@@ -108,10 +108,9 @@ void difference_output(std::string const& caseid, G1 const& g1, G2 const& g2, Ou
 #if defined(BOOST_GEOMETRY_NO_SELF_TURNS)
            << "_no_self"
 #endif
-#if defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
-            << "_no_rob"
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+           << ".svg";
 #endif
-            << ".svg";
 
         std::ofstream svg(filename.str().c_str());
 

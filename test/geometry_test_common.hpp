@@ -100,6 +100,7 @@
 // For all tests:
 // - do NOT use "using namespace boost::geometry" to make clear what is Boost.Geometry
 // - use bg:: as short alias
+#include <boost/geometry/core/config.hpp>
 #include <boost/geometry/core/coordinate_type.hpp>
 #include <boost/geometry/core/closure.hpp>
 #include <boost/geometry/core/point_order.hpp>
@@ -160,6 +161,35 @@ struct mathematical_policy
 
 };
 
+inline void print_configuration()
+{
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+    std::cout << "GEOMETRY UNIT TEST: Using rescale" << std::endl;
+#else
+    std::cout << "GEOMETRY UNIT TEST: No rescale" << std::endl;
+#endif
+
+#if defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
+    std::cout << "GEOMETRY UNIT TEST: Using Kramer's Rule" << std::endl;
+#else
+    std::cout << "GEOMETRY UNIT TEST: Using General Form" << std::endl;
+#endif
+
+#if defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
+    std::cout << "GEOMETRY UNIT TEST: Test only one type" << std::endl;
+#endif
+
+#if defined(BOOST_GEOMETRY_NO_SELF_TURNS)
+    std::cout << "GEOMETRY UNIT TEST: No self turns" << std::endl;
+#endif
+
+    std::cout << std::endl;
+}
+
+// For now, do not check on point count
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
+#define BOOST_GEOMETRY_TEST_NO_POINT_COUNT
+#endif
 
 
 #endif // GEOMETRY_TEST_GEOMETRY_TEST_COMMON_HPP

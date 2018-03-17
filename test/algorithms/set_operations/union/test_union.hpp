@@ -92,6 +92,7 @@ void test_union(std::string const& caseid, G1 const& g1, G2 const& g2,
         int expected_point_count, double expected_area,
         ut_settings const& settings)
 {
+//  g_case_id = caseid;
     typedef typename bg::coordinate_type<G1>::type coordinate_type;
     boost::ignore_unused<coordinate_type>();
     boost::ignore_unused(expected_point_count);
@@ -99,10 +100,6 @@ void test_union(std::string const& caseid, G1 const& g1, G2 const& g2,
     // Declare output (vector of rings or multi_polygon)
     typedef typename setop_output_type<OutputType>::type result_type;
     result_type clip;
-
-#if defined(BOOST_GEOMETRY_DEBUG_ROBUSTNESS)
-    std::cout << "*** UNION " << caseid << std::endl;
-#endif
 
 #if defined(BOOST_GEOMETRY_TEST_CHECK_VALID_INPUT)
     check_input_validity(caseid, 0, g1);
@@ -172,9 +169,7 @@ void test_union(std::string const& caseid, G1 const& g1, G2 const& g2,
     }
 #endif
 
-
-
-#if defined(BOOST_GEOMETRY_DEBUG_ROBUSTNESS)
+#if 0
     std::cout << "*** case: " << caseid
         << " area: " << area
         << " points: " << n
@@ -197,7 +192,7 @@ void test_union(std::string const& caseid, G1 const& g1, G2 const& g2,
             << " type: " << (type_for_assert_message<G1, G2>())
             );
 
-#if ! defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if ! defined(BOOST_GEOMETRY_TEST_NO_POINT_COUNT)
     BOOST_CHECK_MESSAGE(expected_point_count < 0 || std::abs(int(n) - expected_point_count) < 3,
             "union: " << caseid
             << " #points expected: " << expected_point_count
@@ -226,8 +221,11 @@ void test_union(std::string const& caseid, G1 const& g1, G2 const& g2,
 #if defined(BOOST_GEOMETRY_NO_SELF_TURNS)
            << "_no_self"
 #endif
-#if defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
-            << "_no_rob"
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+            << "_rescale"
+#endif
+#if defined(BOOST_GEOMETRY_USE_COMPLEX_SEGMENT_RATIO)
+            << "_csr"
 #endif
             << ".svg";
 

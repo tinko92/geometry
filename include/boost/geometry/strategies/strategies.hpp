@@ -21,6 +21,7 @@
 #ifndef BOOST_GEOMETRY_STRATEGIES_STRATEGIES_HPP
 #define BOOST_GEOMETRY_STRATEGIES_STRATEGIES_HPP
 
+#include <boost/geometry/core/config.hpp>
 
 #include <boost/geometry/strategies/tags.hpp>
 
@@ -64,7 +65,11 @@
 #include <boost/geometry/strategies/cartesian/distance_projected_point.hpp>
 #include <boost/geometry/strategies/cartesian/distance_projected_point_ax.hpp>
 #include <boost/geometry/strategies/cartesian/envelope_segment.hpp>
+#if defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
 #include <boost/geometry/strategies/cartesian/intersection.hpp>
+#else
+#include <boost/geometry/strategies/cartesian/general_intersection.hpp>
+#endif
 #include <boost/geometry/strategies/cartesian/point_in_box.hpp>
 #include <boost/geometry/strategies/cartesian/point_in_poly_franklin.hpp>
 #include <boost/geometry/strategies/cartesian/point_in_poly_crossings_multiply.hpp>

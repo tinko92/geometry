@@ -113,7 +113,7 @@ void test_areal()
     {
         ut_settings settings;
 
-#if !defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
         settings.sym_difference = false;
 #endif
 
@@ -156,18 +156,18 @@ void test_areal()
         settings.percentage = 0.001;
 
         // This testcase is actually different for all combinations
-#if defined(BOOST_GEOMETRY_NO_SELF_TURNS) || defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if defined(BOOST_GEOMETRY_NO_SELF_TURNS) || ! defined(BOOST_GEOMETRY_USE_RESCALING)
         settings.test_validity = false;
 #endif
 
-#if ! defined(BOOST_GEOMETRY_NO_SELF_TURNS) || defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if ! defined(BOOST_GEOMETRY_NO_SELF_TURNS) || ! defined(BOOST_GEOMETRY_USE_RESCALING)
         TEST_DIFFERENCE_WITH(0, 1, ggl_list_20120221_volker, 2, 7962.66, 2, 2775258.93, 4);
 #else
         TEST_DIFFERENCE_WITH(0, 1, ggl_list_20120221_volker, 2, 7962.66, 1, 2775258.93, 3);
 #endif
     }
 
-#if defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
     {
         ut_settings settings;
         settings.sym_difference = false; // Validity problem in sym difference
@@ -431,7 +431,7 @@ void test_areal()
     TEST_DIFFERENCE_IGNORE(case_recursive_boxes_79, 2, 1.25, 5, 4.5, 7);
 #endif
 
-#if defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
     TEST_DIFFERENCE(case_recursive_boxes_80, 1, 0.5, 2, 0.75, 2);
 #else
     // one polygon is divided into two, for same reason as union creates a small
@@ -448,7 +448,8 @@ void test_areal()
 #endif
     TEST_DIFFERENCE(case_recursive_boxes_83, 9, 5.25, 8, 5.25, 12);
     TEST_DIFFERENCE(case_recursive_boxes_84, 4, 8.0, 7, 9.0, 4);
-#ifdef BOOST_GEOMETRY_NO_ROBUSTNESS
+
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
     TEST_DIFFERENCE(case_recursive_boxes_85, 4, 4.0, 7, 3.75, 9);
 #endif
 
@@ -458,7 +459,7 @@ void test_areal()
 
     {
         ut_settings sym_settings;
-    #if defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+    #if ! defined(BOOST_GEOMETRY_USE_RESCALING)
         sym_settings.sym_difference = false;
     #endif
         test_one<Polygon, MultiPolygon, MultiPolygon>("mysql_21965285_b",
@@ -469,10 +470,10 @@ void test_areal()
             sym_settings);
     }
 
-#ifdef BOOST_GEOMETRY_NO_ROBUSTNESS
-    TEST_DIFFERENCE(mysql_regression_1_65_2017_08_31, 0, 0.0, 3, 152.0642, 3);
-#else
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
     TEST_DIFFERENCE(mysql_regression_1_65_2017_08_31, 1, 4.30697514e-7, 3, 152.0642, 4);
+#else
+    TEST_DIFFERENCE(mysql_regression_1_65_2017_08_31, 0, 0.0, 3, 152.0642, 3);
 #endif
 }
 

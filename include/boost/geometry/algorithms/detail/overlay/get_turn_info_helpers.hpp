@@ -16,6 +16,8 @@
 
 #include <boost/geometry/policies/robustness/no_rescale_policy.hpp>
 
+#include <boost/geometry/io/wkt/wkt.hpp>
+
 namespace boost { namespace geometry {
 
 #ifndef DOXYGEN_NO_DETAIL
@@ -58,6 +60,14 @@ struct side_calculator
 
     inline int pk_wrt_q2() const { return m_side_strategy.apply(m_qj, m_qk, m_pk); }
     inline int qk_wrt_p2() const { return m_side_strategy.apply(m_pj, m_pk, m_qk); }
+    inline int pj_wrt_q2() const { return m_side_strategy.apply(m_qj, m_qk, m_pj); }
+
+    template <typename P1, typename P2, typename P>
+    inline double distance_measure(P1 const& p1, P2 const& p2, P const& p) const
+    {
+        return m_side_strategy.distance_measure(p1, p2, p);
+    }
+
 
     Pi const& m_pi;
     Pj const& m_pj;
@@ -195,7 +205,7 @@ public:
     inline Point2 const& rqk() const { return qk(); }
 
     inline side_calculator_type const& sides() const { return m_side_calc; }
-    
+
 private:
     side_calculator_type m_side_calc;
 };
@@ -338,7 +348,7 @@ private:
     {
         typedef model::referring_segment<Point const> seg;
 
-        // no need to calcualte direction info
+        // no need to calculate direction info
         typedef policies::relate::segments_intersection_points
                 <
                     intersection_point_type

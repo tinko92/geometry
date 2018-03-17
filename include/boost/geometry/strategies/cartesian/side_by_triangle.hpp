@@ -24,6 +24,7 @@
 #include <boost/type_traits/is_integral.hpp>
 #include <boost/type_traits/is_void.hpp>
 
+#include <boost/geometry/core/config.hpp>
 #include <boost/geometry/arithmetic/determinant.hpp>
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/util/select_coordinate_type.hpp>
@@ -258,6 +259,20 @@ public :
             : -1;
     }
 
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
+    // Returns a comparable and sortable distance measure:
+    // - if left then positive,
+    // - if collinear than zero - but NOT compared with any epsilon
+    // - if right then negative
+    template <typename P1, typename P2, typename P>
+    static inline
+    typename coordinate_type<P1>::type distance_measure(P1 const& p1, P2 const& p2, P const& p)
+    {
+        typedef typename coordinate_type<P1>::type ct;
+        eps_empty dummy;
+        return side_value<ct, ct>(p1, p2, p, dummy);
+    }
+#endif
 };
 
 

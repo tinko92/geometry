@@ -710,9 +710,113 @@ struct traversal
         return false;
     }
 
+
+    struct linked_turn_op_info
+    {
+        linked_turn_op_info(signed_size_type ti = -1, int oi = -1,
+                    signed_size_type nti = -1)
+            : turn_index(ti)
+            , op_index(oi)
+            , next_turn_index(nti)
+        {}
+
+        signed_size_type turn_index;
+        int op_index;
+        signed_size_type next_turn_index;
+    };
+
+    // Function checks simple cases, such as a cluster with two turns,
+    // arriving at the first turn, first turn points to second turn,
+    // second turn points further.
+    inline bool select_turn_from_cluster_simple(signed_size_type& turn_index,
+            int& op_index,
+            std::set<signed_size_type> const& ids,
+            signed_size_type previous_turn_index) const
+    {
+//return false;
+        typedef typename std::set<signed_size_type>::const_iterator sit_type;
+
+        std::vector<linked_turn_op_info> possibilities;
+        std::set<signed_size_type> blocked_turns;
+        for (sit_type it = ids.begin(); it != ids.end(); ++it)
+        {
+            signed_size_type cluster_turn_index = *it;
+            turn_type const& cluster_turn = m_turns[cluster_turn_index];
+            if (cluster_turn.discarded)
+            {
+                continue;
+            }
+            for (int i = 0; i < 2; i++)
+            {
+                turn_operation_type const& op = cluster_turn.operations[i];
+                turn_operation_type const& other_op = cluster_turn.operations[1 - i];
+                signed_size_type const ni = op.enriched.get_next_turn_index();
+                if (op.operation == target_operation
+                    || op.operation == operation_continue)
+                {
+                    possibilities.push_back(
+                        linked_turn_op_info(cluster_turn_index, i, ni));
+                }
+                else if (op.operation == operation_blocked
+                         && ! (ni == other_op.enriched.get_next_turn_index())
+                         && ids.count(ni) == 0)
+                {
+                    // Points to turn, not part of this cluster,
+                    // and that way is blocked. But if the other operation
+                    // points at the same turn, it is still fine.
+                    blocked_turns.insert(ni);
+                }
+            }
+        }
+
+        if (! blocked_turns.empty())
+        {
+            for (typename std::vector<linked_turn_op_info>::const_iterator it = possibilities.begin();
+                 it != possibilities.end(); ++it)
+            {
+                linked_turn_op_info const& lti = *it;
+                if (blocked_turns.count(lti.next_turn_index) > 0)
+                {
+                    return false;
+                }
+            }
+        }
+
+        if (possibilities.size() != 2)
+        {
+            // for now
+            return false;
+        }
+
+        // Order it (for now:)
+        if (possibilities.front().next_turn_index != possibilities.back().turn_index)
+        {
+            std::reverse(possibilities.begin(), possibilities.end());
+        }
+
+        // The cluster is linked in right order.
+        // Traveral can either enter the cluster in the first turn,
+        // or it can start halfway.
+
+        bool const linked = possibilities.front().next_turn_index == possibilities.back().turn_index;
+        bool const all_same = possibilities.front().next_turn_index == possibilities.back().next_turn_index;
+        if (! (linked || all_same))
+        {
+            return false;
+        }
+
+        std::cout << "@";
+
+        turn_index = possibilities.back().turn_index;
+        op_index = possibilities.back().op_index;
+
+        return true;
+    }
+
     inline bool select_turn_from_cluster(signed_size_type& turn_index,
             int& op_index,
             signed_size_type start_turn_index, int start_op_index,
+            signed_size_type previous_turn_index,
             segment_identifier const& previous_seg_id) const
     {
         bool const is_union = target_operation == operation_union;
@@ -725,6 +829,12 @@ struct traversal
 
         cluster_info const& cinfo = mit->second;
         std::set<signed_size_type> const& ids = cinfo.turn_indices;
+
+        if (select_turn_from_cluster_simple(turn_index, op_index, ids,
+                                            previous_turn_index))
+        {
+            return true;
+        }
 
         sbs_type sbs(m_strategy);
 
@@ -932,7 +1042,8 @@ struct traversal
         if (current_turn.is_clustered())
         {
             if (! select_turn_from_cluster(turn_index, op_index,
-                    start_turn_index, start_op_index, previous_seg_id))
+                    start_turn_index, start_op_index,
+                    previous_turn_index, previous_seg_id))
             {
                 return false;
             }

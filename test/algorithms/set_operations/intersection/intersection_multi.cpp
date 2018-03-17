@@ -361,7 +361,7 @@ void test_areal()
 
     TEST_INTERSECTION(case_recursive_boxes_83, 5, -1, 10.25);
     TEST_INTERSECTION(case_recursive_boxes_84, 1, -1, 0.5);
-#ifdef BOOST_GEOMETRY_NO_ROBUSTNESS
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
     TEST_INTERSECTION(case_recursive_boxes_85, 1, -1, 0.25);
 #endif
     TEST_INTERSECTION(case_recursive_boxes_86, 0, -1, 0.0);
@@ -383,10 +383,10 @@ void test_areal()
     test_one<Polygon, MultiPolygon, MultiPolygon>("ticket_11018",
         ticket_11018[0], ticket_11018[1],
         1, 4,
-#ifdef BOOST_GEOMETRY_NO_ROBUSTNESS
-        9.896437631745599e-09
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+            1.7791170511070893e-14, ut_settings(0.001)
 #else
-        1.7791170511070893e-14, ut_settings(0.001)
+            9.8964664368289143e-09
 #endif
 
     );
@@ -513,6 +513,7 @@ void test_all()
 
 int test_main(int, char* [])
 {
+    print_configuration();
     test_all<bg::model::d2::point_xy<double> >();
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)

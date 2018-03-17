@@ -13,14 +13,11 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_BUFFER_BUFFER_POLICIES_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_BUFFER_BUFFER_POLICIES_HPP
 
-#if ! defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
-#  define BOOST_GEOMETRY_BUFFER_USE_SIDE_OF_INTERSECTION
-#endif
-
 #include <cstddef>
 
 #include <boost/range.hpp>
 
+#include <boost/geometry/core/config.hpp>
 #include <boost/geometry/core/coordinate_type.hpp>
 #include <boost/geometry/core/point_type.hpp>
 
@@ -29,6 +26,10 @@
 #include <boost/geometry/algorithms/detail/overlay/turn_info.hpp>
 
 #include <boost/geometry/strategies/buffer.hpp>
+
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+#  define BOOST_GEOMETRY_BUFFER_USE_SIDE_OF_INTERSECTION
+#endif
 
 
 namespace boost { namespace geometry

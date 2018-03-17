@@ -37,6 +37,7 @@
 #pragma warning(disable : 4127)
 #endif
 
+#include <iostream>
 
 namespace boost { namespace geometry
 {
@@ -130,6 +131,47 @@ struct base_turn_handler
             ? 1 : 0;
     }
 
+    template <typename Point1, typename Point2>
+    static inline typename geometry::coordinate_type<Point1>::type
+            distance_measure(Point1 const& a, Point2 const& b)
+    {
+        // TODO: use comparable distance for point-point instead - but that
+        // causes currently cycling include problems
+        typedef typename geometry::coordinate_type<Point1>::type ctype;
+        ctype const dx = get<0>(a) - get<0>(b);
+        ctype const dy = get<1>(a) - get<1>(b);
+        return dx * dx + dy * dy;
+    }
+
+    template
+    <
+        typename Point1,
+        typename Point2,
+        typename TurnInfo,
+        typename SidePolicy
+    >
+    static inline
+    void set_both_continue(TurnInfo& ti,
+            Point1 const& , Point1 const& pj, Point1 const& pk,
+            Point2 const& , Point2 const& qj, Point2 const& qk,
+            SidePolicy const& side)
+    {
+        both(ti, operation_continue);
+
+        int const side_p = side.pk_wrt_p1();
+        int const side_q = side.qk_wrt_q1();
+
+        // Calculate remaining distance. If it continues collinearly it is
+        // measured until the end of the next segment
+        ti.operations[0].remaining_distance
+                = side_p == 0
+                ? distance_measure(ti.point, pk)
+                : distance_measure(ti.point, pj);
+        ti.operations[1].remaining_distance
+                = side_q == 0
+                ? distance_measure(ti.point, qk)
+                : distance_measure(ti.point, qj);
+    }
 };
 
 
@@ -150,8 +192,8 @@ struct touch_interior : public base_turn_handler
         typename SidePolicy
     >
     static inline void apply(
-                Point1 const& , Point1 const& , Point1 const& ,
-                Point2 const& , Point2 const& , Point2 const& ,
+                Point1 const& pi, Point1 const& pj, Point1 const& pk,
+                Point2 const& qi, Point2 const& qj, Point2 const& qk,
                 TurnInfo& ti,
                 IntersectionInfo const& intersection_info,
                 DirInfo const& dir_info,
@@ -202,11 +244,25 @@ struct touch_interior : public base_turn_handler
         }
         else if (side_qi_p == side_qk_p && side_qi_p == side_qk_q)
         {
+            // ONLY NECESSARY FOR ROBUSTNESS:
+            int const side_pj_q = side.pj_wrt_q2();
+//            int const side_pk_q = side.pk_wrt_q2();
+
             // Q turns left on the left side of P (test "ML2")
             // or Q turns right on the right side of P (test "MR2")
             // Union: take left turn (Q if Q turns left, P if Q turns right)
             // Intersection: other turn
             unsigned int index = side_qk_q == 1 ? index_q : index_p;
+            if (side_pj_q == 0)
+            {
+                // Even though sides xk w.r.t. 1 are distinct, pj is collinear
+                // with q. Therefore swap the path
+                // TODO
+                std::cout << "=> Swap touch-middle" << std::endl;
+
+                index = 1 - index;
+            }
+
             ti.operations[index].operation = operation_union;
             ti.operations[1 - index].operation = operation_intersection;
             ti.touch_only = true;
@@ -216,13 +272,32 @@ struct touch_interior : public base_turn_handler
             // Q intersects on interior of P and continues collinearly
             if (side_qk_q == side_qi_p)
             {
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
+                double vq = side.distance_measure(pi, pj, qk);
+                double vp = side.distance_measure(qj, qk, pj);
+
+
+
+                if (vp > vq)
+                {
+                    // ROBUSTNESS: even though both angles are 0, they might
+                    // still be different. If vp is left from vq, then use
+                    // vp
+                    int const side_pk_p = side.pk_wrt_p1();
+                    unsigned int const index = side_pk_p == -1 ? index_p : index_q;
+                    ti.operations[index].operation = operation_union;
+                    ti.operations[1 - index].operation = operation_intersection;
+                    return;
+                }
+#endif
                 // Collinearly in the same direction
                 // (Q comes from left of P and turns left,
                 //  OR Q comes from right of P and turns right)
-                // Omit intersection point.
+                // Omit second intersection point.
                 // Union: just continue
                 // Intersection: just continue
                 both(ti, operation_continue);
+//                set_both_continue(ti, pi, pj, pk, qi, qj, pk, side);
             }
             else
             {

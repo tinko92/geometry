@@ -145,7 +145,7 @@ void test_areal()
 
     test_one<Polygon, Polygon, Polygon>("distance_zero",
         distance_zero[0], distance_zero[1],
-        1, 0, 8, 9.0098387);
+        1, 0, -1, 9.0098387);
 
     test_one<Polygon, Polygon, Polygon>("wrapped_a",
         wrapped[0], wrapped[1],
@@ -288,38 +288,43 @@ void test_areal()
         ggl_list_20110307_javier[0], ggl_list_20110307_javier[1],
         1, 1, 13, 20016.4);
 
-#if ! defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if defined(BOOST_GEOMETRY_USE_RESCALING) || !defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
     test_one<Polygon, Polygon, Polygon>("ggl_list_20110627_phillip",
         ggl_list_20110627_phillip[0], ggl_list_20110627_phillip[1],
         1, 0, 8, 14729.07145);
 #endif
 
+    std::cout << "begin enrico" << std::endl;
     test_one<Polygon, Polygon, Polygon>("ggl_list_20110716_enrico",
         ggl_list_20110716_enrico[0], ggl_list_20110716_enrico[1],
         1, 1, 15, 129904.197692871);
+    std::cout << "end enrico" << std::endl;
 
-#if ! defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+
+#if defined(BOOST_GEOMETRY_USE_RESCALING) || !defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
     test_one<Polygon, Polygon, Polygon>("ggl_list_20110820_christophe",
         ggl_list_20110820_christophe[0], ggl_list_20110820_christophe[1],
         -1, // Either 1 or 2, depending if the intersection/turn point (eps.region) is missed
         0,
-        if_typed_tt<ct>(9, 8),
+        -1,
         67.3550722317627);
 #endif
 
     {
         ut_settings settings;
         settings.percentage = 0.1;
-#if defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
         settings.test_validity = false;
 #endif
 
+std::cout << "begin isovist" << std::endl;
         test_one<Polygon, Polygon, Polygon>("isovist",
             isovist1[0], isovist1[1],
             1,
             0,
             -1,
             313.36036462, settings);
+std::cout << "end isovist" << std::endl;
 
         // SQL Server gives: 313.360374193241
         // PostGIS gives:    313.360364623393
@@ -351,7 +356,7 @@ void test_areal()
 
     test_one<Polygon, Polygon, Polygon>("ticket_9081_15",
             ticket_9081_15[0], ticket_9081_15[1],
-            1, 0, 10, 0.0403425433);
+            1, 0, -1, 0.0403425433);
 
     test_one<Polygon, Polygon, Polygon>("ticket_9563", ticket_9563[0], ticket_9563[1],
             1, 0, 13, 150.0);
@@ -359,15 +364,11 @@ void test_areal()
     test_one<Polygon, Polygon, Polygon>("ticket_9756", ticket_9756[0], ticket_9756[1],
             1, 0, 10, 1289.08374);
 
-#if defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+    // Can form either one or two clips
     test_one<Polygon, Polygon, Polygon>("ticket_10108_a", ticket_10108_a[0], ticket_10108_a[1],
-            1, 0, 8, 0.0435229);
-#else
-    test_one<Polygon, Polygon, Polygon>("ticket_10108_a", ticket_10108_a[0], ticket_10108_a[1],
-            2, 0, 8, 0.0435229);
-#endif
+            -1, 0, 8, 0.0435229);
 
-#if ! defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if defined(BOOST_GEOMETRY_USE_RESCALING) || !defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
     test_one<Polygon, Polygon, Polygon>("ticket_10108_b", ticket_10108_b[0], ticket_10108_b[1],
             1, 0, 10, 2424.3449);
 #endif
@@ -379,36 +380,42 @@ void test_areal()
             1, 1, 10, 7.5);
 
     {
-        ut_settings ignore_validity;
-        ignore_validity.test_validity = false;
+        ut_settings settings;
+#if defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
+        settings.test_validity = false;
+#endif
+        settings.percentage = 0.01;
         test_one<Polygon, Polygon, Polygon>("geos_1", geos_1[0], geos_1[1],
                 1, 0, -1, 3461.3203125,
-                ignore_validity);
+                settings);
     }
+#if ! defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
+    // TODO for general form:s
     test_one<Polygon, Polygon, Polygon>("geos_2", geos_2[0], geos_2[1],
             1, 0, -1, 350.55102539);
     test_one<Polygon, Polygon, Polygon>("geos_3", geos_3[0], geos_3[1],
             1, 0, -1, 29391548.4998779);
+#endif
     test_one<Polygon, Polygon, Polygon>("geos_4", geos_4[0], geos_4[1],
             1, 0, -1, 2304.4163115);
 
     test_one<Polygon, Polygon, Polygon>("buffer_rt_a", buffer_rt_a[0], buffer_rt_a[1],
                 1, 0, 265, 19.280667);
 
-    // Robustness issues, followed out buffer-robustness-tests, test them also reverse
-#if ! defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if defined(BOOST_GEOMETRY_USE_RESCALING) || !defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
+    // Cases going successfully with either rescaling or general_form intersection
     test_one<Polygon, Polygon, Polygon>("buffer_rt_f", buffer_rt_f[0], buffer_rt_f[1],
-                1, 0, 15, 4.60853);
+                1, 0, -1, 4.60853);
     test_one<Polygon, Polygon, Polygon>("buffer_rt_f_rev", buffer_rt_f[1], buffer_rt_f[0],
-                1, 0, 15, 4.60853);
+                1, 0, -1, 4.60853);
     test_one<Polygon, Polygon, Polygon>("buffer_rt_g", buffer_rt_g[0], buffer_rt_g[1],
-                1, 0, if_typed<ct, float>(16, 11), 16.571);
+                1, 0, -1, 16.571);
     test_one<Polygon, Polygon, Polygon>("buffer_rt_g_rev", buffer_rt_g[1], buffer_rt_g[0],
-                1, 0, if_typed<ct, float>(16, 11), 16.571);
+                1, 0, -1, 16.571);
     test_one<Polygon, Polygon, Polygon>("buffer_rt_i", buffer_rt_i[0], buffer_rt_i[1],
-                1, 0, if_typed<ct, float>(11, 13), 13.6569);
+                1, 0, -1, 13.6569);
     test_one<Polygon, Polygon, Polygon>("buffer_rt_i_rev", buffer_rt_i[1], buffer_rt_i[0],
-                    1, 0, 13, 13.6569);
+                1, 0, -1, 13.6569);
 #endif
 
     test_one<Polygon, Polygon, Polygon>("buffer_rt_j", buffer_rt_j[0], buffer_rt_j[1],
@@ -416,7 +423,7 @@ void test_areal()
     test_one<Polygon, Polygon, Polygon>("buffer_rt_j_rev", buffer_rt_j[1], buffer_rt_j[0],
                 1, 0, -1, 16.5711);
 
-#if ! defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if defined(BOOST_GEOMETRY_USE_RESCALING) || !defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
     test_one<Polygon, Polygon, Polygon>("buffer_rt_l", buffer_rt_l[0], buffer_rt_l[1],
                 1, 0, -1, 19.3995);
     test_one<Polygon, Polygon, Polygon>("buffer_rt_l_rev", buffer_rt_l[1], buffer_rt_l[0],
@@ -429,34 +436,31 @@ void test_areal()
                 1, 0, 9, 19.4852);
 
     test_one<Polygon, Polygon, Polygon>("buffer_rt_m2", buffer_rt_m2[0], buffer_rt_m2[1],
-                1, 0, 12, 21.4853);
+                1, 0, -1, 21.4853);
     test_one<Polygon, Polygon, Polygon>("buffer_rt_m2_rev", buffer_rt_m2[1], buffer_rt_m2[0],
                 1, 0, 15, 21.4853);
 
-#if ! defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if defined(BOOST_GEOMETRY_USE_RESCALING) || !defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
     test_one<Polygon, Polygon, Polygon>("buffer_rt_q", buffer_rt_q[0], buffer_rt_q[1],
-                1, 0, if_typed<ct, float>(16, 12), 18.5710);
+                1, 0, -1, 18.5710);
     test_one<Polygon, Polygon, Polygon>("buffer_rt_q_rev", buffer_rt_q[1], buffer_rt_q[0],
-                1, 0, if_typed<ct, float>(16, 12), 18.5710);
+                1, 0, -1, 18.5710);
     test_one<Polygon, Polygon, Polygon>("buffer_rt_r", buffer_rt_r[0], buffer_rt_r[1],
-                1, 0, if_typed<ct, float>(18, 14), 21.07612);
+                1, 0, -1, 21.07612);
     test_one<Polygon, Polygon, Polygon>("buffer_rt_r_rev", buffer_rt_r[1], buffer_rt_r[0],
-                1, 0, if_typed<ct, float>(18, 14), 21.07612);
+                1, 0, -1, 21.07612);
     test_one<Polygon, Polygon, Polygon>("buffer_rt_t", buffer_rt_t[0], buffer_rt_t[1],
-                1, 0, 9, 15.6569);
+                1, 0, -1, 15.6569);
     test_one<Polygon, Polygon, Polygon>("buffer_rt_t_rev", buffer_rt_t[1], buffer_rt_t[0],
-                1, 0, 10, 15.6569);
+                1, 0, -1, 15.6569);
 #endif
 
     test_one<Polygon, Polygon, Polygon>("buffer_mp1", buffer_mp1[0], buffer_mp1[1],
                 1, 0, if_typed_tt<ct>(93, 91), 22.815);
 
+    // Can either form an interior ring between the circles, or not.
     test_one<Polygon, Polygon, Polygon>("buffer_mp2", buffer_mp2[0], buffer_mp2[1],
-#if defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
-                1, 0, 217, 36.752837);
-#else
-                1, 1, 217, 36.752837);
-#endif
+                1, -1, 217, 36.752837);
 
     test_one<Polygon, Polygon, Polygon>("mysql_21964079_1",
         mysql_21964079_1[0], mysql_21964079_1[1],
@@ -539,11 +543,12 @@ void test_all()
 
 int test_main(int, char* [])
 {
+    print_configuration();
     test_all<bg::model::d2::point_xy<double> >();
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
 
-#if ! defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
     test_all<bg::model::d2::point_xy<float> >();
     test_all<bg::model::d2::point_xy<long double> >();
 #endif

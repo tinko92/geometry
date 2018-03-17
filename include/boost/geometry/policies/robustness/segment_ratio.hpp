@@ -24,6 +24,7 @@ namespace boost { namespace geometry
 {
 
 
+#ifdef BOOST_GEOMETRY_USE_COMPLEX_SEGMENT_RATIO
 namespace detail { namespace segment_ratio
 {
 
@@ -221,7 +222,7 @@ public :
         return result;
     }
 
-#if defined(BOOST_GEOMETRY_DEFINE_STREAM_OPERATOR_SEGMENT_RATIO)
+//#if defined(BOOST_GEOMETRY_DEFINE_STREAM_OPERATOR_SEGMENT_RATIO)
     friend std::ostream& operator<<(std::ostream &os, segment_ratio const& ratio)
     {
         os << ratio.m_numerator << "/" << ratio.m_denominator
@@ -230,7 +231,7 @@ public :
            << ")";
         return os;
     }
-#endif
+//#endif
 
 
 
@@ -260,6 +261,124 @@ private :
         return 1000000.0;
     }
 };
+
+#else
+
+
+template <typename Type>
+class segment_ratio
+{
+public :
+    typedef Type numeric_type;
+
+    // Type-alias for the type itself
+    typedef segment_ratio<Type> thistype;
+
+    inline segment_ratio()
+        : m_ratio(-1)
+    {}
+
+    inline segment_ratio(const Type& value)
+        : m_ratio(value)
+    {
+    }
+
+    inline segment_ratio(const Type& num, const Type& denom)
+        : m_ratio(num / denom)
+    {
+    }
+
+    inline void assign(const Type& value)
+    {
+        m_ratio = value;
+    }
+
+    // SHOULD GO LATER
+    template <typename T>
+    inline void assign(const T& num, const T& denom)
+    {
+        m_ratio = num / Type(denom);
+    }
+
+    inline bool is_zero() const { return math::equals(m_ratio, 0.0); }
+    inline bool is_one() const { return math::equals(m_ratio, 1.0); }
+    inline bool on_segment() const
+    {
+        return m_ratio >= 0.0 && m_ratio <= 1.0;
+    }
+    inline bool in_segment() const
+    {
+        return m_ratio > 0.0 && m_ratio < 1.0;
+    }
+    inline bool on_end() const
+    {
+        // e.g. 0/4 or 4/4
+        return is_zero() || is_one();
+    }
+    inline bool left() const
+    {
+        return m_ratio < 0.0;
+    }
+    inline bool right() const
+    {
+        return m_ratio > 1.0;
+    }
+
+    inline bool near_end() const
+    {
+        if (left() || right())
+        {
+            return false;
+        }
+
+        // todo
+        return false;
+    }
+
+    inline bool close_to(thistype const& other) const
+    {
+        return geometry::math::abs(m_ratio - other.m_ratio) < 1.0e-3;
+    }
+
+    inline bool operator< (thistype const& other) const
+    {
+        return m_ratio < other.m_ratio;
+    }
+
+    inline bool operator== (thistype const& other) const
+    {
+        return m_ratio == other.m_ratio;
+    }
+
+    static inline thistype zero()
+    {
+        static thistype result(0);
+        return result;
+    }
+
+    static inline thistype one()
+    {
+        static thistype result(1);
+        return result;
+    }
+
+//#if defined(BOOST_GEOMETRY_DEFINE_STREAM_OPERATOR_SEGMENT_RATIO)
+    friend std::ostream& operator<<(std::ostream &os, segment_ratio const& ratio)
+    {
+        os << ratio.m_ratio;
+        return os;
+    }
+//#endif
+
+
+
+private :
+    Type m_ratio;
+
+};
+
+
+#endif
 
 
 }} // namespace boost::geometry

@@ -215,7 +215,7 @@ int test_main( int , char* [] )
     test_all<bg::model::d2::point_xy<double> >();
     test_all<bg::model::d2::point_xy<double>, bg::model::point<double, 2, bg::cs::cartesian> >();
 
-#if ! defined(BOOST_GEOMETRY_RESCALE_TO_ROBUST)
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
     test_all<bg::model::d2::point_xy<boost::rational<int> > >();
 #endif
 

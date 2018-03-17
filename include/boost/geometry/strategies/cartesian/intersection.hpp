@@ -18,6 +18,7 @@
 
 #include <algorithm>
 
+#include <boost/geometry/core/config.hpp>
 #include <boost/geometry/core/exception.hpp>
 
 #include <boost/geometry/geometries/concepts/point_concept.hpp>
@@ -665,6 +666,7 @@ private:
     }
 };
 
+#if defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
 
 #ifndef DOXYGEN_NO_STRATEGY_SPECIALIZATIONS
 namespace services
@@ -679,9 +681,11 @@ struct default_strategy<cartesian_tag, CalculationType>
 } // namespace services
 #endif // DOXYGEN_NO_STRATEGY_SPECIALIZATIONS
 
+#endif // KRAMER
 
 }} // namespace strategy::intersection
 
+#if defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
 namespace strategy
 {
 
@@ -744,6 +748,7 @@ struct default_strategy<Geometry1, Geometry2, AnyTag1, AnyTag2, polygonal_tag, p
 }} // within::services
 
 } // strategy
+#endif // KRAMER
 
 }} // namespace boost::geometry
 

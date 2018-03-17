@@ -14,6 +14,7 @@
 #define BOOST_GEOMETRY_STRATEGIES_INTERSECTION_HPP
 
 
+#include <boost/geometry/core/config.hpp>
 #include <boost/geometry/core/point_type.hpp>
 #include <boost/geometry/geometries/segment.hpp>
 
@@ -25,7 +26,11 @@
 #include <boost/geometry/strategies/intersection_result.hpp>
 #include <boost/geometry/strategies/side.hpp>
 
+#if defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
 #include <boost/geometry/strategies/cartesian/intersection.hpp>
+#else
+#include <boost/geometry/strategies/cartesian/general_intersection.hpp>
+#endif
 #include <boost/geometry/strategies/cartesian/side_by_triangle.hpp>
 #include <boost/geometry/strategies/spherical/intersection.hpp>
 #include <boost/geometry/strategies/spherical/ssf.hpp>

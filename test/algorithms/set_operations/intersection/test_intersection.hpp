@@ -114,8 +114,7 @@ check_result(
             << " type: " << (type_for_assert_message<G1, G2>()));
     }
 
-#if ! defined(BOOST_GEOMETRY_NO_BOOST_TEST)
-#if ! defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if ! defined(BOOST_GEOMETRY_TEST_NO_POINT_COUNT)
     if (expected_point_count > 0)
     {
         BOOST_CHECK_MESSAGE(bg::math::abs(n - expected_point_count) < 3,
@@ -159,7 +158,6 @@ check_result(
         // depending on compiler/settings. That cannot be tested by CLOSE
         BOOST_CHECK_LE(detected_length_or_area, expected_length_or_area);
     }
-#endif
 
     return length_or_area;
 }
@@ -251,8 +249,8 @@ typename bg::default_area_result<G1>::type test_intersection(std::string const& 
 #if defined(BOOST_GEOMETRY_NO_SELF_TURNS)
            << "_no_self"
 #endif
-#if defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
-            << "_no_rob"
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+           << "_rescale"
 #endif
             << ".svg";
 
