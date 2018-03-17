@@ -441,18 +441,19 @@ inline void enrich_intersection_points(Turns& turns,
 
         if (turn.both(detail::overlay::operation_none)
             || turn.both(opposite_operation)
+            || turn.both(detail::overlay::operation_blocked)
             || (detail::overlay::is_self_turn<OverlayType>(turn)
                 && ! turn.is_clustered()
                 && ! turn.both(target_operation)))
         {
+            // For all operations, discard xx and none/none
             // For intersections, remove uu to avoid the need to travel
             // a union (during intersection) in uu/cc clusters (e.g. #31,#32,#33)
 
             // Similarly, for union, discard ii
 
-            // Only keep self-uu-turns or self-ii-turns
+            // For self-turns, only keep uu / ii
 
-            // Blocked (or combination with blocked is still needed for difference)
             turn.discarded = true;
             turn.cluster_id = -1;
             continue;
