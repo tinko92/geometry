@@ -161,6 +161,25 @@ struct mathematical_policy
 
 };
 
+inline void print_configuration()
+{
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+    std::cout << "GEOMETRY UNIT TEST: Using rescale" << std::endl;
+#else
+    std::cout << "GEOMETRY UNIT TEST: No rescale" << std::endl;
+#endif
+
+#if defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
+    std::cout << "GEOMETRY UNIT TEST: Test only one type" << std::endl;
+#endif
+
+#if defined(BOOST_GEOMETRY_NO_SELF_TURNS)
+    std::cout << "GEOMETRY UNIT TEST: No self turns" << std::endl;
+#endif
+
+    std::cout << std::endl;
+}
+
 
 
 #endif // GEOMETRY_TEST_GEOMETRY_TEST_COMMON_HPP

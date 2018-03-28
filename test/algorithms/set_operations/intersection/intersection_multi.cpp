@@ -513,6 +513,7 @@ void test_all()
 
 int test_main(int, char* [])
 {
+    print_configuration();
     test_all<bg::model::d2::point_xy<double> >();
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)

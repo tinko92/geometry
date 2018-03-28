@@ -881,6 +881,8 @@ void test_ticket_10868(std::string const& wkt_out)
 
 int test_main(int, char* [])
 {
+    print_configuration();
+
     test_all<bg::model::d2::point_xy<double> >();
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)

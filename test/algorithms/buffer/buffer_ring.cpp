@@ -34,6 +34,7 @@ void test_all()
 
 int test_main(int, char* [])
 {
+    print_configuration();
     test_all<true, bg::model::point<double, 2, bg::cs::cartesian> >();
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
     test_all<false, bg::model::point<double, 2, bg::cs::cartesian> >();

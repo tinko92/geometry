@@ -798,6 +798,7 @@ void test_mixed()
 
 int test_main(int, char* [])
 {
+    print_configuration();
     typedef bg::model::point<double, 2, bg::cs::cartesian> dpoint;
 
     test_all<true, dpoint>();

@@ -363,6 +363,7 @@ void test_invalid()
 
 int test_main(int, char* [])
 {
+    print_configuration();
     test_all<true, bg::model::point<double, 2, bg::cs::cartesian> >();
     test_all<false, bg::model::point<double, 2, bg::cs::cartesian> >();
     //test_all<bg::model::point<tt, 2, bg::cs::cartesian> >();

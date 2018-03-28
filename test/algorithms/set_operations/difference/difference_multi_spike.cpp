@@ -100,6 +100,7 @@ void test_spikes_in_ticket_8365()
 
 int test_main(int, char* [])
 {
+    print_configuration();
     test_spikes_in_ticket_8364<bg::model::d2::point_xy<double>, true, true>();
     test_spikes_in_ticket_8364<bg::model::d2::point_xy<double>, false, false>();
     test_spikes_in_ticket_8365<bg::model::d2::point_xy<double>, true, true>();

@@ -515,6 +515,7 @@ void test_all()
 
 int test_main(int, char* [])
 {
+    print_configuration();
     test_all<double, true>();
 //    test_all<double, false>();
     return 0;
