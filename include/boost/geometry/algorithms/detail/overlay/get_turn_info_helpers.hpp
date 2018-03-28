@@ -16,10 +16,12 @@
 
 #include <boost/geometry/policies/robustness/no_rescale_policy.hpp>
 
-namespace boost { namespace geometry {
+namespace boost { namespace geometry
+{
 
 #ifndef DOXYGEN_NO_DETAIL
-namespace detail { namespace overlay {
+namespace detail { namespace overlay
+{
 
 enum turn_position { position_middle, position_front, position_back };
 
@@ -195,7 +197,7 @@ public:
     inline Point2 const& rqk() const { return qk(); }
 
     inline side_calculator_type const& sides() const { return m_side_calc; }
-    
+
 private:
     side_calculator_type m_side_calc;
 };
@@ -338,7 +340,7 @@ private:
     {
         typedef model::referring_segment<Point const> seg;
 
-        // no need to calcualte direction info
+        // no need to calculate direction info
         typedef policies::relate::segments_intersection_points
                 <
                     intersection_point_type

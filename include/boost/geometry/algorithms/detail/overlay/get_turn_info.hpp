@@ -219,7 +219,7 @@ struct touch_interior : public base_turn_handler
                 // Collinearly in the same direction
                 // (Q comes from left of P and turns left,
                 //  OR Q comes from right of P and turns right)
-                // Omit intersection point.
+                // Omit second intersection point.
                 // Union: just continue
                 // Intersection: just continue
                 both(ti, operation_continue);
