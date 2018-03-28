@@ -288,7 +288,7 @@ void test_areal()
         ggl_list_20110307_javier[0], ggl_list_20110307_javier[1],
         1, 1, 13, 20016.4);
 
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
+#if defined(BOOST_GEOMETRY_USE_RESCALING) || !defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
     test_one<Polygon, Polygon, Polygon>("ggl_list_20110627_phillip",
         ggl_list_20110627_phillip[0], ggl_list_20110627_phillip[1],
         1, 0, 8, 14729.07145);
@@ -299,7 +299,7 @@ void test_areal()
         1, 1, 15, 129904.197692871);
 
 
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
+#if defined(BOOST_GEOMETRY_USE_RESCALING) || !defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
     test_one<Polygon, Polygon, Polygon>("ggl_list_20110820_christophe",
         ggl_list_20110820_christophe[0], ggl_list_20110820_christophe[1],
         -1, // Either 1 or 2, depending if the intersection/turn point (eps.region) is missed
@@ -364,7 +364,7 @@ void test_areal()
     test_one<Polygon, Polygon, Polygon>("ticket_10108_a", ticket_10108_a[0], ticket_10108_a[1],
             -1, 0, 8, 0.0435229);
 
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
+#if defined(BOOST_GEOMETRY_USE_RESCALING) || !defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
     test_one<Polygon, Polygon, Polygon>("ticket_10108_b", ticket_10108_b[0], ticket_10108_b[1],
             1, 0, 10, 2424.3449);
 #endif
@@ -377,16 +377,21 @@ void test_areal()
 
     {
         ut_settings settings;
+#if defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
         settings.test_validity = false;
+#endif
         settings.percentage = 0.01;
         test_one<Polygon, Polygon, Polygon>("geos_1", geos_1[0], geos_1[1],
                 1, 0, -1, 3461.3203125,
                 settings);
     }
+#if ! defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
+    // TODO for general form:s
     test_one<Polygon, Polygon, Polygon>("geos_2", geos_2[0], geos_2[1],
             1, 0, -1, 350.55102539);
     test_one<Polygon, Polygon, Polygon>("geos_3", geos_3[0], geos_3[1],
             1, 0, -1, 29391548.4998779);
+#endif
     test_one<Polygon, Polygon, Polygon>("geos_4", geos_4[0], geos_4[1],
             1, 0, -1, 2304.4163115);
 

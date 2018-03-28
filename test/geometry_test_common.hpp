@@ -169,6 +169,12 @@ inline void print_configuration()
     std::cout << "GEOMETRY UNIT TEST: No rescale" << std::endl;
 #endif
 
+#if defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
+    std::cout << "GEOMETRY UNIT TEST: Using Kramer's Rule" << std::endl;
+#else
+    std::cout << "GEOMETRY UNIT TEST: Using General Form" << std::endl;
+#endif
+
 #if defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
     std::cout << "GEOMETRY UNIT TEST: Test only one type" << std::endl;
 #endif

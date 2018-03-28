@@ -10,6 +10,7 @@
 #define BOOST_GEOMETRY_CORE_CONFIG_HPP
 
 #define BOOST_GEOMETRY_USE_RESCALING
+#define BOOST_GEOMETRY_USE_KRAMER_RULE
 
 // For backward compatibility, deprecated
 #if defined(BOOST_GEOMETRY_USE_RESCALING)

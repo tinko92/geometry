@@ -9,6 +9,7 @@
 #ifndef BOOST_GEOMETRY_ARITHMETIC_GENERAL_FORM_HPP
 #define BOOST_GEOMETRY_ARITHMETIC_GENERAL_FORM_HPP
 
+#include <boost/geometry/util/math.hpp>
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/util/select_most_precise.hpp>
 
@@ -41,6 +42,14 @@ struct general_threshold<float>
 {
    static float get() { return 1.0e-2; }
 };
+
+
+template <typename ValueType, typename Policy>
+static inline
+bool is_zero(ValueType const& value, Policy const& policy)
+{
+    return math::detail::equals_by_policy(value, ValueType(), policy);
+}
 
 //--------------------------------------------------------------------------
 // Structure containing the General Form of a line, a*x + b*y + c == 0
@@ -231,6 +240,33 @@ bool get_intersection(Point& ip,
     }
 
     return result;
+}
+
+// TODO: verify if policy should be used here
+template <typename Policy>
+inline
+bool lines_collinear(general_form<double> const& a,
+                     general_form<double> const& b,
+                     Policy const& policy)
+{
+    if (a.normalized && b.normalized)
+    {
+        bool const same_sign = more_horizontal(a)
+                ? a.b * b.b > 0
+                : a.a * b.a > 0;
+
+        // c is the interception on x or y axis of normalized line
+        // The normalized lign is still directed, if they have the same
+        // direction (same_sign), check for intercept. If they are opposite,
+        // then reverse one intercept
+        return same_sign ? is_zero(a.c - b.c, policy)
+                         : is_zero(a.c + b.c, policy)
+                         ;
+
+    }
+
+    // Not (yet) implemented
+    return false;
 }
 
 } // namespace arithmetic

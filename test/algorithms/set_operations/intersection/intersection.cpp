@@ -261,7 +261,7 @@ void test_areal()
         ggl_list_20140321_7415963[0], ggl_list_20140321_7415963[1],
         0, 0, 0, ut_settings(0.1));
 
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
+#if defined(BOOST_GEOMETRY_USE_RESCALING) || !defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
     test_one<Polygon, Polygon, Polygon>("buffer_rt_f", buffer_rt_f[0], buffer_rt_f[1],
                 1, 4,  0.00029437899183903937, ut_settings(0.01));
 
@@ -291,7 +291,8 @@ void test_areal()
                 ticket_10108_a[0], ticket_10108_a[1],
                 0, 0, 0.0);
 
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
+#if defined(BOOST_GEOMETRY_USE_RESCALING) || !defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
+    // Cases going successfully with either rescaling or general_form intersection
 
     // msvc  5.6023011e-5
     // mingw 5.6022954e-5

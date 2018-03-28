@@ -403,7 +403,7 @@ void test_areal()
     TEST_UNION(case_recursive_boxes_78, 2, 5, -1, 18.0);
     TEST_UNION(case_recursive_boxes_79, 1, 2, -1, 14.75);
 
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
+#if defined(BOOST_GEOMETRY_USE_RESCALING) && defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
     // See comment for this testcase
     TEST_UNION(case_recursive_boxes_80, 2, 1, -1, 1.5);
 #else
@@ -448,7 +448,7 @@ void test_areal()
         ticket_12118[0], ticket_12118[1],
         1, -1, 27, 2221.38713);
 
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
+#if defined(BOOST_GEOMETRY_USE_RESCALING) && defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
     // Combination of Kramer's rule / rescaling will give no output
 #else
     // TODO general-form / no rescalig gives wrong output
