@@ -21,6 +21,7 @@
 #ifndef BOOST_GEOMETRY_STRATEGIES_STRATEGIES_HPP
 #define BOOST_GEOMETRY_STRATEGIES_STRATEGIES_HPP
 
+#include <boost/geometry/core/config.hpp>
 
 #include <boost/geometry/strategies/tags.hpp>
 

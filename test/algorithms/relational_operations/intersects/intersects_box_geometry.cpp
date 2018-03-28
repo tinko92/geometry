@@ -160,7 +160,7 @@ int test_main( int , char* [] )
     test_all<bg::model::d2::point_xy<double> >();
     test_additional<bg::model::d2::point_xy<double> >();
 
-#if ! defined(BOOST_GEOMETRY_RESCALE_TO_ROBUST)
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
     test_all<bg::model::d2::point_xy<boost::rational<int> > >();
 #endif
 

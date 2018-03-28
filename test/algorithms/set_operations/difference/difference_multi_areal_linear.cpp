@@ -10,19 +10,6 @@
 #include <iostream>
 #include <string>
 
-// If defined, tests are run without rescaling-to-integer or robustness policy
-// This multi_difference currently contains no tests for double which then fail
-// #define BOOST_GEOMETRY_NO_ROBUSTNESS
-
-//#define HAVE_TTMATH
-//#define BOOST_GEOMETRY_DEBUG_ASSEMBLE
-//#define BOOST_GEOMETRY_CHECK_WITH_SQLSERVER
-
-//#define BOOST_GEOMETRY_DEBUG_SEGMENT_IDENTIFIER
-//#define BOOST_GEOMETRY_DEBUG_FOLLOW
-//#define BOOST_GEOMETRY_DEBUG_TRAVERSE
-
-
 #include "test_difference.hpp"
 #include <algorithms/test_overlay.hpp>
 #include <algorithms/overlay/multi_overlay_cases.hpp>

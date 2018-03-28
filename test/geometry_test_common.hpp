@@ -100,6 +100,7 @@
 // For all tests:
 // - do NOT use "using namespace boost::geometry" to make clear what is Boost.Geometry
 // - use bg:: as short alias
+#include <boost/geometry/core/config.hpp>
 #include <boost/geometry/core/coordinate_type.hpp>
 #include <boost/geometry/core/closure.hpp>
 #include <boost/geometry/core/point_order.hpp>

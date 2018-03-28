@@ -403,12 +403,12 @@ void test_areal()
     TEST_UNION(case_recursive_boxes_78, 2, 5, -1, 18.0);
     TEST_UNION(case_recursive_boxes_79, 1, 2, -1, 14.75);
 
-#if defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
-    // This is correct: no holes generated
-    TEST_UNION(case_recursive_boxes_80, 2, 0, -1, 1.5);
-#else
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
     // See comment for this testcase
     TEST_UNION(case_recursive_boxes_80, 2, 1, -1, 1.5);
+#else
+    // Correct: no holes generated
+    TEST_UNION(case_recursive_boxes_80, 2, 0, -1, 1.5);
 #endif
 
     TEST_UNION(case_recursive_boxes_81, 5, 0, -1, 15.5);
@@ -431,14 +431,10 @@ void test_areal()
          ggl_list_20140212_sybren[0], ggl_list_20140212_sybren[1],
          2, 0, 16, 0.002471626);
 
+    // Forms either 3 or 4 clips
     test_one<Polygon, MultiPolygon, MultiPolygon>("ticket_9081",
         ticket_9081[0], ticket_9081[1],
-#if defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
-        3,
-#else
-        4,
-#endif
-        0, 31, 0.2187385);
+        -1, 0, 31, 0.2187385);
 
     test_one<Polygon, MultiPolygon, MultiPolygon>("ticket_10803",
         ticket_10803[0], ticket_10803[1],
@@ -447,12 +443,15 @@ void test_areal()
         ticket_11984[0], ticket_11984[1],
         1, 2, 134, 60071.08077);
 
+    // Can optionally form an interior
     test_one<Polygon, MultiPolygon, MultiPolygon>("ticket_12118",
         ticket_12118[0], ticket_12118[1],
-        1, 1, 27, 2221.38713);
+        1, -1, 27, 2221.38713);
 
-#if defined(BOOST_GEOMETRY_ENABLE_FAILING_TESTS) || defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
-    // No output if rescaling is done
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+    // Combination of Kramer's rule / rescaling will give no output
+#else
+    // TODO general-form / no rescalig gives wrong output
     test_one<Polygon, MultiPolygon, MultiPolygon>("ticket_12125",
         ticket_12125[0], ticket_12125[1],
         1, 0, -1, 575.831180350007);

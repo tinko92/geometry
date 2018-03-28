@@ -376,8 +376,8 @@ void test_overlay(std::string const& caseid,
 #if defined(BOOST_GEOMETRY_NO_SELF_TURNS)
         << "_no_self"
 #endif
-#if defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
-        << "_no_rob"
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+        << "_rescale"
 #endif
         << ".svg";
 

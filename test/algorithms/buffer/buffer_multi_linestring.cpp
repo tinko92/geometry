@@ -126,7 +126,7 @@ void test_all()
     }
 
     {
-#if ! defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
         // Coordinates in one linestring vary so much that
         // length = geometry::math::sqrt(dx * dx + dy * dy); returns a value of inf for length
         // That geometry is skipped for the buffer
@@ -158,7 +158,7 @@ void test_all()
             mysql_23023665_1, join_round32, end_round32, 1, 1, 186.5504, 1.0);
     test_one<multi_linestring_type, polygon>("touching1_1",
             touching1, join_round32, end_round32, 2, 0, 78.70773, 1.0
-#if ! defined(BOOST_GEOMETRY_NO_ROBUSTNESS)
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
             , ut_settings::ignore_validity() // false positive, due to rescaling. As we remove it, it is gone
 #endif
                                              );

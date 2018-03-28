@@ -14,6 +14,7 @@
 #define BOOST_GEOMETRY_STRATEGIES_INTERSECTION_HPP
 
 
+#include <boost/geometry/core/config.hpp>
 #include <boost/geometry/core/point_type.hpp>
 #include <boost/geometry/geometries/segment.hpp>
 
