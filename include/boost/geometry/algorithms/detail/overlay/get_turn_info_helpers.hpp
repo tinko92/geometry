@@ -60,6 +60,7 @@ struct side_calculator
 
     inline int pk_wrt_q2() const { return m_side_strategy.apply(m_qj, m_qk, m_pk); }
     inline int qk_wrt_p2() const { return m_side_strategy.apply(m_pj, m_pk, m_qk); }
+    inline int pj_wrt_q2() const { return m_side_strategy.apply(m_qj, m_qk, m_pj); }
 
     Pi const& m_pi;
     Pj const& m_pj;

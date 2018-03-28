@@ -202,11 +202,21 @@ struct touch_interior : public base_turn_handler
         }
         else if (side_qi_p == side_qk_p && side_qi_p == side_qk_q)
         {
+            // Only necessary if rescaling is turned off.
+            int const side_pj_q = side.pj_wrt_q2();
+
             // Q turns left on the left side of P (test "ML2")
             // or Q turns right on the right side of P (test "MR2")
             // Union: take left turn (Q if Q turns left, P if Q turns right)
             // Intersection: other turn
             unsigned int index = side_qk_q == 1 ? index_q : index_p;
+            if (side_pj_q == 0)
+            {
+                // Even though sides xk w.r.t. 1 are distinct, pj is collinear
+                // with q. Therefore swap the path
+                index = 1 - index;
+            }
+
             ti.operations[index].operation = operation_union;
             ti.operations[1 - index].operation = operation_intersection;
             ti.touch_only = true;
