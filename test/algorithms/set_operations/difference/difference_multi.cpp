@@ -161,7 +161,7 @@ void test_areal()
 #endif
 
 #if ! defined(BOOST_GEOMETRY_NO_SELF_TURNS) || ! defined(BOOST_GEOMETRY_USE_RESCALING)
-        TEST_DIFFERENCE_WITH(0, 1, ggl_list_20120221_volker, 2, 7962.66, 2, 2775258.93, 4);
+        TEST_DIFFERENCE_WITH(0, 1, ggl_list_20120221_volker, 2, 7962.66, 2, 2775634.32, 3);
 #else
         TEST_DIFFERENCE_WITH(0, 1, ggl_list_20120221_volker, 2, 7962.66, 1, 2775258.93, 3);
 #endif

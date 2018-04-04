@@ -382,11 +382,10 @@ void test_areal()
     // qcc-arm reports 1.7791215549400884e-14
     test_one<Polygon, MultiPolygon, MultiPolygon>("ticket_11018",
         ticket_11018[0], ticket_11018[1],
-        1, 4,
 #if defined(BOOST_GEOMETRY_USE_RESCALING)
-            1.7791170511070893e-14, ut_settings(0.001)
+            1, 4, 1.7791170511070893e-14, ut_settings(0.001)
 #else
-            9.8964664368289143e-09
+            0, 0, 0.0
 #endif
 
     );
