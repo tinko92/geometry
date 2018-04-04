@@ -11,6 +11,7 @@
 
 #define BOOST_GEOMETRY_USE_RESCALING
 #define BOOST_GEOMETRY_USE_KRAMER_RULE
+#define BOOST_GEOMETRY_USE_COMPLEX_SEGMENT_RATIO
 
 // For backward compatibility, deprecated
 #if defined(BOOST_GEOMETRY_USE_RESCALING)

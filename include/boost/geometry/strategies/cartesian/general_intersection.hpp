@@ -1158,6 +1158,7 @@ struct cartesian_general_segments
         return apply(a, b, policy, robust_policy, a0_rob, a1_rob, b0_rob, b1_rob);
     }
 
+#ifdef BOOST_GEOMETRY_USE_COMPLEX_SEGMENT_RATIO
     // TODO: if rescaling is gone, this can go too.
     template
     <
@@ -1196,6 +1197,7 @@ struct cartesian_general_segments
         sinfo.robust_ra.assign(robust_da, robust_da0);
         sinfo.robust_rb.assign(robust_db, robust_db0);
     }
+#endif
 
     //--------------------------------------------------------------------------
     template
@@ -1258,8 +1260,13 @@ struct cartesian_general_segments
             geometry::set<1>(sinfo.m_point, geometry::get<1, 1>(a));
         }
 
+#ifdef BOOST_GEOMETRY_USE_COMPLEX_SEGMENT_RATIO
         assign_segment_intersection_info(sinfo, robust_a1, robust_a2,
                                          robust_b1, robust_b2);
+#else
+        sinfo.robust_ra.assign(fa);
+        sinfo.robust_rb.assign(fb);
+#endif
 
         side_info sides;
         if (fai == 0)
@@ -1377,8 +1384,13 @@ struct cartesian_general_segments
                     fix_one_common_endpoint(data, fa, fb, a, b, gf_a, gf_b, fa_i, fb_i);
                 }
 
+#ifdef BOOST_GEOMETRY_USE_COMPLEX_SEGMENT_RATIO
                 assign_segment_intersection_info(sinfo, robust_a1, robust_a2,
                                                  robust_b1, robust_b2);
+#else
+                sinfo.robust_ra.assign(fa);
+                sinfo.robust_rb.assign(fb);
+#endif
 
                 // Set sides points from A w.r.t. segment B (=q)
                 consistent = side_assorter<true>::apply(sides, fa, fb,
@@ -1444,6 +1456,7 @@ struct cartesian_general_segments
                          RobustPoint2 const& robust_b1, RobustPoint2 const& robust_b2,
                          bool a_is_point, bool b_is_point)
     {
+#ifdef BOOST_GEOMETRY_USE_COMPLEX_SEGMENT_RATIO
         if (a_is_point)
         {
             return relate_one_degenerate<Policy, RatioType>(a,
@@ -1458,6 +1471,22 @@ struct cartesian_general_segments
                 get<Dimension>(robust_a1), get<Dimension>(robust_a2),
                 false);
         }
+#else
+        if (a_is_point)
+        {
+            return relate_one_degenerate<Policy, RatioType>(a,
+                get<0, Dimension>(a),
+                get<0, Dimension>(b), get<1, Dimension>(b),
+                true);
+        }
+        if (b_is_point)
+        {
+            return relate_one_degenerate<Policy, RatioType>(b,
+                get<0, Dimension>(b),
+                get<0, Dimension>(a), get<1, Dimension>(a),
+                false);
+        }
+#endif
         return relate_collinear<Policy, RatioType>(a, b,
                                 get<Dimension>(robust_a1),
                                 get<Dimension>(robust_a2),
@@ -1574,6 +1603,7 @@ struct cartesian_general_segments
                                           ra_from, ra_to, rb_from, rb_to);
     }
 
+#ifdef BOOST_GEOMETRY_USE_COMPLEX_SEGMENT_RATIO
     /// Relate segments where one is degenerate
     template
     <
@@ -1601,6 +1631,33 @@ struct cartesian_general_segments
 
         return Policy::one_degenerate(degenerate_segment, ratio, a_degenerate);
     }
+#else
+    /// Relate segments where one is degenerate
+    template
+    <
+        typename Policy,
+        typename RatioType,
+        typename DegenerateSegment,
+        typename PointCoordinateType,
+        typename SegmentCoordinateType
+    >
+    static inline typename Policy::return_type
+        relate_one_degenerate(DegenerateSegment const& degenerate_segment,
+                              PointCoordinateType const& d,
+                              SegmentCoordinateType const& s1,
+                              SegmentCoordinateType const& s2,
+                              bool a_degenerate)
+    {
+        RatioType const ratio(d - s1 / (s2 - s1));
+
+        if (!ratio.on_segment())
+        {
+            return Policy::disjoint();
+        }
+
+        return Policy::one_degenerate(degenerate_segment, ratio, a_degenerate);
+    }
+#endif
 
     template <typename ProjCoord1, typename ProjCoord2>
     static inline int position_value(ProjCoord1 const& ca1,
