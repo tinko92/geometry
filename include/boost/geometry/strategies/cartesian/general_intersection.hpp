@@ -629,6 +629,64 @@ struct cartesian_general_segments
         return false;
     }
 
+
+    template
+    <
+        int Dimension,
+        typename Segment1,
+        typename Segment2
+    >
+    static inline
+    bool disjoint_in_dimension(Segment1 const& a, Segment2 const& b)
+    {
+        typedef typename geometry::coordinate_type<Segment1>::type ct;
+        ct a0 = geometry::get<0, Dimension>(a);
+        ct a1 = geometry::get<1, Dimension>(a);
+        ct b0 = geometry::get<0, Dimension>(b);
+        ct b1 = geometry::get<1, Dimension>(b);
+
+        if (a0 > a1) { std::swap(a0, a1); }
+        if (b0 > b1) { std::swap(b0, b1); }
+
+        return (a0 < b0 && a1 < b0)
+            || (a0 > b1 && a1 > b1);
+    }
+
+    template
+    <
+        typename Segment1,
+        typename Segment2,
+        typename T
+    >
+    static inline
+    bool disjoint_by_coordinates(Segment1 const& a, Segment2 const& b,
+                      arithmetic::general_form<T> const& f)
+    {
+        return (arithmetic::has_horizontal_component(f) && disjoint_in_dimension<0>(a, b))
+            || (arithmetic::has_vertical_component(f)   && disjoint_in_dimension<1>(a, b));
+    }
+
+    template
+    <
+        typename Data,
+            typename T
+     >
+    static inline
+    bool disjoint_by_side(Data const& data, T const& threshold)
+    {
+        for (int i = 0; i <= 2; i += 2)
+        {
+            if (data[i].value * data[i + 1].value > 0
+                    && data[i].abs_value > threshold
+                    && data[i + 1].abs_value > threshold)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
     template
     <
         typename Data,
@@ -1361,7 +1419,42 @@ struct cartesian_general_segments
         bool consider_as_collinear = false;
         boost::array<side_data, 4> data;
 
-        // TODO: if doubt, there can be code here
+#ifdef BOOST_GEOMETRY_GENERIC_INT_SUPPORT_DOUBT1
+        if (! crossing && intersection_doubt)
+        {
+            {
+                double fa = -1, fb = -1;
+                if (have_common_endpoints(a, b, fa, fb))
+                {
+                    std::cout << "#";
+                    return handle_common_endpoints<Policy, ratio_type>(a, b, gf_a, gf_b, fa, fb, sinfo, a_is_point, b_is_point, robust_a1, robust_a2, robust_b1, robust_b2);
+                }
+            }
+
+            if (disjoint_by_coordinates(a, b, gf_a))
+            {
+                return Policy::disjoint();
+            }
+
+            initialize_signed_comparable_distances(data, a, b, gf_a, gf_b);
+
+            if (disjoint_by_side(data,
+                                 10.0 * general_distance_threshold<coordinate_type>::get()))
+            {
+                return Policy::disjoint();
+            }
+
+            bool consider_as_crossing = false;
+            bool consider_as_disjoint = false;
+
+            inspect_sides(data, consider_as_collinear, consider_as_crossing,
+                    consider_as_disjoint, a, b, gf_a, gf_b);
+            if (consider_as_disjoint)
+            {
+                return Policy::disjoint();
+            }
+        }
+#endif // BOOST_GEOMETRY_GENERIC_INT_SUPPORT_DOUBT1
 
         if (crossing)
         {
