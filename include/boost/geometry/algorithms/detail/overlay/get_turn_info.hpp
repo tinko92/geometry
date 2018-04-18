@@ -150,8 +150,8 @@ struct touch_interior : public base_turn_handler
         typename SidePolicy
     >
     static inline void apply(
-                Point1 const& , Point1 const& , Point1 const& ,
-                Point2 const& , Point2 const& , Point2 const& ,
+                Point1 const& pi, Point1 const& pj, Point1 const& pk,
+                Point2 const& qi, Point2 const& qj, Point2 const& qk,
                 TurnInfo& ti,
                 IntersectionInfo const& intersection_info,
                 DirInfo const& dir_info,
@@ -203,18 +203,34 @@ struct touch_interior : public base_turn_handler
         else if (side_qi_p == side_qk_p && side_qi_p == side_qk_q)
         {
             // Only necessary if rescaling is turned off.
-            int const side_pj_q = side.pj_wrt_q2();
+            int const side_pj_q2 = side.pj_wrt_q2();
 
             // Q turns left on the left side of P (test "ML2")
             // or Q turns right on the right side of P (test "MR2")
             // Union: take left turn (Q if Q turns left, P if Q turns right)
             // Intersection: other turn
             unsigned int index = side_qk_q == 1 ? index_q : index_p;
-            if (side_pj_q == 0)
+            if (side_pj_q2 == 0)
             {
                 // Even though sides xk w.r.t. 1 are distinct, pj is collinear
                 // with q. Therefore swap the path
                 index = 1 - index;
+            }
+
+            if (opposite(side_pj_q2, side_qi_p))
+            {
+                // Without rescaling, floating point requires extra measures
+                int const side_qj_p1 = side.qj_wrt_p1();
+                int const side_qj_p2 = side.qj_wrt_p2();
+
+                if (same(side_qj_p1, side_qj_p2))
+                {
+                    int const side_pj_q1 = side.pj_wrt_q1();
+                    if (opposite(side_pj_q1, side_pj_q2))
+                    {
+                        index = 1 - index;
+                    }
+                }
             }
 
             ti.operations[index].operation = operation_union;
@@ -640,7 +656,7 @@ struct collinear : public base_turn_handler
 
         int const product = arrival * side_p_or_q;
 
-        if(product == 0)
+        if (product == 0)
         {
             both(ti, operation_continue);
         }
