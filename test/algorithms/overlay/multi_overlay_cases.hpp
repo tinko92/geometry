@@ -1299,6 +1299,12 @@ static std::string case_precision_1[2] =
     "MULTIPOLYGON(((2 7,4 7,4.000005 2.99999,2 3,2 7)))"
 };
 
+static std::string case_precision_2[2] =
+{
+    "MULTIPOLYGON(((0 0,0 4,2 4,2 3,4 3,4 0,0 0)))",
+    "MULTIPOLYGON(((2 7,4 7,4 2.999995,2 3,2 7)))"
+};
+
 
 static std::string pie_21_7_21_0_3[2] =
 {

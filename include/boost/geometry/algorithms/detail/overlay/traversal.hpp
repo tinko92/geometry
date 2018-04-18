@@ -111,11 +111,13 @@ private :
             : turn_index(ti)
             , op_index(oi)
             , next_turn_index(nti)
+            , rank_index(-1)
         {}
 
         signed_size_type turn_index;
         int op_index;
         signed_size_type next_turn_index;
+        signed_size_type rank_index;
     };
 
     static const operation_type target_operation = operation_from_overlay<OverlayType>::value;
@@ -726,17 +728,34 @@ public :
         return false;
     }
 
+    inline signed_size_type get_rank(sbs_type const& sbs,
+            linked_turn_op_info const& info) const
+    {
+        for (std::size_t i = 0; i < sbs.m_ranked_points.size(); i++)
+        {
+            typename sbs_type::rp const& rp = sbs.m_ranked_points[i];
+            if (rp.turn_index == info.turn_index
+                    && rp.operation_index == info.op_index
+                    && rp.direction == sort_by_side::dir_to)
+            {
+                return rp.rank;
+            }
+        }
+        return -1;
+    }
+
     // Function checks simple cases, such as a cluster with two turns,
     // arriving at the first turn, first turn points to second turn,
     // second turn points further.
     inline bool select_turn_from_cluster_linked(signed_size_type& turn_index,
             int& op_index,
-            std::set<signed_size_type> const& ids) const
+            std::set<signed_size_type> const& ids,
+            segment_identifier const& previous_seg_id) const
     {
         typedef typename std::set<signed_size_type>::const_iterator sit_type;
 
         std::vector<linked_turn_op_info> possibilities;
-        std::set<signed_size_type> blocked_turns;
+        std::vector<linked_turn_op_info> blocked;
         for (sit_type it = ids.begin(); it != ids.end(); ++it)
         {
             signed_size_type cluster_turn_index = *it;
@@ -763,20 +782,48 @@ public :
                     // Points to turn, not part of this cluster,
                     // and that way is blocked. But if the other operation
                     // points at the same turn, it is still fine.
-                    blocked_turns.insert(ni);
+                    blocked.push_back(
+                        linked_turn_op_info(cluster_turn_index, i, ni));
                 }
             }
         }
 
-        if (! blocked_turns.empty())
+        if (! blocked.empty())
         {
+            sbs_type sbs(m_strategy);
+
+            if (! fill_sbs(sbs, turn_index, ids, previous_seg_id))
+            {
+                return false;
+            }
+
+            for (typename std::vector<linked_turn_op_info>::iterator it = possibilities.begin();
+                 it != possibilities.end(); ++it)
+            {
+                linked_turn_op_info& info = *it;
+                info.rank_index = get_rank(sbs, info);
+            }
+            for (typename std::vector<linked_turn_op_info>::iterator it = blocked.begin();
+                 it != blocked.end(); ++it)
+            {
+                linked_turn_op_info& info = *it;
+                info.rank_index = get_rank(sbs, info);
+            }
+
+
             for (typename std::vector<linked_turn_op_info>::const_iterator it = possibilities.begin();
                  it != possibilities.end(); ++it)
             {
                 linked_turn_op_info const& lti = *it;
-                if (blocked_turns.count(lti.next_turn_index) > 0)
+                for (typename std::vector<linked_turn_op_info>::const_iterator bit = blocked.begin();
+                     bit != blocked.end(); ++bit)
                 {
-                    return false;
+                    linked_turn_op_info const& blti = *bit;
+                    if (blti.next_turn_index == lti.next_turn_index
+                            && blti.rank_index == lti.rank_index)
+                    {
+                        return false;
+                    }
                 }
             }
         }
@@ -810,29 +857,11 @@ public :
         return true;
     }
 
-    inline bool select_turn_from_cluster(signed_size_type& turn_index,
-            int& op_index,
-            signed_size_type start_turn_index, int start_op_index,
-            segment_identifier const& previous_seg_id) const
+    inline bool fill_sbs(sbs_type& sbs,
+                         signed_size_type turn_index,
+                         std::set<signed_size_type> const& ids,
+                         segment_identifier const& previous_seg_id) const
     {
-        bool const is_union = target_operation == operation_union;
-
-        turn_type const& turn = m_turns[turn_index];
-        BOOST_ASSERT(turn.is_clustered());
-
-        typename Clusters::const_iterator mit = m_clusters.find(turn.cluster_id);
-        BOOST_ASSERT(mit != m_clusters.end());
-
-        cluster_info const& cinfo = mit->second;
-        std::set<signed_size_type> const& ids = cinfo.turn_indices;
-
-        if (select_turn_from_cluster_linked(turn_index, op_index, ids))
-        {
-            return true;
-        }
-
-        sbs_type sbs(m_strategy);
-
         for (typename std::set<signed_size_type>::const_iterator sit = ids.begin();
              sit != ids.end(); ++sit)
         {
@@ -858,7 +887,39 @@ public :
         {
             return false;
         }
+        turn_type const& turn = m_turns[turn_index];
         sbs.apply(turn.point);
+        return true;
+    }
+
+
+    inline bool select_turn_from_cluster(signed_size_type& turn_index,
+            int& op_index,
+            signed_size_type start_turn_index, int start_op_index,
+            segment_identifier const& previous_seg_id) const
+    {
+        bool const is_union = target_operation == operation_union;
+
+        turn_type const& turn = m_turns[turn_index];
+        BOOST_ASSERT(turn.is_clustered());
+
+        typename Clusters::const_iterator mit = m_clusters.find(turn.cluster_id);
+        BOOST_ASSERT(mit != m_clusters.end());
+
+        cluster_info const& cinfo = mit->second;
+        std::set<signed_size_type> const& ids = cinfo.turn_indices;
+
+        if (select_turn_from_cluster_linked(turn_index, op_index, ids, previous_seg_id))
+        {
+            return true;
+        }
+
+        sbs_type sbs(m_strategy);
+
+        if (! fill_sbs(sbs, turn_index, ids, previous_seg_id))
+        {
+            return false;
+        }
 
         bool result = false;
 
