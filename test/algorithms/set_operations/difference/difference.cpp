@@ -242,6 +242,7 @@ void test_all()
         // TODO: b is going wrong in both cases
         TEST_DIFFERENCE(case_precision_1, 1, 13.99999, 1, 8.00001, 1);
         TEST_DIFFERENCE(case_precision_2, 1, 14.0, 1, 8.0, 1);
+        TEST_DIFFERENCE(case_precision_3, 1, 14.0, 1, 8.0, 1);
     }
 #endif
 

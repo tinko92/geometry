@@ -103,7 +103,7 @@ void test_all()
 
     int n = 0;
     int i = 0;
-    double const factor = 1.0e-8;
+    double const factor = 1.0e-2;
     double const bound = 1.0e-5 * factor;
     double const step = 1.0e-6 * factor;
     for (double x = -bound; x <= bound; x += step, ++i)
