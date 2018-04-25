@@ -199,28 +199,22 @@ void test_all()
             8, 36, 2.43452380952381,
             7, 33, 3.18452380952381);
 
-#ifdef BOOST_GEOMETRY_TEST_INCLUDE_FAILING_TESTS
-    // Fails, a-b is partly generated, b-a does not have any output
-    // It failed already in 1.59
     test_one<polygon, polygon, polygon>("case_58_iet",
         case_58[0], case_58[2],
-        3, 12, 0.6666666667,
-        1, -1, 11.1666666667);
-#endif
+        3, -1, 0.6666666667,
+        1, -1, 11.1666666667,
+        2, -1, 0.6666666667 + 11.1666666667);
 
     test_one<polygon, polygon, polygon>("case_80",
         case_80[0], case_80[1],
         1, 9, 44.5,
         1, 10, 84.5);
 
-#ifdef BOOST_GEOMETRY_TEST_INCLUDE_FAILING_TESTS
-    // Fails, holes are not subtracted
     test_one<polygon, polygon, polygon>("case_81",
         case_81[0], case_81[1],
         1, 8, 80.5,
         1, 8, 83.0,
         1, 12, 80.5 + 83.0);
-#endif
 
     test_one<polygon, polygon, polygon>("case_100",
         case_100[0], case_100[1],
