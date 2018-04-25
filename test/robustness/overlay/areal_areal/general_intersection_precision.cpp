@@ -7,9 +7,6 @@
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include "debug_sort_by_side_svg.hpp"
-
-
 #include <iostream>
 #include <iomanip>
 #include <fstream>
