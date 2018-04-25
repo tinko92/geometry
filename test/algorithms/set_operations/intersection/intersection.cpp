@@ -197,8 +197,7 @@ void test_areal()
     // In most cases: 0 (no intersection)
     // In some cases: 1.430511474609375e-05 (clang/gcc on Xubuntu using b2)
     // In some cases: 5.6022983000000002e-05 (powerpc64le-gcc-6-0)
-    test_one<Polygon, Polygon, Polygon>("geos_2",
-        geos_2[0], geos_2[1],
+    test_one<Polygon, Polygon, Polygon>("geos_2", geos_2[0], geos_2[1],
             0, 0, 6.0e-5, ut_settings(-1.0)); // -1 denotes: compare with <=
 
 #if defined(BOOST_GEOMETRY_USE_RESCALING)
