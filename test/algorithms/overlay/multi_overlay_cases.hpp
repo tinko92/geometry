@@ -1293,17 +1293,6 @@ static std::string case_recursive_boxes_88[2] =
     "MULTIPOLYGON(((4 0,4 1,5 1,5 0,4 0)),((3 4,3 3,1 3,1 5,3 5,2.5 4.5,3 4)),((3 4,3 5,4 5,4 4,3 4)),((1 1,2 0,1 0,1 1)),((1 1,1 2,2 2,2 1,1 1)),((1 2,0 2,0 3,1 3,1 2)),((4 4,5 4,5 2,4 2,4 4)))"
 };
 
-static std::string case_precision_1[2] =
-{
-    "MULTIPOLYGON(((0 0,0 4,2 4,2 3,4 3,4 0,0 0)))",
-    "MULTIPOLYGON(((2 7,4 7,4.000005 2.99999,2 3,2 7)))"
-};
-
-static std::string case_precision_2[2] =
-{
-    "MULTIPOLYGON(((0 0,0 4,2 4,2 3,4 3,4 0,0 0)))",
-    "MULTIPOLYGON(((2 7,4 7,4 2.999995,2 3,2 7)))"
-};
 
 
 static std::string pie_21_7_21_0_3[2] =

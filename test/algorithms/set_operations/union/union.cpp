@@ -26,6 +26,10 @@
 #include <boost/geometry/geometries/point_xy.hpp>
 
 
+#define TEST_UNION(caseid, clips, holes, points, area) \
+    (test_one<Polygon, Polygon, Polygon>) \
+    ( #caseid, caseid[0], caseid[1], clips, holes, points, area)
+
 
 template <typename Ring, typename Polygon>
 void test_areal()
@@ -246,6 +250,9 @@ void test_areal()
 
     test_one<Polygon, Polygon, Polygon>("108",
                 case_108[0], case_108[1], 1, 0, 13, 5.0);
+
+    TEST_UNION(case_precision_1, 1, 0, -1, 22.0);
+    TEST_UNION(case_precision_2, 1, 0, -1, 22.0);
 
     /*
     test_one<Polygon, Polygon, Polygon>(102,

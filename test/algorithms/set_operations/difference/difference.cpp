@@ -242,6 +242,15 @@ void test_all()
     TEST_DIFFERENCE(case_106, 1, 17.5, 2, 32.5, 3);
     TEST_DIFFERENCE(case_107, 2, 18.0, 2, 29.0, 4);
 
+
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+    {
+        // TODO: b is going wrong in both cases
+        TEST_DIFFERENCE(case_precision_1, 1, 13.99999, 1, 8.00001, 1);
+        TEST_DIFFERENCE(case_precision_2, 1, 14.0, 1, 8.0, 1);
+    }
+#endif
+
     test_one<polygon, polygon, polygon>("winded",
         winded[0], winded[1],
         3, 37, 61,
