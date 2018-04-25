@@ -70,7 +70,7 @@ void test_overlay(std::string const& caseid,
                    strategy, visitor);
 
     const double detected_area = bg::area(result);
-    if (std::fabs(detected_area - expected_area) > 0.1)
+    if (std::fabs(detected_area - expected_area) > 0.01)
     {
         std::cout << caseid << " area=" << std::setprecision(6) << detected_area
                   << " " << std::setprecision(12) << bg::wkt(g2) << std::endl;
@@ -82,6 +82,10 @@ void update(Ring& ring, double x, double y, std::size_t index)
 {
     bg::set<0>(ring[index], bg::get<0>(ring[index]) + x);
     bg::set<1>(ring[index], bg::get<1>(ring[index]) + y);
+    if (index == 0)
+    {
+        ring.back() = ring.front();
+    }
 }
 
 template <typename T, bool Clockwise>
@@ -97,22 +101,35 @@ void test_all()
     multi_polygon poly2;
     bg::read_wkt(case_a[1], poly2);
 
+    int n = 0;
     int i = 0;
-    double const step = 1.0e-6;
-    for (double x = -1.0e-5; x <= +1.0e-5; x += step, ++i)
+    double const factor = 1.0e-8;
+    double const bound = 1.0e-5 * factor;
+    double const step = 1.0e-6 * factor;
+    for (double x = -bound; x <= bound; x += step, ++i)
     {
         int j = 0;
-        for (double y = -1.0e-5; y <= +1.0e-5; y += step, ++j)
+        for (double y = -bound; y <= bound; y += step, ++j, ++n)
         {
-            multi_polygon poly_adapted = poly2;
+            for (int k = 0; k < 4; k++, ++n)
+            {
+                multi_polygon poly_adapted = poly2;
 
-            update(bg::exterior_ring(poly_adapted.front()), x, y, 2);
+                update(bg::exterior_ring(poly_adapted.front()), x, y, k);
 
-            std::ostringstream out;
-            out << "case_a_union_" << i << "_" << j;
-            test_overlay<multi_polygon, bg::overlay_union>(out.str(), poly1, poly_adapted, 22.0);
+                std::ostringstream out;
+                out << "case_a_union_" << i << "_" << j << "_" << k;
+                test_overlay<multi_polygon, bg::overlay_union>(out.str(), poly1, poly_adapted, 22.0);
+                if (i == 1 && j == 1)
+                {
+                    std::cout << out.str()
+                              << " " << std::setprecision(18)
+                              << bg::wkt(poly_adapted) << std::endl;
+                }
+            }
         }
     }
+    std::cout << "#cases: " << n << std::endl;
 }
 
 int test_main(int, char* [])
