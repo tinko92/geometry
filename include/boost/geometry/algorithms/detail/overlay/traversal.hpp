@@ -764,6 +764,12 @@ public :
             {
                 continue;
             }
+            if (is_self_turn<OverlayType>(cluster_turn)
+                || cluster_turn.both(target_operation))
+            {
+                // Not (yet) supported, can be cluster of u/u turns
+                return false;
+            }
             for (int i = 0; i < 2; i++)
             {
                 turn_operation_type const& op = cluster_turn.operations[i];
@@ -772,6 +778,12 @@ public :
                 if (op.operation == target_operation
                     || op.operation == operation_continue)
                 {
+                    if (ni == cluster_turn_index)
+                    {
+                        // Not (yet) supported, traveling to itself, can be
+                        // hole
+                        return false;
+                    }
                     possibilities.push_back(
                         linked_turn_op_info(cluster_turn_index, i, ni));
                 }
@@ -787,6 +799,8 @@ public :
                 }
             }
         }
+
+        typedef typename std::vector<linked_turn_op_info>::const_iterator const_it_type;
 
         if (! blocked.empty())
         {
@@ -811,11 +825,11 @@ public :
             }
 
 
-            for (typename std::vector<linked_turn_op_info>::const_iterator it = possibilities.begin();
+            for (const_it_type it = possibilities.begin();
                  it != possibilities.end(); ++it)
             {
                 linked_turn_op_info const& lti = *it;
-                for (typename std::vector<linked_turn_op_info>::const_iterator bit = blocked.begin();
+                for (const_it_type bit = blocked.begin();
                      bit != blocked.end(); ++bit)
                 {
                     linked_turn_op_info const& blti = *bit;
@@ -828,31 +842,32 @@ public :
             }
         }
 
-        if (possibilities.size() != 2)
-        {
-            // TODO: we might support longer links. For now support only two records
-            return false;
-        }
-
-        // Order it (2 records can just be reversed)
-        if (possibilities.front().next_turn_index != possibilities.back().turn_index)
-        {
-            std::reverse(possibilities.begin(), possibilities.end());
-        }
-
-        // The cluster is linked in right order.
         // Traveral can either enter the cluster in the first turn,
         // or it can start halfway.
-
-        bool const linked = possibilities.front().next_turn_index == possibilities.back().turn_index;
-        bool const all_same = possibilities.front().next_turn_index == possibilities.back().next_turn_index;
-        if (! (linked || all_same))
+        // If there is one (and only one) possibility pointing outside
+        // the cluster, take that one.
+        linked_turn_op_info target;
+        for (const_it_type it = possibilities.begin();
+             it != possibilities.end(); ++it)
+        {
+            linked_turn_op_info const& lti = *it;
+            if (ids.count(lti.next_turn_index) == 0)
+            {
+                if (target.turn_index >= 0
+                    && target.next_turn_index != lti.next_turn_index)
+                {
+                    return false;
+                }
+                target = lti;
+            }
+        }
+        if (target.turn_index < 0)
         {
             return false;
         }
 
-        turn_index = possibilities.back().turn_index;
-        op_index = possibilities.back().op_index;
+        turn_index = target.turn_index;
+        op_index = target.op_index;
 
         return true;
     }
