@@ -359,6 +359,7 @@ void test_areal()
     TEST_INTERSECTION(case_precision_1, 1, 0, 1.0000025e-05);
     TEST_INTERSECTION(case_precision_2, 1, 0, 4.9999999e-06);
     TEST_INTERSECTION(case_precision_3, 1, 0, 5.0e-08);
+    TEST_INTERSECTION(case_precision_4, 0, 0, 0.0);
 
 #ifndef BOOST_GEOMETRY_NO_SELF_TURNS
     TEST_INTERSECTION(case_106, 2, -1, 3.5);

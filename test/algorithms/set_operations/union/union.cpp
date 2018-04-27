@@ -254,6 +254,7 @@ void test_areal()
     TEST_UNION(case_precision_1, 1, 0, -1, 22.0);
     TEST_UNION(case_precision_2, 1, 0, -1, 22.0);
     TEST_UNION(case_precision_3, 1, 0, -1, 22.0);
+    TEST_UNION(case_precision_4, 1, 0, -1, 22.0);
 
     /*
     test_one<Polygon, Polygon, Polygon>(102,
