@@ -32,6 +32,8 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/is_fundamental.hpp>
 
+#include <boost/geometry/core/config.hpp>
+
 #include <boost/geometry/algorithms/assign.hpp>
 #include <boost/geometry/algorithms/envelope.hpp>
 #include <boost/geometry/algorithms/expand.hpp>
@@ -55,7 +57,12 @@
 #include <boost/geometry/views/reversible_view.hpp>
 #include <boost/geometry/geometries/segment.hpp>
 
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
 #include <boost/geometry/algorithms/detail/expand_by_epsilon.hpp>
+#else
+#include <boost/geometry/algorithms/detail/buffer/buffer_box.hpp>
+#include <boost/geometry/arithmetic/general_form.hpp>
+#endif
 #include <boost/geometry/strategies/envelope.hpp>
 
 namespace boost { namespace geometry
@@ -751,22 +758,32 @@ struct sectionalize_multi
 template <typename Sections>
 inline void enlarge_sections(Sections& sections)
 {
-    // Robustness issue. Increase sections a tiny bit such that all points are really within (and not on border)
-    // Reason: turns might, rarely, be missed otherwise (case: "buffer_mp1")
-    // Drawback: not really, range is now completely inside the section. Section is a tiny bit too large,
-    // which might cause (a small number) of more comparisons
-    
-    // NOTE: above is old comment to the not used code expanding the Boxes by relaxed_epsilon(10)
-    
-    // Enlarge sections by scaled epsilon, this should be consistent with math::equals().
+    // Enlarge sections slightly, this should be consistent with math::equals()
+    // and with the tolerances used in general_form intersections.
+    // This avoids missing turns.
+
     // Points and Segments are equal-compared WRT machine epsilon, but Boxes aren't
     // Enlarging Boxes ensures that they correspond to the bound objects,
     // Segments in this case, since Sections are collections of Segments.
+
+    // Drawback: not really, range is now completely inside the section.
+    // Section is a bit too large, which might cause (a small number)
+    // of more comparisons
     for (typename boost::range_iterator<Sections>::type it = boost::begin(sections);
         it != boost::end(sections);
         ++it)
     {
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
         detail::expand_by_epsilon(it->bounding_box);
+#else
+        typedef typename Sections::box_type box_type;
+        typedef typename geometry::coordinate_type<box_type>::type coordinate_type;
+        coordinate_type const threshold
+                = arithmetic::general_threshold<coordinate_type>::get();
+
+        box_type& box = it->bounding_box;
+        detail::buffer::buffer_box(box, threshold, box);
+#endif
     }
 }
 
