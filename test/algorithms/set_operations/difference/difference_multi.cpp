@@ -151,41 +151,31 @@ void test_areal()
         ggl_list_20120915_h2[0], ggl_list_20120915_h2[2],
             2, 13, 17.0, 0, 0, 0.0);
 
-    {
-        ut_settings settings;
-        settings.percentage = 0.001;
-
-        // This testcase is actually different for all combinations
-#if defined(BOOST_GEOMETRY_NO_SELF_TURNS) || ! defined(BOOST_GEOMETRY_USE_RESCALING)
-        settings.test_validity = false;
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+    // Without rescaling, b/sym_difference misses a small ring
+    TEST_DIFFERENCE(ggl_list_20120221_volker, 2, 7962.66, 2, 2775258.93, 4);
 #endif
 
-#if ! defined(BOOST_GEOMETRY_NO_SELF_TURNS) || ! defined(BOOST_GEOMETRY_USE_RESCALING)
-        TEST_DIFFERENCE_WITH(0, 1, ggl_list_20120221_volker, 2, 7962.66, 2, 2775634.32, 3);
-#else
-        TEST_DIFFERENCE_WITH(0, 1, ggl_list_20120221_volker, 2, 7962.66, 1, 2775258.93, 3);
-#endif
-    }
-
-#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
     {
-        ut_settings settings;
-        settings.sym_difference = false; // Validity problem in sym difference
         // POSTGIS areas: 3.75893745345145, 2.5810000723917e-15
-        TEST_DIFFERENCE_WITH(0, 1, bug_21155501, 1, 3.758937, 1, 1.7763568394002505e-15, 2);
-    }
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+        // With rescaling, A is invalid (this is a robustness problem) and the other
+        // output is discarded because of zero (rescaled) area
+        TEST_DIFFERENCE_IGNORE(bug_21155501, 1, 3.758937, 0, 0.0, 1);
 #else
-    // With no-robustness this one misses one of the outputs
+        TEST_DIFFERENCE(bug_21155501, 1, 3.758937, 0, 0.0, 1);
+#endif
+    }
+
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+    // Without rescaling, this one misses one of the outputs
     test_one<Polygon, MultiPolygon, MultiPolygon>("ticket_9081",
         ticket_9081[0], ticket_9081[1],
             2, 28, 0.0907392476356186, 4, 25, 0.126018011439877,
             4, 42, 0.0907392476356186 + 0.126018011439877,
             tolerance(0.001));
-
-    // With rescaling, A is invalid (this is a robustness problem) and the other
-    // output is discarded because of zero (rescaled) area
-    TEST_DIFFERENCE_IGNORE(bug_21155501, 1, 3.758937, 0, 0.0, 1);
 #endif
+
 
 #ifndef BOOST_GEOMETRY_NO_SELF_TURNS
     TEST_DIFFERENCE(ticket_12503, 46, 920.625, 4, 7.625, 50);
