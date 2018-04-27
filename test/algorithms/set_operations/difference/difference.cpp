@@ -52,9 +52,7 @@
 template <typename P>
 void test_all()
 {
-    typedef bg::model::box<P> box;
     typedef bg::model::polygon<P> polygon;
-    typedef bg::model::ring<P> ring;
 
     typedef typename bg::coordinate_type<P>::type ct;
 
@@ -471,7 +469,11 @@ void test_all()
             2, 23, 62.25,
             0, 0, 0.0);
 
+#if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
     // Other combi's
+    typedef bg::model::box<P> box;
+    typedef bg::model::ring<P> ring;
+
     {
         test_one<polygon, polygon, ring>(
                 "star_ring_ring", example_star, example_ring,
@@ -530,6 +532,7 @@ void test_all()
             3, -1, 8.53333333333, 2, -1, 0.53333333333);
 
     }
+#endif
 
     /***
     Experimental (cut), does not work:
