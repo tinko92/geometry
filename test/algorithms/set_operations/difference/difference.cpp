@@ -266,15 +266,17 @@ void test_all()
         1, 61, 10.2717,
         1, 61, 10.2717);
 
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
     if ( BOOST_GEOMETRY_CONDITION((boost::is_same<ct, double>::value)) )
     {
         test_one<polygon, polygon, polygon>("buffer_mp2",
             buffer_mp2[0], buffer_mp2[1],
             1, 91, 12.09857,
-            1, 155, 24.19714);
-    }
+            1, 155, 24.19714
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
+            , 1, -1, 12.09857 + 24.19714
 #endif
+                );
+    }
 
     /*** TODO: self-tangencies for difference
     test_one<polygon, polygon, polygon>("wrapped_a",
@@ -299,15 +301,17 @@ void test_all()
 
         // Isovist - the # output polygons differ per compiler/pointtype, (very) small
         // rings might be discarded. We check area only
+
+        // SQL Server gives:    0.279121891701124 and 224.889211358929
+        // PostGIS gives:       0.279121991127244 and 224.889205853156
+        // No robustness gives: 0.279121991127106 and 224.825363749290
+
         test_one<polygon, polygon, polygon>("isovist",
             isovist1[0], isovist1[1],
             -1, -1, 0.279132,
             -1, -1, 224.8892,
             settings);
     }
-    // SQL Server gives:    0.279121891701124 and 224.889211358929
-    // PostGIS gives:       0.279121991127244 and 224.889205853156
-    // No robustness gives: 0.279121991127106 and 224.825363749290
 
 #ifdef BOOST_GEOMETRY_TEST_INCLUDE_FAILING_TESTS
     test_one<polygon, polygon, polygon>("geos_1",
@@ -365,14 +369,15 @@ void test_all()
 
     if ( BOOST_GEOMETRY_CONDITION((! boost::is_same<ct, float>::value)) )
     {
+        ut_settings settings = sym_settings;
         test_one<polygon, polygon, polygon>("ggl_list_20110716_enrico",
             ggl_list_20110716_enrico[0], ggl_list_20110716_enrico[1],
             3, -1, 35723.8506317139,
             1, -1, 58456.4964294434,
-            1, -1, 35723.8506317139 + 58456.4964294434);
+            1, -1, 35723.8506317139 + 58456.4964294434,
+            settings);
     }
 
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
     {
         // symmetric difference is not valid due to robustness issue, it has
         // two turns (touch_only) and a midpoint is located in other polygon
@@ -383,9 +388,11 @@ void test_all()
             ggl_list_20110820_christophe[0], ggl_list_20110820_christophe[1],
             1, -1, 2.8570121719168924,
             1, -1, 64.498061986388564,
-                ignore_validity);
-    }
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
+            1, -1, 2.8570121719168924 + 64.498061986388564,
 #endif
+            ignore_validity);
+    }
 
     test_one<polygon, polygon, polygon>("ggl_list_20120717_volker",
         ggl_list_20120717_volker[0], ggl_list_20120717_volker[1],
@@ -415,10 +422,12 @@ void test_all()
         ticket_8310a[0], ticket_8310a[1],
         1, 10, 10.11562724,
         0, 0, 0);
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
     test_one<polygon, polygon, polygon>("ticket_8310b",
         ticket_8310b[0], ticket_8310b[1],
         1, 10, 10.12655608,
         0, 0, 0);
+#endif
     test_one<polygon, polygon, polygon>("ticket_8310c",
         ticket_8310c[0], ticket_8310c[1],
         1, 10, 10.03103292,
@@ -449,12 +458,14 @@ void test_all()
             1, 4,  0.029019232,
             sym_settings);
 
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
     test_one<polygon, polygon, polygon>("ticket_10108_b",
             ticket_10108_b[0], ticket_10108_b[1],
             1, 5, 1081.68697,
-            1, 5, 1342.65795);
+            1, 5, 1342.65795
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
+            , sym_settings
 #endif
+            );
 
     test_one<polygon, polygon, polygon>("ticket_11725",
         ticket_11725[0], ticket_11725[1],
