@@ -30,6 +30,10 @@
     (test_one<Polygon, Polygon, Polygon>) \
     ( #caseid, caseid[0], caseid[1], clips, holes, points, area)
 
+#define TEST_UNION_REV(caseid, clips, holes, points, area) \
+    (test_one<Polygon, Polygon, Polygon>) \
+    ( #caseid "_rev", caseid[1], caseid[0], clips, holes, points, area)
+
 
 template <typename Ring, typename Polygon>
 void test_areal()
@@ -255,6 +259,12 @@ void test_areal()
     TEST_UNION(case_precision_2, 1, 0, -1, 22.0);
     TEST_UNION(case_precision_3, 1, 0, -1, 22.0);
     TEST_UNION(case_precision_4, 1, 0, -1, 22.0);
+    TEST_UNION(case_precision_5, 1, 0, -1, 22.0);
+    TEST_UNION_REV(case_precision_1, 1, 0, -1, 22.0);
+    TEST_UNION_REV(case_precision_2, 1, 0, -1, 22.0);
+    TEST_UNION_REV(case_precision_3, 1, 0, -1, 22.0);
+    TEST_UNION_REV(case_precision_4, 1, 0, -1, 22.0);
+    TEST_UNION_REV(case_precision_5, 1, 0, -1, 22.0);
 
     /*
     test_one<Polygon, Polygon, Polygon>(102,

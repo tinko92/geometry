@@ -46,6 +46,10 @@ BOOST_GEOMETRY_REGISTER_LINESTRING_TEMPLATED(std::vector)
     (test_one<Polygon, Polygon, Polygon>) \
     ( #caseid, caseid[0], caseid[1], clips, points, area)
 
+#define TEST_INTERSECTION_REV(caseid, clips, points, area) \
+    (test_one<Polygon, Polygon, Polygon>) \
+    ( #caseid "_rev", caseid[1], caseid[0], clips, points, area)
+
 #if defined(BOOST_GEOMETRY_NO_SELF_TURNS)
     #define TEST_INTERSECTION_IGNORE(caseid, clips, points, area) \
         { ut_settings ignore_validity; ignore_validity.test_validity = false; \
@@ -360,6 +364,12 @@ void test_areal()
     TEST_INTERSECTION(case_precision_2, 1, 0, 4.9999999e-06);
     TEST_INTERSECTION(case_precision_3, 1, 0, 5.0e-08);
     TEST_INTERSECTION(case_precision_4, 0, 0, 0.0);
+    TEST_INTERSECTION(case_precision_5, 0, 0, 5.0e-07);
+    TEST_INTERSECTION_REV(case_precision_1, 1, 0, 1.0000025e-05);
+    TEST_INTERSECTION_REV(case_precision_2, 1, 0, 4.9999999e-06);
+    TEST_INTERSECTION_REV(case_precision_3, 1, 0, 5.0e-08);
+    TEST_INTERSECTION_REV(case_precision_4, 0, 0, 0.0);
+    TEST_INTERSECTION_REV(case_precision_5, 0, 0, 5.0e-07);
 
 #ifndef BOOST_GEOMETRY_NO_SELF_TURNS
     TEST_INTERSECTION(case_106, 2, -1, 3.5);

@@ -244,6 +244,7 @@ void test_all()
 #endif
     TEST_DIFFERENCE(case_precision_3, 1, 14.0, 1, 8.0, 1);
     TEST_DIFFERENCE(case_precision_4, 1, 14.0, 1, 8.0, 1);
+    TEST_DIFFERENCE(case_precision_5, 1, 14.0, 1, 8.0, 1);
 
     test_one<polygon, polygon, polygon>("winded",
         winded[0], winded[1],

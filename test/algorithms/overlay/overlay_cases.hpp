@@ -724,6 +724,13 @@ static std::string case_precision_4[2] =
     "POLYGON((2 7,4 7,4 3.00000001,2 3,2 7))"
 };
 
+static std::string case_precision_5[2] =
+{
+    "POLYGON((0 0,0 4,2 4,2 3,4 3,4 0,0 0))",
+    "POLYGON((2 7,4 7,4 3,2.0000005 2.9999995,2 7))"
+};
+
+
 // ticket_17 is keyholed, so has a hole formed by an deliberate intersection
 // This will fail the intersection/traversal process
 static std::string ticket_17[2] = {
