@@ -755,7 +755,7 @@ struct sectionalize_multi
     }
 };
 
-template <typename Sections>
+template <typename CoordinateType, typename Sections>
 inline void enlarge_sections(Sections& sections)
 {
     // Enlarge sections slightly, this should be consistent with math::equals()
@@ -776,13 +776,9 @@ inline void enlarge_sections(Sections& sections)
 #if defined(BOOST_GEOMETRY_USE_RESCALING)
         detail::expand_by_epsilon(it->bounding_box);
 #else
-        typedef typename Sections::box_type box_type;
-        typedef typename geometry::coordinate_type<box_type>::type coordinate_type;
-        coordinate_type const threshold
-                = arithmetic::general_threshold<coordinate_type>::get();
-
-        box_type& box = it->bounding_box;
-        detail::buffer::buffer_box(box, threshold, box);
+        detail::buffer::buffer_box(it->bounding_box,
+            arithmetic::general_threshold<CoordinateType>::get(),
+            it->bounding_box);
 #endif
     }
 }
@@ -979,7 +975,7 @@ inline void sectionalize(Geometry const& geometry,
             DimensionVector
         >::apply(geometry, robust_policy, sections, strategy, ring_id, max_count);
 
-    detail::sectionalize::enlarge_sections(sections);
+    detail::sectionalize::enlarge_sections<ctype1>(sections);
 }
 
 
