@@ -84,7 +84,7 @@ struct base_turn_handler
         return side1 * side2 == 1;
     }
 
-    // Both continue
+    // Both get the same operation
     template <typename TurnInfo>
     static inline void both(TurnInfo& ti, operation_type const op)
     {
@@ -185,6 +185,9 @@ struct touch_interior : public base_turn_handler
 
         int const side_qk_q = side.qk_wrt_q1();
 
+        // Only necessary if rescaling is turned off:
+        int const side_pj_q2 = side.pj_wrt_q2();
+
         if (side_qi_p == -1 && side_qk_p == -1 && side_qk_q == 1)
         {
             // Q turns left on the right side of P (test "MR3")
@@ -194,17 +197,25 @@ struct touch_interior : public base_turn_handler
         }
         else if (side_qi_p == 1 && side_qk_p == 1 && side_qk_q == -1)
         {
-            // Q turns right on the left side of P (test "ML3")
-            // Union: take both operation
-            // Intersection: skip
-            both(ti, operation_union);
+            if (side_pj_q2 == -1)
+            {
+                // Q turns right on the left side of P (test "ML3")
+                // Union: take both operations
+                // Intersection: skip
+                both(ti, operation_union);
+            }
+            else
+            {
+                // q2 is collinear with p1, so it does not turn back. This
+                // can happen in floating point precision. In this case,
+                // block one of the operations to avoid taking that path.
+                ti.operations[index_p].operation = operation_union;
+                ti.operations[index_q].operation = operation_blocked;
+            }
             ti.touch_only = true;
         }
         else if (side_qi_p == side_qk_p && side_qi_p == side_qk_q)
         {
-            // Only necessary if rescaling is turned off.
-            int const side_pj_q2 = side.pj_wrt_q2();
-
             // Q turns left on the left side of P (test "ML2")
             // or Q turns right on the right side of P (test "MR2")
             // Union: take left turn (Q if Q turns left, P if Q turns right)
