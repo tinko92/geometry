@@ -53,9 +53,9 @@ namespace detail { namespace overlay
 {
 
 template <typename Turns>
-struct discarded_turn
+struct discarded_indexed_turn
 {
-    discarded_turn(Turns const& turns)
+    discarded_indexed_turn(Turns const& turns)
         : m_turns(turns)
     {}
 
@@ -66,6 +66,15 @@ struct discarded_turn
     }
 
     Turns const& m_turns;
+};
+
+struct is_arrive_turn
+{
+    template <typename Turn>
+    inline bool operator()(Turn const& turn) const
+    {
+        return turn.method == method_arrive;
+    }
 };
 
 // Sorts IP-s of this ring on segment-identifier, and if on same segment,
@@ -272,7 +281,7 @@ inline void enrich_adapt(Operations& operations, Turns& turns)
     }
 
     // Remove discarded turns from operations to avoid having them as next turn
-    discarded_turn<Turns> const predicate(turns);
+    discarded_indexed_turn<Turns> const predicate(turns);
     operations.erase(std::remove_if(boost::begin(operations),
         boost::end(operations), predicate), boost::end(operations));
 }
@@ -412,6 +421,7 @@ inline void enrich_intersection_points(Turns& turns,
             ? detail::overlay::operation_intersection
             : detail::overlay::operation_union;
     static const bool is_dissolve = OverlayType == overlay_dissolve;
+    static const bool is_difference = OverlayType == overlay_difference;
 
     typedef typename boost::range_value<Turns>::type turn_type;
     typedef typename turn_type::turn_operation_type op_type;
@@ -425,6 +435,15 @@ inline void enrich_intersection_points(Turns& turns,
             ring_identifier,
             std::vector<indexed_turn_operation>
         > mapped_vector_type;
+
+    if (is_difference)
+    {
+        // For difference, erase 'arrive' turns
+        // (just discarding currently does not work)
+        turns.erase(std::remove_if(boost::begin(turns),
+            boost::end(turns), detail::overlay::is_arrive_turn()),
+                    boost::end(turns));
+    }
 
     bool has_cc = false;
     bool const has_colocations

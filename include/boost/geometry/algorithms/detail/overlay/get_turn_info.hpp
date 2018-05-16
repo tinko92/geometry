@@ -555,6 +555,59 @@ struct equal : public base_turn_handler
 
 template
 <
+    typename TurnInfo
+>
+struct arrive : public base_turn_handler
+{
+    template
+    <
+        typename Point1,
+        typename Point2,
+        typename IntersectionInfo,
+        typename DirInfo,
+        typename SidePolicy
+    >
+    static inline bool apply(
+                Point1 const& pi, Point1 const& pj, Point1 const& pk,
+                Point2 const& qi, Point2 const& qj, Point2 const& qk,
+                TurnInfo& ti,
+                IntersectionInfo const& info,
+                DirInfo const&  dir_info,
+                SidePolicy const& side)
+    {
+        if (dir_info.opposite)
+        {
+            return false;
+        }
+        if (dir_info.dir_a != 1 || dir_info.dir_b != 1)
+        {
+            return false;
+        }
+        if (dir_info.how_a * dir_info.how_b != -1)
+        {
+            // One should arrive
+            return false;
+        }
+        int const side_qj_p1 = side.qj_wrt_p1();
+        int const side_pk_p = side.pk_wrt_p1();
+
+        if (!opposite(side_qj_p1, side_pk_p))
+        {
+            return false;
+        }
+
+        // Copy intersection point
+        assign_point(ti, method_arrive, info, 0);
+        ui_else_iu(!(dir_info.how_a == 1
+                   && side_qj_p1 == 1
+                   && side_pk_p == -1), ti);
+        return true;
+    }
+};
+
+
+template
+<
     typename TurnInfo,
     typename AssignPolicy
 >
@@ -1014,8 +1067,7 @@ struct get_turn_info
         // Select method and apply
         switch(method)
         {
-            case 'a' : // collinear, "at"
-            case 'f' : // collinear, "from"
+            case 'f' : // "from"
             case 's' : // starts from the middle
                 if (AssignPolicy::include_no_turn
                     && inters.i_info().count > 0)
@@ -1079,6 +1131,18 @@ struct get_turn_info
                     tp, inters.i_info(), inters.d_info(), inters.sides());
                 AssignPolicy::apply(tp, pi, qi, inters);
                 *out++ = tp;
+            }
+            break;
+            case 'a' :
+            {
+                // "arrives at", necessary to handle for
+                bool const applied = arrive<TurnInfo>::apply(pi, pj, pk, qi, qj, qk,
+                    tp, inters.i_info(), inters.d_info(), inters.sides());
+                if (applied)
+                {
+                    AssignPolicy::apply(tp, pi, qi, inters);
+                    *out++ = tp;
+                }
             }
             break;
             case 'e':

@@ -504,6 +504,39 @@ inline void discard_interior_exterior_turns(Turns& turns, Clusters& clusters)
     }
 }
 
+// Turns marked with method <arrive> are generated but usually duplicate, unless
+// (by floating point precision) the other turn is just missed.
+// This means that all <arrive> turns within clusters can be removed.
+template <typename Turns, typename Clusters>
+inline void discard_arrive_turns(Turns& turns, Clusters& clusters)
+{
+    typedef typename boost::range_value<Turns>::type turn_type;
+
+    for (typename Clusters::iterator cit = clusters.begin();
+         cit != clusters.end(); ++cit)
+    {
+        cluster_info& cinfo = cit->second;
+        std::set<signed_size_type>& ids = cinfo.turn_indices;
+
+        for (std::set<signed_size_type>::iterator sit = ids.begin();
+             sit != ids.end(); /* no increment */)
+        {
+            std::set<signed_size_type>::iterator current_it = sit;
+            ++sit;
+
+            signed_size_type const turn_index = *current_it;
+            turn_type& turn = turns[turn_index];
+
+            if (turn.method == method_arrive)
+            {
+                turn.discarded = true;
+                turn.cluster_id = -1;
+                ids.erase(current_it);
+            }
+        }
+    }
+}
+
 template
 <
     overlay_type OverlayType,
@@ -689,6 +722,8 @@ inline bool handle_colocations(Turns& turns, Clusters& clusters,
                 do_reverse<geometry::point_order<Geometry2>::value>::value != Reverse2
             >(turns, clusters);
     }
+
+    discard_arrive_turns(turns, clusters);
 
 #if defined(BOOST_GEOMETRY_DEBUG_HANDLE_COLOCATIONS)
     std::cout << "*** Colocations " << map.size() << std::endl;
