@@ -23,7 +23,10 @@ namespace arithmetic
 // Determined with corresponding unit test.
 // It should not be replaced by machine epsilon or math::equals
 template <typename GeneralType>
-struct general_threshold {};
+struct general_threshold
+{
+    static GeneralType get() { return GeneralType(); }
+};
 
 template <>
 struct general_threshold<long double>

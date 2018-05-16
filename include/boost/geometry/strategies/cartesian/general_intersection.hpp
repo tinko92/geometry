@@ -94,7 +94,10 @@ namespace strategy { namespace intersection
 // Determined with corresponding unit test.
 // It should not be replaced by machine epsilon or math::equals
 template <typename Type>
-struct general_distance_threshold {};
+struct general_distance_threshold
+{
+    static Type get() { return Type(); }
+};
 
 template <>
 struct general_distance_threshold<long double>
