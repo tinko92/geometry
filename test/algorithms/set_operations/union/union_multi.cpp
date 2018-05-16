@@ -33,6 +33,10 @@
     (test_one<Polygon, MultiPolygon, MultiPolygon>) \
     ( #caseid, caseid[0], caseid[1], clips, holes, points, area)
 
+#define TEST_UNION_REV(caseid, clips, holes, points, area) \
+    (test_one<Polygon, MultiPolygon, MultiPolygon>) \
+    ( #caseid "_rev", caseid[1], caseid[0], clips, holes, points, area)
+
 #define TEST_UNION_IGNORE(caseid, clips, holes, points, area) \
    { ut_settings ignore_validity; ignore_validity.test_validity = false; \
      test_one<Polygon, MultiPolygon, MultiPolygon> \
@@ -419,6 +423,14 @@ void test_areal()
     TEST_UNION(case_recursive_boxes_86, 3, 0, -1, 3.0);
     TEST_UNION(case_recursive_boxes_87, 8, 0, -1, 4.5);
     TEST_UNION(case_recursive_boxes_88, 5, 1, -1, 15.0);
+
+    TEST_UNION(case_precision_m1, 1, 0, -1, 71.0);
+    TEST_UNION(case_precision_m2, 1, 1, -1, 74.0);
+    TEST_UNION_REV(case_precision_m1, 1, 0, -1, 71.0);
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+    // TODO: fix this, most probably missing another turn
+    TEST_UNION_REV(case_precision_m2, 1, 1, -1, 74.0);
+#endif
 
     test_one<Polygon, MultiPolygon, MultiPolygon>("ggl_list_20120915_h2_a",
          ggl_list_20120915_h2[0], ggl_list_20120915_h2[1],
