@@ -19,6 +19,7 @@
 #include <boost/core/ignore_unused.hpp>
 #include <boost/throw_exception.hpp>
 
+#include <boost/geometry/core/config.hpp>
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/assert.hpp>
 
@@ -575,6 +576,17 @@ struct arrive : public base_turn_handler
                 DirInfo const&  dir_info,
                 SidePolicy const& side)
     {
+#if defined(BOOST_GEOMETRY_USE_RESCALING)
+        // For rescaling, arrive turns are not needed and are currently harmful
+        return false;
+#endif
+
+        if (ti.operations[0].seg_id.source_index == ti.operations[1].seg_id.source_index)
+        {
+            // Self-turn, do not generate arrivals (there would be many)
+            return false;
+        }
+
         if (dir_info.opposite)
         {
             return false;
@@ -585,24 +597,60 @@ struct arrive : public base_turn_handler
         }
         if (dir_info.how_a * dir_info.how_b != -1)
         {
-            // One should arrive
+            // One of them, but not both, should arrive
             return false;
         }
-        int const side_qj_p1 = side.qj_wrt_p1();
-        int const side_pk_p = side.pk_wrt_p1();
 
-        if (!opposite(side_qj_p1, side_pk_p))
+        bool ui = false;
+        if (dir_info.how_a == 1)
         {
-            return false;
+            //                  ^
+            //                  | q        p arrives, q leaves
+            //                  |          side qj/p == 1
+            // p --------------->
+            //                  \          .
+            //                   \pk       side pk/p == -1
+
+
+            int const side_qj_p1 = side.qj_wrt_p1();
+            int const side_pk_p = side.pk_wrt_p1();
+
+            if (!opposite(side_qj_p1, side_pk_p))
+            {
+                return false;
+            }
+
+            ui = false;
+            ti.operations[0].arrives = true;
+        }
+        else
+        {
+            //                  ^
+            //                  | p        q arrives, p leaves
+            //                  |          side pj/q == 1
+            // q --------------->
+            //                  \          .
+            //                   \qk       side qk/q == -1
+
+
+            int const side_pj_q1 = side.pj_wrt_q1();
+            int const side_qk_q = side.qk_wrt_q1();
+
+            if (!opposite(side_pj_q1, side_qk_q))
+            {
+                return false;
+            }
+
+            ui = true;
+            ti.operations[1].arrives = true;
         }
 
         // Copy intersection point
         assign_point(ti, method_arrive, info, 0);
-        ui_else_iu(!(dir_info.how_a == 1
-                   && side_qj_p1 == 1
-                   && side_pk_p == -1), ti);
+        ui_else_iu(ui, ti);
         return true;
     }
+
 };
 
 

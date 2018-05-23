@@ -54,12 +54,14 @@ struct turn_operation
     operation_type operation;
     segment_identifier seg_id;
     SegmentRatio fraction;
+    bool arrives;
 
     typedef typename coordinate_type<Point>::type comparable_distance_type;
     comparable_distance_type remaining_distance;
 
     inline turn_operation()
         : operation(operation_none)
+        , arrives(false)
         , remaining_distance(0)
     {}
 };

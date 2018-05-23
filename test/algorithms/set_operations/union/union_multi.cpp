@@ -427,10 +427,7 @@ void test_areal()
     TEST_UNION(case_precision_m1, 1, 0, -1, 71.0);
     TEST_UNION(case_precision_m2, 1, 1, -1, 74.0);
     TEST_UNION_REV(case_precision_m1, 1, 0, -1, 71.0);
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
-    // TODO: fix this, most probably missing another turn
     TEST_UNION_REV(case_precision_m2, 1, 1, -1, 74.0);
-#endif
 
     test_one<Polygon, MultiPolygon, MultiPolygon>("ggl_list_20120915_h2_a",
          ggl_list_20120915_h2[0], ggl_list_20120915_h2[1],

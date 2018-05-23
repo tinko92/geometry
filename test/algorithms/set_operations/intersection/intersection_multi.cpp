@@ -375,10 +375,7 @@ void test_areal()
     TEST_INTERSECTION(case_precision_m1, 1, -1, 14.0);
     TEST_INTERSECTION(case_precision_m2, 2, -1, 15.25);
     TEST_INTERSECTION_REV(case_precision_m1, 1, -1, 14.0);
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
-    // TODO: fix this, most probably missing another turn
     TEST_INTERSECTION_REV(case_precision_m2, 2, -1, 15.25);
-#endif
 
     test_one<Polygon, MultiPolygon, MultiPolygon>("ggl_list_20120915_h2_a",
         ggl_list_20120915_h2[0], ggl_list_20120915_h2[1],

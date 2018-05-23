@@ -68,15 +68,6 @@ struct discarded_indexed_turn
     Turns const& m_turns;
 };
 
-struct is_arrive_turn
-{
-    template <typename Turn>
-    inline bool operator()(Turn const& turn) const
-    {
-        return turn.method == method_arrive;
-    }
-};
-
 // Sorts IP-s of this ring on segment-identifier, and if on same segment,
 //  on distance.
 // Then assigns for each IP which is the next IP on this segment,
@@ -421,7 +412,6 @@ inline void enrich_intersection_points(Turns& turns,
             ? detail::overlay::operation_intersection
             : detail::overlay::operation_union;
     static const bool is_dissolve = OverlayType == overlay_dissolve;
-    static const bool is_difference = OverlayType == overlay_difference;
 
     typedef typename boost::range_value<Turns>::type turn_type;
     typedef typename turn_type::turn_operation_type op_type;
@@ -436,14 +426,12 @@ inline void enrich_intersection_points(Turns& turns,
             std::vector<indexed_turn_operation>
         > mapped_vector_type;
 
-    if (is_difference)
-    {
-        // For difference, erase 'arrive' turns
-        // (just discarding currently does not work)
-        turns.erase(std::remove_if(boost::begin(turns),
-            boost::end(turns), detail::overlay::is_arrive_turn()),
-                    boost::end(turns));
-    }
+    // As long as turn indexes are not used yet, turns might be erased from
+    // the vector
+    detail::overlay::erase_colocated_arrivals(turns);
+
+    // From here on, turn indexes are used (in clusters, next_index, etc)
+    // and may only be flagged as discarded
 
     bool has_cc = false;
     bool const has_colocations

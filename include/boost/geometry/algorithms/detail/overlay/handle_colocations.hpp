@@ -82,6 +82,14 @@ struct turn_operation_index
     signed_size_type op_index; // only 0,1
 };
 
+struct is_discarded_arrive_turn
+{
+    template <typename Turn>
+    inline bool operator()(Turn const& turn) const
+    {
+        return turn.method == method_arrive && turn.discarded;
+    }
+};
 
 template <typename Turns>
 struct less_by_fraction_and_type
@@ -506,35 +514,86 @@ inline void discard_interior_exterior_turns(Turns& turns, Clusters& clusters)
 
 // Turns marked with method <arrive> are generated but usually duplicate, unless
 // (by floating point precision) the other turn is just missed.
-// This means that all <arrive> turns within clusters can be removed.
-template <typename Turns, typename Clusters>
-inline void discard_arrive_turns(Turns& turns, Clusters& clusters)
+// This means that all <arrive> colocated with any other turn can be deleted.
+// This is done before colocation (because in colocated, they are only discarded,
+// and that can give issues in traversal)
+template <typename Turns>
+inline void erase_colocated_arrivals(Turns& turns)
 {
     typedef typename boost::range_value<Turns>::type turn_type;
+    typedef typename boost::range_iterator<Turns const>::type turn_it;
 
-    for (typename Clusters::iterator cit = clusters.begin();
-         cit != clusters.end(); ++cit)
+    // Maps from segment_identifier to turn_id
+    typedef std::map<segment_identifier, std::vector<turn_operation_index> > map_type;
+    map_type arrivals;
+
+    signed_size_type turn_index = 0;
+    for (turn_it it = boost::begin(turns); it != boost::end(turns); ++it, ++turn_index)
     {
-        cluster_info& cinfo = cit->second;
-        std::set<signed_size_type>& ids = cinfo.turn_indices;
-
-        for (std::set<signed_size_type>::iterator sit = ids.begin();
-             sit != ids.end(); /* no increment */)
+        turn_type const& turn = *it;
+        if (turn.method == method_arrive)
         {
-            std::set<signed_size_type>::iterator current_it = sit;
-            ++sit;
-
-            signed_size_type const turn_index = *current_it;
-            turn_type& turn = turns[turn_index];
-
-            if (turn.method == method_arrive)
+            turn_operation_index top;
+            top.turn_index = turn_index;
+            segment_identifier id;
+            if (turn.operations[0].arrives)
             {
-                turn.discarded = true;
-                turn.cluster_id = -1;
-                ids.erase(current_it);
+                top.op_index = 0;
+                id = turn.operations[0].seg_id;
+            }
+            else if (turn.operations[1].arrives)
+            {
+                top.op_index = 1;
+                id = turn.operations[1].seg_id;
+            }
+            else
+            {
+                continue;
+            }
+
+            arrivals[id].push_back(top);
+        }
+    }
+
+    if (arrivals.empty())
+    {
+        return;
+    }
+
+    // Find equal/collinear turns on the same segment
+    bool discarded = false;
+    for (turn_it it = boost::begin(turns); it != boost::end(turns); ++it)
+    {
+        turn_type const& turn = *it;
+        if (turn.method != method_arrive && turn.method != method_crosses)
+        {
+            for (int op = 0; op < 2; op++)
+            {
+                map_type::const_iterator mit = arrivals.find(turn.operations[op].seg_id);
+                if (mit != arrivals.end())
+                {
+                    for (std::size_t i = 0; i < mit->second.size(); i++)
+                    {
+                        const turn_operation_index& top = mit->second[i];
+                        if (top.op_index == op)
+                        {
+                            turns[top.turn_index].discarded = true;
+                            discarded = true;
+                        }
+                    }
+                }
             }
         }
     }
+
+    if (!discarded)
+    {
+        return;
+    }
+
+    turns.erase(std::remove_if(boost::begin(turns), boost::end(turns),
+                               is_discarded_arrive_turn()),
+                boost::end(turns));
 }
 
 template
@@ -722,8 +781,6 @@ inline bool handle_colocations(Turns& turns, Clusters& clusters,
                 do_reverse<geometry::point_order<Geometry2>::value>::value != Reverse2
             >(turns, clusters);
     }
-
-    discard_arrive_turns(turns, clusters);
 
 #if defined(BOOST_GEOMETRY_DEBUG_HANDLE_COLOCATIONS)
     std::cout << "*** Colocations " << map.size() << std::endl;
