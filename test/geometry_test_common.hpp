@@ -186,6 +186,10 @@ inline void print_configuration()
     std::cout << std::endl;
 }
 
+// For now, do not check on point count
+#if ! defined(BOOST_GEOMETRY_USE_RESCALING)
+#define BOOST_GEOMETRY_TEST_NO_POINT_COUNT
+#endif
 
 
 #endif // GEOMETRY_TEST_GEOMETRY_TEST_COMMON_HPP
