@@ -44,15 +44,43 @@ class cross_track_box_box_generic
 {
 public :
 
+    template <typename Point, typename PPStrategy, typename PSStrategy>
+    ReturnType static inline diagonal_case(Point topA,
+                                           Point topB,
+                                           Point bottomA,
+                                           Point bottomB,
+                                           bool north_shortest,
+                                           bool non_overlap,
+                                           PPStrategy pp_strategy,
+                                           PSStrategy ps_strategy)
+    {
+        if (north_shortest && non_overlap)
+        {
+            return pp_strategy.apply(topA, bottomB);
+        }
+        if (north_shortest && !non_overlap)
+        {
+            return ps_strategy.apply(topA, topB, bottomB);
+        }
+        if (!north_shortest && non_overlap)
+        {
+            return pp_strategy.apply(bottomA, topB);
+        }
+        return ps_strategy.apply(bottomA, topB, bottomB);
+    }
+
+
     template
     <
             typename Box1,
             typename Box2,
-            typename Strategy
+            typename PPStrategy,
+            typename PSStrategy
     >
     ReturnType static inline apply (Box1 const& box1,
                                     Box2 const& box2,
-                                    Strategy ps_strategy)
+                                    PPStrategy pp_strategy,
+                                    PSStrategy ps_strategy)
     {
 
         // this method assumes that the coordinates of the point and
@@ -104,7 +132,7 @@ public :
 #ifdef BOOST_GEOMETRY_DEBUG_CROSS_TRACK_BOX_BOX
             std::cout << "(box1 crosses antimeridian)";
 #endif
-            return apply(box2, box1, ps_strategy);
+            return apply(box2, box1, pp_strategy, ps_strategy);
         }
         else
         {
@@ -135,17 +163,17 @@ public :
             {
                 return geometry::strategy::distance::services::result_from_distance
                     <
-                        Strategy, box_point_type1, box_point_type2
-                    >::apply(ps_strategy, ps_strategy.get_distance_strategy()
-                               .meridian(lat_min1, lat_max2));
+                        PSStrategy, box_point_type1, box_point_type2
+                    >::apply(ps_strategy, ps_strategy
+                               .vertical_or_meridian(lat_min1, lat_max2));
             }
             else if (lat_max1 < lat_min2)
             {
                 return geometry::strategy::distance::services::result_from_distance
                     <
-                        Strategy, box_point_type1, box_point_type2
-                    >::apply(ps_strategy, ps_strategy.get_distance_strategy().
-                             meridian(lat_min2, lat_max1));
+                        PSStrategy, box_point_type1, box_point_type2
+                    >::apply(ps_strategy, ps_strategy
+                             .vertical_or_meridian(lat_min2, lat_max1));
             }
             else
             {
@@ -162,9 +190,9 @@ public :
         ReturnType bottom_common = (std::max)(lat_min1, lat_min2);
 
         // true if the closest points are on northern hemisphere
-        bool north_shortest = math::abs(top_common) > math::abs(bottom_common)
-                || lat_max1 <= lat_min2
-                || lat_min1 >= lat_max2;
+        bool north_shortest = top_common + bottom_common > 0;
+        // true if box bands do not overlap
+        bool non_overlap = top_common < bottom_common;
 
         if (north_shortest)
         {
@@ -183,44 +211,40 @@ public :
 #ifdef BOOST_GEOMETRY_DEBUG_CROSS_TRACK_BOX_BOX
             std::cout << "(bottom left)";
 #endif
-            if (north_shortest)
-            {
-                return ps_strategy.apply(top_right2, top_left1, bottom_left1);
-            }
-            return ps_strategy.apply(bottom_right2, top_left1, bottom_left1);
+            return diagonal_case(top_right2, top_left1,
+                                 bottom_right2, bottom_left1,
+                                 north_shortest, non_overlap,
+                                 pp_strategy, ps_strategy);
         }
         if (bottom_max && right_wrap)
         {
 #ifdef BOOST_GEOMETRY_DEBUG_CROSS_TRACK_BOX_BOX
             std::cout << "(bottom right)";
 #endif
-            if (north_shortest)
-            {
-                return ps_strategy.apply(top_left2, top_right1, bottom_right1);
-            }
-            return ps_strategy.apply(bottom_left2, top_right1, bottom_right1);
+            return diagonal_case(top_left2, top_right1,
+                                 bottom_left2, bottom_right1,
+                                 north_shortest, non_overlap,
+                                 pp_strategy, ps_strategy);
         }
         if (!bottom_max && !right_wrap)
         {
 #ifdef BOOST_GEOMETRY_DEBUG_CROSS_TRACK_BOX_BOX
             std::cout << "(top left)";
 #endif
-            if (north_shortest)
-            {
-                return ps_strategy.apply(top_left1, top_right2, bottom_right2);
-            }
-            return ps_strategy.apply(bottom_left1, top_right2, bottom_right2);
+            return diagonal_case(top_left1, top_right2,
+                                 bottom_left1, bottom_right2,
+                                 north_shortest, non_overlap,
+                                 pp_strategy, ps_strategy);
         }
         if (!bottom_max && right_wrap)
         {
 #ifdef BOOST_GEOMETRY_DEBUG_CROSS_TRACK_BOX_BOX
             std::cout << "(top right)";
 #endif
-            if (north_shortest)
-            {
-                return ps_strategy.apply(top_right1, top_left2, bottom_left2);
-            }
-            return ps_strategy.apply(bottom_right1, top_left2, bottom_left2);
+            return diagonal_case(top_right1, top_left2,
+                                 bottom_right1, bottom_left2,
+                                 north_shortest, non_overlap,
+                                 pp_strategy, ps_strategy);
         }
         return ReturnType(0);
     }
@@ -244,7 +268,7 @@ to cross track
 template
 <
     typename CalculationType = void,
-    typename Strategy = cross_track<CalculationType>
+    typename Strategy = haversine<double, CalculationType>
 >
 class cross_track_box_box
 {
@@ -258,15 +282,44 @@ public:
 
     typedef typename Strategy::radius_type radius_type;
 
+    // strategy getters
+
+    // point-segment strategy getters
+    struct distance_ps_strategy
+    {
+        typedef cross_track<CalculationType, Strategy> type;
+    };
+
+    typedef typename strategy::distance::services::comparable_type
+        <
+            Strategy
+        >::type pp_comparable_strategy;
+
+    typedef typename boost::mpl::if_
+        <
+            boost::is_same
+                <
+                    pp_comparable_strategy,
+                    Strategy
+                >,
+            typename strategy::distance::services::comparable_type
+                <
+                    typename distance_ps_strategy::type
+                >::type,
+            typename distance_ps_strategy::type
+        >::type ps_strategy_type;
+
+    // constructors
+
     inline cross_track_box_box()
     {}
 
     explicit inline cross_track_box_box(typename Strategy::radius_type const& r)
-        : m_ps_strategy(r)
+        : m_strategy(r)
     {}
 
     inline cross_track_box_box(Strategy const& s)
-        : m_ps_strategy(s)
+        : m_strategy(s)
     {}
 
 
@@ -281,7 +334,7 @@ public:
 #if !defined(BOOST_MSVC)
         BOOST_CONCEPT_ASSERT
             (
-                (concepts::PointSegmentDistanceStrategy
+                (concepts::PointDistanceStrategy
                     <
                         Strategy,
                         typename point_type<Box1>::type,
@@ -291,16 +344,18 @@ public:
 #endif
         typedef typename return_type<Box1, Box2>::type return_type;
         return details::cross_track_box_box_generic
-                                <return_type>::apply(box1, box2, m_ps_strategy);
+                                <return_type>::apply(box1, box2,
+                                                     m_strategy,
+                                                     ps_strategy_type(m_strategy));
     }
 
     inline typename Strategy::radius_type radius() const
     {
-        return m_ps_strategy.radius();
+        return m_strategy.radius();
     }
 
 private:
-    Strategy m_ps_strategy;
+    Strategy m_strategy;
 };
 
 
@@ -398,7 +453,7 @@ struct default_strategy
                     boost::is_void<Strategy>,
                     typename default_strategy
                         <
-                            point_tag, segment_tag,
+                            point_tag, point_tag,
                             typename point_type<Box1>::type, typename point_type<Box2>::type,
                             spherical_equatorial_tag, spherical_equatorial_tag
                         >::type,

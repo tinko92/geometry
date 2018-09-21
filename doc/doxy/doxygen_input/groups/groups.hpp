@@ -6,6 +6,7 @@
 // Modifications copyright (c) 2018, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle
 
+
 // Use, modification and distribution is subject to the Boost Software License,
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -32,6 +33,8 @@
 \defgroup cs coordinate systems
 \defgroup densify densify: add points to geometry, keeping shape
 \defgroup difference difference: difference of two geometries
+\defgroup discrete_frechet_distance discrete_frechet_distance : calculate discrete frechet distance between two geometries
+\defgroup discrete_hausdorff_distance discrete_hausdorff_distance : calculate discrete hausdorff distance between two geometries
 \defgroup disjoint disjoint: detect if geometries are not spatially related
 \defgroup distance distance: calculate distance between two geometries
 \defgroup enum enum: enumerations
@@ -67,6 +70,7 @@
 \defgroup selected selection: check if a geometry is "selected" by a point
 \defgroup set set: set geometries
 \defgroup simplify simplify: remove points from a geometry, keeping shape (simplification or generalization)
+\defgroup srs srs: Spatial Reference System definition
 \defgroup strategies strategies: strategies
 \defgroup svg svg: Stream SVG (Scalable Vector Graphics)
 \defgroup sym_difference sym_difference: sym_difference of two geometries

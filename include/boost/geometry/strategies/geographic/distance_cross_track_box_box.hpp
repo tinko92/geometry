@@ -1,8 +1,9 @@
 // Boost.Geometry (aka GGL, Generic Geometry Library)
 
-// Copyright (c) 2017, Oracle and/or its affiliates.
+// Copyright (c) 2017-2018, Oracle and/or its affiliates.
 
 // Contributed and/or modified by Vissarion Fysikopoulos, on behalf of Oracle
+// Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle
 
 // Use, modification and distribution is subject to the Boost Software License,
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
@@ -60,14 +61,37 @@ template
 class geographic_cross_track_box_box
 {
 public:
-    typedef geographic_cross_track<FormulaPolicy, Spheroid, CalculationType> Strategy;
+
+    // point-point strategy getters
+    struct distance_pp_strategy
+    {
+        typedef geographic<FormulaPolicy, Spheroid, CalculationType> type;
+    };
+
+    // point-segment strategy getters
+    struct distance_ps_strategy
+    {
+        typedef geographic_cross_track
+                <
+                    FormulaPolicy,
+                    Spheroid,
+                    CalculationType
+                > type;
+    };
 
     template <typename Box1, typename Box2>
-    struct return_type
-        : services::return_type<Strategy, typename point_type<Box1>::type, typename point_type<Box2>::type>
+    struct return_type : services::return_type
+            <
+                typename distance_ps_strategy::type,
+                typename point_type<Box1>::type,
+                typename point_type<Box2>::type
+            >
     {};
 
-    inline geographic_cross_track_box_box()
+    //constructor
+
+    explicit geographic_cross_track_box_box(Spheroid const& spheroid = Spheroid())
+             : m_spheroid(spheroid)
     {}
 
     template <typename Box1, typename Box2>
@@ -89,8 +113,12 @@ public:
 */
         typedef typename return_type<Box1, Box2>::type return_type;
         return details::cross_track_box_box_generic
-                                       <return_type>::apply(box1, box2, Strategy());
+                                       <return_type>::apply(box1, box2,
+                                                            typename distance_pp_strategy::type(m_spheroid),
+                                                            typename distance_ps_strategy::type(m_spheroid));
     }
+private :
+    Spheroid m_spheroid;
 };
 
 
@@ -147,7 +175,7 @@ struct get_comparable<geographic_cross_track_box_box<Strategy, Spheroid, Calcula
     typedef typename comparable_type<this_strategy>::type comparable_type;
 
 public:
-    static inline comparable_type apply(this_strategy const& strategy)
+    static inline comparable_type apply(this_strategy const& /*strategy*/)
     {
         return comparable_type();
     }

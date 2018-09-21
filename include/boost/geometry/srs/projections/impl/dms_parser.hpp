@@ -2,8 +2,8 @@
 
 // Copyright (c) 2007-2012 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017.
-// Modifications copyright (c) 2017, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018.
+// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -41,16 +41,12 @@
 
 #include <string>
 
+#include <boost/algorithm/string.hpp>
+#include <boost/config.hpp>
 #include <boost/static_assert.hpp>
 
-#if !defined(BOOST_GEOMETRY_NO_LEXICAL_CAST)
-#include <boost/lexical_cast.hpp>
-#endif // !defined(BOOST_GEOMETRY_NO_LEXICAL_CAST)
-
-#include <boost/algorithm/string.hpp>
-
 #include <boost/geometry/core/cs.hpp>
-
+#include <boost/geometry/srs/projections/str_cast.hpp>
 #include <boost/geometry/util/math.hpp>
 
 namespace boost { namespace geometry { namespace projections
@@ -127,20 +123,23 @@ struct dms_parser
         bool has_dms[3];
 
         dms_value()
+#if !defined(BOOST_NO_CXX11_UNIFIED_INITIALIZATION_SYNTAX) && (!defined(_MSC_VER) || (_MSC_VER >= 1900)) // workaround for VC++ 12 (aka 2013)
+            : dms{0, 0, 0}
+            , has_dms{false, false, false}
+        {}
+#else
         {
-            memset(this, 0, sizeof(dms_value));
+            std::fill(dms, dms + 3, T(0));
+            std::fill(has_dms, has_dms + 3, false);
         }
+#endif
     };
 
 
     template <size_t I>
     static inline void assign_dms(dms_value& dms, std::string& value, bool& has_value)
     {
-#if !defined(BOOST_GEOMETRY_NO_LEXICAL_CAST)
-        dms.dms[I] = boost::lexical_cast<T>(value.c_str());
-#else // !defined(BOOST_GEOMETRY_NO_LEXICAL_CAST)
-        dms.dms[I] = std::atof(value.c_str());
-#endif // !defined(BOOST_GEOMETRY_NO_LEXICAL_CAST)
+        dms.dms[I] = geometry::str_cast<T>(value);
         dms.has_dms[I] = true;
         has_value = false;
         value.clear();
@@ -157,8 +156,12 @@ struct dms_parser
         }
     }
 
+    static inline dms_result<T> apply(std::string const& is)
+    {
+        return apply(is.c_str());
+    }
 
-    dms_result<T> apply(const char* is) const
+    static inline dms_result<T> apply(const char* is)
     {
         dms_value dms;
         bool has_value = false;
