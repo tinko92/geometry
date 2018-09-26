@@ -460,7 +460,6 @@ void test_areal()
 #if defined(BOOST_GEOMETRY_USE_RESCALING) && defined(BOOST_GEOMETRY_USE_KRAMER_RULE)
     // Combination of Kramer's rule / rescaling will give no output
 #else
-    // TODO general-form / no rescalig gives wrong output
     test_one<Polygon, MultiPolygon, MultiPolygon>("ticket_12125",
         ticket_12125[0], ticket_12125[1],
         1, 0, -1, 575.831180350007);
