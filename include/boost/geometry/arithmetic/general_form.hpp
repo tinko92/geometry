@@ -191,7 +191,10 @@ signed_comparable_distance(general_form<GeneralType> const& p,
 
     // TODO: should be precalculated
     const GeneralType denom = p.a * p.a + p.b * p.b;
-    BOOST_ASSERT(denom != 0);
+    if (denom == 0)
+    {
+        return 0;
+    }
     return (num > 0 ? 1.0 : -1.0) * num * num / denom;
 }
 
