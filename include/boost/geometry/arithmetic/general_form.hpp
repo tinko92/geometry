@@ -213,8 +213,8 @@ bool similar_direction(const general_form<GeneralType>& p,
 
 // Calculates intersection point of two infinite lines.
 // Returns true if the lines intersect.
-// Returns false if lines are considered as collinear.
-// Set the doubt flag for nearly collinear lines.
+// Returns false if lines are parallel (or collinear)
+// Set the doubt flag for nearly parallel lines.
 template <typename Point, typename GeneralType>
 inline
 bool get_intersection(Point& ip,
@@ -248,12 +248,10 @@ bool get_intersection(Point& ip,
     return result;
 }
 
-// TODO: verify if policy should be used here
-template <typename Policy>
+template <typename GeneralType>
 inline
-bool lines_collinear(general_form<double> const& a,
-                     general_form<double> const& b,
-                     Policy const& policy)
+bool lines_collinear(general_form<GeneralType> const& a,
+                     general_form<GeneralType> const& b)
 {
     if (a.normalized && b.normalized)
     {
@@ -265,13 +263,13 @@ bool lines_collinear(general_form<double> const& a,
         // The normalized lign is still directed, if they have the same
         // direction (same_sign), check for intercept. If they are opposite,
         // then reverse one intercept
-        return same_sign ? is_zero(a.c - b.c, policy)
-                         : is_zero(a.c + b.c, policy)
-                         ;
+        GeneralType const diff = same_sign ? a.c - b.c : a.c + b.c;
+        GeneralType const threshold = general_threshold<GeneralType>::get2();
+        return std::fabs(diff) < threshold;
 
     }
 
-    // Not (yet) implemented
+    // Non normalized lines are not (yet) implemented
     return false;
 }
 

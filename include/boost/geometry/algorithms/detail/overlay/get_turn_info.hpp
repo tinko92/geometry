@@ -581,6 +581,9 @@ struct arrive : public base_turn_handler
         return false;
 #endif
 
+        // Arrive turns currently do sometimes more harm than good
+        return false;
+
         if (ti.operations[0].seg_id.source_index == ti.operations[1].seg_id.source_index)
         {
             // Self-turn, do not generate arrivals (there would be many)

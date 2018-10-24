@@ -48,43 +48,10 @@
 #include <boost/geometry/policies/robustness/segment_ratio_type.hpp>
 
 
+
+
 namespace boost { namespace geometry
 {
-
-namespace strategy { namespace side
-{
-
-template <typename CalculationType = void>
-struct side_by_generic_form
-{
-
-    template <typename P1, typename P2, typename P>
-    static inline int apply(P1 const& p1, P2 const& p2, P const& p)
-    {
-        arithmetic::general_form<double> form = arithmetic::construct_line<double>(p1, p2);
-        double dist = arithmetic::signed_comparable_distance(form, get<0>(p), get<1>(p));
-
-        // TODO remove policy
-        typedef math::detail::equals_factor_policy<double> equal_policy_type;
-        equal_policy_type policy(geometry::get<0>(p1), geometry::get<1>(p1),
-                       geometry::get<0>(p2), geometry::get<1>(p2));
-        return math::detail::equals_by_policy(dist, 0, policy) ? 0
-            : dist > 0 ? 1
-            : -1;
-
-    }
-
-    template <typename P1, typename P2, typename P>
-    static inline double signed_comparable_distance(P1 const& p1, P2 const& p2, P const& p)
-    {
-        arithmetic::general_form<double> const form = arithmetic::construct_line<double>(p1, p2);
-        return arithmetic::signed_comparable_distance(form, get<0>(p), get<1>(p));
-    }
-
-};
-
-
-}}
 
 namespace strategy { namespace intersection
 {
@@ -117,6 +84,37 @@ struct general_distance_threshold<float>
    static float get() { return 1.0e-6; }
 };
 
+}}
+
+namespace strategy { namespace side
+{
+
+template <typename CalculationType = void>
+struct side_by_generic_form
+{
+
+    template <typename P1, typename P2, typename P>
+    static inline int apply(P1 const& p1, P2 const& p2, P const& p)
+    {
+        typedef typename geometry::coordinate_type<P>::type ctype;
+        arithmetic::general_form<ctype> form = arithmetic::construct_line<ctype>(p1, p2);
+        const ctype dist = arithmetic::signed_comparable_distance(form, get<0>(p), get<1>(p));
+
+        // TODO: move const 0.5 to threshold structure
+        const ctype threshold = 0.5 * strategy::intersection::general_distance_threshold<ctype>::get();
+
+        return std::fabs(dist) < threshold ? 0
+            : dist > 0 ? 1
+            : -1;
+    }
+
+};
+
+
+}}
+
+namespace strategy { namespace intersection
+{
 
 // This intersection strategy is based
 // on the general form of a line: ax + by + c
@@ -1379,12 +1377,6 @@ struct cartesian_general_segments
                 typename geometry::coordinate_type<Segment2>::type
             >::type coordinate_type;
 
-        typedef math::detail::equals_factor_policy<coordinate_type> equal_policy_type;
-
-        equal_policy_type equal_policy(geometry::get<0,0>(a),
-                       geometry::get<1,1>(a),
-                       geometry::get<0,1>(b),
-                       geometry::get<1,0>(b));
 
 #if 1
         // todo still using robust points
@@ -1516,11 +1508,11 @@ struct cartesian_general_segments
         // then lines are about collinear, and that is verified below.
 
         // TODO: only calculate if not yet considered as collinear
-        arithmetic::general_form<double> gf_norm_a = arithmetic::normalize_line<double>(gf_a);
-        arithmetic::general_form<double> gf_norm_b = arithmetic::normalize_line<double>(gf_b);
+        arithmetic::general_form<coordinate_type> gf_norm_a = arithmetic::normalize_line<coordinate_type>(gf_a);
+        arithmetic::general_form<coordinate_type> gf_norm_b = arithmetic::normalize_line<coordinate_type>(gf_b);
 
         if (consider_as_collinear
-            || arithmetic::lines_collinear(gf_norm_a, gf_norm_b, equal_policy))
+            || arithmetic::lines_collinear(gf_norm_a, gf_norm_b))
         {
             // Lines are collinear. There are 0, 1 or 2 intersections
             return arithmetic::more_horizontal(gf_a)
