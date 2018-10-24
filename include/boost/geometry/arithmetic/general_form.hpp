@@ -31,19 +31,22 @@ struct general_threshold
 template <>
 struct general_threshold<long double>
 {
-   static long double get() { return 1.0e-10; }
+   static long double get() { return 1.0e-8; } //1.0e-16 for general int prec.cpp
+   static long double get2() { return 1.0e-18; }
 };
 
 template <>
 struct general_threshold<double>
 {
-   static double get() { return 1.0e-7; }
+   static double get() { return 1.0e-6; }
+   static double get2() { return 1.0e-12; }
 };
 
 template <>
 struct general_threshold<float>
 {
    static float get() { return 1.0e-2; }
+   static float get2() { return 1.0e-2; }
 };
 
 
