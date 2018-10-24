@@ -108,6 +108,15 @@ struct side_by_generic_form
             : -1;
     }
 
+#if defined(BOOST_GEOMETRY_GENERAL_INT_SUPPORT_SIDE_DISTANCE_MEASURE)
+    template <typename P1, typename P2, typename P>
+    static inline double signed_comparable_distance(P1 const& p1, P2 const& p2, P const& p)
+    {
+        arithmetic::general_form<double> const form = arithmetic::construct_line<double>(p1, p2);
+        return arithmetic::signed_comparable_distance(form, get<0>(p), get<1>(p));
+    }
+#endif
+
 };
 
 
