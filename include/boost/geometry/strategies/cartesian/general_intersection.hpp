@@ -1423,7 +1423,7 @@ struct cartesian_general_segments
         bool consider_as_collinear = false;
         boost::array<side_data, 4> data;
 
-#ifdef BOOST_GEOMETRY_GENERIC_INT_SUPPORT_DOUBT1
+#ifdef BOOST_GEOMETRY_GENERAL_INT_SUPPORT_DOUBT1
         if (! crossing && intersection_doubt)
         {
             {
@@ -1458,7 +1458,7 @@ struct cartesian_general_segments
                 return Policy::disjoint();
             }
         }
-#endif // BOOST_GEOMETRY_GENERIC_INT_SUPPORT_DOUBT1
+#endif // BOOST_GEOMETRY_GENERAL_INT_SUPPORT_DOUBT1
 
         if (crossing)
         {
