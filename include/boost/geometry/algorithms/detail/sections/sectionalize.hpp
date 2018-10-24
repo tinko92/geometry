@@ -775,7 +775,7 @@ inline void enlarge_sections(Sections& sections)
         detail::expand_by_epsilon(it->bounding_box);
 #else
         detail::buffer::buffer_box(it->bounding_box,
-            arithmetic::general_threshold<CoordinateType>::get(),
+            10.0 * arithmetic::general_threshold<CoordinateType>::get(),
             it->bounding_box);
 #endif
     }
