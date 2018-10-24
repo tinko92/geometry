@@ -732,9 +732,27 @@ static std::string case_precision_5[2] =
 
 static std::string case_precision_6[2] =
 {
-    // Not yet solved, either misses a turn, or we should handle an arrive-turn
     "POLYGON((0 0,0 4,2 4,2 3,4 3,4 0,0 0))",
     "POLYGON((-1 -1,-1 8,2 8,2 7,2 3,4.0000005 2.9999995,4 7,4 8,8 8,8 -1,-1 -1))"
+};
+
+static std::string case_precision_7[2] =
+{
+    // Needs larger margin for sectionalize (long double only)
+    "POLYGON((0 0,0 4,2 4,2 3,4 3,4 0,0 0))",
+    "POLYGON((2 7,4 7,4 3.00000002,2 3,2 7))"
+};
+
+static std::string case_precision_8[2] =
+{
+    "POLYGON((0 0,0 4,2 4,2 3,4 3,4 0,0 0))",
+    "POLYGON((-1 -1,-1 8,8 8,8 -1,-1 -1),(2 7,2 3,4.00000006 3.00000009,4 7,2 7))"
+};
+
+static std::string case_precision_9[2] =
+{
+    "POLYGON((0 0,0 4,2 4,2 3,4 3,4 0,0 0))",
+    "POLYGON((-1 -1,-1 8,8 8,8 -1,-1 -1),(2 7,2 3,3.99999 2.999995,4 7,2 7))"
 };
 
 

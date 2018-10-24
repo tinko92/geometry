@@ -27,6 +27,12 @@ static std::string case_a[2] =
     "MULTIPOLYGON(((2 7,4 7,4 3,2 3,2 7)))"
     };
 
+static std::string case_b[2] =
+    {
+    "MULTIPOLYGON(((0 0,0 4,2 4,2 3,4 3,4 0,0 0)))",
+    "MULTIPOLYGON(((-1 -1,-1 8,8 8,8 -1,-1 -1),(2 7,2 3,4 3,4 7,2 7)))"
+    };
+
 
 
 template <typename Geometry, bg::overlay_type OverlayType>
@@ -92,17 +98,21 @@ void update(Ring& ring, double x, double y, std::size_t index)
 }
 
 template <typename T, bool Clockwise>
-void test_all()
+void test_all(bool with_holes)
 {
     typedef bg::model::point<T, 2, bg::cs::cartesian> point_type;
     typedef bg::model::polygon<point_type, Clockwise> polygon;
     typedef bg::model::multi_polygon<polygon> multi_polygon;
 
+    const std::string& first = with_holes ? case_b[0] : case_a[0];
+    const std::string& second = with_holes ? case_b[1] : case_a[1];
+    const double expectation = with_holes ? 73 : 22;
+
     multi_polygon poly1;
-    bg::read_wkt(case_a[0], poly1);
+    bg::read_wkt(first, poly1);
 
     multi_polygon poly2;
-    bg::read_wkt(case_a[1], poly2);
+    bg::read_wkt(second, poly2);
 
     int error_count = 0;
     int n = 0;
@@ -120,11 +130,15 @@ void test_all()
                 {
                     multi_polygon poly_adapted = poly2;
 
-                    update(bg::exterior_ring(poly_adapted.front()), x, y, k);
+                    if (with_holes)
+                        update(bg::interior_rings(poly_adapted.front()).front(), x, y, k);
+                    else
+                        update(bg::exterior_ring(poly_adapted.front()), x, y, k);
+
 
                     std::ostringstream out;
                     out << "case_a_union_" << i << "_" << j << "_" << k;
-                    if (!test_overlay<multi_polygon, bg::overlay_union>(out.str(), poly1, poly_adapted, 22.0))
+                    if (!test_overlay<multi_polygon, bg::overlay_union>(out.str(), poly1, poly_adapted, expectation))
                     {
                         error_count++;
                     }
@@ -140,13 +154,18 @@ void test_all()
             }
         }
     }
-    std::cout << "#cases: " << n << " #errors: " << error_count << std::endl;
+    std::cout
+            << std::endl
+            << (with_holes ? "with interior rings" : "only exterior rings")
+            << " #cases: " << n << " #errors: " << error_count << std::endl;
     BOOST_CHECK_EQUAL(error_count, 0);
 }
 
 int test_main(int, char* [])
 {
+    typedef double coordinate_type;
     print_configuration();
-    test_all<double, true>();
+    test_all<coordinate_type, true>(false);
+    test_all<coordinate_type, true>(true);
     return 0;
  }
