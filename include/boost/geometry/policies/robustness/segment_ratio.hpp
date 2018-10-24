@@ -294,8 +294,8 @@ public :
     }
 
     // SHOULD GO LATER
-    template <typename T>
-    inline void assign(const T& num, const T& denom)
+    template <typename T1, typename T2>
+    inline void assign(const T1& num, const T2& denom)
     {
         m_ratio = num / Type(denom);
     }
