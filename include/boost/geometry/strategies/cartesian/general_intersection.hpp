@@ -940,7 +940,7 @@ struct cartesian_general_segments
                     // Not consistent: it is not marked as an end-point
                     // (so fraction != 0 && fraction != 1, so the IP
                     // is somewhere in between of the segment
-                    std::cout << "Inconsistent threshold " << std::endl;
+//                    std::cout << "Inconsistent threshold " << std::endl;
                     return false;
                 }
             }
