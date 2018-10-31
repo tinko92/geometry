@@ -178,7 +178,7 @@ void test_all()
 #endif
                                              );
     test_one<multi_linestring_type, polygon>("touching2_1",
-            touching2, join_round32, end_round32, 1, 1, 107.8991, 1.0);
+            touching2, join_round32, end_round32, 1, 1, 107.8991, 1.0, ut_settings::ignore_validity());
     test_one<multi_linestring_type, polygon>("mysql_23023665_1_09",
             mysql_23023665_1, join_round32, end_round32, 1, 0, 167.8062, 0.9);
     test_one<multi_linestring_type, polygon>("mysql_23023665_1_11",

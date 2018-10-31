@@ -286,7 +286,8 @@ void test_all()
     test_one<linestring, polygon>("mysql_report_2015_06_11",
             mysql_report_2015_06_11, join_round32, end_round32,
             27862.733459829971,
-            5.9518403867035365);
+            5.9518403867035365,
+            ut_settings::ignore_validity());
 
 #if defined(BOOST_GEOMETRY_BUFFER_INCLUDE_FAILING_TESTS)
     test_one<linestring, polygon>("mysql_report_2015_09_08a", mysql_report_2015_09_08a, join_round32, end_round32, 0.0, 1.0);
