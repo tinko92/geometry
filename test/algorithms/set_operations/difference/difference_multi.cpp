@@ -447,8 +447,8 @@ void test_areal()
     TEST_DIFFERENCE(case_recursive_boxes_87, 4, 2.0, 4, 2.5, 8);
     TEST_DIFFERENCE(case_recursive_boxes_88, 3, 4.75, 5, 6.75, 4);
 
-    TEST_DIFFERENCE(case_precision_m1, 1, 5.0e-7, 1, 57.0, 1);
-    TEST_DIFFERENCE(case_precision_m2, 2, 1.0, 1, 57.75, 2);
+    TEST_DIFFERENCE(case_precision_m1, 0, 0.0, 1, 57.0, 1);
+    TEST_DIFFERENCE(case_precision_m2, 1, 1.0, 1, 57.75, 2);
 
     {
         ut_settings sym_settings;
@@ -577,7 +577,9 @@ int test_main(int, char* [])
     print_configuration();
     test_all<bg::model::d2::point_xy<double> >();
 
+#if defined(BOOST_GEOMETRY_USE_RESCALING) // for now
     test_specific<bg::model::d2::point_xy<int>, false, false>();
+#endif
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
     test_all<bg::model::d2::point_xy<float> >();

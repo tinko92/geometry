@@ -636,7 +636,9 @@ int test_main(int, char* [])
     print_configuration();
     test_all<bg::model::d2::point_xy<double> >();
 
+#if defined(BOOST_GEOMETRY_USE_RESCALING) // for now
     test_specific<bg::model::d2::point_xy<int>, false, false>();
+#endif
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
     test_all<bg::model::d2::point_xy<float> >();

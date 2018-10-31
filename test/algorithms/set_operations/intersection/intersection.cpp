@@ -303,7 +303,7 @@ void test_areal()
                 1, 4, 703687777321.0);
     test_one<Polygon, Polygon, Polygon>("ticket_10747_e",
                 ticket_10747_e[0], ticket_10747_e[1],
-                1, 4, 7.0368748575710959e-15);
+                0, 4, 0.0);
 
     test_one<Polygon, Polygon, Polygon>("ticket_11576",
                 ticket_11576[0], ticket_11576[1],
@@ -893,7 +893,6 @@ int test_main(int, char* [])
     test_all<bg::model::d2::point_xy<ttmath_big> >();
 #endif
 
-#endif
 
     // Commented, because exception is now disabled:
     // test_exception<bg::model::d2::point_xy<double> >();
@@ -920,6 +919,7 @@ int test_main(int, char* [])
 
 #if defined(BOOST_HAS_LONG_LONG)
     test_ticket_10868<boost::long_long_type>("MULTIPOLYGON(((33520458 6878575,33480192 14931538,31446819 18947953,30772384 19615678,30101303 19612322,30114725 16928001,33520458 6878575)))");
+#endif
 #endif
 #endif
 
