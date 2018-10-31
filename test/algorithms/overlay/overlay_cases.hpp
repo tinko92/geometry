@@ -755,6 +755,19 @@ static std::string case_precision_9[2] =
     "POLYGON((-1 -1,-1 8,8 8,8 -1,-1 -1),(2 7,2 3,3.99999 2.999995,4 7,2 7))"
 };
 
+static std::string case_precision_10[2] =
+{
+    // Needs 1.0e-5 for threshold in double
+    "POLYGON((0 0,0 4,2 4,2 3,4 3,4 0,0 0))",
+    "POLYGON((-1 -1,-1 8,8 8,8 -1,-1 -1),(2 7,2 3,4.000006 2.999991,4 7,2 7))"
+};
+
+static std::string case_precision_11[2] =
+{
+    // Needs ~0.5 for threshold in side_by_generic_form
+    "POLYGON((0 0,0 4,2 4,2 3,4 3,4 0,0 0))",
+    "POLYGON((-1 -1,-1 8,8 8,8 -1,-1 -1),(2 7,2 3,4.00000000000000089 2.99999999999999201,4 7,2 7))"
+};
 
 // ticket_17 is keyholed, so has a hole formed by an deliberate intersection
 // This will fail the intersection/traversal process

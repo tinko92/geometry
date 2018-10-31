@@ -265,6 +265,9 @@ void test_areal()
     TEST_UNION(case_precision_6, 1, 0, -1, 71.0);
     TEST_UNION(case_precision_7, 1, 0, -1, 22.0);
     TEST_UNION(case_precision_8, 1, 1, -1, 73.0);
+    TEST_UNION(case_precision_9, 1, 1, -1, 73.0);
+    TEST_UNION(case_precision_10, 1, 1, -1, 73.0);
+    TEST_UNION(case_precision_11, 1, 1, -1, 73.0);
     TEST_UNION_REV(case_precision_1, 1, 0, -1, 22.0);
     TEST_UNION_REV(case_precision_2, 1, 0, -1, 22.0);
     TEST_UNION_REV(case_precision_3, 1, 0, -1, 22.0);
@@ -273,6 +276,9 @@ void test_areal()
     TEST_UNION_REV(case_precision_6, 1, 0, -1, 71.0);
     TEST_UNION_REV(case_precision_7, 1, 0, -1, 22.0);
     TEST_UNION_REV(case_precision_8, 1, 1, -1, 73.0);
+    TEST_UNION_REV(case_precision_9, 1, 1, -1, 73.0);
+    TEST_UNION_REV(case_precision_10, 1, 1, -1, 73.0);
+    TEST_UNION_REV(case_precision_11, 1, 1, -1, 73.0);
 
     /*
     test_one<Polygon, Polygon, Polygon>(102,
