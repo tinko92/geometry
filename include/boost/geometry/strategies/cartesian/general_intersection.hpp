@@ -69,19 +69,31 @@ struct general_distance_threshold
 template <>
 struct general_distance_threshold<long double>
 {
-   static long double get() { return 1.0e-10; }
+    static long double get() { return 1.0e-10; }
+    static long double get2() { return 0.5e-8; }
+    static long double get3() { return 1.0e-3; }
+    static long double get4() { return 1.0e-1; }
+    static long double get5() { return 1.0e-12; }
 };
 
 template <>
 struct general_distance_threshold<double>
 {
-   static double get() { return 1.0e-10; }
+    static double get() { return 1.0e-6; }
+    static double get2() { return 0.5e-06; }
+    static double get3() { return 1.0e-3; }
+    static double get4() { return 1.0e-1; }
+    static double get5() { return 1.0e-12; }
 };
 
 template <>
 struct general_distance_threshold<float>
 {
-   static float get() { return 1.0e-6; }
+    static float get() { return 1.0e-6; }
+    static float get2() { return 0.5e-06; }
+    static float get3() { return 1.0e-3; }
+    static float get4() { return 1.0e-1; }
+    static float get5() { return 1.0e-12; }
 };
 
 }}
@@ -100,8 +112,7 @@ struct side_by_generic_form
         arithmetic::general_form<ctype> form = arithmetic::construct_line<ctype>(p1, p2);
         const ctype dist = arithmetic::signed_comparable_distance(form, get<0>(p), get<1>(p));
 
-        // TODO: move const 0.5 to threshold structure
-        const ctype threshold = 0.5 * strategy::intersection::general_distance_threshold<ctype>::get();
+        const ctype threshold = strategy::intersection::general_distance_threshold<ctype>::get2();
 
         return std::fabs(dist) < threshold ? 0
             : dist > 0 ? 1
@@ -429,7 +440,7 @@ struct cartesian_general_segments
             return false;
         }
 
-        double const threshold = 1.0e-3; // TODO
+        double const threshold = general_distance_threshold<double>::get3();
         if (fa_i == 0 && std::fabs(fa) < threshold)       { return true; }
         if (fa_i == 1 && std::fabs(fa - 1.0) < threshold) { return true; }
         if (fb_i == 0 && std::fabs(fb) < threshold)       { return true; }
@@ -741,7 +752,7 @@ struct cartesian_general_segments
         // are considered as disjoint. But if one of them is zero, then we
         // consider them as collinear.
 
-        if (std::fabs(side_a * side_b) > 0.1) // TODO THRESHOLD
+        if (std::fabs(side_a * side_b) > general_distance_threshold<double>::get4())
         {
             // Not even close to collinear
             // Caused by imprecision of get_intersection_point
@@ -766,7 +777,7 @@ struct cartesian_general_segments
 
         double const dm_separation = std::max(dm_max_a, dm_max_b);
 
-        consider_as_disjoint = dm_separation > 1.0e-12; // TODO - use distance here 'magic' distance
+        consider_as_disjoint = dm_separation > general_distance_threshold<double>::get5();
         consider_as_collinear = ! consider_as_disjoint;
     }
 
@@ -1009,8 +1020,8 @@ struct cartesian_general_segments
                 return false;
             }
 
-            double const eps = 0.01; // TODO
-            double const eps_f = 0.1; // TODO
+            double const eps = 0.01; // THRESHOLD
+            double const eps_f = 0.1; // THRESHOLD
 
             // There are 8 possibilities
             // TODO, clean this up
