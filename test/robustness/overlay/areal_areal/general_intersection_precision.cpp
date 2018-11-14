@@ -33,6 +33,12 @@ static std::string case_b[2] =
     "MULTIPOLYGON(((-1 -1,-1 8,8 8,8 -1,-1 -1),(2 7,2 3,4 3,4 7,2 7)))"
     };
 
+static std::string case_c[2] =
+    {
+    "MULTIPOLYGON(((0 0,0 4,2 4,2 3,4 3,4 0,0 0)))",
+    "MULTIPOLYGON(((1 1,0 1,0 3,1 3,1 1)))"
+    };
+
 
 
 template <typename Geometry, bg::overlay_type OverlayType>
@@ -80,7 +86,7 @@ bool test_overlay(std::string const& caseid,
     {
         std::cout << std::endl
                   << "ERROR: " << caseid << " area=" << std::setprecision(6) << detected_area
-                  << " " << std::setprecision(12) << bg::wkt(g2) << std::endl;
+                  << " " << std::setprecision(18) << bg::wkt(g2) << std::endl;
         return false;
     }
     return true;
@@ -89,6 +95,10 @@ bool test_overlay(std::string const& caseid,
 template <typename Ring>
 void update(Ring& ring, double x, double y, std::size_t index)
 {
+    if (index >= ring.size())
+    {
+        return;
+    }
     bg::set<0>(ring[index], bg::get<0>(ring[index]) + x);
     bg::set<1>(ring[index], bg::get<1>(ring[index]) + y);
     if (index == 0)
@@ -97,16 +107,16 @@ void update(Ring& ring, double x, double y, std::size_t index)
     }
 }
 
-template <typename T, bool Clockwise>
-void test_all(bool with_holes)
+template <typename T, bool Clockwise, bg::overlay_type OverlayType>
+int test_all(int case_index, int min_vertex_index, int max_vertex_index,
+             double expectation)
 {
     typedef bg::model::point<T, 2, bg::cs::cartesian> point_type;
     typedef bg::model::polygon<point_type, Clockwise> polygon;
     typedef bg::model::multi_polygon<polygon> multi_polygon;
 
-    const std::string& first = with_holes ? case_b[0] : case_a[0];
-    const std::string& second = with_holes ? case_b[1] : case_a[1];
-    const double expectation = with_holes ? 73 : 22;
+    const std::string& first = case_a[0]; // [0] is the same everywhere
+    const std::string& second = case_index == 0 ? case_a[1] : case_index == 1 ? case_b[1] : case_c[1];
 
     multi_polygon poly1;
     bg::read_wkt(first, poly1);
@@ -126,19 +136,25 @@ void test_all(bool with_holes)
             int j = 0;
             for (double y = -bound; y <= bound; y += step, ++j, ++n)
             {
-                for (int k = 0; k < 4; k++, ++n)
+                for (int k = min_vertex_index; k <= max_vertex_index; k++, ++n)
                 {
                     multi_polygon poly_adapted = poly2;
 
-                    if (with_holes)
-                        update(bg::interior_rings(poly_adapted.front()).front(), x, y, k);
-                    else
-                        update(bg::exterior_ring(poly_adapted.front()), x, y, k);
-
+                    switch (case_index)
+                    {
+                        case 0 : update(bg::exterior_ring(poly_adapted.front()), x, y, k); break;
+                        case 1 : update(bg::interior_rings(poly_adapted.front()).front(), x, y, k); break;
+                        case 2 : update(bg::exterior_ring(poly_adapted.front()), x, y, k); break;
+                        case 3 : update(bg::exterior_ring(poly_adapted.front()), x, y, k); break;
+                        case 4 :
+                            update(bg::exterior_ring(poly_adapted.front()), x, y, k);
+                            update(bg::exterior_ring(poly_adapted.front()), x, y, k + 1);
+                            break;
+                    }
 
                     std::ostringstream out;
                     out << "case_a_union_" << i << "_" << j << "_" << k;
-                    if (!test_overlay<multi_polygon, bg::overlay_union>(out.str(), poly1, poly_adapted, expectation))
+                    if (!test_overlay<multi_polygon, OverlayType>(out.str(), poly1, poly_adapted, expectation))
                     {
                         error_count++;
                     }
@@ -156,16 +172,20 @@ void test_all(bool with_holes)
     }
     std::cout
             << std::endl
-            << (with_holes ? "with interior rings" : "only exterior rings")
+            << (case_index == 1 ? "with interior rings" : "only exterior rings")
             << " #cases: " << n << " #errors: " << error_count << std::endl;
     BOOST_CHECK_EQUAL(error_count, 0);
+    return error_count;
 }
 
 int test_main(int, char* [])
 {
     typedef double coordinate_type;
     print_configuration();
-    test_all<coordinate_type, true>(false);
-    test_all<coordinate_type, true>(true);
+//    test_all<coordinate_type, true, bg::overlay_union>(0, 0, 3, 73.0);
+//    test_all<coordinate_type, true, bg::overlay_union>(1, 0, 3, 22.0);
+    test_all<coordinate_type, true, bg::overlay_intersection>(2, 1, 1, 2.0);
+    test_all<coordinate_type, true, bg::overlay_intersection>(2, 1, 1, 2.0);
+    test_all<coordinate_type, true, bg::overlay_intersection>(4, 1, 1, 2.0);
     return 0;
  }
