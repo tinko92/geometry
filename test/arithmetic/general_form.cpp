@@ -135,6 +135,26 @@ void test_get_intersection()
     verify_point_on_line(q, bg::get<0>(ip), bg::get<1>(ip));
 }
 
+template <typename T>
+void test_parallel()
+{
+    // Two lines, parallel to each other
+    bg::arithmetic::general_form<T> p = bg::arithmetic::construct_line<T>(0, 1, 4, 5);
+    bg::arithmetic::general_form<T> q = bg::arithmetic::construct_line<T>(0, 2, 4, 6);
+
+    typedef bg::model::point<T, 2, bg::cs::cartesian> point_type;
+    point_type ip;
+    bool doubt = false;
+    BOOST_CHECK(!bg::arithmetic::get_intersection(ip, doubt, p, q));
+    BOOST_CHECK(!doubt);
+
+    bg::arithmetic::general_form<T> np = bg::arithmetic::normalize_line<T>(p);
+    bg::arithmetic::general_form<T> nq = bg::arithmetic::normalize_line<T>(q);
+
+    BOOST_CHECK(!bg::arithmetic::lines_collinear(np, nq));
+
+}
+
 void increase_counts(std::size_t& count,
                      std::size_t& count_crossing,
                      std::size_t& count_doubt,
@@ -320,6 +340,7 @@ void test_all(T threshold, T const& epsilon)
 {
     test_construct_line<T>();
     test_normalize_line<T>();
+    test_parallel<T>();
     test_distance_measure<T>();
     test_get_intersection<T>();
     test_component<T>();
