@@ -32,21 +32,21 @@ template <>
 struct general_threshold<long double>
 {
    static long double get() { return 1.0e-5; }
-   static long double get2() { return 1.0e-18; }
+   static long double get2() { return 1.0e-5; }
 };
 
 template <>
 struct general_threshold<double>
 {
    static double get() { return 1.0e-5; }
-   static double get2() { return 1.0e-12; }
+   static double get2() { return 1.0e-5; }
 };
 
 template <>
 struct general_threshold<float>
 {
    static float get() { return 1.0e-3; }
-   static float get2() { return 1.0e-2; }
+   static float get2() { return 1.0e-3; }
 };
 
 

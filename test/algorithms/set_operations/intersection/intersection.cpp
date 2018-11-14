@@ -349,7 +349,7 @@ void test_areal()
 
     TEST_INTERSECTION(case_105, 1, 34, 76.0);
 
-    TEST_INTERSECTION(case_precision_1, 1, 0, 1.0000025e-05);
+    TEST_INTERSECTION(case_precision_1, 0, 0, 0.0);
     TEST_INTERSECTION(case_precision_2, 0, 0, 0.0);
     TEST_INTERSECTION(case_precision_3, 0, 0, 0.0);
     TEST_INTERSECTION(case_precision_4, 0, 0, 0.0);
@@ -358,7 +358,11 @@ void test_areal()
     // - but within considers at as 'within'
     TEST_INTERSECTION(case_precision_5, 0, 0, 0.0);
 #endif
-    TEST_INTERSECTION_REV(case_precision_1, 1, 0, 1.0000025e-05);
+
+    TEST_INTERSECTION(case_precision_12, 1, -1, 2.0);
+    TEST_INTERSECTION(case_precision_13, 1, -1, 2.0);
+
+    TEST_INTERSECTION_REV(case_precision_1, 0, 0, 0.0);
     TEST_INTERSECTION_REV(case_precision_2, 0, 0, 0.0);
     TEST_INTERSECTION_REV(case_precision_3, 0, 0, 0.0);
     TEST_INTERSECTION_REV(case_precision_4, 0, 0, 0.0);
