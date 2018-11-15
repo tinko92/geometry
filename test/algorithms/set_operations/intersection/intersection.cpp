@@ -354,18 +354,28 @@ void test_areal()
     TEST_INTERSECTION(case_precision_3, 0, 0, 0.0);
     TEST_INTERSECTION(case_precision_4, 0, 0, 0.0);
     TEST_INTERSECTION(case_precision_5, 0, 0, 0.0);
-
-    TEST_INTERSECTION(case_precision_12, 1, -1, 2.0);
-    TEST_INTERSECTION(case_precision_13, 1, -1, 2.0);
+    TEST_INTERSECTION(case_precision_6, 1, -1, 14.0);
+    TEST_INTERSECTION(case_precision_7, 0, -1, 0.0);
+    TEST_INTERSECTION(case_precision_8, 1, -1, 14.0);
+    TEST_INTERSECTION(case_precision_9, 1, -1, 14.0);
+    TEST_INTERSECTION(case_precision_10, 1, -1, 14.0);
+    TEST_INTERSECTION(case_precision_11, 1, -1, 14.0);
+    TEST_INTERSECTION(case_precision_12, 1, -1, 1.999999999997);
+    TEST_INTERSECTION(case_precision_13, 1, -1, 1.999989999999);
 
     TEST_INTERSECTION_REV(case_precision_1, 0, 0, 0.0);
     TEST_INTERSECTION_REV(case_precision_2, 0, 0, 0.0);
     TEST_INTERSECTION_REV(case_precision_3, 0, 0, 0.0);
     TEST_INTERSECTION_REV(case_precision_4, 0, 0, 0.0);
     TEST_INTERSECTION_REV(case_precision_5, 0, 0, 0.0);
-
-    TEST_INTERSECTION_REV(case_precision_12, 1, -1, 2.0);
-    TEST_INTERSECTION_REV(case_precision_13, 1, -1, 2.0);
+    TEST_INTERSECTION_REV(case_precision_6, 1, -1, 14.0);
+    TEST_INTERSECTION_REV(case_precision_7, 0, -1, 0.0);
+    TEST_INTERSECTION_REV(case_precision_8, 1, -1, 14.0);
+    TEST_INTERSECTION_REV(case_precision_9, 1, -1, 14.0);
+    TEST_INTERSECTION_REV(case_precision_10, 1, -1, 14.0);
+    TEST_INTERSECTION_REV(case_precision_11, 1, -1, 14.0);
+    TEST_INTERSECTION_REV(case_precision_12, 1, -1, 1.999999999997);
+    TEST_INTERSECTION_REV(case_precision_13, 1, -1, 1.999989999999);
 
 #ifndef BOOST_GEOMETRY_NO_SELF_TURNS
     TEST_INTERSECTION(case_106, 2, -1, 3.5);
