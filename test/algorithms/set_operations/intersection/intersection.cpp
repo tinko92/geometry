@@ -353,11 +353,7 @@ void test_areal()
     TEST_INTERSECTION(case_precision_2, 0, 0, 0.0);
     TEST_INTERSECTION(case_precision_3, 0, 0, 0.0);
     TEST_INTERSECTION(case_precision_4, 0, 0, 0.0);
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
-    // Intersection is currently missed in generic intersection
-    // - but within considers at as 'within'
     TEST_INTERSECTION(case_precision_5, 0, 0, 0.0);
-#endif
 
     TEST_INTERSECTION(case_precision_12, 1, -1, 2.0);
     TEST_INTERSECTION(case_precision_13, 1, -1, 2.0);
