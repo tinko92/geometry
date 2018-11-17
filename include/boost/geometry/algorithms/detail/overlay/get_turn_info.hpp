@@ -131,6 +131,17 @@ struct base_turn_handler
             ? 1 : 0;
     }
 
+    template <typename Point1, typename Point2>
+    static inline typename geometry::coordinate_type<Point1>::type
+            distance_measure(Point1 const& a, Point2 const& b)
+    {
+        // TODO: use comparable distance for point-point instead - but that
+        // causes currently cycling include problems
+        typedef typename geometry::coordinate_type<Point1>::type ctype;
+        ctype const dx = get<0>(a) - get<0>(b);
+        ctype const dy = get<1>(a) - get<1>(b);
+        return dx * dx + dy * dy;
+    }
 };
 
 
@@ -261,6 +272,12 @@ struct touch_interior : public base_turn_handler
                 // Union: just continue
                 // Intersection: just continue
                 both(ti, operation_continue);
+
+                // Calculate remaining distance.
+                // Q arrives at p, at point qj, so use qk for q
+                // and use pj for p
+                ti.operations[index_p].remaining_distance = distance_measure(ti.point, pj);
+                ti.operations[index_q].remaining_distance = distance_measure(ti.point, qk);
             }
             else
             {
@@ -790,18 +807,6 @@ struct collinear : public base_turn_handler
                 = side_q == 0
                 ? distance_measure(ti.point, qk)
                 : distance_measure(ti.point, qj);
-    }
-
-    template <typename Point1, typename Point2>
-    static inline typename geometry::coordinate_type<Point1>::type
-            distance_measure(Point1 const& a, Point2 const& b)
-    {
-        // TODO: use comparable distance for point-point instead - but that
-        // causes currently cycling include problems
-        typedef typename geometry::coordinate_type<Point1>::type ctype;
-        ctype const dx = get<0>(a) - get<0>(b);
-        ctype const dy = get<1>(a) - get<1>(b);
-        return dx * dx + dy * dy;
     }
 };
 
