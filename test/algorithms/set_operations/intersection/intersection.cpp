@@ -50,6 +50,12 @@ BOOST_GEOMETRY_REGISTER_LINESTRING_TEMPLATED(std::vector)
     (test_one<Polygon, Polygon, Polygon>) \
     ( #caseid "_rev", caseid[1], caseid[0], clips, points, area)
 
+#define TEST_INTERSECTION_WITH(caseid, index1, index2, \
+     clips, points, area, settings) \
+    (test_one<Polygon, Polygon, Polygon>) \
+    ( #caseid #index1 "_" #index2, caseid[index1], caseid[index2], \
+     clips, points, area, settings)
+
 #if defined(BOOST_GEOMETRY_NO_SELF_TURNS)
     #define TEST_INTERSECTION_IGNORE(caseid, clips, points, area) \
         { ut_settings ignore_validity; ignore_validity.test_validity = false; \
@@ -356,8 +362,6 @@ void test_areal()
     TEST_INTERSECTION(case_precision_9, 1, -1, 14.0);
     TEST_INTERSECTION(case_precision_10, 1, -1, 14.0);
     TEST_INTERSECTION(case_precision_11, 1, -1, 14.0);
-    TEST_INTERSECTION(case_precision_12, 1, -1, 1.999999999997);
-    TEST_INTERSECTION(case_precision_13, 1, -1, 1.999989999999);
 
     TEST_INTERSECTION_REV(case_precision_1, 0, 0, 0.0);
     TEST_INTERSECTION_REV(case_precision_2, 0, 0, 0.0);
@@ -370,8 +374,13 @@ void test_areal()
     TEST_INTERSECTION_REV(case_precision_9, 1, -1, 14.0);
     TEST_INTERSECTION_REV(case_precision_10, 1, -1, 14.0);
     TEST_INTERSECTION_REV(case_precision_11, 1, -1, 14.0);
-    TEST_INTERSECTION_REV(case_precision_12, 1, -1, 1.999999999997);
-    TEST_INTERSECTION_REV(case_precision_13, 1, -1, 1.999989999999);
+    {
+        ut_settings settings(0.01);
+        TEST_INTERSECTION_WITH(case_precision_12, 0, 1, 1, -1, 2.0, settings);
+        TEST_INTERSECTION_WITH(case_precision_13, 0, 1, 1, -1, 2.0, settings);
+        TEST_INTERSECTION_WITH(case_precision_12, 1, 0, 1, -1, 2.0, settings);
+        TEST_INTERSECTION_WITH(case_precision_13, 1, 0, 1, -1, 2.0, settings);
+    }
 
 #ifndef BOOST_GEOMETRY_NO_SELF_TURNS
     TEST_INTERSECTION(case_106, 2, -1, 3.5);
