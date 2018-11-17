@@ -373,12 +373,12 @@ void test_areal()
                 ticket_5103[0], ticket_5103[1],
                 1, 0, 25, 2515271327070.5);
 
-    test_one<Polygon, Polygon, Polygon>("ticket_8310a", ticket_8310a[0], ticket_8310a[1],
-            1, 0, 5, 10.5000019595);
-    test_one<Polygon, Polygon, Polygon>("ticket_8310b", ticket_8310b[0], ticket_8310b[1],
-            1, 0, 5, 10.5000019595);
-    test_one<Polygon, Polygon, Polygon>("ticket_8310c", ticket_8310c[0], ticket_8310c[1],
-            1, 0, 5, 10.5000019595);
+    TEST_UNION(ticket_8310a, 1, 0, 5, 10.5000019595);
+    TEST_UNION(ticket_8310b, 1, 0, 5, 10.5000019595);
+    TEST_UNION(ticket_8310c, 1, 0, 5, 10.5000019595);
+    TEST_UNION_REV(ticket_8310a, 1, 0, 5, 10.5000019595);
+    TEST_UNION_REV(ticket_8310b, 1, 0, 5, 10.5000019595);
+    TEST_UNION_REV(ticket_8310c, 1, 0, 5, 10.5000019595);
 
     test_one<Polygon, Polygon, Polygon>("ticket_9081_15",
             ticket_9081_15[0], ticket_9081_15[1],
