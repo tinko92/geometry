@@ -104,6 +104,26 @@ namespace strategy { namespace side
 template <typename CalculationType = void>
 struct side_by_generic_form
 {
+    typedef strategy::envelope::cartesian<CalculationType> envelope_strategy_type;
+
+    static inline envelope_strategy_type get_envelope_strategy()
+    {
+        return envelope_strategy_type();
+    }
+
+    typedef strategy::disjoint::segment_box disjoint_strategy_type;
+
+    static inline disjoint_strategy_type get_disjoint_strategy()
+    {
+        return disjoint_strategy_type();
+    }
+
+    typedef strategy::within::cartesian_point_point equals_point_point_strategy_type;
+    static inline equals_point_point_strategy_type get_equals_point_point_strategy()
+    {
+        return equals_point_point_strategy_type();
+    }
+
 
     template <typename P1, typename P2, typename P>
     static inline int apply(P1 const& p1, P2 const& p2, P const& p)
@@ -210,13 +230,43 @@ struct cartesian_general_segments
         return strategy_type();
     }
 
-    typedef envelope::cartesian_segment<CalculationType>
-        envelope_strategy_type;
+    typedef envelope::cartesian<CalculationType> envelope_strategy_type;
 
     static inline envelope_strategy_type get_envelope_strategy()
     {
         return envelope_strategy_type();
     }
+
+    typedef expand::cartesian_segment expand_strategy_type;
+
+    static inline expand_strategy_type get_expand_strategy()
+    {
+        return expand_strategy_type();
+    }
+
+    typedef within::cartesian_point_point point_in_point_strategy_type;
+
+    static inline point_in_point_strategy_type get_point_in_point_strategy()
+    {
+        return point_in_point_strategy_type();
+    }
+
+    typedef within::cartesian_point_point equals_point_point_strategy_type;
+
+    static inline equals_point_point_strategy_type get_equals_point_point_strategy()
+    {
+        return equals_point_point_strategy_type();
+    }
+
+    typedef disjoint::cartesian_box_box disjoint_box_box_strategy_type;
+
+    static inline disjoint_box_box_strategy_type get_disjoint_box_box_strategy()
+    {
+        return disjoint_box_box_strategy_type();
+    }
+
+    typedef covered_by::cartesian_point_box disjoint_point_box_strategy_type;
+    typedef expand::cartesian_box expand_box_strategy_type;
 
     //--------------------------------------------------------------------------
 
