@@ -1451,12 +1451,12 @@ struct cartesian_general_segments
 #if 1
         // todo still using robust points
         using geometry::detail::equals::equals_point_point;
-        bool const a_is_point = equals_point_point(robust_a1, robust_a2);
-        bool const b_is_point = equals_point_point(robust_b1, robust_b2);
+        bool const a_is_point = equals_point_point(robust_a1, robust_a2, point_in_point_strategy_type());
+        bool const b_is_point = equals_point_point(robust_b1, robust_b2, point_in_point_strategy_type());
 
         if (a_is_point && b_is_point)
         {
-            return equals_point_point(robust_a1, robust_b2)
+            return equals_point_point(robust_a1, robust_b2, point_in_point_strategy_type())
                 ? Policy::degenerate(a, true)
                 : Policy::disjoint()
                 ;
