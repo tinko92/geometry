@@ -277,8 +277,8 @@ struct touch_interior : public base_turn_handler
                 // Calculate remaining distance.
                 // Q arrives at p, at point qj, so use qk for q
                 // and use pj for p
-                ti.operations[index_p].remaining_distance = distance_measure(ti.point, pj);
-                ti.operations[index_q].remaining_distance = distance_measure(ti.point, qk);
+                ti.operations[index_p].remaining_distance = distance_measure(ti.point, range_p.at(1));
+                ti.operations[index_q].remaining_distance = distance_measure(ti.point, range_q.at(2));
             }
             else
             {
@@ -1134,14 +1134,14 @@ struct get_turn_info
             break;
             case 'a' :
             {
-                // "arrives at", necessary to handle for
-                bool const applied = arrive<TurnInfo>::apply(pi, pj, pk, qi, qj, qk,
-                    tp, inters.i_info(), inters.d_info(), inters.sides());
-                if (applied)
-                {
-                    AssignPolicy::apply(tp, pi, qi, inters);
-                    *out++ = tp;
-                }
+//                // "arrives at", necessary to handle for
+//                bool const applied = arrive<TurnInfo>::apply(pi, pj, pk, qi, qj, qk,
+//                    tp, inters.i_info(), inters.d_info(), inters.sides());
+//                if (applied)
+//                {
+//                    AssignPolicy::apply(tp, pi, qi, inters);
+//                    *out++ = tp;
+//                }
             }
             break;
             case 'e':
