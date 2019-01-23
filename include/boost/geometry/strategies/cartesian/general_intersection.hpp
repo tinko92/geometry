@@ -1578,11 +1578,15 @@ struct cartesian_general_segments
         // then lines are about collinear, and that is verified below.
 
         // TODO: only calculate if not yet considered as collinear
-        arithmetic::general_form<coordinate_type> gf_norm_a = arithmetic::normalize_line<coordinate_type>(gf_a);
-        arithmetic::general_form<coordinate_type> gf_norm_b = arithmetic::normalize_line<coordinate_type>(gf_b);
 
-        if (consider_as_collinear
-            || arithmetic::lines_collinear(gf_norm_a, gf_norm_b))
+        if (!consider_as_collinear)
+        {
+            arithmetic::general_form<coordinate_type> gf_norm_a = arithmetic::normalize_line<coordinate_type>(gf_a);
+            arithmetic::general_form<coordinate_type> gf_norm_b = arithmetic::normalize_line<coordinate_type>(gf_b);
+            consider_as_collinear = arithmetic::lines_collinear(gf_norm_a, gf_norm_b);
+        }
+
+        if (consider_as_collinear)
         {
             // Lines are collinear. There are 0, 1 or 2 intersections
             return arithmetic::more_horizontal(gf_a)
