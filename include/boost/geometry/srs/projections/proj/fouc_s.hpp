@@ -40,13 +40,14 @@
 #ifndef BOOST_GEOMETRY_PROJECTIONS_FOUC_S_HPP
 #define BOOST_GEOMETRY_PROJECTIONS_FOUC_S_HPP
 
-#include <boost/geometry/util/math.hpp>
-
+#include <boost/geometry/srs/projections/impl/aasincos.hpp>
 #include <boost/geometry/srs/projections/impl/base_static.hpp>
 #include <boost/geometry/srs/projections/impl/base_dynamic.hpp>
-#include <boost/geometry/srs/projections/impl/projects.hpp>
 #include <boost/geometry/srs/projections/impl/factory_entry.hpp>
-#include <boost/geometry/srs/projections/impl/aasincos.hpp>
+#include <boost/geometry/srs/projections/impl/pj_param.hpp>
+#include <boost/geometry/srs/projections/impl/projects.hpp>
+
+#include <boost/geometry/util/math.hpp>
 
 namespace boost { namespace geometry
 {
@@ -125,7 +126,7 @@ namespace projections
             inline void setup_fouc_s(Params const& params, Parameters& par, par_fouc_s<T>& proj_parm)
             {
                 proj_parm.n = pj_get_param_f<T, srs::spar::n>(params, "n", srs::dpar::n);
-                if (proj_parm.n < 0. || proj_parm.n > 1.)
+                if ((proj_parm.n < 0.) || (proj_parm.n > 1.))
                     BOOST_THROW_EXCEPTION( projection_exception(error_n_out_of_range) );
 
                 proj_parm.n1 = 1. - proj_parm.n;

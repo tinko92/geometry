@@ -49,14 +49,15 @@
 #ifndef BOOST_GEOMETRY_PROJECTIONS_HEALPIX_HPP
 #define BOOST_GEOMETRY_PROJECTIONS_HEALPIX_HPP
 
-#include <boost/geometry/util/math.hpp>
-
 #include <boost/geometry/srs/projections/impl/base_static.hpp>
 #include <boost/geometry/srs/projections/impl/base_dynamic.hpp>
-#include <boost/geometry/srs/projections/impl/projects.hpp>
 #include <boost/geometry/srs/projections/impl/factory_entry.hpp>
 #include <boost/geometry/srs/projections/impl/pj_auth.hpp>
+#include <boost/geometry/srs/projections/impl/pj_param.hpp>
 #include <boost/geometry/srs/projections/impl/pj_qsfn.hpp>
+#include <boost/geometry/srs/projections/impl/projects.hpp>
+
+#include <boost/geometry/util/math.hpp>
 
 namespace boost { namespace geometry
 {
@@ -725,10 +726,10 @@ namespace projections
                 proj_parm.north_square = pj_get_param_i<srs::spar::north_square>(params, "north_square", srs::dpar::north_square);
                 proj_parm.south_square = pj_get_param_i<srs::spar::south_square>(params, "south_square", srs::dpar::south_square);
                 /* Check for valid north_square and south_square inputs. */
-                if (proj_parm.north_square < 0 || proj_parm.north_square > 3) {
+                if ((proj_parm.north_square < 0) || (proj_parm.north_square > 3)) {
                     BOOST_THROW_EXCEPTION( projection_exception(error_axis) );
                 }
-                if (proj_parm.south_square < 0 || proj_parm.south_square > 3) {
+                if ((proj_parm.south_square < 0) || (proj_parm.south_square > 3)) {
                     BOOST_THROW_EXCEPTION( projection_exception(error_axis) );
                 }
                 if (par.es != 0.0) {
