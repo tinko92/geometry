@@ -19,7 +19,7 @@
 namespace boost { namespace geometry { namespace random { namespace dispatch
 {
 
-    template<typename Point, typename DomainGeometry, typename DomainSubset, typename DomainTag = typename tag_cast
+    template<typename DomainGeometry, typename Point, typename DomainSubset = interior, typename DomainTag = typename tag_cast
             <
                 typename tag<DomainGeometry>::type,
                 segment_tag,
