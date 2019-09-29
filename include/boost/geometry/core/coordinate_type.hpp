@@ -40,10 +40,15 @@ namespace traits
 template <typename Point, typename Enable = void>
 struct coordinate_type
 {
+
+#if __cplusplus <= 201703L
     BOOST_MPL_ASSERT_MSG
         (
             false, NOT_IMPLEMENTED_FOR_THIS_POINT_TYPE, (types<Point>)
         );
+#else
+	typedef void type;
+#endif
 };
 
 } // namespace traits

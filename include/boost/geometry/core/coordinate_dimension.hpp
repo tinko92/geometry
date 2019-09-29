@@ -40,10 +40,14 @@ namespace traits
 template <typename Point, typename Enable = void>
 struct dimension
 {
-   BOOST_MPL_ASSERT_MSG
-        (
-            false, NOT_IMPLEMENTED_FOR_THIS_POINT_TYPE, (types<Point>)
-        );
+#if __cplusplus <= 201703L
+	BOOST_MPL_ASSERT_MSG
+	(
+		false, NOT_IMPLEMENTED_FOR_THIS_POINT_TYPE, (types<Point>)
+	);
+#else
+   const static int value = 0;
+#endif
 };
 
 } // namespace traits
@@ -60,11 +64,13 @@ template <typename P>
 struct dimension<point_tag, P>
     : traits::dimension<typename geometry::util::bare_type<P>::type>
 {
+#if __cplusplus <= 201703L
     BOOST_MPL_ASSERT_MSG(
         (traits::dimension<typename geometry::util::bare_type<P>::type>::value > 0),
         INVALID_DIMENSION_VALUE,
         (traits::dimension<typename geometry::util::bare_type<P>::type>)
     );
+#endif
 };
 
 } // namespace core_dispatch

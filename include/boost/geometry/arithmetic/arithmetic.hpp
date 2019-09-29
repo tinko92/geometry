@@ -161,10 +161,14 @@ inline void add_value(Point& p, typename detail::param<Point>::type value)
  */
 template <typename Point1, typename Point2>
 inline void add_point(Point1& p1, Point2 const& p2)
+#if __cplusplus > 201703L
+	requires concepts::is_point<Point1> && concepts::is_const_point<Point2>
+#endif
 {
+#if __cplusplus <= 201703L
     BOOST_CONCEPT_ASSERT( (concepts::Point<Point1>) );
     BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<Point2>) );
-
+#endif
     for_each_coordinate(p1, detail::point_operation<Point2, std::plus>(p2));
 }
 

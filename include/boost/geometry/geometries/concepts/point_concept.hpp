@@ -28,6 +28,12 @@
 #include <boost/geometry/core/coordinate_dimension.hpp>
 #include <boost/geometry/core/coordinate_system.hpp>
 
+#if __cplusplus > 201703L
+#include <boost/geometry/core/tags.hpp>
+
+#include <concepts>
+#endif
+
 
 
 namespace boost { namespace geometry { namespace concepts
@@ -186,6 +192,40 @@ public:
     }
 #endif
 };
+
+#if __cplusplus > 201703L
+
+namespace detail {
+template<typename P, typename C, std::size_t Dim, std::size_t DimCount>
+concept has_access_get =
+Dim == DimCount ||
+requires(P p) {
+	{geometry::get<Dim, P>(p)}->std::convertible_to<C>;
+	requires has_access_get<P, C, Dim + 1, DimCount>;
+};
+
+template<typename P, typename C, std::size_t Dim, std::size_t DimCount>
+concept has_access_set =
+Dim == DimCount ||
+requires(P p, C c) {
+	geometry::set<Dim, P>(p, c);
+	requires has_access_set<P, C, Dim + 1, DimCount>;
+};
+} //namespace detail
+
+template<typename P>
+concept is_const_point =
+	std::same_as<typename traits::tag<P>::type, geometry::point_tag> &&
+	dimension<P>::value > 0 &&
+	!std::same_as<typename coordinate_system<P>::type, void> &&
+	!std::same_as<typename coordinate_type<P>::type, void> &&
+	detail::has_access_get<P, typename coordinate_type<P>::type, 0, dimension<P>::value>;
+
+template<typename P>
+concept is_point =
+	is_const_point<P> &&
+	detail::has_access_set<P, typename coordinate_type<P>::type, 0, dimension<P>::value>;
+#endif
 
 }}} // namespace boost::geometry::concepts
 

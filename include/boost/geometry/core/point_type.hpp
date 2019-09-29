@@ -42,10 +42,14 @@ namespace traits
 template <typename Geometry>
 struct point_type
 {
+#if __cplusplus <= 201703L
     BOOST_MPL_ASSERT_MSG
         (
             false, NOT_IMPLEMENTED_FOR_THIS_POINT_TYPE, (types<Geometry>)
         );
+#else
+	typedef void type;
+#endif
 };
 
 
