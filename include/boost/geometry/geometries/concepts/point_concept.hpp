@@ -199,18 +199,14 @@ namespace detail {
 template<typename P, typename C, std::size_t Dim, std::size_t DimCount>
 concept has_access_get =
 Dim == DimCount ||
-requires(P p) {
-	{geometry::get<Dim, P>(p)}->std::convertible_to<C>;
-	requires has_access_get<P, C, Dim + 1, DimCount>;
-};
+( requires(P p) { {geometry::get<Dim, P>(p)}->std::convertible_to<C>; } &&
+  has_access_get<P, C, Dim + 1, DimCount> );
 
 template<typename P, typename C, std::size_t Dim, std::size_t DimCount>
 concept has_access_set =
 Dim == DimCount ||
-requires(P p, C c) {
-	geometry::set<Dim, P>(p, c);
-	requires has_access_set<P, C, Dim + 1, DimCount>;
-};
+( requires(P p, C c) { geometry::set<Dim, P>(p, c); } &&
+  has_access_set<P, C, Dim + 1, DimCount> );
 } //namespace detail
 
 template<typename P>
