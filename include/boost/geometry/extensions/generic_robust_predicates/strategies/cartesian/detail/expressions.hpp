@@ -159,6 +159,81 @@ inline double approximate_value(const Reals&... args) {
     return results.back();
 }
 
+template<typename T> using inc = boost::mp11::mp_int<T::value + 1>;
+
+template<typename L> using app_zero_b = boost::mp11::mp_push_front<L, boost::mp11::mp_int<0>>;
+template<typename L> using app_zero_f = boost::mp11::mp_push_back<L, boost::mp11::mp_int<0>>;
+template<typename L> using mult_by_1_p_eps = boost::mp11::mp_transform<boost::mp11::mp_plus, app_zero_b<L>, app_zero_f<L>>;
+
+template<typename L> using div_by_1_m_eps_helper = boost::mp11::mp_partial_sum<boost::mp11::mp_plus, boost::mp11::mp_int<0>, L>;
+template<typename L> using div_by_1_m_eps = boost::mp11::mp_push_back
+    <
+        boost::mp11::mp_pop_back<div_by_1_m_eps_helper<L>>,
+        inc<boost::mp11::mp_back<div_by_1_m_eps_helper<L>>>
+    >;
+
+template
+<
+    typename L1,
+    typename L2,
+    typename L,
+    bool L1_Empty = boost::mp11::mp_empty<L1>,
+    bool L2_Empty = boost::mp11::mp_empty<L2>
+>
+struct coeff_merge_impl {};
+
+template
+<
+    typename L1,
+    typename L2,
+    typename L
+>
+struct coeff_merge_impl<L1, L2, L, boost::mp11::mp_false, boost::mp11::mp_false>
+{
+    using type = coeff_merge_impl<
+        boost::mp11::mp_pop_front<L1>,
+        boost::mp11::mp_pop_front<L2>,
+        boost::mp11::mp_push_back<L, boost::mp11::mp_plus<boost::mp11::mp_front<L1>, boost::mp11::mp_front<L2>>>>::type;
+};
+
+template
+< 
+    typename L1,
+    typename L2,
+    typename L
+>   
+struct coeff_merge_impl<L1, L2, L, boost::mp11::mp_true, boost::mp11::mp_true>
+{
+    using type = L;
+};
+
+template
+< 
+    typename L1,
+    typename L2,
+    typename L
+>   
+struct coeff_merge_impl<L1, L2, L, boost::mp11::mp_true, boost::mp11::mp_false>
+{
+    using type = boost::mp11::mp_append<L, L2>;
+};
+
+template
+<
+    typename L1,
+    typename L2,
+    typename L
+>   
+struct coeff_merge_impl<L1, L2, L, boost::mp11::mp_false, boost::mp11::mp_true>
+{
+    using type = boost::mp11::mp_append<L, L1>;
+};
+
+template<typename L1, typename L2> coeff_merge = typename coeff_mergy_impl<L1, L2, boost::mp11::mp_list<>>::type;
+
+//TOOD: coeff_max
+//TODO: magnitude_expressions
+
 }} // namespace detail::generic_robust_predicates
 
 }} // namespace boost::geometry
