@@ -165,7 +165,7 @@ template<typename L> using app_zero_b = boost::mp11::mp_push_front<L, boost::mp1
 template<typename L> using app_zero_f = boost::mp11::mp_push_back<L, boost::mp11::mp_int<0>>;
 template<typename L> using mult_by_1_p_eps = boost::mp11::mp_transform<boost::mp11::mp_plus, app_zero_b<L>, app_zero_f<L>>;
 
-template<typename L> using div_by_1_m_eps_helper = boost::mp11::mp_partial_sum<boost::mp11::mp_plus, boost::mp11::mp_int<0>, L>;
+template<typename L> using div_by_1_m_eps_helper = boost::mp11::mp_partial_sum<L, boost::mp11::mp_int<0>, boost::mp11::mp_plus>;
 template<typename L> using div_by_1_m_eps = boost::mp11::mp_push_back
     <
         boost::mp11::mp_pop_back<div_by_1_m_eps_helper<L>>,
@@ -177,8 +177,8 @@ template
     typename L1,
     typename L2,
     typename L,
-    bool L1_Empty = boost::mp11::mp_empty<L1>,
-    bool L2_Empty = boost::mp11::mp_empty<L2>
+    typename L1_Empty = boost::mp11::mp_empty<L1>,
+    typename L2_Empty = boost::mp11::mp_empty<L2>
 >
 struct coeff_merge_impl {};
 
@@ -190,7 +190,7 @@ template
 >
 struct coeff_merge_impl<L1, L2, L, boost::mp11::mp_false, boost::mp11::mp_false>
 {
-    using type = coeff_merge_impl<
+    using type = typename coeff_merge_impl<
         boost::mp11::mp_pop_front<L1>,
         boost::mp11::mp_pop_front<L2>,
         boost::mp11::mp_push_back<L, boost::mp11::mp_plus<boost::mp11::mp_front<L1>, boost::mp11::mp_front<L2>>>>::type;
@@ -229,7 +229,7 @@ struct coeff_merge_impl<L1, L2, L, boost::mp11::mp_false, boost::mp11::mp_true>
     using type = boost::mp11::mp_append<L, L1>;
 };
 
-template<typename L1, typename L2> coeff_merge = typename coeff_mergy_impl<L1, L2, boost::mp11::mp_list<>>::type;
+template<typename L1, typename L2> using coeff_merge = typename coeff_merge_impl<L1, L2, boost::mp11::mp_list<>>::type;
 
 //TOOD: coeff_max
 //TODO: magnitude_expressions
