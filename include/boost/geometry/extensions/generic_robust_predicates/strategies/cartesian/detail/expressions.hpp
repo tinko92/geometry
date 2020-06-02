@@ -231,7 +231,121 @@ struct coeff_merge_impl<L1, L2, L, boost::mp11::mp_false, boost::mp11::mp_true>
 
 template<typename L1, typename L2> using coeff_merge = typename coeff_merge_impl<L1, L2, boost::mp11::mp_list<>>::type;
 
-//TOOD: coeff_max
+template<typename N>
+struct log_2_floor_impl {
+    using type = typename boost::mp11::mp_plus<typename log_2_floor_impl<boost::mp11::mp_int<N::value / 2>>::type, boost::mp11::mp_int<1>>;
+};
+
+template<>
+struct log_2_floor_impl<boost::mp11::mp_int<1>> {
+    using type = boost::mp11::mp_int<0>;
+};
+
+template<typename N> using log_2_floor = typename log_2_floor_impl<N>::type;
+
+template<typename N>
+struct log_2_ceil_impl {
+private:
+    using floor = log_2_floor<N>;
+public:
+    using type = boost::mp11::mp_int< (1 << floor::value) == N::value ? floor::value : floor::value + 1 >;
+};
+
+template<typename N> using log_2_ceil = typename log_2_ceil_impl<N>::type;
+
+template
+<
+    typename L1,
+    typename L2,
+    typename L,
+    typename L1_Empty = boost::mp11::mp_empty<L1>,
+    typename L2_Empty = boost::mp11::mp_empty<L2>
+>
+struct coeff_max_impl {};
+
+template
+<
+    typename L1,
+    typename L2,
+    typename L
+>
+struct coeff_max_impl<L1, L2, L, boost::mp11::mp_false, boost::mp11::mp_false>
+{
+    using type = typename coeff_max_impl<
+        boost::mp11::mp_pop_front<L1>,
+        boost::mp11::mp_pop_front<L2>,
+        boost::mp11::mp_push_back<L, boost::mp11::mp_max<boost::mp11::mp_front<L1>, boost::mp11::mp_front<L2>>>>::type;
+};
+
+template
+< 
+    typename L1,
+    typename L2,
+    typename L
+>   
+struct coeff_max_impl<L1, L2, L, boost::mp11::mp_true, boost::mp11::mp_true>
+{
+    using type = L;
+};
+
+template
+< 
+    typename L1,
+    typename L2,
+    typename L
+>   
+struct coeff_max_impl<L1, L2, L, boost::mp11::mp_true, boost::mp11::mp_false>
+{
+    using type = boost::mp11::mp_append<L, L2>;
+};
+
+template
+<
+    typename L1,
+    typename L2,
+    typename L
+>   
+struct coeff_max_impl<L1, L2, L, boost::mp11::mp_false, boost::mp11::mp_true>
+{
+    using type = boost::mp11::mp_append<L, L1>;
+};
+
+template<typename L1, typename L2> using coeff_max = typename coeff_max_impl<L1, L2, boost::mp11::mp_list<>>::type;
+
+template<typename S> using is_not_zero = boost::mp11::mp_bool<S::value != 0>;
+
+template
+<
+    typename L, 
+    std::size_t Tail_Size =
+        boost::mp11::mp_size<L>::value - boost::mp11::mp_find_if<L, is_not_zero>::value
+>
+struct coeff_round_impl
+{
+private:
+    using first_nz = boost::mp11::mp_find_if<L, is_not_zero>;
+    using tail = boost::mp11::mp_erase_c<L, 0, first_nz::value + 2>;
+    using zero_tail = boost::mp11::mp_same<boost::mp11::mp_find_if<tail, is_not_zero>, boost::mp11::mp_size<tail>>;
+    using head = boost::mp11::mp_erase_c<L, first_nz::value + 2, boost::mp11::mp_size<L>::value>;
+    using minor = boost::mp11::mp_if<zero_tail, boost::mp11::mp_back<head>, inc<boost::mp11::mp_back<head>>>;
+    using major = boost::mp11::mp_at<head, first_nz>;
+    using major_rounded = boost::mp11::mp_int<1 << log_2_ceil<major>::value>;
+    using minor_rounded = boost::mp11::mp_int<
+        (minor::value / major_rounded::value) * major_rounded::value < minor::value ?
+	     (minor::value / major_rounded::value + 1) * major_rounded::value
+	   : (minor::value / major_rounded::value) * major_rounded::value >;
+public:
+    using type = boost::mp11::mp_push_back< boost::mp11::mp_pop_back<head>, minor_rounded >;
+};
+
+template<typename L>
+struct coeff_round_impl<L, 0> { using type = L; };
+
+template<typename L>
+struct coeff_round_impl<L, 1> { using type = L; };
+
+template<typename L> using coeff_round = typename coeff_round_impl<L>::type;
+
 //TODO: magnitude_expressions
 
 }} // namespace detail::generic_robust_predicates
