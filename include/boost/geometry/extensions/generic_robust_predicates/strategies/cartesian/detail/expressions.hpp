@@ -18,6 +18,8 @@
 #include <boost/mp11/integral.hpp>
 #include <boost/mp11/list.hpp>
 #include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/map.hpp>
+#include <boost/mp11/set.hpp>
 
 namespace boost { namespace geometry
 {
@@ -172,13 +174,20 @@ template<typename L> using div_by_1_m_eps = boost::mp11::mp_push_back
         inc<boost::mp11::mp_back<div_by_1_m_eps_helper<L>>>
     >;
 
+template<typename LOV, typename Void = boost::mp11::mp_same<LOV, void>>
+struct empty_or_void { using type = boost::mp11::mp_empty<LOV>; };
+
+template<typename LOV>
+struct empty_or_void<LOV, boost::mp11::mp_true> { using type = boost::mp11::mp_true; };
+
+
 template
 <
     typename L1,
     typename L2,
     typename L,
-    typename L1_Empty = boost::mp11::mp_empty<L1>,
-    typename L2_Empty = boost::mp11::mp_empty<L2>
+    typename L1_Empty = typename empty_or_void<L1>::type,
+    typename L2_Empty = typename empty_or_void<L2>::type
 >
 struct coeff_merge_impl {};
 
@@ -258,8 +267,8 @@ template
     typename L1,
     typename L2,
     typename L,
-    typename L1_Empty = boost::mp11::mp_empty<L1>,
-    typename L2_Empty = boost::mp11::mp_empty<L2>
+    typename L1_Empty = typename empty_or_void<L1>::type,
+    typename L2_Empty = typename empty_or_void<L2>::type
 >
 struct coeff_max_impl {};
 
@@ -345,6 +354,79 @@ template<typename L>
 struct coeff_round_impl<L, 1> { using type = L; };
 
 template<typename L> using coeff_round = typename coeff_round_impl<L>::type;
+
+template<typename M, typename K, typename Contained = boost::mp11::mp_map_contains<M, K>>
+struct mp_map_at_second_or_void
+{
+    using type = void;
+};
+
+template<typename M, typename K>
+struct mp_map_at_second_or_void<M, K, boost::mp11::mp_true>
+{
+    using type = boost::mp11::mp_second<boost::mp11::mp_map_find<M, K>>;
+};
+
+template<typename M1, typename M2>
+struct add_fold_operator
+{
+public:
+    template<typename M, typename K> using fn = boost::mp11::mp_map_insert<
+        M,
+        boost::mp11::mp_list<K, coeff_merge<
+            typename mp_map_at_second_or_void<M1, K>::type,
+	    typename mp_map_at_second_or_void<M2, K>::type>>>;
+};
+
+template<typename M1, typename M2> using add_children = boost::mp11::mp_fold<
+    boost::mp11::mp_set_union<boost::mp11::mp_map_keys<M1>, boost::mp11::mp_map_keys<M2>>,
+    boost::mp11::mp_list<>,
+    add_fold_operator<M1, M2>::template fn>;
+
+template<typename L> using indexed = boost::mp11::mp_transform<
+    boost::mp11::mp_list,
+    boost::mp11::mp_iota<boost::mp11::mp_size<L>>,
+    L>;
+
+template<typename L> using strip_index = boost::mp11::mp_transform<boost::mp11::mp_second, L>;
+template<typename IV1, typename IV2> using indexed_value_product =
+    boost::mp11::mp_list<
+	boost::mp11::mp_plus< boost::mp11::mp_first<IV1>, boost::mp11::mp_first<IV2>>,
+	boost::mp11::mp_int< boost::mp11::mp_second<IV1>::value * boost::mp11::mp_second<IV2>::value >
+    >;
+
+template<typename IV1, typename IV2> using indexed_value_sum =
+    boost::mp11::mp_list<
+        boost::mp11::mp_first<IV1>,
+        boost::mp11::mp_plus< boost::mp11::mp_second<IV1>, boost::mp11::mp_second<IV2> >
+    >;
+
+template<typename V1> struct add_nested
+{
+    template<typename K, typename V2> using fn = boost::mp11::mp_plus<V1, V2>;
+};
+
+template<typename M, typename IV> using list_product_fold =
+    boost::mp11::mp_map_update_q<M, IV, add_nested<boost::mp11::mp_second<IV>>>;
+
+template<typename IV1, typename IV2> using index_less =
+    boost::mp11::mp_less<boost::mp11::mp_first<IV1>, boost::mp11::mp_first<IV2>>;
+
+template<typename L1, typename L2> using list_product =
+    strip_index<
+        boost::mp11::mp_sort<
+            boost::mp11::mp_fold<
+                boost::mp11::mp_product<
+                    indexed_value_product,
+                    indexed<L1>, indexed<L2>
+                >,
+                boost::mp11::mp_list<>,
+                list_product_fold
+            >,
+            index_less
+        >
+    >;
+
 
 //TODO: magnitude_expressions
 
