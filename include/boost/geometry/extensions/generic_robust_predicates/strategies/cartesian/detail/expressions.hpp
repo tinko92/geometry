@@ -29,6 +29,9 @@ namespace detail { namespace generic_robust_predicates
 
 enum class operator_types { sum, difference, product, no_op };
 
+struct sum_error_type {};
+struct product_error_type {};
+
 template<typename Left, typename Right>
 struct internal_node
 {
@@ -42,6 +45,7 @@ struct sum : public internal_node<Left, Right>
 {
     static constexpr bool sign_exact = Left::is_leaf && Right::is_leaf;
     static constexpr operator_types operator_type = operator_types::sum;
+    using error_type = sum_error_type;
 };
 
 template<typename Left, typename Right>
@@ -49,6 +53,7 @@ struct difference : public internal_node<Left, Right>
 {
     static constexpr bool sign_exact = Left::is_leaf && Right::is_leaf;
     static constexpr operator_types operator_type = operator_types::difference;
+    using error_type = sum_error_type;
 };
 
 template<typename Left, typename Right>
@@ -56,6 +61,7 @@ struct product : public internal_node<Left, Right>
 {
     static constexpr bool sign_exact = Left::sign_exact && Right::sign_exact;
     static constexpr operator_types operator_type = operator_types::product;
+    using error_type = product_error_type;
 };
 
 template<std::size_t Argn>
@@ -202,7 +208,14 @@ struct coeff_merge_impl<L1, L2, L, boost::mp11::mp_false, boost::mp11::mp_false>
     using type = typename coeff_merge_impl<
         boost::mp11::mp_pop_front<L1>,
         boost::mp11::mp_pop_front<L2>,
-        boost::mp11::mp_push_back<L, boost::mp11::mp_plus<boost::mp11::mp_front<L1>, boost::mp11::mp_front<L2>>>>::type;
+        boost::mp11::mp_push_back<
+            L,
+            boost::mp11::mp_plus<
+                boost::mp11::mp_front<L1>,
+                boost::mp11::mp_front<L2>
+            >
+        >
+    >::type;
 };
 
 template
@@ -238,7 +251,8 @@ struct coeff_merge_impl<L1, L2, L, boost::mp11::mp_false, boost::mp11::mp_true>
     using type = boost::mp11::mp_append<L, L1>;
 };
 
-template<typename L1, typename L2> using coeff_merge = typename coeff_merge_impl<L1, L2, boost::mp11::mp_list<>>::type;
+template<typename L1, typename L2> using coeff_merge =
+    typename coeff_merge_impl<L1, L2, boost::mp11::mp_list<>>::type;
 
 template<typename N>
 struct log_2_floor_impl {
@@ -341,8 +355,8 @@ private:
     using major_rounded = boost::mp11::mp_int<1 << log_2_ceil<major>::value>;
     using minor_rounded = boost::mp11::mp_int<
         (minor::value / major_rounded::value) * major_rounded::value < minor::value ?
-	     (minor::value / major_rounded::value + 1) * major_rounded::value
-	   : (minor::value / major_rounded::value) * major_rounded::value >;
+         (minor::value / major_rounded::value + 1) * major_rounded::value
+       : (minor::value / major_rounded::value) * major_rounded::value >;
 public:
     using type = boost::mp11::mp_push_back< boost::mp11::mp_pop_back<head>, minor_rounded >;
 };
@@ -373,9 +387,13 @@ struct add_fold_operator
 public:
     template<typename M, typename K> using fn = boost::mp11::mp_map_insert<
         M,
-        boost::mp11::mp_list<K, coeff_merge<
-            typename mp_map_at_second_or_void<M1, K>::type,
-	    typename mp_map_at_second_or_void<M2, K>::type>>>;
+        boost::mp11::mp_list<K, 
+            coeff_merge<
+                typename mp_map_at_second_or_void<M1, K>::type,
+                typename mp_map_at_second_or_void<M2, K>::type
+            >
+        >
+    >;
 };
 
 template<typename M1, typename M2> using add_children = boost::mp11::mp_fold<
@@ -427,8 +445,156 @@ template<typename L1, typename L2> using list_product =
         >
     >;
 
+template
+<
+    typename Exp,
+    typename LErr,
+    typename RErr,
+    typename Children_Empty = 
+        boost::mp11::mp_and<
+            typename empty_or_void<LErr>::type,
+            typename empty_or_void<RErr>::type
+        >
+>
+struct sum_err_impl
+{
+private:
+    using children = add_children<LErr, RErr>;
+public:
+    using type = boost::mp11::mp_map_insert<
+        children,
+        boost::mp11::mp_list<Exp, boost::mp11::mp_list<boost::mp11::mp_int<1>>>
+    >;
+};
 
-//TODO: magnitude_expressions
+template
+<
+    typename Exp,
+    typename LErr,
+    typename RErr
+>
+struct sum_err_impl<Exp, LErr, RErr, boost::mp11::mp_true>
+{
+    using type = boost::mp11::mp_list<
+        boost::mp11::mp_list<Exp, boost::mp11::mp_list<boost::mp11::mp_int<1>>>
+    >;
+};
+
+template<typename Exp, typename LErr, typename RErr> using sum_err = typename sum_err_impl<Exp, LErr, RErr>::type;
+
+template<typename L> using pad_second = boost::mp11::mp_list<
+    boost::mp11::mp_front<L>,
+    boost::mp11::mp_push_front<boost::mp11::mp_second<L>, boost::mp11::mp_int<0>>>;
+
+template<typename L> using pop_front_second = boost::mp11::mp_list<
+    boost::mp11::mp_front<L>,
+    boost::mp11::mp_pop_front<boost::mp11::mp_second<L>>>;
+
+template<typename K, typename V> using increment_first_of_second =
+    boost::mp11::mp_transform_front<V, inc>;
+
+template<typename KV1, typename KV2> using prod_entry_merge =
+    boost::mp11::mp_list<
+        boost::mp11::mp_list<
+            boost::mp11::mp_first<KV1>,
+            boost::mp11::mp_first<KV2>
+        >,
+        list_product<boost::mp11::mp_second<KV1>, boost::mp11::mp_second<KV2>>>;
+
+
+template
+<
+    typename Exp,
+    typename LErr,
+    typename RErr
+>
+struct prod_children_impl
+{
+private:
+    using left = typename Exp::left;
+    using right = typename Exp::right;
+    using padded_lerr = boost::mp11::mp_map_update<
+        boost::mp11::mp_transform<pad_second, LErr>,
+        boost::mp11::mp_list<left, boost::mp11::mp_list<boost::mp11::mp_int<1>>>,
+        increment_first_of_second
+    >;
+    using padded_rerr = boost::mp11::mp_map_update<
+        boost::mp11::mp_transform<pad_second, RErr>, 
+        boost::mp11::mp_list<right, boost::mp11::mp_list<boost::mp11::mp_int<1>>>, 
+        increment_first_of_second
+    >;
+    using prod = boost::mp11::mp_product<prod_entry_merge, padded_lerr, padded_rerr>;
+    using stripped_prod = boost::mp11::mp_transform<pop_front_second, prod>;
+public:
+    using type = stripped_prod;
+};
+
+template<typename Exp, typename LErr, typename RErr> using prod_children =
+    typename prod_children_impl<Exp, LErr, RErr>::type;
+
+template
+<
+    typename Exp,
+    typename LErr,
+    typename RErr
+>
+struct product_err_impl
+{
+private:
+    using children = prod_children<Exp, LErr, RErr>;
+public:
+    using type = boost::mp11::mp_map_insert<
+        children,
+        boost::mp11::mp_list<Exp, boost::mp11::mp_list<boost::mp11::mp_int<1>>>
+    >;
+};
+
+template<typename Exp, typename LErr, typename RErr> using product_err = typename product_err_impl<Exp, LErr, RErr>::type;
+
+template
+<
+    typename Map,
+    typename Key,
+    typename Contains = boost::mp11::mp_map_contains<Map, Key>
+>
+struct val_or_empty_list
+{
+    using type = boost::mp11::mp_second<boost::mp11::mp_map_find<Map, Key>>;
+};
+
+template
+<
+    typename Map,
+    typename Key
+>
+struct val_or_empty_list<Map, Key, boost::mp11::mp_false>
+{
+    using type = boost::mp11::mp_list<>;
+};
+
+template
+<
+    typename Errors,
+    typename Exp
+>
+struct error_fold_impl
+{
+private:
+    using lerr = typename val_or_empty_list<Errors, typename Exp::left>::type;
+    using rerr = typename val_or_empty_list<Errors, typename Exp::right>::type;
+    using err = boost::mp11::mp_if<
+        boost::mp11::mp_same<typename Exp::error_type, sum_error_type>,
+        sum_err<Exp, lerr, rerr>,
+        product_err<Exp, lerr, rerr>
+    >;
+public:
+    using type = boost::mp11::mp_map_insert<Errors, boost::mp11::mp_list<Exp, err>>;
+};
+
+
+template<typename Errors, typename Exp> using error_fold = typename error_fold_impl<Errors, Exp>::type;
+
+template<typename Evals> using evals_error = boost::mp11::mp_fold<Evals, boost::mp11::mp_list<>, error_fold>;
 
 }} // namespace detail::generic_robust_predicates
 
