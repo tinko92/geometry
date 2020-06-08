@@ -596,6 +596,18 @@ template<typename Errors, typename Exp> using error_fold = typename error_fold_i
 
 template<typename Evals> using evals_error = boost::mp11::mp_fold<Evals, boost::mp11::mp_list<>, error_fold>;
 
+template
+<
+    typename T,
+    typename IsList = boost::mp11::mp_is_list<T>
+>
+struct is_mp_list
+{
+    using type = boost::mp11::mp_same<T, boost::mp11::mp_rename<T, boost::mp11::mp_list>>;
+};
+
+template<typename T> struct is_mp_list<T, boost::mp11::mp_false> { using type = boost::mp11::mp_false; };
+
 }} // namespace detail::generic_robust_predicates
 
 }} // namespace boost::geometry
