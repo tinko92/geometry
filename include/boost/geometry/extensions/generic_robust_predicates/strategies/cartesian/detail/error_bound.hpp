@@ -16,13 +16,24 @@
 
 #include <boost/mp11/integral.hpp>
 #include <boost/mp11/list.hpp>
+#include <boost/mp11/map.hpp>
 
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/coefficient_list.hpp>
 
 namespace boost { namespace geometry
 {
 
 namespace detail { namespace generic_robust_predicates
 {
+
+template<typename KV> using second_is_coeff_list = is_coeff_list<boost::mp11::mp_second<KV>>;
+
+template<typename EM> using is_error_map = boost::mp11::mp_and<
+    boost::mp11::mp_is_map<EM>,
+    boost::mp11::mp_all_of<EM, second_is_coeff_list>,
+    boost::mp11::mp_similar<EM, boost::mp11::mp_list<>>
+    //TODO: It would be desirable to also validate that the keys are good
+>;
 
 template<typename M1, typename M2>
 struct add_fold_operator
@@ -58,12 +69,16 @@ template
 struct sum_err_impl
 {
 private:
+    static_assert(is_error_map<LErr>::value, "LErr needs to be a valid error map.");
+    static_assert(is_error_map<RErr>::value, "RErr needs to be a valid error map.");
     using children = add_children<LErr, RErr>;
+    static_assert(is_error_map<children>::value, "children needs to be a valid error map.");
 public:
     using type = boost::mp11::mp_map_insert<
         children,
         boost::mp11::mp_list<Exp, boost::mp11::mp_list<boost::mp11::mp_int<1>>>
     >;
+    static_assert(is_error_map<type>::value, "type needs to be a valid error map.");
 };
 
 template
@@ -74,9 +89,12 @@ template
 >
 struct sum_err_impl<Exp, LErr, RErr, boost::mp11::mp_true>
 {
+    static_assert(is_error_map<LErr>::value, "LErr needs to be a valid error map.");
+    static_assert(is_error_map<RErr>::value, "RErr needs to be a valid error map.");
     using type = boost::mp11::mp_list<
         boost::mp11::mp_list<Exp, boost::mp11::mp_list<boost::mp11::mp_int<1>>>
     >;
+    static_assert(is_error_map<type>::value, "type needs to be a valid error map.");
 };
 
 template<typename Exp, typename LErr, typename RErr> using sum_err = typename sum_err_impl<Exp, LErr, RErr>::type;
@@ -110,6 +128,8 @@ template
 struct prod_children_impl
 {
 private:
+    static_assert(is_error_map<LErr>::value, "LErr needs to be a valid error map.");
+    static_assert(is_error_map<RErr>::value, "RErr needs to be a valid error map.");
     using left = typename Exp::left;
     using right = typename Exp::right;
     using padded_lerr = boost::mp11::mp_map_update<
@@ -126,6 +146,7 @@ private:
     using stripped_prod = boost::mp11::mp_transform<pop_front_second, prod>;
 public:
     using type = stripped_prod;
+    static_assert(is_error_map<type>::value, "type needs to be a valid error map.");
 };
 
 template<typename Exp, typename LErr, typename RErr> using prod_children =
@@ -140,12 +161,16 @@ template
 struct product_err_impl
 {
 private:
+    static_assert(is_error_map<LErr>::value, "LErr needs to be a valid error map.");
+    static_assert(is_error_map<RErr>::value, "RErr needs to be a valid error map.");
     using children = prod_children<Exp, LErr, RErr>;
+    static_assert(is_error_map<children>::value, "children needs to be a valid error map.");
 public:
     using type = boost::mp11::mp_map_insert<
         children,
         boost::mp11::mp_list<Exp, boost::mp11::mp_list<boost::mp11::mp_int<1>>>
     >;
+    static_assert(is_error_map<type>::value, "type needs to be a valid error map.");
 };
 
 template<typename Exp, typename LErr, typename RErr> using product_err = typename product_err_impl<Exp, LErr, RErr>::type;
@@ -230,6 +255,7 @@ public:
 };
 
 template<typename KV, typename M> using error_map_insert = typename error_map_insert_impl<KV, M>::type;
+
 template<typename M, typename KV, typename KeyMPList = is_mp_list<boost::mp11::mp_front<KV>>>
 struct error_map_list_to_product_fold_impl
 {

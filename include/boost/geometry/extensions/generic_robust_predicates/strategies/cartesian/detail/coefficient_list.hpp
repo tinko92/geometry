@@ -25,6 +25,14 @@ namespace boost { namespace geometry
 namespace detail { namespace generic_robust_predicates
 {
 
+//only meant to be used in assertions
+template<typename T> using is_mp_int = boost::mp11::mp_same<T, boost::mp11::mp_int<T::value>>;
+
+template<typename L> using is_coeff_list = boost::mp11::mp_and<
+    boost::mp11::mp_all_of<L, is_mp_int>,
+    boost::mp11::mp_similar<L, boost::mp11::mp_list<>>
+>;
+
 template<typename L> using app_zero_b = boost::mp11::mp_push_front<L, boost::mp11::mp_int<0>>;
 template<typename L> using app_zero_f = boost::mp11::mp_push_back<L, boost::mp11::mp_int<0>>;
 template<typename L> using mult_by_1_p_eps = 
