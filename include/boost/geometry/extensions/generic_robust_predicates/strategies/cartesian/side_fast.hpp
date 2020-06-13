@@ -15,7 +15,7 @@
 #include <boost/geometry/util/select_coordinate_type.hpp>
 #include <boost/geometry/core/access.hpp>
 
-#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/expressions.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/approximate.hpp>
 
 namespace boost { namespace geometry
 {
