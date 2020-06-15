@@ -42,7 +42,8 @@ inline int stage_a(const Reals&... args) {
         boost::mp11::mp_second<boost::mp11::mp_map_find<interim_errors, typename root::right>>
     >;
     using final_children_ltp = error_map_list_to_product<final_children>;
-    using final_children_sum_fold = error_map_sum_up<final_children_ltp>;
+    using final_children_ltp_abs = abs_all<final_children_ltp>;
+    using final_children_sum_fold = error_map_sum_up<final_children_ltp_abs>;
     using final_coeff = coeff_round<div_by_1_m_eps<mult_by_1_p_eps<boost::mp11::mp_second<final_children_sum_fold>>>>;
     using error_expression = boost::mp11::mp_front<final_children_sum_fold>;
     using error_eval_stack = boost::mp11::mp_unique<post_order<error_expression>>;

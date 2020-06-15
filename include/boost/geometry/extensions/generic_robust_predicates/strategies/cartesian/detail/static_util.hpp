@@ -74,6 +74,27 @@ template<typename L> using indexed = boost::mp11::mp_transform<
 
 template<typename L> using strip_index = boost::mp11::mp_transform<boost::mp11::mp_second, L>;
 
+template
+<
+    typename Map,
+    typename Key,
+    typename Contains = boost::mp11::mp_map_contains<Map, Key>
+>
+struct val_or_empty_list
+{
+    using type = boost::mp11::mp_second<boost::mp11::mp_map_find<Map, Key>>;
+};
+
+template
+<
+    typename Map,
+    typename Key
+>
+struct val_or_empty_list<Map, Key, boost::mp11::mp_false>
+{
+    using type = boost::mp11::mp_list<>;
+};
+
 }} // namespace detail::generic_robust_predicates
 
 }} // namespace boost::geometry

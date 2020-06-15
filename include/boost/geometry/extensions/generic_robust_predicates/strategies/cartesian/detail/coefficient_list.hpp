@@ -33,14 +33,40 @@ template<typename L> using is_coeff_list = boost::mp11::mp_and<
     boost::mp11::mp_similar<L, boost::mp11::mp_list<>>
 >;
 
+template<typename L>
+struct coeff_truncate_impl
+{
+private:
+    static_assert(is_coeff_list<L>::value, "L must be a coefficient list");
+    using first_nz = boost::mp11::mp_find_if<L, is_not_zero>;
+    using after_second_nz =
+        boost::mp11::mp_min<
+            boost::mp11::mp_size_t<first_nz::value + 2>,
+            boost::mp11::mp_size<L>
+        >;
+    using tail = boost::mp11::mp_erase_c<L, 0, after_second_nz::value>;
+    using head = boost::mp11::mp_erase<L, after_second_nz, boost::mp11::mp_size<L>>;
+    using round_up =
+        boost::mp11::mp_less<boost::mp11::mp_find_if<tail, is_not_zero>, boost::mp11::mp_size<tail>>;
+public:
+    using type = boost::mp11::mp_if<
+            round_up,
+            boost::mp11::mp_push_back<head, boost::mp11::mp_int<1>>,
+            head
+        >;
+    static_assert(is_coeff_list<L>::value, "type should be a coefficient list");
+};
+
+template<typename L> using coeff_truncate = typename coeff_truncate_impl<L>::type;
+
 template<typename L> using app_zero_b = boost::mp11::mp_push_front<L, boost::mp11::mp_int<0>>;
 template<typename L> using app_zero_f = boost::mp11::mp_push_back<L, boost::mp11::mp_int<0>>;
-template<typename L> using mult_by_1_p_eps = 
-    boost::mp11::mp_transform<
+template<typename L> using mult_by_1_p_eps =
+    coeff_truncate<boost::mp11::mp_transform<
         boost::mp11::mp_plus,
         app_zero_b<L>,
         app_zero_f<L>
-    >;
+    >>;
 
 template<typename L, typename N, typename done = boost::mp11::mp_bool<N::value == 0>>
 struct mult_by_1_p_eps_pow_impl
@@ -58,14 +84,15 @@ public:
     using type = L;
 };
 
-template<typename L, typename N> using mult_by_1_p_eps_pow = typename mult_by_1_p_eps_pow_impl<L, N>::type;
+template<typename L, typename N> using mult_by_1_p_eps_pow =
+    coeff_truncate<typename mult_by_1_p_eps_pow_impl<L, N>::type>;
 
 template<typename L> using div_by_1_m_eps_helper = boost::mp11::mp_partial_sum<L, boost::mp11::mp_int<0>, boost::mp11::mp_plus>;
-template<typename L> using div_by_1_m_eps = boost::mp11::mp_push_back
+template<typename L> using div_by_1_m_eps = coeff_truncate<boost::mp11::mp_push_back
     <
         boost::mp11::mp_pop_back<div_by_1_m_eps_helper<L>>,
         inc<boost::mp11::mp_back<div_by_1_m_eps_helper<L>>>
-    >;
+    >>;
 
 template
 <
@@ -132,7 +159,7 @@ struct coeff_merge_impl<L1, L2, L, boost::mp11::mp_false, boost::mp11::mp_true>
 };
 
 template<typename L1, typename L2> using coeff_merge =
-    typename coeff_merge_impl<L1, L2, boost::mp11::mp_list<>>::type;
+    coeff_truncate<typename coeff_merge_impl<L1, L2, boost::mp11::mp_list<>>::type>;
 
 template
 <
@@ -199,7 +226,8 @@ struct coeff_max_impl<L1, L2, L, boost::mp11::mp_false, boost::mp11::mp_true>
     using type = boost::mp11::mp_append<L, L1>;
 };
 
-template<typename L1, typename L2> using coeff_max = typename coeff_max_impl<L1, L2, boost::mp11::mp_list<>>::type;
+template<typename L1, typename L2> using coeff_max =
+    coeff_truncate<typename coeff_max_impl<L1, L2, boost::mp11::mp_list<>>::type>;
 
 template
 <
@@ -235,8 +263,8 @@ template<typename L> using coeff_round = typename coeff_round_impl<L>::type;
 
 template<typename IV1, typename IV2> using indexed_value_product =
     boost::mp11::mp_list<
-	boost::mp11::mp_plus< boost::mp11::mp_first<IV1>, boost::mp11::mp_first<IV2>>,
-	boost::mp11::mp_int< boost::mp11::mp_second<IV1>::value * boost::mp11::mp_second<IV2>::value >
+	    boost::mp11::mp_plus< boost::mp11::mp_first<IV1>, boost::mp11::mp_first<IV2>>,
+	    boost::mp11::mp_int< boost::mp11::mp_second<IV1>::value * boost::mp11::mp_second<IV2>::value >
     >;
 
 template<typename V1> struct add_nested

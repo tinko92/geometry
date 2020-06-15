@@ -58,8 +58,9 @@ template<typename M1, typename M2> using add_children = boost::mp11::mp_fold<
 template
 <
     typename Exp,
-    typename LErr,
-    typename RErr,
+    typename EM,
+    typename LErr = typename val_or_empty_list<EM, typename Exp::left>::type,
+    typename RErr = typename val_or_empty_list<EM, typename Exp::right>::type,
     typename Children_Empty = 
         boost::mp11::mp_and<
             typename empty_or_void<LErr>::type,
@@ -84,10 +85,11 @@ public:
 template
 <
     typename Exp,
+    typename EM,
     typename LErr,
     typename RErr
 >
-struct sum_err_impl<Exp, LErr, RErr, boost::mp11::mp_true>
+struct sum_err_impl<Exp, EM, LErr, RErr, boost::mp11::mp_true>
 {
     static_assert(is_error_map<LErr>::value, "LErr needs to be a valid error map.");
     static_assert(is_error_map<RErr>::value, "RErr needs to be a valid error map.");
@@ -97,7 +99,8 @@ struct sum_err_impl<Exp, LErr, RErr, boost::mp11::mp_true>
     static_assert(is_error_map<type>::value, "type needs to be a valid error map.");
 };
 
-template<typename Exp, typename LErr, typename RErr> using sum_err = typename sum_err_impl<Exp, LErr, RErr>::type;
+template<typename Exp, typename EM> using sum_err =
+    typename sum_err_impl<Exp, EM>::type;
 
 template<typename L> using pad_second = boost::mp11::mp_list<
     boost::mp11::mp_front<L>,
@@ -173,28 +176,8 @@ public:
     static_assert(is_error_map<type>::value, "type needs to be a valid error map.");
 };
 
-template<typename Exp, typename LErr, typename RErr> using product_err = typename product_err_impl<Exp, LErr, RErr>::type;
-
-template
-<
-    typename Map,
-    typename Key,
-    typename Contains = boost::mp11::mp_map_contains<Map, Key>
->
-struct val_or_empty_list
-{
-    using type = boost::mp11::mp_second<boost::mp11::mp_map_find<Map, Key>>;
-};
-
-template
-<
-    typename Map,
-    typename Key
->
-struct val_or_empty_list<Map, Key, boost::mp11::mp_false>
-{
-    using type = boost::mp11::mp_list<>;
-};
+template<typename Exp, typename LErr, typename RErr> using product_err =
+    typename product_err_impl<Exp, LErr, RErr>::type;
 
 template
 <
@@ -208,7 +191,7 @@ private:
     using rerr = typename val_or_empty_list<Errors, typename Exp::right>::type;
     using err = boost::mp11::mp_if<
         boost::mp11::mp_same<typename Exp::error_type, sum_error_type>,
-        sum_err<Exp, lerr, rerr>,
+        sum_err<Exp, Errors>,
         product_err<Exp, lerr, rerr>
     >;
 public:
@@ -283,6 +266,19 @@ struct error_map_list_to_product_impl
 
 template<typename M> using error_map_list_to_product = typename error_map_list_to_product_impl<M>::type;
 
+template<typename EM, typename KV> using abs_fold =
+    boost::mp11::mp_push_back<
+        EM,
+        boost::mp11::mp_list< abs<boost::mp11::mp_front<KV>>, boost::mp11::mp_second<KV> >
+    >;
+
+template<typename EM> using abs_all =
+    boost::mp11::mp_fold<
+        EM,
+        boost::mp11::mp_list<>,
+        abs_fold
+    >;
+
 template<
     typename KV1,
     typename KV2
@@ -292,10 +288,11 @@ struct abs_sum_error_term_impl
 private:
     using key1 = boost::mp11::mp_front<KV1>;
     using key2 = boost::mp11::mp_front<KV2>;
-    using nkey = sum<abs<key1>, abs<key2>>;
-    using val1 = boost::mp11::mp_second<KV2>;
+    using nkey = sum<key1, key2>;
+    using val1 = boost::mp11::mp_second<KV1>;
     using val2 = boost::mp11::mp_second<KV2>;
     using mval = coeff_max<val1, val2>;
+    static_assert(is_coeff_list<mval>::value, "merged coefficient list fails coefficient list check");
     using nval = mult_by_1_p_eps<mval>;
 public:
     using type = boost::mp11::mp_list<nkey, nval>;
@@ -318,7 +315,7 @@ template<
 >
 struct eps_pow
 {
-    static constexpr Real value = 
+    static constexpr Real value =
           std::numeric_limits<Real>::epsilon()/2.0
         * eps_pow<Real, boost::mp11::mp_size_t<Exp::value - 1>>::value;
 };
