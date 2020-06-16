@@ -35,6 +35,21 @@ template<typename EM> using is_error_map = boost::mp11::mp_and<
     //TODO: It would be desirable to also validate that the keys are good
 >;
 
+template<typename KV, typename M>
+struct error_map_insert_impl
+{
+private:
+    using key = boost::mp11::mp_front<KV>;
+    using value = boost::mp11::mp_second<KV>;
+    using other_value = typename mp_map_at_second_or_void<M, key>::type;
+    using merged_value = coeff_merge<value, other_value>;
+    using nkv = boost::mp11::mp_list<key, merged_value>;
+public:
+    using type = boost::mp11::mp_map_replace<M, nkv>;
+};
+
+template<typename KV, typename M> using error_map_insert = typename error_map_insert_impl<KV, M>::type;
+
 template<typename M1, typename M2>
 struct add_fold_operator
 {
@@ -54,7 +69,56 @@ template<typename M1, typename M2> using add_children = boost::mp11::mp_fold<
     boost::mp11::mp_set_union<boost::mp11::mp_map_keys<M1>, boost::mp11::mp_map_keys<M2>>,
     boost::mp11::mp_list<>,
     add_fold_operator<M1, M2>::template fn>;
-    
+
+template
+<
+    typename Exp,
+    typename EM,
+    typename Out,
+    typename LErr = typename val_or_empty_list<EM, typename Exp::left>::type,
+    typename RErr = typename val_or_empty_list<EM, typename Exp::right>::type,
+    typename skip_decompose =
+        boost::mp11::mp_or<
+            boost::mp11::mp_not<boost::mp11::mp_same<typename Exp::error_type, sum_error_type>>,
+            boost::mp11::mp_same<boost::mp11::mp_list<>, LErr, RErr>
+        >
+>
+struct decompose_add_impl
+{
+private:
+    using decomp_left = typename decompose_add_impl<typename Exp::left, EM, Out>::type;
+    using decomp_right = typename decompose_add_impl<typename Exp::right, EM, decomp_left>::type;
+public:
+    using type = decomp_right;
+};
+
+template
+<
+    typename Exp,
+    typename EM,
+    typename Out,
+    typename LErr,
+    typename RErr
+>
+struct decompose_add_impl<Exp, EM, Out, LErr, RErr, boost::mp11::mp_true>
+{
+    using type = error_map_insert<
+        boost::mp11::mp_list<
+            Exp,
+            boost::mp11::mp_list<boost::mp11::mp_int<1>>
+        >,
+        Out
+    >;
+};
+
+template
+<
+    typename Exp,
+    typename EM,
+    typename Out
+>
+using decompose_add = typename decompose_add_impl<Exp, EM, Out>::type;
+
 template
 <
     typename Exp,
@@ -75,10 +139,12 @@ private:
     using children = add_children<LErr, RErr>;
     static_assert(is_error_map<children>::value, "children needs to be a valid error map.");
 public:
+    /*
     using type = boost::mp11::mp_map_insert<
         children,
         boost::mp11::mp_list<Exp, boost::mp11::mp_list<boost::mp11::mp_int<1>>>
-    >;
+    >;*/
+    using type = decompose_add<Exp, EM, children>;
     static_assert(is_error_map<type>::value, "type needs to be a valid error map.");
 };
 
@@ -213,9 +279,9 @@ private:
     using value = boost::mp11::mp_second<KV>;
     using multiplications = boost::mp11::mp_int<boost::mp11::mp_size<key>::value - 1>;
     using nvalue = mult_by_1_p_eps_pow<value, multiplications>;
-    using nkey = boost::mp11::mp_fold<
-        boost::mp11::mp_pop_front<key>,
-        boost::mp11::mp_front<key>,
+    using nkey = boost::mp11::mp_reverse_fold<
+        boost::mp11::mp_pop_back<key>,
+        boost::mp11::mp_back<key>,
         product
     >;
 public:
@@ -223,21 +289,6 @@ public:
 };
 
 template<typename KV> using list_to_product = typename list_to_product_impl<KV>::type;
-
-template<typename KV, typename M>
-struct error_map_insert_impl
-{
-private:
-    using key = boost::mp11::mp_front<KV>;
-    using value = boost::mp11::mp_second<KV>;
-    using other_value = typename mp_map_at_second_or_void<M, key>::type;
-    using merged_value = coeff_merge<value, other_value>;
-    using nkv = boost::mp11::mp_list<key, merged_value>;
-public:
-    using type = boost::mp11::mp_map_replace<M, nkv>;
-};
-
-template<typename KV, typename M> using error_map_insert = typename error_map_insert_impl<KV, M>::type;
 
 template<typename M, typename KV, typename KeyMPList = is_mp_list<boost::mp11::mp_front<KV>>>
 struct error_map_list_to_product_fold_impl
