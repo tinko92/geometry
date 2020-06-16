@@ -191,8 +191,9 @@ template<typename KV1, typename KV2> using prod_entry_merge =
 template
 <
     typename Exp,
-    typename LErr,
-    typename RErr
+    typename EM,
+    typename LErr = typename val_or_empty_list<EM, typename Exp::left>::type,
+    typename RErr = typename val_or_empty_list<EM, typename Exp::right>::type
 >
 struct prod_children_impl
 {
@@ -201,49 +202,67 @@ private:
     static_assert(is_error_map<RErr>::value, "RErr needs to be a valid error map.");
     using left = typename Exp::left;
     using right = typename Exp::right;
-    using padded_lerr = boost::mp11::mp_map_update<
-        boost::mp11::mp_transform<pad_second, LErr>,
-        boost::mp11::mp_list<left, boost::mp11::mp_list<boost::mp11::mp_int<1>>>,
-        increment_first_of_second
-    >;
-    using padded_rerr = boost::mp11::mp_map_update<
-        boost::mp11::mp_transform<pad_second, RErr>, 
-        boost::mp11::mp_list<right, boost::mp11::mp_list<boost::mp11::mp_int<1>>>, 
-        increment_first_of_second
-    >;
-    using prod = boost::mp11::mp_product<prod_entry_merge, padded_lerr, padded_rerr>;
+    using padded_lerr = boost::mp11::mp_transform<pad_second, LErr>;
+    using added_left_lerr = /*decompose_add<left, EM, */decompose_add<left, EM, padded_lerr>/*>*/;
+    using padded_rerr = boost::mp11::mp_transform<pad_second, RErr>;
+    using added_right_rerr = /*decompose_add<right, EM, */decompose_add<right, EM, padded_rerr>/*>*/;
+    using prod = boost::mp11::mp_product<prod_entry_merge, added_left_lerr, added_right_rerr>;
     using stripped_prod = boost::mp11::mp_transform<pop_front_second, prod>;
 public:
     using type = stripped_prod;
     static_assert(is_error_map<type>::value, "type needs to be a valid error map.");
 };
 
-template<typename Exp, typename LErr, typename RErr> using prod_children =
-    typename prod_children_impl<Exp, LErr, RErr>::type;
+template<typename Exp, typename EM> using prod_children =
+    typename prod_children_impl<Exp, EM>::type;
 
 template
 <
     typename Exp,
-    typename LErr,
-    typename RErr
+    typename EM,
+    typename LErr = typename val_or_empty_list<EM, typename Exp::left>::type,
+    typename RErr = typename val_or_empty_list<EM, typename Exp::right>::type
 >
 struct product_err_impl
 {
 private:
     static_assert(is_error_map<LErr>::value, "LErr needs to be a valid error map.");
     static_assert(is_error_map<RErr>::value, "RErr needs to be a valid error map.");
-    using children = prod_children<Exp, LErr, RErr>;
+    using children = prod_children<Exp, EM>;
     static_assert(is_error_map<children>::value, "children needs to be a valid error map.");
 public:
-    using type = boost::mp11::mp_map_insert<
+    using type = /*children;*/boost::mp11::mp_map_insert<
         children,
         boost::mp11::mp_list<Exp, boost::mp11::mp_list<boost::mp11::mp_int<1>>>
     >;
     static_assert(is_error_map<type>::value, "type needs to be a valid error map.");
 };
 
-template<typename Exp, typename LErr, typename RErr> using product_err =
-    typename product_err_impl<Exp, LErr, RErr>::type;
+template<typename Exp, typename EM> using product_err =
+    typename product_err_impl<Exp, EM>::type;
+
+template
+<
+    typename Errors,
+    typename Exp,
+    typename IsSum = boost::mp11::mp_same<typename Exp::error_type, sum_error_type>
+>
+struct sum_or_product_err_impl {
+    using type = sum_err<Exp, Errors>;
+};
+
+template
+<
+    typename Errors,
+    typename Exp
+>
+struct sum_or_product_err_impl<Errors, Exp, boost::mp11::mp_false>
+{
+    using type = product_err<Exp, Errors>;
+};
+
+template<typename Errors, typename Exp> using sum_or_product_err =
+    typename sum_or_product_err_impl<Errors, Exp>::type;
 
 template
 <
@@ -255,11 +274,7 @@ struct error_fold_impl
 private:
     using lerr = typename val_or_empty_list<Errors, typename Exp::left>::type;
     using rerr = typename val_or_empty_list<Errors, typename Exp::right>::type;
-    using err = boost::mp11::mp_if<
-        boost::mp11::mp_same<typename Exp::error_type, sum_error_type>,
-        sum_err<Exp, Errors>,
-        product_err<Exp, lerr, rerr>
-    >;
+    using err = sum_or_product_err<Errors, Exp>;
 public:
     using type = boost::mp11::mp_map_insert<Errors, boost::mp11::mp_list<Exp, err>>;
 };
