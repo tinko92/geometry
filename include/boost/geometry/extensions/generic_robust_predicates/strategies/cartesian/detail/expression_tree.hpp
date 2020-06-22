@@ -23,7 +23,18 @@ namespace boost { namespace geometry
 namespace detail { namespace generic_robust_predicates
 {
 
-enum class operator_types { sum, difference, product, abs, no_op };
+enum class operator_types {
+    sum, difference, product, abs, no_op,
+    two_sum_tail, two_difference_tail, two_product_tail, //check
+    fast_two_sum_tail, fast_two_difference_tail, //check
+    grow_expansion, grow_expansion_ze, //check
+    grow_diff_expansion, grow_diff_expansion_ze, //check
+    expansion_sum, expansion_sum_ze, //check
+    expansion_diff, expansion_diff_ze, //check
+    fast_expansion_sum, fast_expansion_sum_ze, //check
+    fast_expansion_diff, fast_expansion_diff_ze, //check
+    scale_expansion, scale_expansion_ze //check
+};
 enum class operator_arities { unary, binary };
 
 constexpr int sign_uncertain = -2;
