@@ -19,6 +19,11 @@
 #include <iterator>
 #include <type_traits>
 
+#include <boost/mp11/integral.hpp>
+#include <boost/mp11/list.hpp>
+#include <boost/mp11/utility.hpp>
+#include <boost/mp11/algorithm.hpp>
+
 #include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/expression_tree.hpp>
 
 namespace boost { namespace geometry
@@ -545,11 +550,259 @@ inline OutIter scale_expansion_ze(InIter e_begin, InIter e_end, Real b, OutIter 
 }
 
 struct sum_config {
-    constexpr std::size_t fast_sum_threshold = 4;
-    constexpr std::size_t zero_elimination_threshold = 999; //TODO
+    static constexpr std::size_t fast_sum_threshold = 4;
+//  constexpr std::size_t zero_elimination_threshold = 999; //TODO
 };
 
 
+template<typename Rhs>
+struct greater_than_or_equal
+{
+    template<typename Lhs>
+    using fn = boost::mp11::mp_bool< Lhs::value >= Rhs::value >;
+};
+
+template
+<
+    std::size_t e_length,
+    std::size_t f_length,
+    bool e_negate = false,
+    bool f_negate = false,
+    std::size_t h_length = e_length + f_length
+>
+struct expansion_plus_impl
+{
+    template<typename InIter1, typename InIter2, typename OutIter>
+    static inline OutIter apply(
+        InIter1 e_begin,
+        InIter1 e_end,
+        InIter2 f_begin,
+        InIter2 f_end,
+        OutIter h_begin,
+        OutIter h_end) {
+        return fast_expansion_sum<InIter1, InIter2, OutIter, e_negate, f_negate>(e_begin, e_end, f_begin, f_end, h_begin, h_end);
+    }
+};
+
+template<bool e_negate, bool f_negate>
+struct expansion_plus_impl<1, 1, e_negate, f_negate, 2>
+{
+    template<typename InIter1, typename InIter2, typename OutIter>
+    static inline OutIter apply(
+        InIter1 e_begin,
+        InIter1 e_end,
+        InIter2 f_begin,
+        InIter2 f_end,
+        OutIter h_begin,
+        OutIter h_end) {
+        auto x = negate<e_negate>(*e_begin) + negate<f_negate>(*f_begin);
+        auto y = two_sum_tail(
+            negate<e_negate>(*e_begin), negate<f_negate>(*f_begin), x);
+        *h_begin = y;
+        *(h_begin + 1) = x;
+        return h_begin + 2;
+    }
+};
+
+template<std::size_t e_length, bool e_negate, bool f_negate, std::size_t h_length>
+struct expansion_plus_impl<e_length, 1, e_negate, f_negate, h_length>
+{
+    template<typename InIter1, typename InIter2, typename OutIter>
+    static inline OutIter apply(
+        InIter1 e_begin,
+        InIter1 e_end,
+        InIter2 f_begin,
+        InIter2 f_end,
+        OutIter h_begin,
+        OutIter h_end) {
+        return grow_expansion<InIter1, decltype(*f_begin), OutIter, e_negate, f_negate>(e_begin, e_end, *f_begin, h_begin, h_end);
+    }
+};
+
+template<std::size_t f_length, bool e_negate, bool f_negate, std::size_t h_length>      
+struct expansion_plus_impl<1, f_length, e_negate, f_negate, h_length>
+{
+    template<typename InIter1, typename InIter2, typename OutIter>
+    static inline OutIter apply(
+        InIter1 e_begin,
+        InIter1 e_end,
+        InIter2 f_begin,
+        InIter2 f_end,
+        OutIter h_begin,
+        OutIter h_end) {
+        return grow_expansion<InIter2, decltype(*e_begin), OutIter, e_negate, f_negate>(f_begin, f_end, *e_begin, h_begin, h_end);
+    }
+};
+
+template<bool e_negate, bool f_negate>
+struct expansion_plus_impl<2, 2, e_negate, f_negate, 4>
+{
+    template<typename InIter1, typename InIter2, typename OutIter>
+    static inline OutIter apply(
+        InIter1 e_begin,
+        InIter1 e_end,
+        InIter2 f_begin,
+        InIter2 f_end,
+        OutIter h_begin,
+        OutIter h_end) {
+        return expansion_sum<InIter1, InIter2, OutIter, e_negate, f_negate>(e_begin, e_end, f_begin, f_end, h_begin, h_end);
+    }
+};
+
+template<std::size_t e_length, std::size_t f_length, typename InIter1, typename InIter2, typename OutIter, std::size_t result = e_length + f_length>
+inline OutIter expansion_plus(
+    InIter1 e_begin,
+    InIter1 e_end,
+    InIter2 f_begin,
+    InIter2 f_end,
+    OutIter h_begin,
+    OutIter h_end) {
+    return expansion_plus_impl<e_length, f_length>::
+        apply(e_begin, e_end, f_begin, f_end, h_begin, h_end);
+}
+
+template<std::size_t e_length, std::size_t f_length, typename InIter1, typename InIter2, typename OutIter, std::size_t result = e_length + f_length>
+inline OutIter expansion_minus(
+    InIter1 e_begin,
+    InIter1 e_end,
+    InIter2 f_begin,
+    InIter2 f_end,
+    OutIter h_begin,
+    OutIter h_end) {
+    return expansion_plus_impl<e_length, f_length, false, true>::
+        apply(e_begin, e_end, f_begin, f_end, h_begin, h_end);
+}
+
+template<std::size_t N>
+struct minus_n_impl
+{
+    template<typename V>
+    using fn = boost::mp11::mp_size_t<V::value - N>;
+};
+
+template<typename IndexList, std::size_t index_length = boost::mp11::mp_size<IndexList>::value>
+struct distillation_impl {
+private:
+    static constexpr std::size_t length = boost::mp11::mp_back<IndexList>::value;
+    using first_greater =
+        boost::mp11::mp_find_if_q
+            <
+                IndexList,
+                greater_than_or_equal<boost::mp11::mp_size_t< (length + 1) / 2 >>
+            >;
+    using not_first =
+        boost::mp11::mp_if
+            <
+                boost::mp11::mp_bool<(first_greater::value > 0)>,
+                first_greater,
+                boost::mp11::mp_size_t<first_greater::value + 1>
+            >;
+    using first_half = boost::mp11::mp_take<IndexList, not_first>;
+    static constexpr std::size_t first_length = boost::mp11::mp_back<first_half>::value;
+    using second_half = boost::mp11::mp_transform_q<minus_n_impl<first_length>,
+        boost::mp11::mp_drop<IndexList, not_first>>;
+public:
+    template<typename Iter>
+    inline Iter apply(Iter begin, Iter end) {
+        //The folliwng divide and conquer scheme is a primitive heuristic
+        //and it would probably be a good idea to explore possible optimizations.
+        assert(std::distance(begin, end) <= length);
+        auto first_end = distillation_impl<first_half>::
+            apply(begin, begin + first_length);
+        auto second_end = distillation_impl<second_half>::
+            apply(begin + first_length, end);
+        return expansion_plus(
+                begin,
+                first_end,
+                begin + first_length,
+                second_end,
+                begin,
+                end
+            );
+    }
+};
+
+template<typename IndexList>
+struct distillation_impl<IndexList, 1> {
+    template<typename Iter>
+    inline Iter apply(Iter begin, Iter end) {
+        return end;
+    }
+};
+
+template<typename IndexList, typename Iter>
+inline Iter distillation(Iter begin, Iter end) {
+    return distillation_impl<IndexList>::apply(begin, end);
+}
+
+template<std::size_t e_length, std::size_t f_length, std::size_t result = 2 * e_length * f_length, bool e_smaller = e_length <= f_length>
+struct expansion_times_impl
+{
+    template<typename InIter1, typename InIter2, typename OutIter>
+    inline OutIter apply(
+        InIter1 e_begin,
+        InIter1 e_end,
+        InIter2 f_begin,
+        InIter2 f_end,
+        OutIter h_begin,
+        OutIter h_end) {
+        auto h_it = h_begin;
+        for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+            scale_expansion(f_begin, f_end, *e_it, h_it, h_it + 2 * f_length);
+            h_it += 2 * f_length;
+        }
+        using index_list = boost::mp11::mp_repeat_c<
+            boost::mp11::mp_size_t<2 * f_length>,
+            e_length
+        >;
+        using ps_index_list = boost::mp11::mp_partial_sum<
+            index_list,
+            boost::mp11::mp_size_t<0>,
+            boost::mp11::mp_plus
+        >;
+        return distillation<ps_index_list>(h_begin, h_end);
+    }
+};
+
+template<std::size_t e_length, std::size_t f_length, std::size_t result>
+struct expansion_times_impl<e_length, f_length, result, false>
+{
+    template<typename InIter1, typename InIter2, typename OutIter>
+    inline OutIter apply(
+        InIter1 e_begin,
+        InIter1 e_end,
+        InIter2 f_begin,
+        InIter2 f_end,
+        OutIter h_begin,
+        OutIter h_end) {
+        return expansion_times_impl<f_length, e_length>::apply(
+            f_begin,
+            f_end,
+            e_begin,
+            e_end,
+            h_begin,
+            h_end);
+    }
+};
+
+template<>
+struct expansion_times_impl<1, 1, 2, true>
+{
+    template<typename InIter1, typename InIter2, typename OutIter>
+    inline OutIter apply(
+        InIter1 e_begin,
+        InIter1 e_end,
+        InIter2 f_begin,
+        InIter2 f_end,
+        OutIter h_begin,
+        OutIter h_end) {
+        auto x = *e_begin * *f_begin;
+        auto y = two_product_tail(*e_begin, *f_begin, x);
+        *h_begin = y;
+        *(h_begin + 1) = x;
+        return h_begin + 2;
+    }
+};
 
 }} // namespace detail::generic_robust_predicates
 
