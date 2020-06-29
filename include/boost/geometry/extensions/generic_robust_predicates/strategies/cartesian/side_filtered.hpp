@@ -136,12 +136,12 @@ public:
                 get<0>(p1), get<1>(p1),
                 get<0>(p2), get<1>(p2),
                 get<0>(p), get<1>(p));
-        if(stage_a_result != 
+        if(stage_a_result !=
                 boost::geometry::detail::generic_robust_predicates::sign_uncertain)
             return stage_a_result;
-        else boost::geometry::detail::generic_robust_predicates::stage_d<expression, promoted_type>(                     
-                get<0>(p1), get<1>(p1),           
-                get<0>(p2), get<1>(p2),        
+        else return boost::geometry::detail::generic_robust_predicates::stage_d<expression, promoted_type>(
+                get<0>(p1), get<1>(p1),
+                get<0>(p2), get<1>(p2),
                 get<0>(p), get<1>(p));
     }
 
