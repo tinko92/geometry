@@ -9,13 +9,14 @@
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_SIDE_FAST_HPP
-#define BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_SIDE_FAST_HPP
+#ifndef BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_SIDE_FILTERED_HPP
+#define BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_SIDE_FILTERED_HPP
 
 #include <boost/geometry/util/select_coordinate_type.hpp>
 #include <boost/geometry/core/access.hpp>
 
-#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/approximate.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/stage_a.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/stage_d.hpp>
 
 namespace boost { namespace geometry
 {
@@ -30,7 +31,7 @@ namespace strategy { namespace side
 \tparam CalculationType \tparam_calculation
  */
 template <typename CalculationType = void>
-class side_fast
+class side_filtered
 {
 
 public:
@@ -131,8 +132,14 @@ public:
                                 >
                         >
                 >;
-        return boost::geometry::detail::generic_robust_predicates::
-            approximate_sign<expression, promoted_type>(
+        auto stage_a_result = boost::geometry::detail::generic_robust_predicates::stage_a<expression, promoted_type>(
+                get<0>(p1), get<1>(p1),
+                get<0>(p2), get<1>(p2),
+                get<0>(p), get<1>(p));
+        if(stage_a_result != 
+                boost::geometry::detail::generic_robust_predicates::sign_uncertain)
+            return stage_a_result;
+        else boost::geometry::detail::generic_robust_predicates::stage_d<expression, promoted_type>(                     
                 get<0>(p1), get<1>(p1),           
                 get<0>(p2), get<1>(p2),        
                 get<0>(p), get<1>(p));
@@ -144,4 +151,4 @@ public:
 
 }} // namespace boost::geometry
 
-#endif // BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_SIDE_FAST_HPP
+#endif // BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_SIDE_FILTERED_HPP
