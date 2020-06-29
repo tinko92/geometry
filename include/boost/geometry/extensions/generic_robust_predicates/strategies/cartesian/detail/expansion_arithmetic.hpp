@@ -359,7 +359,6 @@ inline OutIter fast_expansion_sum_inplace(InIter1 e_begin, InIter1 e_end, InIter
     static_assert(std::is_same<typename std::iterator_traits<OutIter>::value_type, Real>::value);
     assert(debug_expansion::expansion_nonoverlapping(e_begin, e_end));
     assert(debug_expansion::expansion_nonoverlapping(f_begin, f_end));
-
     if(NegateE) {
         for(auto e_it = e_begin; e_it != e_end; ++e_it) {
             *e_it = -*e_it;
@@ -392,7 +391,7 @@ inline OutIter fast_expansion_sum_inplace(InIter1 e_begin, InIter1 e_end, InIter
     *h_it = fast_two_sum_tail(*(g_it + 1), *(g_it), Q);
     g_it += 2;
     ++h_it;
-    for(; g_it != g_end; ++g_it) {
+    for(; g_it < g_end; ++g_it) {
         Real Q_new = Q + *g_it;
         *h_it = two_sum_tail(Q, *g_it, Q_new);
         Q = Q_new;
@@ -844,7 +843,41 @@ inline OutIter expansion_plus(
         apply(e_begin, e_end, f_begin, f_end, h_begin, h_end);
 }
 
-template<std::size_t e_length, std::size_t f_length, typename InIter1, typename InIter2, typename OutIter, std::size_t result = e_length + f_length>
+template<std::size_t e_length, std::size_t f_length, bool inplace, typename InIter, typename Real, typename OutIter, std::size_t result = e_length + f_length>
+inline OutIter expansion_plus(
+    InIter e_begin,
+    InIter e_end,
+    Real f,
+    OutIter h_begin,
+    OutIter h_end) {
+    static_assert( f_length == 1 );
+    return grow_expansion(e_begin, e_end, f, h_begin, h_end);
+}
+
+template<std::size_t e_length, std::size_t f_length, bool inplace, typename InIter, typename Real, typename OutIter, std::size_t result = e_length + f_length>
+inline OutIter expansion_plus(
+    Real e,
+    InIter f_begin,
+    InIter f_end,
+    OutIter h_begin,
+    OutIter h_end) {
+    static_assert( e_length == 1 );
+    return grow_expansion(f_begin, f_end, e, h_begin, h_end);
+}
+
+template<std::size_t e_length, std::size_t f_length, bool inplace, typename Real, typename OutIter, std::size_t result = e_length + f_length>
+inline OutIter expansion_plus(
+    Real e,
+    Real f,
+    OutIter h_begin,
+    OutIter h_end) {
+    static_assert( f_length == 1 && e_length == 1 );
+    *(h_begin + 1) = e + f;
+    *h_begin = two_sum_tail(e, f, *(h_begin + 1));
+    return h_begin + 2;
+}
+
+template<std::size_t e_length, std::size_t f_length, bool inplace, typename InIter1, typename InIter2, typename OutIter, std::size_t result = e_length + f_length>
 inline OutIter expansion_minus(
     InIter1 e_begin,
     InIter1 e_end,
@@ -852,8 +885,42 @@ inline OutIter expansion_minus(
     InIter2 f_end,
     OutIter h_begin,
     OutIter h_end) {
-    return expansion_plus_impl<e_length, f_length, false, true>::
+    return expansion_plus_impl<e_length, f_length, inplace, false, true>::
         apply(e_begin, e_end, f_begin, f_end, h_begin, h_end);
+}
+
+template<std::size_t e_length, std::size_t f_length, bool inplace, typename InIter, typename Real, typename OutIter, std::size_t result = e_length + f_length>
+inline OutIter expansion_minus(
+    InIter e_begin,
+    InIter e_end,
+    Real f,
+    OutIter h_begin,
+    OutIter h_end) {
+    static_assert(f_length == 1);
+    return expansion_plus<e_length, f_length, inplace>(e_begin, e_end, -f, h_begin, h_end);
+}
+
+template<std::size_t e_length, std::size_t f_length, bool inplace, typename Real, typename InIter, typename OutIter, std::size_t result = e_length + f_length>
+inline OutIter expansion_minus(
+    Real e,
+    InIter f_begin,
+    InIter f_end,
+    OutIter h_begin,
+    OutIter h_end) {
+    static_assert(e_length == 1);
+    return grow_expansion<InIter, OutIter, Real, false, true>(f_begin, f_end, e, h_begin, h_end);
+}
+
+template<std::size_t e_length, std::size_t f_length, bool inplace, typename Real, typename OutIter, std::size_t result = e_length + f_length>
+inline OutIter expansion_minus(
+    Real e,
+    Real f,
+    OutIter h_begin,
+    OutIter h_end) {
+    static_assert(e_length == 1 && f_length == 1);
+    *(h_begin + 1) = e - f;
+    *h_begin = two_difference_tail(e, f, *(h_begin + 1));
+    return h_begin + 2;
 }
 
 template<std::size_t N>
@@ -897,6 +964,7 @@ public:
             apply(begin, begin + first_length);
         auto second_end = distillation_impl<second_half>::
             apply(begin + first_length, end);
+
         return expansion_plus<first_length, length - first_length, true>(
                 begin,
                 first_end,
@@ -938,24 +1006,19 @@ struct expansion_times_impl
 
         auto h_it = h_begin;
         for(auto e_it = e_begin; e_it != e_end; ++e_it) {
-
-
             scale_expansion(f_begin, f_end, *e_it, h_it, h_it + 2 * f_length);
-
             h_it += 2 * f_length;
         }
-
-
         using index_list = boost::mp11::mp_repeat_c<
             boost::mp11::mp_list<boost::mp11::mp_size_t<2 * f_length>>,
             e_length
         >;
-
         using ps_index_list = boost::mp11::mp_partial_sum<
             index_list,
             boost::mp11::mp_size_t<0>,
             boost::mp11::mp_plus
         >;
+
         h_it = distillation<ps_index_list>(h_begin, h_end);
         assert(debug_expansion::expansion_nonoverlapping(h_begin, h_it));
         return h_it;
@@ -1002,7 +1065,7 @@ struct expansion_times_impl<1, 1, 2, true>
     }
 };
 
-template<std::size_t e_length, std::size_t f_length, typename InIter1, typename InIter2, typename OutIter, std::size_t result = e_length + f_length>
+template<std::size_t e_length, std::size_t f_length, bool inplace, typename InIter1, typename InIter2, typename OutIter, std::size_t result = 2 * e_length * f_length>
 inline OutIter expansion_times(
     InIter1 e_begin,
     InIter1 e_end,
@@ -1012,6 +1075,40 @@ inline OutIter expansion_times(
     OutIter h_end) {
     return expansion_times_impl<e_length, f_length>::
         apply(e_begin, e_end, f_begin, f_end, h_begin, h_end);
+}
+
+template<std::size_t e_length, std::size_t f_length, bool inplace, typename InIter, typename Real, typename OutIter, std::size_t result = 2 * e_length>
+inline OutIter expansion_times(
+    InIter e_begin,
+    InIter e_end,
+    Real f,
+    OutIter h_begin,
+    OutIter h_end) {
+    static_assert(f_length == 1);
+    return scale_expansion(e_begin, e_end, f, h_begin, h_end);
+}
+
+template<std::size_t e_length, std::size_t f_length, bool inplace, typename InIter, typename Real, typename OutIter, std::size_t result = 2 * f_length>
+inline OutIter expansion_times(
+    Real e,
+    InIter f_begin,
+    InIter f_end,
+    OutIter h_begin,
+    OutIter h_end) {
+    static_assert(e_length == 1);
+    return scale_expansion(f_begin, f_end, e, h_begin, h_end);
+}
+
+template<std::size_t e_length, std::size_t f_length, bool inplace, typename Real, typename OutIter, std::size_t result = 2>
+inline OutIter expansion_times(
+    Real e,
+    Real f,
+    OutIter h_begin,
+    OutIter h_end) {
+    static_assert(e_length == 1 && f_length == 1);
+    *(h_begin + 1) = e * f;
+    *(h_begin) = two_product_tail(e, f, *(h_begin + 1));
+    return h_begin + 2;
 }
 
 template<std::size_t s1, std::size_t s2>
