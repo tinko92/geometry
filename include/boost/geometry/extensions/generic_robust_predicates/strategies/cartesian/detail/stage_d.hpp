@@ -161,8 +161,8 @@ template<
 struct eval_expansion_impl<Evals, Eval, Sizes, AccumulatedSizes, Iter, Real, Op, true, true>
 {
 private:
-    using left = Eval::left;
-    using right = Eval::right;
+    using left = typename Eval::left;
+    using right = typename Eval::right;
     using eval_index = boost::mp11::mp_find<Evals, Eval>;
     static constexpr std::size_t size = boost::mp11::mp_at<Sizes, eval_index>::value;
     static constexpr std::size_t start = boost::mp11::mp_at<AccumulatedSizes, eval_index>::value;
@@ -187,8 +187,8 @@ template<
 struct eval_expansion_impl<Evals, Eval, Sizes, AccumulatedSizes, Iter, Real, Op, true, false>
 {
 private:
-    using left = Eval::left;
-    using right = Eval::right;
+    using left = typename Eval::left;
+    using right = typename Eval::right;
     using eval_index = boost::mp11::mp_find<Evals, Eval>;
     static constexpr std::size_t size = boost::mp11::mp_at<Sizes, eval_index>::value;
     static constexpr std::size_t start = boost::mp11::mp_at<AccumulatedSizes, eval_index>::value;
@@ -220,8 +220,8 @@ template<
 struct eval_expansion_impl<Evals, Eval, Sizes, AccumulatedSizes, Iter, Real, Op, false, true>
 {
 private:
-    using left = Eval::left;
-    using right = Eval::right;
+    using left = typename Eval::left;
+    using right = typename Eval::right;
     using eval_index = boost::mp11::mp_find<Evals, Eval>;
     static constexpr std::size_t size = boost::mp11::mp_at<Sizes, eval_index>::value;
     static constexpr std::size_t start = boost::mp11::mp_at<AccumulatedSizes, eval_index>::value;
@@ -253,8 +253,8 @@ template<
 struct eval_expansion_impl<Evals, Eval, Sizes, AccumulatedSizes, Iter, Real, Op, false, false>
 {
 private:
-    using left = Eval::left;
-    using right = Eval::right;
+    using left = typename Eval::left;
+    using right = typename Eval::right;
     using eval_index = boost::mp11::mp_find<Evals, Eval>;
     static constexpr std::size_t size = boost::mp11::mp_at<Sizes, eval_index>::value;
     static constexpr std::size_t start = boost::mp11::mp_at<AccumulatedSizes, eval_index>::value;

@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <iterator>
 #include <type_traits>
-#include <bitset>
 
 #include <boost/mp11/integral.hpp>
 #include <boost/mp11/list.hpp>
@@ -156,8 +155,10 @@ inline bool expansion_strongly_nonoverlapping(Iter begin, Iter end) {
                 return false;
             }
             if( !nonadjacent(lesser, *it) ) {
-                int null;
-                if( std::frexp(lesser, &null) != 0.5 || std::frexp(*it, &null) != 0.5 ) {
+                int exp_now, exp_lesser;
+                double lesser_mant = std::frexp(lesser, &exp_lesser);
+                double now_mant = std::frexp(*it, &exp_now);
+                if( std::abs(std::frexp(lesser, &exp_lesser)) != 0.5 || std::abs(std::frexp(*it, &exp_now)) != 0.5 ) {
                     return false;
                 }
                 if( !nonadjacent( lesser, previous ) ) {
@@ -187,7 +188,7 @@ constexpr Real two_sum_tail(Real a, Real b, Real x) {
 
 template<typename Real>
 constexpr Real fast_two_sum_tail(Real a, Real b, Real x) {
-    assert(std::abs(a) > std::abs(b) || a == 0);
+    assert(std::abs(a) >= std::abs(b) || a == 0);
     Real b_virtual = x - a;
     Real y = b - b_virtual;
     assert(debug_expansion::nonadjacent(x, y));
@@ -207,7 +208,7 @@ constexpr Real two_difference_tail(Real a, Real b, Real x) {
 
 template<typename Real>
 constexpr Real fast_two_difference_tail(Real a, Real b, Real x) {
-    assert(std::abs(a) > std::abs(b) || a == 0);
+    assert(std::abs(a) >= std::abs(b) || a == 0);
     Real b_virtual = a - x;
     Real y = b_virtual - b;
     assert(debug_expansion::nonadjacent(x, y));
@@ -523,6 +524,7 @@ inline OutIter fast_expansion_sum_not_inplace(InIter1 e_begin, InIter1 e_end, In
     }
     *h_it = Q;
     ++h_it;
+
     assert(debug_expansion::expansion_strongly_nonoverlapping(h_begin, h_end));
     return h_end;
 }
