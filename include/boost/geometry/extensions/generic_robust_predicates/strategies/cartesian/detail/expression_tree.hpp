@@ -24,17 +24,9 @@ namespace detail { namespace generic_robust_predicates
 {
 
 enum class operator_types {
-    sum, difference, product, abs, no_op,
-    two_sum_tail, two_difference_tail, two_product_tail, //check
-    fast_two_sum_tail, fast_two_difference_tail, //check
-    grow_expansion, grow_expansion_ze, //check
-    grow_diff_expansion, grow_diff_expansion_ze, //check
-    expansion_sum, expansion_sum_ze, //check
-    expansion_diff, expansion_diff_ze, //check
-    fast_expansion_sum, fast_expansion_sum_ze, //check
-    fast_expansion_diff, fast_expansion_diff_ze, //check
-    scale_expansion, scale_expansion_ze //check
+    sum, difference, product, abs, no_op
 };
+
 enum class operator_arities { unary, binary };
 
 constexpr int sign_uncertain = -2;
@@ -43,13 +35,13 @@ struct sum_error_type {};
 struct product_error_type {};
 struct no_error_type {};
 
-template<typename... Children>
+template <typename... Children>
 struct internal_node
 {
     static constexpr bool is_leaf = false;
 };
 
-template<typename Left, typename Right>
+template <typename Left, typename Right>
 struct internal_binary_node : internal_node<Left, Right>
 {
     using left  = Left;
@@ -57,14 +49,14 @@ struct internal_binary_node : internal_node<Left, Right>
     static constexpr operator_arities operator_arity = operator_arities::binary;
 };
 
-template<typename Child>
+template <typename Child>
 struct internal_unary_node : internal_node<Child>
 {
     using child = Child;
     static constexpr operator_arities operator_arity = operator_arities::unary;
 };
 
-template<typename Left, typename Right>
+template <typename Left, typename Right>
 struct sum : public internal_binary_node<Left, Right>
 {
     static constexpr bool sign_exact = Left::is_leaf && Right::is_leaf;
@@ -72,7 +64,7 @@ struct sum : public internal_binary_node<Left, Right>
     using error_type = sum_error_type;
 };
 
-template<typename Left, typename Right>
+template <typename Left, typename Right>
 struct difference : public internal_binary_node<Left, Right>
 {
     static constexpr bool sign_exact = Left::is_leaf && Right::is_leaf;
@@ -80,7 +72,7 @@ struct difference : public internal_binary_node<Left, Right>
     using error_type = sum_error_type;
 };
 
-template<typename Left, typename Right>
+template <typename Left, typename Right>
 struct product : public internal_binary_node<Left, Right>
 {
     static constexpr bool sign_exact = Left::sign_exact && Right::sign_exact;
@@ -88,7 +80,7 @@ struct product : public internal_binary_node<Left, Right>
     using error_type = product_error_type;
 };
 
-template<typename Child>
+template <typename Child>
 struct abs : public internal_unary_node<Child>
 {
     using error_type = no_error_type;
@@ -96,7 +88,7 @@ struct abs : public internal_unary_node<Child>
     static constexpr bool sign_exact = Child::sign_exact;
 };
 
-template<std::size_t Argn>
+template <std::size_t Argn>
 struct leaf
 {
     static constexpr std::size_t argn = Argn;
@@ -107,7 +99,8 @@ struct leaf
     static constexpr operator_arities operator_arity = operator_arities::unary;
 };
 
-template<
+template
+<
     typename In,
     typename Out,
     bool at_leaf = In::is_leaf,
@@ -115,13 +108,13 @@ template<
 >
 struct post_order_impl;
 
-template<typename In, typename Out>
+template <typename In, typename Out>
 struct post_order_impl<In, Out, true, false>
 {
     using type = boost::mp11::mp_push_back<Out, In>;
 };
 
-template<typename In, typename Out>
+template <typename In, typename Out>
 struct post_order_impl<In, Out, false, true>
 {
     using leftl  = typename post_order_impl<typename In::left, boost::mp11::mp_list<>>::type;
@@ -130,7 +123,7 @@ struct post_order_impl<In, Out, false, true>
     using type   = boost::mp11::mp_push_back<merged, In>;
 };
 
-template<typename In, typename Out>
+template <typename In, typename Out>
 struct post_order_impl<In, Out, false, false>
 {
     using childl  = typename post_order_impl<typename In::child, boost::mp11::mp_list<>>::type;
@@ -138,13 +131,11 @@ struct post_order_impl<In, Out, false, false>
     using type   = boost::mp11::mp_push_back<merged, In>;
 };
 
-template<typename In>
+template <typename In>
 using post_order = typename post_order_impl<In, boost::mp11::mp_list<>>::type;
 
-template<typename Node>
+template <typename Node>
 using is_leaf = boost::mp11::mp_bool<Node::is_leaf>;
-
-
 
 using  _1 = leaf<1>;
 using  _2 = leaf<2>;
