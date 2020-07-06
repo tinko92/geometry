@@ -1,0 +1,621 @@
+// Boost.Geometry (aka GGL, Generic Geometry Library)
+
+// Copyright (c) 2020 Tinko Bartels, Berlin, Germany.
+
+// Contributed and/or modified by Tinko Bartels,
+//   as part of Google Summer of Code 2020 program.
+
+// Use, modification and distribution is subject to the Boost Software License,
+// Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_DETAIL_STAGE_A_STATIC_HPP
+#define BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_DETAIL_STAGE_A_STATIC_HPP
+
+#include <array>
+
+#include <boost/mp11/list.hpp>
+#include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/map.hpp>
+#include <boost/mp11/set.hpp>
+
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/expression_tree.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/approximate.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/coefficient_list.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/error_bound.hpp>
+
+namespace boost { namespace geometry
+{
+
+namespace detail { namespace generic_robust_predicates
+{
+
+
+template
+<
+    typename All,
+    typename Remaining,
+    typename Real,
+    typename Arr,
+    operator_types Op,
+    typename ...Reals
+>
+struct maximize_abs_impl {};
+
+template
+<
+    typename All,
+    typename Remaining,
+    typename Real,
+    typename Arr,
+    bool Empty,
+    typename ...Reals
+>
+struct maximize_abs_remainder_impl
+{
+    static inline void apply(Arr& interim_results, const Reals&... args)
+    {
+        using node = boost::mp11::mp_front<Remaining>;
+        maximize_abs_impl
+            <
+                All,
+                Remaining,
+                Real,
+                Arr,
+                node::operator_type,
+                Reals...
+            >::apply(interim_results, args...);
+    }
+};
+
+template
+<
+    typename All,
+    typename Remaining,
+    typename Real,
+    typename Arr,
+    typename ...Reals
+>
+struct maximize_abs_remainder_impl
+    <
+        All,
+        Remaining,
+        Real,
+        Arr,
+        true,
+        Reals...
+    >
+{
+    static inline void apply(Arr& interim_results, const Reals&... args) {}
+};
+
+template
+<
+    typename All,
+    typename Remaining,
+    typename Real,
+    typename Arr,
+    typename ...Reals
+>
+inline void maximize_abs_remainder(Arr& interim_results, const Reals&... args)
+{
+    maximize_abs_remainder_impl
+        <
+            All,
+            Remaining,
+            Real,
+            Arr,
+            boost::mp11::mp_empty<Remaining>::value,
+            Reals...
+        >::apply(interim_results, args...);
+}
+
+template
+<
+    typename All,
+    typename Node,
+    typename Real,
+    typename Arr,
+    bool is_leaf,
+    bool max,
+    typename ...Reals
+>
+struct get_min_max_impl
+{
+    static inline Real apply(Arr& interim_results, const Reals&... args)
+    {
+        return interim_results[boost::mp11::mp_find<All, Node>::value];
+    }
+};
+
+template
+<
+    typename All,
+    typename Node,
+    typename Real,
+    typename Arr,
+    typename ...Reals
+>
+struct get_min_max_impl<All, Node, Real, Arr, true, true, Reals...>
+{
+    static inline Real apply(Arr& interim_results, const Reals&... args)
+    {
+        return get_nth_real<Node::argn, Real>(args...);
+    }
+};
+
+template
+<
+    typename All,
+    typename Node,
+    typename Real,
+    typename Arr,
+    typename ...Reals
+>
+struct get_min_max_impl<All, Node, Real, Arr, true, false, Reals...>
+{                              
+    static inline Real apply(Arr& interim_results, const Reals&... args)
+    {
+        return get_nth_real<sizeof...(Reals) / 2 + Node::argn, Real>(args...);
+    }
+};
+
+template
+<
+    typename All,
+    typename Node,
+    typename Real,
+    typename Arr,
+    bool max,
+    typename ...Reals
+>
+inline Real get_min_max(Arr& interim_results, const Reals&...args)
+{
+    return get_min_max_impl
+        <
+            All,
+            Node,
+            Real,
+            Arr,
+            is_leaf<Node>::value,
+            max,
+            Reals...
+        >::apply(interim_results, args...);
+}
+
+template
+<
+    typename All,
+    typename Remaining,
+    typename Real,
+    typename Arr,
+    typename ...Reals
+>
+struct maximize_abs_impl
+    <
+        All,
+        Remaining,
+        Real,
+        Arr,
+        operator_types::product,
+        Reals...
+    >
+{
+    static inline void apply(Arr& interim_results, const Reals&... args)
+    {
+        using node = boost::mp11::mp_front<Remaining>;
+        const Real l = std::max(
+                std::abs(get_min_max
+                    <
+                        All,
+                        typename node::left,
+                        Real,
+                        Arr,
+                        false
+                    >(interim_results, args...)),
+                std::abs(get_min_max
+                    <
+                        All,
+                        typename node::left,
+                        Real,
+                        Arr,
+                        true
+                    >(interim_results, args...)));
+        const Real r = std::max(
+                std::abs(get_min_max
+                    <
+                        All,
+                        typename node::right,
+                        Real,
+                        Arr,
+                        false
+                    >(interim_results, args...)),
+                std::abs(get_min_max
+                    <
+                        All,
+                        typename node::right,
+                        Real,
+                        Arr,
+                        true
+                    >(interim_results, args...)));
+        interim_results[boost::mp11::mp_find<All, node>::value] = l * r;
+        maximize_abs_remainder
+            <
+                All,
+                boost::mp11::mp_pop_front<Remaining>,
+                Real
+            >(interim_results, args...);
+    }
+};
+
+template
+<
+    typename All,
+    typename Remaining,
+    typename Real,
+    typename Arr,
+    typename ...Reals
+>
+struct maximize_abs_impl
+    <
+        All,
+        Remaining,
+        Real,
+        Arr,
+        operator_types::sum,
+        Reals...
+    >
+{
+    static inline void apply(Arr& interim_results, const Reals&... args)
+    {
+        using node = boost::mp11::mp_front<Remaining>;
+        Real maxsum = get_min_max
+                    <
+                        All,
+                        typename node::left,
+                        Real,
+                        Arr,
+                        true
+                    >(interim_results, args...)
+                    + get_min_max
+                    <
+                        All,
+                        typename node::right,
+                        Real,
+                        Arr,
+                        true
+                    >(interim_results, args...);
+        Real minsum = get_min_max
+                    <
+                        All,
+                        typename node::left,
+                        Real,
+                        Arr,
+                        false
+                    >(interim_results, args...)
+                    + get_min_max
+                    <
+                        All,
+                        typename node::right,
+                        Real,
+                        Arr,
+                        false
+                    >(interim_results, args...);
+        interim_results[boost::mp11::mp_find<All, node>::value] =
+            std::max(std::abs(maxsum), std::abs(minsum));
+        maximize_abs_remainder
+            <
+                All,
+                boost::mp11::mp_pop_front<Remaining>,
+                Real
+            >(interim_results, args...);
+    }
+};
+
+template
+<
+    typename All,
+    typename Remaining,
+    typename Real,
+    typename Arr,
+    typename ...Reals
+>
+struct maximize_abs_impl
+    <
+        All,
+        Remaining,
+        Real,
+        Arr,
+        operator_types::difference,
+        Reals...
+    >
+{
+    static inline void apply(Arr& interim_results, const Reals&... args)
+    {
+        using node = boost::mp11::mp_front<Remaining>;
+        Real maxmin = get_min_max
+                    <
+                        All,
+                        typename node::left,
+                        Real,
+                        Arr,
+                        true
+                    >(interim_results, args...)
+                    - get_min_max
+                    <
+                        All,
+                        typename node::right,
+                        Real,
+                        Arr,
+                        false
+                    >(interim_results, args...);
+        Real minmax = get_min_max
+                    <
+                        All,
+                        typename node::left,
+                        Real,
+                        Arr,
+                        false
+                    >(interim_results, args...)
+                    + get_min_max
+                    <
+                        All,
+                        typename node::right,
+                        Real,
+                        Arr,
+                        true
+                    >(interim_results, args...);
+        interim_results[boost::mp11::mp_find<All, node>::value] =
+            std::max(std::abs(maxmin), std::abs(minmax));
+
+        maximize_abs_remainder
+            <
+                All,
+                boost::mp11::mp_pop_front<Remaining>,
+                Real
+            >(interim_results, args...);
+    }
+};
+
+template
+<
+    typename All,
+    typename Remaining,
+    typename Real,
+    typename Arr,
+    typename ...Reals
+>
+struct maximize_abs_impl
+    <
+        All,
+        Remaining,
+        Real,
+        Arr,
+        operator_types::abs,
+        Reals...
+    >
+{
+    static inline void apply(Arr& interim_results, const Reals&... args)
+    {
+        using node = boost::mp11::mp_front<Remaining>;
+        interim_results[boost::mp11::mp_find<All, node>::value] =
+            std::abs(get_approx
+                <
+                    All,
+                    typename node::child,
+                    Real
+                >(interim_results, args...));
+        maximize_abs_remainder
+            <
+                All,
+                boost::mp11::mp_pop_front<Remaining>,
+                Real
+            >(interim_results, args...);
+    }
+};
+
+template
+<
+    typename All,
+    typename Remaining,
+    typename Real,
+    typename Arr,
+    typename ...Reals
+>
+struct maximize_abs_impl
+    <
+        All,
+        Remaining,
+        Real,
+        Arr,
+        operator_types::no_op,
+        Reals...
+    >
+{
+    static inline void apply(Arr& interim_results, const Reals&... args)
+    {
+        maximize_abs_remainder
+            <
+                All,
+                boost::mp11::mp_pop_front<Remaining>,
+                Real
+            >(interim_results, args...);
+    }
+};
+
+template
+<
+    typename All,
+    typename Remaining,
+    typename Real,
+    typename Arr,
+    typename ...Reals
+>
+inline void maximize_abs(Arr& interim_results, const Reals&... args)
+{
+    maximize_abs_remainder
+        <
+            All,
+            Remaining,
+            Real
+        >(interim_results, args...);
+}
+
+template
+<
+    typename Real,
+    typename ErrorExpression,
+    typename ErrorEvalStack,
+    typename ArgumentN,
+    typename MaxLeaf
+>
+struct error_bound_impl {};
+
+template
+<
+    typename Real,
+    typename ErrorExpression,
+    typename ErrorEvalStack,
+    typename MaxLeaf
+>
+struct error_bound_impl
+    <
+        Real,
+        ErrorExpression,
+        ErrorEvalStack,
+        boost::mp11::mp_size_t<1>,
+        MaxLeaf
+    >
+{
+    template<typename Real1>
+    static constexpr Real apply(const Real1& arg)
+    {
+        return arg;
+    }
+};
+
+template
+<
+    typename Real,
+    typename ErrorExpression,
+    typename ErrorEvalStack,
+    typename MaxLeaf
+>
+struct error_bound_impl
+    <
+        Real,
+        ErrorExpression,
+        ErrorEvalStack,
+        boost::mp11::mp_size_t<MaxLeaf::value * 2>,
+        MaxLeaf
+    >
+{
+    template<typename ...Reals>
+    static constexpr Real apply(const Reals&... args)
+    {
+        std::array<Real, boost::mp11::mp_size<ErrorEvalStack>::value> evals;
+        maximize_abs
+            <
+                ErrorEvalStack,
+                ErrorEvalStack,
+                Real
+            >(evals, args...);
+        return
+            get_approx<ErrorEvalStack, ErrorExpression, Real>(evals, args...);
+    }
+};
+
+template <typename Expression, typename Real>
+class stage_a_static
+{
+private:
+    Real error_bound;
+    using root = Expression;
+    using stack = typename boost::mp11::mp_unique<post_order<Expression>>;
+    using evals = typename boost::mp11::mp_remove_if<stack, is_leaf>;
+    using interim_evals = typename boost::mp11::mp_remove
+        <
+            boost::mp11::mp_remove_if<stack, is_leaf>,
+            root
+        >;
+    using interim_errors = evals_error<interim_evals>;
+    using final_children = add_children
+        <
+            boost::mp11::mp_second
+                <
+                    boost::mp11::mp_map_find
+                        <
+                            interim_errors,
+                            typename root::left
+                        >
+                >,
+            boost::mp11::mp_second
+                <
+                    boost::mp11::mp_map_find
+                        <
+                            interim_errors,
+                            typename root::right
+                        >
+                >
+        >;
+    using final_children_ltp = error_map_list_to_product<final_children>;
+    using final_children_ltp_abs = abs_all<final_children_ltp>;
+    using final_children_sum_fold = error_map_sum_up<final_children_ltp_abs>;
+    using final_coeff = coeff_round
+        <
+            div_by_1_m_eps
+                <
+                    mult_by_1_p_eps
+                        <
+                            boost::mp11::mp_second<final_children_sum_fold>
+                        >
+                >
+        >;
+    using error_expression = boost::mp11::mp_front<final_children_sum_fold>;
+    using error_eval_stack = boost::mp11::mp_unique
+        <
+            post_order<error_expression>
+        >;
+    using error_eval_stack_remainder = boost::mp11::mp_set_difference
+        <
+            error_eval_stack,
+            evals
+        >;
+    using all_evals = boost::mp11::mp_append
+        <
+            evals,
+            error_eval_stack_remainder
+        >;
+
+public:
+    template <typename ...Reals>
+    inline stage_a_static(const Reals&... args)
+        : error_bound(
+              error_bound_impl
+                <
+                    Real,
+                    error_expression,
+                    error_eval_stack,
+                    boost::mp11::mp_size_t<sizeof...(Reals)>,
+                    max_leaf<root>
+                >::apply(args...)
+            * eval_eps_polynomial<Real, final_coeff>::value) {}
+
+    template <typename ...Reals>
+    int operator()(const Reals&... args)
+    {
+        if(error_bound == 0) return 0;
+        std::array<Real, boost::mp11::mp_size<evals>::value> results;
+        approximate_interim<evals, evals, Real>(results, args...);
+        const Real det = get_approx<evals, root, Real>(results, args...);
+        if(det > error_bound) return 1;
+        if(det < -error_bound) return -1;
+        return sign_uncertain;
+    }
+};
+
+}} // namespace detail::generic_robust_predicates
+
+}} // namespace boost::geometry
+
+#endif // BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_DETAIL_STAGE_A_STATIC_HPP

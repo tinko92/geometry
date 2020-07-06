@@ -137,6 +137,32 @@ using post_order = typename post_order_impl<In, boost::mp11::mp_list<>>::type;
 template <typename Node>
 using is_leaf = boost::mp11::mp_bool<Node::is_leaf>;
 
+template <typename Node, typename IsLeaf = is_leaf<Node>>
+struct max_leaf_impl;
+
+template <typename Node> using max_leaf = typename max_leaf_impl<Node>::type;
+
+template <typename Node>
+struct max_leaf_impl<Node, boost::mp11::mp_false>
+{
+private:
+    using children_list = boost::mp11::mp_rename<Node, boost::mp11::mp_list>;
+    using children_max_leaves =
+        boost::mp11::mp_transform<max_leaf, children_list>;
+public:
+    using type = boost::mp11::mp_max_element
+        <
+            children_max_leaves,
+            boost::mp11::mp_less
+        >;
+};
+
+template <typename Node>
+struct max_leaf_impl<Node, boost::mp11::mp_true>
+{
+    using type = boost::mp11::mp_size_t<Node::argn>;
+};
+
 using  _1 = leaf<1>;
 using  _2 = leaf<2>;
 using  _3 = leaf<3>;
