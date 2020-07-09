@@ -19,10 +19,7 @@
 #include <boost/mp11/map.hpp>
 #include <boost/mp11/set.hpp>
 
-#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/expression_tree.hpp>
-#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/approximate.hpp>
-#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/coefficient_list.hpp>
-#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/error_bound.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/stage_a.hpp>
 
 namespace boost { namespace geometry
 {
@@ -153,7 +150,7 @@ template
     typename ...Reals
 >
 struct get_min_max_impl<All, Node, Real, Arr, true, false, Reals...>
-{                              
+{
     static inline Real apply(Arr& interim_results, const Reals&... args)
     {
         return get_nth_real<sizeof...(Reals) / 2 + Node::argn, Real>(args...);
@@ -529,65 +526,14 @@ template <typename Expression, typename Real>
 class stage_a_static
 {
 private:
-    Real error_bound;
-    using root = Expression;
-    using stack = typename boost::mp11::mp_unique<post_order<Expression>>;
-    using evals = typename boost::mp11::mp_remove_if<stack, is_leaf>;
-    using interim_evals = typename boost::mp11::mp_remove
-        <
-            boost::mp11::mp_remove_if<stack, is_leaf>,
-            root
-        >;
-    using interim_errors = evals_error<interim_evals>;
-    using final_children = add_children
-        <
-            boost::mp11::mp_second
-                <
-                    boost::mp11::mp_map_find
-                        <
-                            interim_errors,
-                            typename root::left
-                        >
-                >,
-            boost::mp11::mp_second
-                <
-                    boost::mp11::mp_map_find
-                        <
-                            interim_errors,
-                            typename root::right
-                        >
-                >
-        >;
-    using final_children_ltp = error_map_list_to_product<final_children>;
-    using final_children_ltp_abs = abs_all<final_children_ltp>;
-    using final_children_sum_fold = error_map_sum_up<final_children_ltp_abs>;
-    using final_coeff = coeff_round
-        <
-            div_by_1_m_eps
-                <
-                    mult_by_1_p_eps
-                        <
-                            boost::mp11::mp_second<final_children_sum_fold>
-                        >
-                >
-        >;
-    using error_expression = boost::mp11::mp_front<final_children_sum_fold>;
-    using error_eval_stack = boost::mp11::mp_unique
-        <
-            post_order<error_expression>
-        >;
-    using error_eval_stack_remainder = boost::mp11::mp_set_difference
-        <
-            error_eval_stack,
-            evals
-        >;
-    using all_evals = boost::mp11::mp_append
-        <
-            evals,
-            error_eval_stack_remainder
-        >;
+    using base_predicate = stage_a<Expression, Real>;
+    using evals = base_predicate::evals;
+    using error_expression = base_predicate::error_expression;
+    using error_eval_stack = base_predicate::error_eval_stack;
+    using final_coeff = base_predicate::final_coeff;
 
 public:
+    const Real error_bound;
     template <typename ...Reals>
     inline stage_a_static(const Reals&... args)
         : error_bound(
@@ -602,15 +548,33 @@ public:
             * eval_eps_polynomial<Real, final_coeff>::value) {}
 
     template <typename ...Reals>
-    int operator()(const Reals&... args)
+    inline int apply(const Reals&... args)
     {
-        if(error_bound == 0) return 0;
+        if (error_bound == 0)
+        {
+            return 0;
+        }
         std::array<Real, boost::mp11::mp_size<evals>::value> results;
         approximate_interim<evals, evals, Real>(results, args...);
-        const Real det = get_approx<evals, root, Real>(results, args...);
-        if(det > error_bound) return 1;
-        if(det < -error_bound) return -1;
-        return sign_uncertain;
+        const Real det = get_approx<evals, Expression, Real>(results, args...);
+        if (det > error_bound)
+        {
+            return 1;
+        }
+        else if (det < -error_bound)
+        {
+            return -1;
+        }
+        else
+        {
+            return sign_uncertain;
+        }
+    }
+
+    template <typename ...Reals>
+    inline int operator()(const Reals&... args)
+    {
+        return apply(args...);
     }
 };
 

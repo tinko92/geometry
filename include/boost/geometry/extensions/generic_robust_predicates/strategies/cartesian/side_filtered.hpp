@@ -33,46 +33,51 @@ namespace strategy { namespace side
 template <typename CalculationType = void>
 class side_filtered
 {
+private:
+    using expression =
+        boost::geometry::detail::generic_robust_predicates::difference
+            <
+                boost::geometry::detail::generic_robust_predicates::product
+                    <
+                        boost::geometry::detail::generic_robust_predicates::difference
+                            <
+                                boost::geometry::detail::generic_robust_predicates::_1,
+                                boost::geometry::detail::generic_robust_predicates::_5
+                            >,
+                        boost::geometry::detail::generic_robust_predicates::difference
+                            <
+                                boost::geometry::detail::generic_robust_predicates::_4,
+                                boost::geometry::detail::generic_robust_predicates::_6
+                            >
+                    >,
+                boost::geometry::detail::generic_robust_predicates::product
+                    <
+                        boost::geometry::detail::generic_robust_predicates::difference
+                            <
+                                boost::geometry::detail::generic_robust_predicates::_2,
+                                boost::geometry::detail::generic_robust_predicates::_6
+                            >,
+                        boost::geometry::detail::generic_robust_predicates::difference
+                            <
+                                boost::geometry::detail::generic_robust_predicates::_3,
+                                boost::geometry::detail::generic_robust_predicates::_5
+                            >
+                    >
+            >;
 
 public:
     typedef cartesian_tag cs_tag;
     template
-    <
-        typename CoordinateType,
-        typename PromotedType,
-        typename P1,
-        typename P2,
-        typename P
-    >
+        <
+            typename CoordinateType,
+            typename PromotedType,
+            typename P1,
+            typename P2,
+            typename P
+        >
     static inline
     PromotedType side_value(P1 const& p1, P2 const& p2, P const& p)
     {
-        using boost::geometry::detail::generic_robust_predicates::difference;
-        using boost::geometry::detail::generic_robust_predicates::product;
-        using boost::geometry::detail::generic_robust_predicates::leaf;
-        using expression = 
-                difference<
-                        product<
-                                difference<
-                                        leaf<1>,
-                                        leaf<5>
-                                >,
-                                difference<
-                                        leaf<4>,
-                                        leaf<6>
-                                >
-                        >,
-                        product<
-                                difference<
-                                        leaf<2>,
-                                        leaf<6>
-                                >,
-                                difference<
-                                        leaf<3>,
-                                        leaf<5>
-                                >
-                        >
-                >;
         return boost::geometry::detail::generic_robust_predicates::
             approximate_value<expression, PromotedType>(
                 get<0>(p1), get<1>(p1),
@@ -85,9 +90,9 @@ public:
     {
         typedef typename coordinate_type<P1>::type coordinate_type1;
         typedef typename coordinate_type<P2>::type coordinate_type2;
-        typedef typename coordinate_type<P>::type coordinate_type3;    
-            
-        typedef typename boost::mpl::if_c 
+        typedef typename coordinate_type<P>::type coordinate_type3;
+
+        typedef typename boost::mpl::if_c
             <
                 boost::is_void<CalculationType>::type::value,
                 typename select_most_precise
@@ -100,53 +105,32 @@ public:
                     >::type,
                 CalculationType
             >::type coordinate_type;
-            
+
         typedef typename select_most_precise
             <
                 coordinate_type,
                 double
-            >::type promoted_type; 
-        using boost::geometry::detail::generic_robust_predicates::difference;
-        using boost::geometry::detail::generic_robust_predicates::product;
-        using boost::geometry::detail::generic_robust_predicates::leaf;
-        using expression = 
-                difference<
-                        product<
-                                difference<
-                                        leaf<1>,
-                                        leaf<5>
-                                >,
-                                difference<
-                                        leaf<4>,
-                                        leaf<6>
-                                >
-                        >,
-                        product<
-                                difference<
-                                        leaf<2>,
-                                        leaf<6>
-                                >,
-                                difference<
-                                        leaf<3>,
-                                        leaf<5>
-                                >
-                        >
-                >;
-        auto stage_a_result = boost::geometry::detail::generic_robust_predicates::
-            stage_a<expression, promoted_type>(
-                get<0>(p1), get<1>(p1),
-                get<0>(p2), get<1>(p2),
-                get<0>(p), get<1>(p));
-        if(stage_a_result !=
-                boost::geometry::detail::generic_robust_predicates::sign_uncertain)
-            return stage_a_result;
-        else return boost::geometry::detail::generic_robust_predicates::
-            stage_d<expression, promoted_type>(
-                get<0>(p1), get<1>(p1),
-                get<0>(p2), get<1>(p2),
-                get<0>(p), get<1>(p));
-    }
+            >::type promoted_type;
 
+        auto stage_a_result = boost::geometry::detail::generic_robust_predicates::
+            stage_a<expression, promoted_type>::apply(
+                get<0>(p1), get<1>(p1),
+                get<0>(p2), get<1>(p2),
+                get<0>(p),  get<1>(p));
+        if (stage_a_result !=
+                boost::geometry::detail::generic_robust_predicates::sign_uncertain)
+        {
+            return stage_a_result;
+        }
+        else
+        {
+            return boost::geometry::detail::generic_robust_predicates::
+                stage_d<expression, promoted_type>::apply(
+                    get<0>(p1), get<1>(p1),
+                    get<0>(p2), get<1>(p2),
+                    get<0>(p),  get<1>(p));
+        }
+    }
 };
 
 }} // namespace strategy::side

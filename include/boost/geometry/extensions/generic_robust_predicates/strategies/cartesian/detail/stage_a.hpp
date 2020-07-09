@@ -30,12 +30,16 @@ namespace boost { namespace geometry
 namespace detail { namespace generic_robust_predicates
 {
 
-template <typename Expression, typename Real, typename ...Reals>
-inline int stage_a(const Reals&... args)
+template <typename Expression, typename Real>
+struct stage_a
 {
+private:
     using root = Expression;
     using stack = typename boost::mp11::mp_unique<post_order<Expression>>;
+
+public:
     using evals = typename boost::mp11::mp_remove_if<stack, is_leaf>;
+
     using interim_evals = typename boost::mp11::mp_remove
         <
             boost::mp11::mp_remove_if<stack, is_leaf>,
@@ -74,11 +78,15 @@ inline int stage_a(const Reals&... args)
                         >
                 >
         >;
+
+public:
     using error_expression = boost::mp11::mp_front<final_children_sum_fold>;
     using error_eval_stack = boost::mp11::mp_unique
         <
             post_order<error_expression>
         >;
+
+private:
     using error_eval_stack_remainder = boost::mp11::mp_set_difference
         <
             error_eval_stack,
@@ -90,18 +98,35 @@ inline int stage_a(const Reals&... args)
             error_eval_stack_remainder
         >;
 
-    std::array<Real, boost::mp11::mp_size<all_evals>::value> results;
-    approximate_interim<all_evals, all_evals, Real>(results, args...);
+public:
+    template <typename ...Reals>
+    static inline int apply(const Reals&... args)
+    {
+        std::array<Real, boost::mp11::mp_size<all_evals>::value> results;
+        approximate_interim<all_evals, all_evals, Real>(results, args...);
 
-    const Real stage_a_bound =
-          eval_eps_polynomial<Real, final_coeff>::value
-        * get_approx<all_evals, error_expression, Real>(results, args...);
-    const Real det = get_approx<all_evals, root, Real>(results, args...);
-    if(det > stage_a_bound) return 1;
-    if(det < -stage_a_bound) return -1;
-    if(stage_a_bound == 0) return 0;
-    return sign_uncertain;
-}
+        const Real stage_a_bound =
+              eval_eps_polynomial<Real, final_coeff>::value
+            * get_approx<all_evals, error_expression, Real>(results, args...);
+        const Real det = get_approx<all_evals, root, Real>(results, args...);
+        if (det > stage_a_bound)
+        {
+            return 1;
+        }
+        else if (det < -stage_a_bound)
+        {
+            return -1;
+        }
+        else if (stage_a_bound == 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return sign_uncertain;
+        }
+    }
+};
 
 }} // namespace detail::generic_robust_predicates
 

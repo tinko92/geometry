@@ -441,54 +441,67 @@ struct eval_expansions_impl
     }
 };
 
-template <typename Expression, typename Real, typename ...Reals>
-inline int stage_d(const Reals&... args)
+template <typename Expression, typename Real>
+struct stage_d
 {
-    using root = Expression;
-    using stack = typename boost::mp11::mp_unique<post_order<Expression>>;
-    using evals = typename boost::mp11::mp_remove_if<stack, is_leaf>;
-    using sizes = boost::mp11::mp_transform<expansion_size, evals>;
-    using accumulated_sizes = boost::mp11::mp_push_front
-        <
-            boost::mp11::mp_partial_sum
-                <
-                    sizes,
-                    boost::mp11::mp_size_t<0>,
-                    boost::mp11::mp_plus
-                >,
-            boost::mp11::mp_size_t<0>
-        >;
 
-    using result_array =
-        std::array<Real, boost::mp11::mp_back<accumulated_sizes>::value>;
-    result_array results;
+    template <typename ...Reals>
+    static inline int apply(const Reals&... args)
+    {
+        using root = Expression;
+        using stack = typename boost::mp11::mp_unique<post_order<Expression>>;
+        using evals = typename boost::mp11::mp_remove_if<stack, is_leaf>;
+        using sizes = boost::mp11::mp_transform<expansion_size, evals>;
+        using accumulated_sizes = boost::mp11::mp_push_front
+            <
+                boost::mp11::mp_partial_sum
+                    <
+                        sizes,
+                        boost::mp11::mp_size_t<0>,
+                        boost::mp11::mp_plus
+                    >,
+                boost::mp11::mp_size_t<0>
+            >;
 
-    auto final_exp_end = eval_expansions_impl
-        <
-            evals,
-            evals,
-            sizes,
-            accumulated_sizes,
-            decltype(results.begin()),
-            Real
-        >::apply(results.begin(), results.end(), args...);
+        using result_array =
+            std::array<Real, boost::mp11::mp_back<accumulated_sizes>::value>;
+        result_array results;
+
+        auto final_exp_end = eval_expansions_impl
+            <
+                evals,
+                evals,
+                sizes,
+                accumulated_sizes,
+                decltype(results.begin()),
+                Real
+            >::apply(results.begin(), results.end(), args...);
 
 
-    //TODO: If the last value is not computed with zero elimination, we need to either search
-    //      for the last non-zero entry (multiplate branches) or add them all up (multiple
-    //      float ops). Evaluate which one is faster (if the case of no zero elimination
-    //      even matters at all).
-    constexpr std::size_t final_exp_size =
-        boost::mp11::mp_back<sizes>::value;
-    auto is_zero = [](Real d) { return d == Real(0); };
-    auto most_significant =
-        std::find_if_not(
-            results.crbegin(),
-            results.crbegin() + final_exp_size, is_zero);
-    if( most_significant == results.crbegin() + final_exp_size) return 0;
-    else if( *most_significant > 0 ) return 1;
-    else return -1;
-}
+        //TODO: If the last value is not computed with zero elimination, we need to either search
+        //      for the last non-zero entry (multiplate branches) or add them all up (multiple
+        //      float ops). Evaluate which one is faster (if the case of no zero elimination
+        //      even matters at all).
+        constexpr std::size_t final_exp_size =
+            boost::mp11::mp_back<sizes>::value;
+        auto is_zero = [](Real d) { return d == Real(0); };
+        auto most_significant = std::find_if_not(
+                results.crbegin(),
+                results.crbegin() + final_exp_size, is_zero);
+        if( most_significant == results.crbegin() + final_exp_size)
+        {
+            return 0;
+        }
+        else if( *most_significant > 0 )
+        {
+            return 1;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+};
 
 }} // namespace detail::generic_robust_predicates
 
