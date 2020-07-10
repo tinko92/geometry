@@ -1404,7 +1404,7 @@ inline OutIter expansion_plus(InIter e_begin,
                               OutIter h_begin,
                               OutIter h_end)
 {
-    static_assert( f_length == 1 );
+    static_assert( f_length == 1, "f_length must be 1 if f is a single component." );
     return grow_expansion(e_begin, e_end, f, h_begin, h_end);
 }
 
@@ -1424,7 +1424,7 @@ inline OutIter expansion_plus(Real e,
                               OutIter h_begin,
                               OutIter h_end)
 {
-    static_assert( e_length == 1 );
+    static_assert( e_length == 1, "e_length must be 1 if e is a single component." );
     return grow_expansion(f_begin, f_end, e, h_begin, h_end);
 }
 
@@ -1443,7 +1443,7 @@ inline OutIter expansion_plus(
     OutIter h_begin,
     OutIter h_end)
 {
-    static_assert( f_length == 1 && e_length == 1 );
+    static_assert( f_length == 1 && e_length == 1, "e_length and f_length must be 1 if they are single components." );
     *(h_begin + 1) = e + f;
     *h_begin = two_sum_tail(e, f, *(h_begin + 1));
     return h_begin + 2;
@@ -1485,7 +1485,7 @@ inline OutIter expansion_minus(InIter e_begin,
                                OutIter h_begin,
                                OutIter h_end)
 {
-    static_assert(f_length == 1);
+    static_assert(f_length == 1, "f_length must be 1 if f is a single component.");
     return expansion_plus
         <
             e_length,
@@ -1510,7 +1510,7 @@ inline OutIter expansion_minus(Real e,
                                OutIter h_begin,
                                OutIter h_end)
 {
-    static_assert(e_length == 1);
+    static_assert(e_length == 1, "e_length must be 1 if e is a single component.");
     return grow_expansion
         <
             InIter,
@@ -1535,7 +1535,7 @@ inline OutIter expansion_minus(Real e,
                                OutIter h_begin,
                                OutIter h_end)
 {
-    static_assert(e_length == 1 && f_length == 1);
+    static_assert(e_length == 1 && f_length == 1, "e_length and f_length must be 1 if they are single components.");
     *(h_begin + 1) = e - f;
     *h_begin = two_difference_tail(e, f, *(h_begin + 1));
     return h_begin + 2;
@@ -1751,7 +1751,7 @@ inline OutIter expansion_times(InIter e_begin,
                                OutIter h_begin,
                                OutIter h_end)
 {
-    static_assert(f_length == 1);
+    static_assert(f_length == 1, "f_length must be 1 if f is a single component.");
     return scale_expansion(e_begin, e_end, f, h_begin, h_end);
 }
 
@@ -1771,7 +1771,7 @@ inline OutIter expansion_times(Real e,
                                OutIter h_begin,
                                OutIter h_end)
 {
-    static_assert(e_length == 1);
+    static_assert(e_length == 1, "e_length must be 1 if e is a single component.");
     return scale_expansion(f_begin, f_end, e, h_begin, h_end);
 }
 
@@ -1789,7 +1789,7 @@ inline OutIter expansion_times(Real e,
                                OutIter h_begin,
                                OutIter h_end)
 {
-    static_assert(e_length == 1 && f_length == 1);
+    static_assert(e_length == 1 && f_length == 1, "e_length and f_length must be 1 if they are single components.");
     *(h_begin + 1) = e * f;
     *(h_begin) = two_product_tail(e, f, *(h_begin + 1));
     return h_begin + 2;
