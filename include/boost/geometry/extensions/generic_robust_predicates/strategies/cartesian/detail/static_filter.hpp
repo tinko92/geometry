@@ -531,7 +531,7 @@ template
     <
         typename Expression,
         typename Real,
-        template <typename, typename> typename BasePredicate
+        template <typename, typename> class BasePredicate
     >
 class static_filter
 {
@@ -545,7 +545,10 @@ private:
             post_order<error_expression>
         >;
 public:
-    const Real error_bound;
+    Real error_bound;
+
+    inline static_filter() {}
+
     template <typename ...Reals>
     inline static_filter(const Reals&... args)
         : error_bound(
@@ -559,7 +562,7 @@ public:
                 >::apply(args...)) {}
 
     template <typename ...Reals>
-    inline int apply(const Reals&... args)
+    inline int apply(const Reals&... args) const
     {
         if (error_bound == 0)
         {
@@ -583,7 +586,7 @@ public:
     }
 
     template <typename ...Reals>
-    inline int operator()(const Reals&... args)
+    inline int operator()(const Reals&... args) const
     {
         return apply(args...);
     }
