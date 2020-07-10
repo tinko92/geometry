@@ -211,8 +211,8 @@ public:
     template<typename ...Reals>
     static Iter apply(Iter begin, Iter end, const Reals&... args)
     {
-        Real left_val = get_nth_real<left::argn, Real>(args...);
-        Real right_val = get_nth_real<right::argn, Real>(args...);
+        Real left_val = get_nth_real<left, left::argn, Real>(args...);
+        Real right_val = get_nth_real<right, right::argn, Real>(args...);
         return perform_op_impl<Op, 1, 1, false, Iter>
             ::apply(left_val, right_val, begin + start, begin + start + size);
     }
@@ -258,7 +258,7 @@ public:
     template<typename ...Reals>
     static Iter apply(Iter begin, Iter end, const Reals&... args)
     {
-        Real left_val = get_nth_real<left::argn, Real>(args...);
+        Real left_val = get_nth_real<left, left::argn, Real>(args...);
         return perform_op_impl<Op, 1, right_size, false, Iter>::apply(
             left_val,
             begin + right_start,
@@ -308,7 +308,7 @@ public:
     template<typename ...Reals>
     static Iter apply(Iter begin, Iter end, const Reals&... args)
     {
-        Real right_val = get_nth_real<right::argn, Real>(args...);
+        Real right_val = get_nth_real<right, right::argn, Real>(args...);
         return perform_op_impl<Op, left_size, 1, false, Iter>::apply(
             begin + left_start,
             begin + left_start + left_size,

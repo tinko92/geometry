@@ -9,8 +9,8 @@
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_DETAIL_STAGE_A_STATIC_HPP
-#define BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_DETAIL_STAGE_A_STATIC_HPP
+#ifndef BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_DETAIL_STATIC_FILTER_HPP
+#define BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_DETAIL_STATIC_FILTER_HPP
 
 #include <array>
 
@@ -137,7 +137,7 @@ struct get_min_max_impl<All, Node, Real, Arr, true, true, Reals...>
 {
     static inline Real apply(Arr& interim_results, const Reals&... args)
     {
-        return get_nth_real<Node::argn, Real>(args...);
+        return get_nth_real<Node, Node::argn, Real>(args...);
     }
 };
 
@@ -153,7 +153,12 @@ struct get_min_max_impl<All, Node, Real, Arr, true, false, Reals...>
 {
     static inline Real apply(Arr& interim_results, const Reals&... args)
     {
-        return get_nth_real<sizeof...(Reals) / 2 + Node::argn, Real>(args...);
+        return get_nth_real
+            <
+                Node,
+                (Node::argn > 0 ? sizeof...(Reals) / 2 + Node::argn : 0),
+                Real
+            >(args...);
     }
 };
 
@@ -522,20 +527,27 @@ struct error_bound_impl
     }
 };
 
-template <typename Expression, typename Real>
-class stage_a_static
+template
+    <
+        typename Expression,
+        typename Real,
+        template <typename, typename> typename BasePredicate
+    >
+class static_filter
 {
 private:
-    using base_predicate = stage_a<Expression, Real>;
-    using evals = base_predicate::evals;
-    using error_expression = base_predicate::error_expression;
-    using error_eval_stack = base_predicate::error_eval_stack;
-    using final_coeff = base_predicate::final_coeff;
-
+    using base_predicate = BasePredicate<Expression, Real>;
+    using stack = typename boost::mp11::mp_unique<post_order<Expression>>;
+    using evals = typename boost::mp11::mp_remove_if<stack, is_leaf>;
+    using error_expression = typename base_predicate::error_expression;
+    using error_eval_stack = boost::mp11::mp_unique
+        <
+            post_order<error_expression>
+        >;
 public:
     const Real error_bound;
     template <typename ...Reals>
-    inline stage_a_static(const Reals&... args)
+    inline static_filter(const Reals&... args)
         : error_bound(
               error_bound_impl
                 <
@@ -543,9 +555,8 @@ public:
                     error_expression,
                     error_eval_stack,
                     boost::mp11::mp_size_t<sizeof...(Reals)>,
-                    max_leaf<root>
-                >::apply(args...)
-            * eval_eps_polynomial<Real, final_coeff>::value) {}
+                    max_argn<Expression>
+                >::apply(args...)) {}
 
     template <typename ...Reals>
     inline int apply(const Reals&... args)
@@ -582,4 +593,4 @@ public:
 
 }} // namespace boost::geometry
 
-#endif // BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_DETAIL_STAGE_A_STATIC_HPP
+#endif // BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_DETAIL_STATIC_FILTER_HPP

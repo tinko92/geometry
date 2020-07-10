@@ -36,10 +36,7 @@ struct stage_a
 private:
     using root = Expression;
     using stack = typename boost::mp11::mp_unique<post_order<Expression>>;
-
-public:
     using evals = typename boost::mp11::mp_remove_if<stack, is_leaf>;
-
     using interim_evals = typename boost::mp11::mp_remove
         <
             boost::mp11::mp_remove_if<stack, is_leaf>,
@@ -78,15 +75,21 @@ public:
                         >
                 >
         >;
+    static constexpr Real final_coeff_value = eval_eps_polynomial<Real, final_coeff>::value;
 
+    struct final_coeff_constant : public static_constant_interface<Real>
+    {
+        static constexpr Real value = final_coeff_value;
+    };
+
+    using error_expression_variable = boost::mp11::mp_front<final_children_sum_fold>;
 public:
-    using error_expression = boost::mp11::mp_front<final_children_sum_fold>;
+    using error_expression = product<final_coeff_constant, error_expression_variable>;
+private:
     using error_eval_stack = boost::mp11::mp_unique
         <
             post_order<error_expression>
         >;
-
-private:
     using error_eval_stack_remainder = boost::mp11::mp_set_difference
         <
             error_eval_stack,
@@ -106,8 +109,7 @@ public:
         approximate_interim<all_evals, all_evals, Real>(results, args...);
 
         const Real stage_a_bound =
-              eval_eps_polynomial<Real, final_coeff>::value
-            * get_approx<all_evals, error_expression, Real>(results, args...);
+            get_approx<all_evals, error_expression, Real>(results, args...);
         const Real det = get_approx<all_evals, root, Real>(results, args...);
         if (det > stage_a_bound)
         {

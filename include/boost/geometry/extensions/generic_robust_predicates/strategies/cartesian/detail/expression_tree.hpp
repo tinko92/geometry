@@ -88,15 +88,26 @@ struct abs : public internal_unary_node<Child>
     static constexpr bool sign_exact = Child::sign_exact;
 };
 
-template <std::size_t Argn>
 struct leaf
 {
-    static constexpr std::size_t argn = Argn;
     static constexpr bool is_leaf = true;
     static constexpr bool sign_exact = true;
     static constexpr operator_types operator_type = operator_types::no_op;
-
     static constexpr operator_arities operator_arity = operator_arities::unary;
+};
+
+template <std::size_t Argn>
+struct argument : public leaf
+{
+    static constexpr std::size_t argn = Argn;
+};
+
+template <typename NumberType>
+struct static_constant_interface : public leaf
+{
+    using value_type = NumberType;
+    static constexpr NumberType value = 0; //override
+    static constexpr std::size_t argn = 0;
 };
 
 template
@@ -138,43 +149,43 @@ template <typename Node>
 using is_leaf = boost::mp11::mp_bool<Node::is_leaf>;
 
 template <typename Node, typename IsLeaf = is_leaf<Node>>
-struct max_leaf_impl;
+struct max_argn_impl;
 
-template <typename Node> using max_leaf = typename max_leaf_impl<Node>::type;
+template <typename Node> using max_argn = typename max_argn_impl<Node>::type;
 
 template <typename Node>
-struct max_leaf_impl<Node, boost::mp11::mp_false>
+struct max_argn_impl<Node, boost::mp11::mp_false>
 {
 private:
     using children_list = boost::mp11::mp_rename<Node, boost::mp11::mp_list>;
-    using children_max_leaves =
-        boost::mp11::mp_transform<max_leaf, children_list>;
+    using children_max_argn =
+        boost::mp11::mp_transform<max_argn, children_list>;
 public:
     using type = boost::mp11::mp_max_element
         <
-            children_max_leaves,
+            children_max_argn,
             boost::mp11::mp_less
         >;
 };
 
 template <typename Node>
-struct max_leaf_impl<Node, boost::mp11::mp_true>
+struct max_argn_impl<Node, boost::mp11::mp_true>
 {
     using type = boost::mp11::mp_size_t<Node::argn>;
 };
 
-using  _1 = leaf<1>;
-using  _2 = leaf<2>;
-using  _3 = leaf<3>;
-using  _4 = leaf<4>;
-using  _5 = leaf<5>;
-using  _6 = leaf<6>;
-using  _7 = leaf<7>;
-using  _8 = leaf<8>;
-using  _9 = leaf<9>;
-using _10 = leaf<10>;
-using _11 = leaf<11>;
-using _12 = leaf<12>;
+using  _1 = argument<1>;
+using  _2 = argument<2>;
+using  _3 = argument<3>;
+using  _4 = argument<4>;
+using  _5 = argument<5>;
+using  _6 = argument<6>;
+using  _7 = argument<7>;
+using  _8 = argument<8>;
+using  _9 = argument<9>;
+using _10 = argument<10>;
+using _11 = argument<11>;
+using _12 = argument<12>;
 
 }} // namespace detail::generic_robust_predicates
 

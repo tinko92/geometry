@@ -30,6 +30,7 @@ namespace detail { namespace generic_robust_predicates
 
 template
 <
+    typename Node,
     std::size_t N,
     typename Real,
     typename ...Reals
@@ -38,16 +39,17 @@ struct get_nth_real_impl
 {
     static inline Real apply(const Real& arg, const Reals&... args)
     {
-        return get_nth_real_impl<N - 1, Reals...>::apply(args...);
+        return get_nth_real_impl<Node, N - 1, Reals...>::apply(args...);
     }
 };
 
 template
 <
+    typename Node,
     typename Real,
     typename ...Reals
 >
-struct get_nth_real_impl<1, Real, Reals...>
+struct get_nth_real_impl<Node, 1, Real, Reals...>
 {
     static inline Real apply(const Real& arg, const Reals&... args)
     {
@@ -57,13 +59,28 @@ struct get_nth_real_impl<1, Real, Reals...>
 
 template
 <
+    typename Node,
+    typename Real,
+    typename ...Reals
+>
+struct get_nth_real_impl<Node, 0, Real, Reals...>
+{
+    static inline Real apply(const Real& arg, const Reals&... args)
+    {
+        return Node::value;
+    }
+};
+
+template
+<
+    typename Node,
     std::size_t N,
     typename Real,
     typename ...Reals
 >
 inline Real get_nth_real(const Real& arg, const Reals&... args)
 {
-    return get_nth_real_impl<N, Real, Reals...>::apply(arg, args...);
+    return get_nth_real_impl<Node, N, Real, Reals...>::apply(arg, args...);
 }
 
 template
@@ -95,7 +112,7 @@ struct get_approx_impl<All, Node, Real, Arr, true, Reals...>
 {
     static inline Real apply(Arr& interim_results, const Reals&... args)
     {
-        return get_nth_real<Node::argn, Real>(args...);
+        return get_nth_real<Node, Node::argn, Real>(args...);
     }
 };
 

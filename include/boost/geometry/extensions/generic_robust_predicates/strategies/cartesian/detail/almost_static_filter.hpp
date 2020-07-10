@@ -26,16 +26,15 @@ template
 <
     typename Expression,
     typename Real,
-    template <typename, typename> StaticFilter
+    typename StaticFilter
 >
 class almost_static_filter
 {
 private:
-    using static_filter = StaticFilter<Expression, Real>;
     using expression_max_leaf = max_leaf<Expression>;
     using index_set = boost::mp11::mp_iota<expression_max_leaf>;
     std::array<Real, 2 * expression_max_leaf::value> extrema;
-    static_filter filter;
+    StaticFilter filter;
 
     template <std::size_t N, typename ...Reals>
     inline void update_extremum(const Reals&... args)
@@ -85,7 +84,7 @@ public:
 
     inline void update_filter()
     {
-        filter = static_filter(std::get<index_set>(extrema)...);
+        filter = StaticFilter(std::get<index_set>(extrema)...);
     }
 };
 
