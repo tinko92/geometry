@@ -544,14 +544,14 @@ private:
         <
             post_order<error_expression>
         >;
-public:
-    Real error_bound;
+    Real m_error_bound;
 
+public:
     inline static_filter() {}
 
     template <typename ...Reals>
     inline static_filter(const Reals&... args)
-        : error_bound(
+        : m_error_bound(
               error_bound_impl
                 <
                     Real,
@@ -564,18 +564,18 @@ public:
     template <typename ...Reals>
     inline int apply(const Reals&... args) const
     {
-        if (error_bound == 0)
+        if (m_error_bound == 0)
         {
             return 0;
         }
         std::array<Real, boost::mp11::mp_size<evals>::value> results;
         approximate_interim<evals, evals, Real>(results, args...);
         const Real det = get_approx<evals, Expression, Real>(results, args...);
-        if (det > error_bound)
+        if (det > m_error_bound)
         {
             return 1;
         }
-        else if (det < -error_bound)
+        else if (det < -m_error_bound)
         {
             return -1;
         }
