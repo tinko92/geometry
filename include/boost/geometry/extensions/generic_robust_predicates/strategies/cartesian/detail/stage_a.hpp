@@ -19,6 +19,7 @@
 #include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/expression_tree.hpp>
 #include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/coefficient_list.hpp>
 #include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/error_bound.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/interval_error_bound.hpp>
 
 #include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/semi_static_filter.hpp>
 #include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/almost_static_filter.hpp>
@@ -116,7 +117,7 @@ using stage_a_static = static_filter
         <
             Expression,
             Real,
-            stage_a_error_bound<Expression, Real>
+            interval<stage_a_error_bound<Expression, Real>>
         >;
 
 template

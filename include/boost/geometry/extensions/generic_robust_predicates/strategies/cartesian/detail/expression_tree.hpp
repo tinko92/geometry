@@ -24,7 +24,7 @@ namespace detail { namespace generic_robust_predicates
 {
 
 enum class operator_types {
-    sum, difference, product, abs, no_op
+    sum, difference, product, abs, no_op, max, min
 };
 
 enum class operator_arities { unary, binary };
@@ -78,6 +78,22 @@ struct product : public internal_binary_node<Left, Right>
     static constexpr bool sign_exact = Left::sign_exact && Right::sign_exact;
     static constexpr operator_types operator_type = operator_types::product;
     using error_type = product_error_type;
+};
+
+template <typename Left, typename Right>
+struct max : public internal_binary_node<Left, Right>
+{
+    static constexpr bool sign_exact = Left::sign_exact && Right::sign_exact;
+    static constexpr operator_types operator_type = operator_types::max;
+    using error_type = no_error_type;
+};
+
+template <typename Left, typename Right>
+struct min : public internal_binary_node<Left, Right>
+{
+    static constexpr bool sign_exact = Left::sign_exact && Right::sign_exact;
+    static constexpr operator_types operator_type = operator_types::min;
+    using error_type = no_error_type;
 };
 
 template <typename Child>
