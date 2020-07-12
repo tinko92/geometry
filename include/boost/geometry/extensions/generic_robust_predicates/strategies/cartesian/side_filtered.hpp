@@ -17,6 +17,7 @@
 
 #include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/stage_a.hpp>
 #include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/stage_d.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/expressions.hpp>
 
 namespace boost { namespace geometry
 {
@@ -35,36 +36,7 @@ class side_filtered
 {
 private:
     using expression =
-        boost::geometry::detail::generic_robust_predicates::difference
-            <
-                boost::geometry::detail::generic_robust_predicates::product
-                    <
-                        boost::geometry::detail::generic_robust_predicates::difference
-                            <
-                                boost::geometry::detail::generic_robust_predicates::_1,
-                                boost::geometry::detail::generic_robust_predicates::_5
-                            >,
-                        boost::geometry::detail::generic_robust_predicates::difference
-                            <
-                                boost::geometry::detail::generic_robust_predicates::_4,
-                                boost::geometry::detail::generic_robust_predicates::_6
-                            >
-                    >,
-                boost::geometry::detail::generic_robust_predicates::product
-                    <
-                        boost::geometry::detail::generic_robust_predicates::difference
-                            <
-                                boost::geometry::detail::generic_robust_predicates::_2,
-                                boost::geometry::detail::generic_robust_predicates::_6
-                            >,
-                        boost::geometry::detail::generic_robust_predicates::difference
-                            <
-                                boost::geometry::detail::generic_robust_predicates::_3,
-                                boost::geometry::detail::generic_robust_predicates::_5
-                            >
-                    >
-            >;
-
+        boost::geometry::detail::generic_robust_predicates::orient2d;
 public:
     typedef cartesian_tag cs_tag;
     template
