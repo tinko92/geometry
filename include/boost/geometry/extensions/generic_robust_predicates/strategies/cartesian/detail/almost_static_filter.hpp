@@ -145,7 +145,6 @@ private:
     using extrema_array = std::array<Real, 2 * expression_max_argn::value>;
     extrema_array m_extrema;
     StaticFilter m_filter;
-
 public:
     const StaticFilter& filter() const { return m_filter; }
     inline almost_static_filter()

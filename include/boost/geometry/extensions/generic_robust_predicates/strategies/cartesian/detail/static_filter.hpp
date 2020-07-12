@@ -528,24 +528,21 @@ struct error_bound_impl
 };
 
 template
-    <
-        typename Expression,
-        typename Real,
-        template <typename, typename> class BasePredicate
-    >
+<
+    typename Expression,
+    typename Real,
+    typename ErrorExpression
+>
 class static_filter
 {
 private:
-    using base_predicate = BasePredicate<Expression, Real>;
     using stack = typename boost::mp11::mp_unique<post_order<Expression>>;
     using evals = typename boost::mp11::mp_remove_if<stack, is_leaf>;
-    using error_expression = typename base_predicate::error_expression;
     using error_eval_stack = boost::mp11::mp_unique
         <
-            post_order<error_expression>
+            post_order<ErrorExpression>
         >;
     Real m_error_bound;
-
 public:
     inline static_filter() {}
 
@@ -555,7 +552,7 @@ public:
               error_bound_impl
                 <
                     Real,
-                    error_expression,
+                    ErrorExpression,
                     error_eval_stack,
                     boost::mp11::mp_size_t<sizeof...(Reals)>,
                     max_argn<Expression>
@@ -564,10 +561,6 @@ public:
     template <typename ...Reals>
     inline int apply(const Reals&... args) const
     {
-        if (m_error_bound == 0)
-        {
-            return 0;
-        }
         std::array<Real, boost::mp11::mp_size<evals>::value> results;
         approximate_interim<evals, evals, Real>(results, args...);
         const Real det = get_approx<evals, Expression, Real>(results, args...);
@@ -578,6 +571,10 @@ public:
         else if (det < -m_error_bound)
         {
             return -1;
+        }
+        else if (m_error_bound == 0 && det == 0)
+        {
+            return 0;
         }
         else
         {

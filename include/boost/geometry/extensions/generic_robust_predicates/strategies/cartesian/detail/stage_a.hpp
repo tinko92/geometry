@@ -12,17 +12,17 @@
 #ifndef BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_DETAIL_STAGE_A_HPP
 #define BOOST_GEOMETRY_EXTENSIONS_GENERIC_ROBUST_PREDICATES_STRATEGIES_CARTESIAN_DETAIL_STAGE_A_HPP
 
-#include <array>
-
 #include <boost/mp11/list.hpp>
 #include <boost/mp11/algorithm.hpp>
-#include <boost/mp11/map.hpp>
 #include <boost/mp11/set.hpp>
 
 #include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/expression_tree.hpp>
-#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/approximate.hpp>
 #include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/coefficient_list.hpp>
 #include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/error_bound.hpp>
+
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/semi_static_filter.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/almost_static_filter.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/static_filter.hpp>
 
 namespace boost { namespace geometry
 {
@@ -31,7 +31,7 @@ namespace detail { namespace generic_robust_predicates
 {
 
 template <typename Expression, typename Real>
-struct stage_a
+struct stage_a_error_bound_impl
 {
 private:
     using root = Expression;
@@ -84,51 +84,52 @@ private:
 
     using error_expression_variable = boost::mp11::mp_front<final_children_sum_fold>;
 public:
-    using error_expression = product<final_coeff_constant, error_expression_variable>;
-private:
-    using error_eval_stack = boost::mp11::mp_unique
-        <
-            post_order<error_expression>
-        >;
-    using error_eval_stack_remainder = boost::mp11::mp_set_difference
-        <
-            error_eval_stack,
-            evals
-        >;
-    using all_evals = boost::mp11::mp_append
-        <
-            evals,
-            error_eval_stack_remainder
-        >;
-
-public:
-    template <typename ...Reals>
-    static inline int apply(const Reals&... args)
-    {
-        std::array<Real, boost::mp11::mp_size<all_evals>::value> results;
-        approximate_interim<all_evals, all_evals, Real>(results, args...);
-
-        const Real stage_a_bound =
-            get_approx<all_evals, error_expression, Real>(results, args...);
-        const Real det = get_approx<all_evals, root, Real>(results, args...);
-        if (det > stage_a_bound)
-        {
-            return 1;
-        }
-        else if (det < -stage_a_bound)
-        {
-            return -1;
-        }
-        else if (stage_a_bound == 0)
-        {
-            return 0;
-        }
-        else
-        {
-            return sign_uncertain;
-        }
-    }
+    using type = product<final_coeff_constant, error_expression_variable>;
 };
+
+template
+<
+    typename Expression,
+    typename Real
+>
+using stage_a_error_bound =
+    typename stage_a_error_bound_impl<Expression, Real>::type;
+
+template
+<
+    typename Expression,
+    typename Real
+>
+using stage_a_semi_static = semi_static_filter
+        <
+            Expression,
+            Real,
+            stage_a_error_bound<Expression, Real>
+        >;
+
+template
+<
+    typename Expression,
+    typename Real
+>
+using stage_a_static = static_filter
+        <
+            Expression,
+            Real,
+            stage_a_error_bound<Expression, Real>
+        >;
+
+template
+<
+    typename Expression,
+    typename Real
+>
+using stage_a_almost_static = almost_static_filter
+        <
+            Expression,
+            Real,
+            stage_a_static<Expression, Real>
+        >;
 
 }} // namespace detail::generic_robust_predicates
 
