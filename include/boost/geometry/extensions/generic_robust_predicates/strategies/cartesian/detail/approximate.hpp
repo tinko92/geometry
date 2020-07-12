@@ -428,6 +428,97 @@ struct approximate_interim_impl
     }
 };
 
+template<typename Real>
+Real approximate_ufp(Real a)
+{
+    int r;
+    std::frexp(a, &r);
+    return std::ldexp(Real(1), r);
+}
+
+template<typename Real>
+Real approximate_succ(Real a)
+{    
+    int exp;
+    Real frac = std::frexp(a, &exp);
+    frac += std::numeric_limits<Real>::epsilon();
+    return std::ldexp(frac, exp);
+}
+
+template
+<
+    typename All,
+    typename Remaining,
+    typename Real,
+    typename Arr,
+    typename ...Reals
+>
+struct approximate_interim_impl
+    <
+        All,
+        Remaining,
+        Real,
+        Arr,
+        operator_types::ufp,
+        Reals...
+    >
+{
+    static inline void apply(Arr& interim_results, const Reals&... args)
+    {
+        using node = boost::mp11::mp_front<Remaining>;
+        interim_results[boost::mp11::mp_find<All, node>::value] =
+            approximate_ufp(get_approx
+                <
+                    All,
+                    typename node::child,
+                    Real
+                >(interim_results, args...));
+        approximate_remainder
+            <
+                All,
+                boost::mp11::mp_pop_front<Remaining>,
+                Real
+            >(interim_results, args...);
+    }
+};
+
+template
+<
+    typename All, 
+    typename Remaining,
+    typename Real,   
+    typename Arr,
+    typename ...Reals
+>
+struct approximate_interim_impl
+    <
+        All,
+        Remaining,
+        Real,
+        Arr,
+        operator_types::succ,
+        Reals...
+    >
+{
+    static inline void apply(Arr& interim_results, const Reals&... args)
+    {
+        using node = boost::mp11::mp_front<Remaining>;
+        interim_results[boost::mp11::mp_find<All, node>::value] =
+            approximate_succ(get_approx
+                <
+                    All,
+                    typename node::child,
+                    Real
+                >(interim_results, args...));
+        approximate_remainder
+            <
+                All,
+                boost::mp11::mp_pop_front<Remaining>,
+                Real
+            >(interim_results, args...);
+    }
+};
+
 template
 <
     typename All,

@@ -24,7 +24,7 @@ namespace detail { namespace generic_robust_predicates
 {
 
 enum class operator_types {
-    sum, difference, product, abs, no_op, max, min
+    sum, difference, product, abs, no_op, max, min, ufp, succ
 };
 
 enum class operator_arities { unary, binary };
@@ -102,6 +102,22 @@ struct abs : public internal_unary_node<Child>
     using error_type = no_error_type;
     static constexpr operator_types operator_type = operator_types::abs;
     static constexpr bool sign_exact = Child::sign_exact;
+};
+
+template <typename Child>
+struct ufp : public internal_unary_node<Child>
+{
+    using error_type = no_error_type;
+    static constexpr operator_types operator_type = operator_types::ufp;
+    static constexpr bool sign_exact = true;
+};
+
+template <typename Child>
+struct succ : public internal_unary_node<Child>
+{
+    using error_type = no_error_type;
+    static constexpr operator_types operator_type = operator_types::succ;
+    static constexpr bool sign_exact = true;
 };
 
 struct leaf

@@ -46,6 +46,25 @@ struct u_n : public static_constant_interface<Real>
     static constexpr Real value = std::numeric_limits<Real>::min();
 };
 
+template <typename Real>
+struct two_u : public static_constant_interface<Real>
+{
+    static constexpr Real value = std::numeric_limits<Real>::epsilon();
+};
+
+template <typename Real>
+struct three_u : public static_constant_interface<Real>
+{
+    static constexpr Real value = 3 * std::numeric_limits<Real>::epsilon() / 2;
+};
+
+template <typename Real>
+struct two_u_sqr : public static_constant_interface<Real>
+{
+    static constexpr Real value = std::numeric_limits<Real>::epsilon()
+                                * std::numeric_limits<Real>::epsilon() / 2;
+};
+
 //The following could be defined generally and statically if sqrt and floor
 //were constexpr functions.
 template <std::size_t MantissaLength>
@@ -67,6 +86,12 @@ template <>
 struct small_phi<22>
 {
     static constexpr std::size_t value = 4096;
+};
+
+template <>
+struct small_phi<11>
+{
+    static constexpr std::size_t value = 44;
 };
 
 template <typename Real>
@@ -104,6 +129,44 @@ using simple_orient2d_semi_static = semi_static_filter
             typename simple_orient2d_semi_static_error_expression_impl<Real>
                 ::type
         >;
+
+template
+<
+    typename Real
+>
+struct simple_orient2d_static_error_expression_impl
+{
+private:
+    using m_x = max < _1, max < _3, _5 > >;
+    using n_x = min < _1, min < _3, _5 > >;
+    using m_y = max < _2, max < _4, _6 > >;
+    using n_y = min < _2, min < _4, _6 > >;
+    using alpha = difference < m_x, n_x >;
+    using beta = difference < m_y, n_y >;
+    using summand1 = product < product < two_u<Real>, alpha >, ufp < beta > >;
+    using summand2 = product < product < two_u<Real>, beta >, ufp < alpha > >;
+    using summand3 = product < two_u<Real>, ufp < product < alpha, beta > > >;
+    using summand4 = product
+        <
+            two_u_sqr<Real>,
+            product
+                <
+                    ufp < alpha >,
+                    ufp < beta >
+                >
+        >;
+    using T2 = sum < sum < summand1, summand2 >, sum < summand3, summand4 > >;
+public:
+    using type = succ < sum < T2, product < three_u<Real>, ufp<T2> > > >;
+};
+
+template <typename Real>
+using simple_orient2d_static = static_filter
+    <
+        orient2d,
+        Real,
+        typename simple_orient2d_static_error_expression_impl<Real>::type
+    >;
 
 }} // namespace detail::generic_robust_predicates
 
