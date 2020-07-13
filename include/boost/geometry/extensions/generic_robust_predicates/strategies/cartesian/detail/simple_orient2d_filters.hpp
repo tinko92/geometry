@@ -33,7 +33,7 @@ namespace boost { namespace geometry
 namespace detail { namespace generic_robust_predicates
 {
 
-// The following error expressions are based on "Simple Floating-Point Filters 
+// The following error expressions are based on "Simple Floating-Point Filters
 // for the Two-Dimensional Orientation Problem" by Katsuhisa Ozaki, Florian
 // Bunger, Takeshi Ogita, Shin'ichi Oishi, Siegfried M. Rump.
 // See: https://doi.org/10.1007/s10543-015-0574-9

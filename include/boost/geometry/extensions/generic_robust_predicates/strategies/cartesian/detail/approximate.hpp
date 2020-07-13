@@ -438,7 +438,7 @@ Real approximate_ufp(Real a)
 
 template<typename Real>
 Real approximate_succ(Real a)
-{    
+{
     int exp;
     Real frac = std::frexp(a, &exp);
     frac += std::numeric_limits<Real>::epsilon();
@@ -484,9 +484,9 @@ struct approximate_interim_impl
 
 template
 <
-    typename All, 
+    typename All,
     typename Remaining,
-    typename Real,   
+    typename Real,
     typename Arr,
     typename ...Reals
 >

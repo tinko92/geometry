@@ -45,7 +45,7 @@ public:
 template <typename Left, typename Right, std::size_t max_argn>
 struct interval_min_impl<sum<Left, Right>, max_argn>
 {
-private: 
+private:
     using min_left = typename interval_min_impl<Left, max_argn>::type;
     using min_right = typename interval_min_impl<Right, max_argn>::type;
 public:

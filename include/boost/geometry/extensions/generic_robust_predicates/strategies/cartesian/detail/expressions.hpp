@@ -30,7 +30,7 @@ using orient2d = difference
             product
                 <
                     difference < _2, _6 >,
-                    difference < _3, _5 > 
+                    difference < _3, _5 >
                 >
         >;
 
