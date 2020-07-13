@@ -1541,10 +1541,6 @@ inline std::enable_if_t<!StageB, OutIter> expansion_minus(Real e,
                                                          OutIter h_end)
 {
     static_assert(e_length == 1 && f_length == 1, "e_length and f_length must be 1 if they are single components.");
-
-    //TODO
-    std::cout << "Not Stage B(" << StageB << "): " << e << " - " << f << "\n";
-
     *(h_begin + 1) = e - f;
     *h_begin = two_difference_tail(e, f, *(h_begin + 1));
     return h_begin + 2;
@@ -1567,8 +1563,6 @@ inline std::enable_if_t<StageB, OutIter> expansion_minus(Real e,
 {
     static_assert(e_length == 1 && f_length == 1, "e_length and f_length must be 1 if they are single components.");
     *(h_begin) = e - f;
-    //TODO
-    std::cout << "Stage_B difference: " << e << " - " << f << " = " << *(h_begin) << "\n";
     return h_begin + 1;
 }
 
@@ -2043,8 +2037,6 @@ public:
     {
         Real left_val = get_nth_real<left, left::argn, Real>(args...);
         Real right_val = get_nth_real<right, right::argn, Real>(args...);
-        //TODO
-        std::cout << "eval expansion impl StageB: " << StageB << "\n";
         return perform_op_impl<Op, 1, 1, false, Iter, StageB>
             ::apply(left_val, right_val, begin + start, begin + start + size);
     }

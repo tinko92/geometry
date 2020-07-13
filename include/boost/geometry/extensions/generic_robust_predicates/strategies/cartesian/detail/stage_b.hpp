@@ -136,10 +136,6 @@ struct stage_b
                 boost::mp11::mp_size_t<0>
             >;
 
-        //TODO:REMOVE
-        std::cout << "Evals: \n\n" << name_indent<evals>() << "\n\nSizes: \n\n"
-            << name_indent<sizes>() << "\n\n";
-
         using result_array =
             std::array<Real, boost::mp11::mp_back<accumulated_sizes>::value>;
         result_array results;
