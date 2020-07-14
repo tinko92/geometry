@@ -34,6 +34,46 @@ using orient2d = difference
                 >
         >;
 
+struct incircle_helper
+{
+    using adx = difference<_1, _7>;
+    using ady = difference<_2, _8>;
+    using bdx = difference<_3, _7>;
+    using bdy = difference<_4, _8>;
+    using cdx = difference<_5, _7>;
+    using cdy = difference<_6, _8>;
+    using abdet = difference<product<adx, bdy>, product<bdx, ady>>;
+    using bcdet = difference<product<bdx, cdy>, product<cdx, bdy>>;
+    using cadet = difference<product<cdx, ady>, product<adx, cdy>>;
+    using alift = sum<product<adx, adx>, product<ady, ady>>;
+    using blift = sum<product<bdx, bdx>, product<bdy, bdy>>;
+    using clift = sum<product<cdx, cdx>, product<cdy, cdy>>;
+    using expression = sum
+        <
+            product
+                <
+                    alift,
+                    bcdet
+                >,
+            sum
+                <
+                    product
+                        <
+                            blift,
+                            cadet
+                        >,
+                    product
+                        <
+                            clift,
+                            abdet
+                        >
+                >
+        >;
+};
+
+using incircle = incircle_helper::expression;
+
+
 }} // namespace detail::generic_robust_predicates
 
 }} // namespace boost::geometry
