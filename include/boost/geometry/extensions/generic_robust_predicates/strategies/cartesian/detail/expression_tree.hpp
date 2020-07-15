@@ -27,7 +27,7 @@ enum class operator_types {
     sum, difference, product, abs, no_op, max, min, ufp, succ
 };
 
-enum class operator_arities { unary, binary };
+enum class operator_arities { nullary, unary, binary };
 
 constexpr int sign_uncertain = -2;
 
@@ -125,7 +125,7 @@ struct leaf
     static constexpr bool is_leaf = true;
     static constexpr bool sign_exact = true;
     static constexpr operator_types operator_type = operator_types::no_op;
-    static constexpr operator_arities operator_arity = operator_arities::unary;
+    static constexpr operator_arities operator_arity = operator_arities::nullary;
 };
 
 template <std::size_t Argn>
@@ -142,43 +142,66 @@ struct static_constant_interface : public leaf
     static constexpr std::size_t argn = 0;
 };
 
+template <typename Node>
+using is_leaf = boost::mp11::mp_bool<Node::is_leaf>;
+
 template
 <
     typename In,
     typename Out,
-    bool at_leaf = In::is_leaf,
-    bool is_binary = In::operator_arity == operator_arities::binary
+    template <typename> class Anchor = is_leaf,
+    bool IsBinary = In::operator_arity == operator_arities::binary,
+    bool AtAnchor = Anchor<In>::value
 >
 struct post_order_impl;
 
-template <typename In, typename Out>
-struct post_order_impl<In, Out, true, false>
+template
+<
+    typename In,
+    typename Out,
+    template <typename> class Anchor,
+    bool IsBinary
+>
+struct post_order_impl<In, Out, Anchor, IsBinary, true>
 {
     using type = boost::mp11::mp_push_back<Out, In>;
 };
 
-template <typename In, typename Out>
-struct post_order_impl<In, Out, false, true>
+template <typename In, typename Out, template <typename> class Anchor>
+struct post_order_impl<In, Out, Anchor, true, false>
 {
-    using leftl  = typename post_order_impl<typename In::left, boost::mp11::mp_list<>>::type;
-    using rightl = typename post_order_impl<typename In::right, boost::mp11::mp_list<>>::type;
+    using leftl = typename post_order_impl
+            <
+                typename In::left,
+                boost::mp11::mp_list<>,
+                Anchor
+            >::type;
+    using rightl = typename post_order_impl
+            <
+                typename In::right,
+                boost::mp11::mp_list<>,
+                Anchor
+            >::type;
     using merged = boost::mp11::mp_append<Out, leftl, rightl>;
     using type   = boost::mp11::mp_push_back<merged, In>;
 };
 
-template <typename In, typename Out>
-struct post_order_impl<In, Out, false, false>
+template <typename In, typename Out, template <typename> class Anchor>
+struct post_order_impl<In, Out, Anchor, false, false>
 {
-    using childl  = typename post_order_impl<typename In::child, boost::mp11::mp_list<>>::type;
+    using childl = typename post_order_impl
+            <
+                typename In::child,
+                boost::mp11::mp_list<>,
+                Anchor
+            >::type;
     using merged = boost::mp11::mp_append<Out, childl>;
     using type   = boost::mp11::mp_push_back<merged, In>;
 };
 
-template <typename In>
-using post_order = typename post_order_impl<In, boost::mp11::mp_list<>>::type;
-
-template <typename Node>
-using is_leaf = boost::mp11::mp_bool<Node::is_leaf>;
+template <typename In, template <typename> class Anchor = is_leaf>
+using post_order =
+    typename post_order_impl<In, boost::mp11::mp_list<>, Anchor>::type;
 
 template <typename Node, typename IsLeaf = is_leaf<Node>>
 struct max_argn_impl;

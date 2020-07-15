@@ -63,7 +63,10 @@ struct log_2_ceil_impl
 private:
     using floor = log_2_floor<N>;
 public:
-    using type = boost::mp11::mp_int< (1 << floor::value) == N::value ? floor::value : floor::value + 1 >;
+    using type = boost::mp11::mp_int
+        <
+            (1 << floor::value) == N::value ? floor::value : floor::value + 1
+        >;
 };
 
 template <typename N> using log_2_ceil = typename log_2_ceil_impl<N>::type;

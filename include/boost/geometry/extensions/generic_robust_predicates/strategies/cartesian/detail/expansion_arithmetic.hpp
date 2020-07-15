@@ -1867,7 +1867,7 @@ private:
     static constexpr std::size_t right_size =
         expansion_size_impl<typename Expression::right, StageB>::value;
 public:
-    static constexpr std::size_t value = 
+    static constexpr std::size_t value =
         StageB && Expression::left::is_leaf && Expression::right::is_leaf ?
               1
             : left_size + right_size;
