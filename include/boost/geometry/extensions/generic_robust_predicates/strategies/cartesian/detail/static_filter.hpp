@@ -55,9 +55,10 @@ public:
     template <typename ...Reals>
     inline int apply(const Reals&... args) const
     {
+        std::array<Real, sizeof...(Reals)> input;
         std::array<Real, boost::mp11::mp_size<evals>::value> results;
-        approximate_interim<evals, evals, Real>(results, args...);
-        const Real det = get_approx<evals, Expression, Real>(results, args...);
+        approximate_interim<evals, evals, Real>(results, input);
+        const Real det = get_approx<evals, Expression, Real>(results, input);
         if (det > m_error_bound)
         {
             return 1;

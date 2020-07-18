@@ -14,6 +14,7 @@
 
 #include <cstddef>
 
+#include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/integral.hpp>
 #include <boost/mp11/list.hpp>
 
@@ -164,7 +165,7 @@ template
 >
 struct post_order_impl<In, Out, Anchor, IsBinary, true>
 {
-    using type = boost::mp11::mp_push_back<Out, In>;
+    using type = Out;
 };
 
 template <typename In, typename Out, template <typename> class Anchor>

@@ -33,13 +33,13 @@ template
     typename Node,
     std::size_t N,
     typename Real,
-    typename ...Reals
+    typename InputArr
 >
 struct get_nth_real_impl
 {
-    static inline Real apply(const Real& arg, const Reals&... args)
+    static inline Real apply(const InputArr& input)
     {
-        return get_nth_real_impl<Node, N - 1, Reals...>::apply(args...);
+        return input[N - 1];
     }
 };
 
@@ -47,25 +47,11 @@ template
 <
     typename Node,
     typename Real,
-    typename ...Reals
+    typename InputArr
 >
-struct get_nth_real_impl<Node, 1, Real, Reals...>
+struct get_nth_real_impl<Node, 0, Real, InputArr>
 {
-    static inline Real apply(const Real& arg, const Reals&... args)
-    {
-        return arg;
-    }
-};
-
-template
-<
-    typename Node,
-    typename Real,
-    typename ...Reals
->
-struct get_nth_real_impl<Node, 0, Real, Reals...>
-{
-    static inline Real apply(const Real& arg, const Reals&... args)
+    static inline Real apply(const InputArr&)
     {
         return Node::value;
     }
@@ -76,11 +62,11 @@ template
     typename Node,
     std::size_t N,
     typename Real,
-    typename ...Reals
+    typename InputArr
 >
-inline Real get_nth_real(const Real& arg, const Reals&... args)
+inline Real get_nth_real(const InputArr& input)
 {
-    return get_nth_real_impl<Node, N, Real, Reals...>::apply(arg, args...);
+    return get_nth_real_impl<Node, Node::argn, Real, InputArr>::apply(input);
 }
 
 template
@@ -90,11 +76,11 @@ template
     typename Real,
     typename Arr,
     bool is_leaf,
-    typename ...Reals
+    typename InputArr
 >
 struct get_approx_impl
 {
-    static inline Real apply(Arr& interim_results, const Reals&... args)
+    static inline Real apply(Arr& interim_results, const InputArr& input)
     {
         return interim_results[boost::mp11::mp_find<All, Node>::value];
     }
@@ -106,13 +92,13 @@ template
     typename Node,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
-struct get_approx_impl<All, Node, Real, Arr, true, Reals...>
+struct get_approx_impl<All, Node, Real, Arr, true, InputArr>
 {
-    static inline Real apply(Arr& interim_results, const Reals&... args)
+    static inline Real apply(Arr& interim_results, const InputArr& input)
     {
-        return get_nth_real<Node, Node::argn, Real>(args...);
+        return get_nth_real<Node, Node::argn, Real, InputArr>(input);
     }
 };
 
@@ -122,9 +108,9 @@ template
     typename Node,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
-inline Real get_approx(Arr& interim_results, const Reals&...args)
+inline Real get_approx(Arr& interim_results, const InputArr& input)
 {
     return get_approx_impl
         <
@@ -133,8 +119,8 @@ inline Real get_approx(Arr& interim_results, const Reals&...args)
             Real,
             Arr,
             is_leaf<Node>::value,
-            Reals...
-        >::apply(interim_results, args...);
+            InputArr
+        >::apply(interim_results, input);
 }
 
 template
@@ -144,7 +130,7 @@ template
     typename Real,
     typename Arr,
     operator_types Op,
-    typename ...Reals
+    typename InputArr
 >
 struct approximate_interim_impl {};
 
@@ -155,11 +141,11 @@ template
     typename Real,
     typename Arr,
     bool Empty,
-    typename ...Reals
+    typename InputArr
 >
 struct approximate_remainder_impl
 {
-    static inline void apply(Arr& interim_results, const Reals&... args)
+    static inline void apply(Arr& interim_results, const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         approximate_interim_impl
@@ -169,8 +155,8 @@ struct approximate_remainder_impl
                 Real,
                 Arr,
                 node::operator_type,
-                Reals...
-            >::apply(interim_results, args...);
+                InputArr
+            >::apply(interim_results, input);
     }
 };
 
@@ -180,7 +166,7 @@ template
     typename Remaining,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
 struct approximate_remainder_impl
     <
@@ -189,10 +175,10 @@ struct approximate_remainder_impl
         Real,
         Arr,
         true,
-        Reals...
+        InputArr
     >
 {
-    static inline void apply(Arr& interim_results, const Reals&... args) {}
+    static inline void apply(Arr& interim_results, const InputArr& input) {}
 };
 
 template
@@ -201,9 +187,9 @@ template
     typename Remaining,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
-inline void approximate_remainder(Arr& interim_results, const Reals&... args)
+inline void approximate_remainder(Arr& interim_results, const InputArr& input)
 {
     approximate_remainder_impl
         <
@@ -212,8 +198,8 @@ inline void approximate_remainder(Arr& interim_results, const Reals&... args)
             Real,
             Arr,
             boost::mp11::mp_empty<Remaining>::value,
-            Reals...
-        >::apply(interim_results, args...);
+            InputArr
+        >::apply(interim_results, input);
 }
 
 template
@@ -222,7 +208,7 @@ template
     typename Remaining,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
 struct approximate_interim_impl
     <
@@ -231,23 +217,23 @@ struct approximate_interim_impl
         Real,
         Arr,
         operator_types::product,
-        Reals...
+        InputArr
     >
 {
-    static inline void apply(Arr& interim_results, const Reals&... args)
+    static inline void apply(Arr& interim_results, const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         interim_results[boost::mp11::mp_find<All, node>::value] =
                   get_approx<All, typename node::left, Real>(interim_results,
-                                                             args...)
+                                                             input)
                 * get_approx<All, typename node::right, Real>(interim_results,
-                                                              args...);
+                                                              input);
         approximate_remainder
             <
                 All,
                 boost::mp11::mp_pop_front<Remaining>,
                 Real
-            >(interim_results, args...);
+            >(interim_results, input);
     }
 };
 
@@ -257,7 +243,7 @@ template
     typename Remaining,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
 struct approximate_interim_impl
     <
@@ -266,23 +252,23 @@ struct approximate_interim_impl
         Real,
         Arr,
         operator_types::max,
-        Reals...
+        InputArr
     >
 {
-    static inline void apply(Arr& interim_results, const Reals&... args)
+    static inline void apply(Arr& interim_results, const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         interim_results[boost::mp11::mp_find<All, node>::value] = std::max(
                   get_approx<All, typename node::left, Real>(interim_results,
-                                                             args...),
+                                                             input),
                   get_approx<All, typename node::right, Real>(interim_results,
-                                                              args...));
+                                                              input));
         approximate_remainder
             <
                 All,
                 boost::mp11::mp_pop_front<Remaining>,
                 Real
-            >(interim_results, args...);
+            >(interim_results, input);
     }
 };
 
@@ -292,7 +278,7 @@ template
     typename Remaining,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
 struct approximate_interim_impl
     <
@@ -301,23 +287,23 @@ struct approximate_interim_impl
         Real,
         Arr,
         operator_types::min,
-        Reals...
+        InputArr
     >
 {
-    static inline void apply(Arr& interim_results, const Reals&... args)
+    static inline void apply(Arr& interim_results, const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         interim_results[boost::mp11::mp_find<All, node>::value] = std::min(
                   get_approx<All, typename node::left, Real>(interim_results,
-                                                             args...),
+                                                             input),
                   get_approx<All, typename node::right, Real>(interim_results,
-                                                              args...));
+                                                              input));
         approximate_remainder
             <
                 All,
                 boost::mp11::mp_pop_front<Remaining>,
                 Real
-            >(interim_results, args...);
+            >(interim_results, input);
     }
 };
 
@@ -327,7 +313,7 @@ template
     typename Remaining,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
 struct approximate_interim_impl
     <
@@ -336,23 +322,23 @@ struct approximate_interim_impl
         Real,
         Arr,
         operator_types::sum,
-        Reals...
+        InputArr
     >
 {
-    static inline void apply(Arr& interim_results, const Reals&... args)
+    static inline void apply(Arr& interim_results, const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         interim_results[boost::mp11::mp_find<All, node>::value] =
                   get_approx<All, typename node::left, Real>(interim_results,
-                                                             args...)
+                                                             input)
                 + get_approx<All, typename node::right, Real>(interim_results,
-                                                              args...);
+                                                              input);
         approximate_remainder
             <
                 All,
                 boost::mp11::mp_pop_front<Remaining>,
                 Real
-            >(interim_results, args...);
+            >(interim_results, input);
     }
 };
 
@@ -362,7 +348,7 @@ template
     typename Remaining,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
 struct approximate_interim_impl
     <
@@ -371,23 +357,23 @@ struct approximate_interim_impl
         Real,
         Arr,
         operator_types::difference,
-        Reals...
+        InputArr
     >
 {
-    static inline void apply(Arr& interim_results, const Reals&... args)
+    static inline void apply(Arr& interim_results, const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         interim_results[boost::mp11::mp_find<All, node>::value] =
                   get_approx<All, typename node::left, Real>(interim_results,
-                                                             args...)
+                                                             input)
                 - get_approx<All, typename node::right, Real>(interim_results,
-                                                              args...);
+                                                              input);
         approximate_remainder
             <
                 All,
                 boost::mp11::mp_pop_front<Remaining>,
                 Real
-            >(interim_results, args...);
+            >(interim_results, input);
     }
 };
 
@@ -397,7 +383,7 @@ template
     typename Remaining,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
 struct approximate_interim_impl
     <
@@ -406,10 +392,10 @@ struct approximate_interim_impl
         Real,
         Arr,
         operator_types::abs,
-        Reals...
+        InputArr
     >
 {
-    static inline void apply(Arr& interim_results, const Reals&... args)
+    static inline void apply(Arr& interim_results, const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         interim_results[boost::mp11::mp_find<All, node>::value] =
@@ -418,13 +404,13 @@ struct approximate_interim_impl
                     All,
                     typename node::child,
                     Real
-                >(interim_results, args...));
+                >(interim_results, input));
         approximate_remainder
             <
                 All,
                 boost::mp11::mp_pop_front<Remaining>,
                 Real
-            >(interim_results, args...);
+            >(interim_results, input);
     }
 };
 
@@ -451,7 +437,7 @@ template
     typename Remaining,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
 struct approximate_interim_impl
     <
@@ -460,10 +446,10 @@ struct approximate_interim_impl
         Real,
         Arr,
         operator_types::ufp,
-        Reals...
+        InputArr
     >
 {
-    static inline void apply(Arr& interim_results, const Reals&... args)
+    static inline void apply(Arr& interim_results, const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         interim_results[boost::mp11::mp_find<All, node>::value] =
@@ -472,13 +458,13 @@ struct approximate_interim_impl
                     All,
                     typename node::child,
                     Real
-                >(interim_results, args...));
+                >(interim_results, input));
         approximate_remainder
             <
                 All,
                 boost::mp11::mp_pop_front<Remaining>,
                 Real
-            >(interim_results, args...);
+            >(interim_results, input);
     }
 };
 
@@ -488,7 +474,7 @@ template
     typename Remaining,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
 struct approximate_interim_impl
     <
@@ -497,10 +483,10 @@ struct approximate_interim_impl
         Real,
         Arr,
         operator_types::succ,
-        Reals...
+        InputArr
     >
 {
-    static inline void apply(Arr& interim_results, const Reals&... args)
+    static inline void apply(Arr& interim_results, const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         interim_results[boost::mp11::mp_find<All, node>::value] =
@@ -509,13 +495,13 @@ struct approximate_interim_impl
                     All,
                     typename node::child,
                     Real
-                >(interim_results, args...));
+                >(interim_results, input));
         approximate_remainder
             <
                 All,
                 boost::mp11::mp_pop_front<Remaining>,
                 Real
-            >(interim_results, args...);
+            >(interim_results, input);
     }
 };
 
@@ -525,7 +511,7 @@ template
     typename Remaining,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
 struct approximate_interim_impl
     <
@@ -534,17 +520,17 @@ struct approximate_interim_impl
         Real,
         Arr,
         operator_types::no_op,
-        Reals...
+        InputArr
     >
 {
-    static inline void apply(Arr& interim_results, const Reals&... args)
+    static inline void apply(Arr& interim_results, const InputArr& input)
     {
         approximate_remainder
             <
                 All,
                 boost::mp11::mp_pop_front<Remaining>,
                 Real
-            >(interim_results, args...);
+            >(interim_results, input);
     }
 };
 
@@ -554,26 +540,26 @@ template
     typename Remaining,
     typename Real,
     typename Arr,
-    typename ...Reals
+    typename InputArr
 >
-inline void approximate_interim(Arr& interim_results, const Reals&... args)
+inline void approximate_interim(Arr& interim_results, const InputArr& input)
 {
     approximate_remainder
         <
             All,
             Remaining,
             Real
-        >(interim_results, args...);
+        >(interim_results, input);
 }
 
-template<typename Expression, typename Real, typename ...Reals>
-inline Real approximate_value(const Reals&... args)
+template<typename Expression, typename Real, typename InputArr>
+inline Real approximate_value(const InputArr& input)
 {
     using root = Expression;
     using stack = typename boost::mp11::mp_unique<post_order<Expression>>;
     using evals = typename boost::mp11::mp_remove_if<stack, is_leaf>;
     std::array<Real, boost::mp11::mp_size<evals>::value> results;
-        approximate_interim<evals, evals, Real>(results, args...);
+        approximate_interim<evals, evals, Real>(results, input);
     return results.back();
 }
 

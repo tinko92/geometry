@@ -24,92 +24,6 @@ namespace boost { namespace geometry
 namespace detail { namespace generic_robust_predicates
 {
 
-template
-<
-    std::size_t N,
-    typename ExtremaArray,
-    typename Real,
-    typename ...Reals
->
-inline void update_extremum_check(bool& check,
-                                  ExtremaArray& extrema,
-                                  const Reals&... args)
-{
-    Real arg = get_nth_real<void, N + 1, Real>(args...);
-    if (arg > extrema[N])
-    {
-        check = true;
-        extrema[N] = arg;
-    }
-    else if (arg < extrema[N + extrema.size() / 2])
-    {
-        check = true;
-        extrema[N + extrema.size() / 2] = arg;
-    }
-}
-
-template
-<
-    std::size_t N,
-    typename Real,
-    typename ExtremaArray,
-    typename ...Reals
->
-inline void update_extremum(ExtremaArray& extrema, const Reals&... args)
-{
-    Real arg = get_nth_real<void, N + 1, Real>(args...);
-    extrema[N] = std::max(extrema[N], arg);
-    extrema[N + extrema.size() / 2] =
-        std::min(extrema[N + extrema.size() / 2], arg);
-}
-
-template <std::size_t I, typename Real>
-struct update_extrema_check_impl
-{
-    template <typename ExtremaArray, Real, typename ...Reals>
-    static inline void apply(bool& changed,
-                             ExtremaArray& extrema,
-                             const Reals&... args)
-    {
-        update_extremum_check<I, Real>(changed, extrema, args...);
-        update_extrema_check_impl<I - 1, Real>
-            ::apply(changed, extrema, args...);
-    }
-};
-
-template <typename Real>
-struct update_extrema_check_impl<0, Real>
-{
-    template <typename ExtremaArray, typename ...Reals>
-    static inline void apply(bool& changed,
-                             ExtremaArray& extrema,
-                             const Reals&... args)
-    {
-        update_extremum_check<0, Real>(changed, extrema, args...);
-    }
-};
-
-template <std::size_t I, typename Real>
-struct update_extrema_impl
-{
-    template <typename ExtremaArray, typename ...Reals>
-    static inline void apply(ExtremaArray& extrema, const Reals&... args)
-    {
-        update_extremum<I, Real>(extrema, args...);
-        update_extrema_impl<I - 1, Real>::apply(extrema, args...);
-    }
-};
-
-template <typename Real>
-struct update_extrema_impl<0, Real>
-{
-    template <typename ExtremaArray, typename ...Reals>
-    static inline void apply(ExtremaArray& extrema, const Reals&... args)
-    {
-            update_extremum<0, Real>(extrema, args...);
-    }
-};
-
 template <typename Filter, std::size_t N, std::size_t End>
 struct make_filter_impl
 {
@@ -165,19 +79,38 @@ public:
     template <typename ...Reals>
     inline void update_extrema(const Reals&... args)
     {
-        update_extrema_impl
-            <
-                expression_max_argn::value - 1,
-                Real
-            >::apply(m_extrema, args...);
+        std::array<Real, sizeof...(Reals)> input {{ static_cast<Real>(args)... }};
+        for(int i = 0; i < m_extrema.size() / 2; ++i)
+        {
+            m_extrema[i] = std::max(m_extrema[i], input[i]);
+        }
+        for(int i = m_extrema.size() / 2; i < m_extrema.size(); ++i)
+        {
+            m_extrema[i] = std::min(m_extrema[i], input[i]);
+        }
     }
 
     template <typename ...Reals>
     inline bool update_extrema_check(const Reals&... args)
     {
         bool changed = false;
-        update_extrema_check_impl<expression_max_argn::value - 1, Real>
-            ::apply(changed, m_extrema, args...);
+        std::array<Real, sizeof...(Reals)> input {{ static_cast<Real>(args)... }};
+        for(int i = 0; i < m_extrema.size() / 2; ++i)
+        {
+            if(input[i] > m_extrema[i])
+            {
+                changed = true;
+                m_extrema[i] = input[i];
+            }
+        }
+        for(int i = m_extrema.size() / 2; i < m_extrema.size(); ++i)
+        {
+            if(input[i] < m_extrema[i])
+            {
+                changed = true;
+                m_extrema[i] = input[i];
+            }
+        }
         return changed;
     }
 

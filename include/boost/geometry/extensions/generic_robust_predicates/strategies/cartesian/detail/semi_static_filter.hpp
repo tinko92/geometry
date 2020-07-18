@@ -51,11 +51,13 @@ public:
     template <typename ...Reals>
     static inline int apply(const Reals&... args)
     {
+        std::array<Real, sizeof...(Reals)> input {{ static_cast<Real>(args)... }};
         std::array<Real, boost::mp11::mp_size<all_evals>::value> results;
-        approximate_interim<all_evals, all_evals, Real>(results, args...);
+        approximate_interim<all_evals, all_evals, Real>(results, input);
         const Real error_bound =
-            get_approx<all_evals, ErrorExpression, Real>(results, args...);
-        const Real det = get_approx<all_evals, Expression, Real>(results, args...);
+            get_approx<all_evals, ErrorExpression, Real>(results, input);
+        const Real det =
+            get_approx<all_evals, Expression, Real>(results, input);
         if (det > error_bound)
         {
             return 1;

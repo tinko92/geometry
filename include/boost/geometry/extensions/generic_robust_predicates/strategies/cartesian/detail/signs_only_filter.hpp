@@ -40,7 +40,7 @@ template
     operator_types Op,
     bool LeftExact,
     bool RightExact,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl;
 
@@ -51,7 +51,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl
     <
@@ -63,12 +63,12 @@ struct deduce_sign_binary_impl
         operator_types::product,
         true,
         true,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         int& out = signs[boost::mp11::mp_find<All, node>::value];
@@ -77,13 +77,13 @@ struct deduce_sign_binary_impl
                     Exacts,
                     typename node::left,
                     typename ApproxArr::value_type
-                >(approx, args...);
+                >(approx, input);
         const auto& r = get_approx
                 <
                     Exacts,
                     typename node::right,
                     typename ApproxArr::value_type
-                >(approx, args...);
+                >(approx, input);
         out =   ( l > 0 ? 1 : ( l < 0 ? -1 : 0 ) )
               * ( r > 0 ? 1 : ( r < 0 ? -1 : 0 ) );
     }
@@ -96,7 +96,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl
     <
@@ -108,12 +108,12 @@ struct deduce_sign_binary_impl
         operator_types::product,
         true,
         false,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         int& out = signs[boost::mp11::mp_find<All, node>::value];
@@ -122,7 +122,7 @@ struct deduce_sign_binary_impl
                     Exacts,
                     typename node::left,
                     typename ApproxArr::value_type
-                >(approx, args...);
+                >(approx, input);
         const int& sr =
             signs[boost::mp11::mp_find<All, typename node::right>::value];
         if ( sr == sign_uncertain && l != 0 )
@@ -143,7 +143,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl
     <
@@ -155,12 +155,12 @@ struct deduce_sign_binary_impl
         operator_types::product,
         false,
         true,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         int& out = signs[boost::mp11::mp_find<All, node>::value];
@@ -169,7 +169,7 @@ struct deduce_sign_binary_impl
                     Exacts,
                     typename node::right,
                     typename ApproxArr::value_type
-                >(approx, args...);
+                >(approx, input);
         const int& sl =
             signs[boost::mp11::mp_find<All, typename node::left>::value];
         if ( sl == sign_uncertain && r != 0 )
@@ -190,7 +190,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl
     <
@@ -202,12 +202,12 @@ struct deduce_sign_binary_impl
         operator_types::product,
         false,
         false,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr&)
     {
         using node = boost::mp11::mp_front<Remaining>;
         int& out = signs[boost::mp11::mp_find<All, node>::value];
@@ -237,7 +237,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl
     <
@@ -249,12 +249,12 @@ struct deduce_sign_binary_impl
         operator_types::sum,
         true,
         true,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         int& out = signs[boost::mp11::mp_find<All, node>::value];
@@ -263,13 +263,13 @@ struct deduce_sign_binary_impl
                     Exacts,
                     typename node::left,
                     typename ApproxArr::value_type
-                >(approx, args...);
+                >(approx, input);
         const auto& r = get_approx
                 <
                     Exacts,
                     typename node::right,
                     typename ApproxArr::value_type
-                >(approx, args...);
+                >(approx, input);
         if ( (l > 0 && r >= 0) || (l >= 0 && r > 0) )
         {
             out = 1;
@@ -296,7 +296,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl
     <
@@ -308,12 +308,12 @@ struct deduce_sign_binary_impl
         operator_types::sum,
         true,
         false,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         int& out = signs[boost::mp11::mp_find<All, node>::value];
@@ -322,7 +322,7 @@ struct deduce_sign_binary_impl
                     Exacts,
                     typename node::left,
                     typename ApproxArr::value_type
-                >(approx, args...);
+                >(approx, input);
         const int& sr =
             signs[boost::mp11::mp_find<All, typename node::right>::value];
         if ( sr == sign_uncertain )
@@ -355,7 +355,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl
     <
@@ -367,12 +367,12 @@ struct deduce_sign_binary_impl
         operator_types::sum,
         false,
         true,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         int& out = signs[boost::mp11::mp_find<All, node>::value];
@@ -381,7 +381,7 @@ struct deduce_sign_binary_impl
                     Exacts,
                     typename node::right,
                     typename ApproxArr::value_type
-                >(approx, args...);
+                >(approx, input);
         const int& sl =
             signs[boost::mp11::mp_find<All, typename node::left>::value];
         if ( sl == sign_uncertain )
@@ -414,7 +414,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl
     <
@@ -426,12 +426,12 @@ struct deduce_sign_binary_impl
         operator_types::sum,
         false,
         false,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr&)
     {
         using node = boost::mp11::mp_front<Remaining>;
         int& out = signs[boost::mp11::mp_find<All, node>::value];
@@ -465,7 +465,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl
     <
@@ -477,12 +477,12 @@ struct deduce_sign_binary_impl
         operator_types::difference,
         true,
         true,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         int& out = signs[boost::mp11::mp_find<All, node>::value];
@@ -491,13 +491,13 @@ struct deduce_sign_binary_impl
                     Exacts,
                     typename node::left,
                     typename ApproxArr::value_type
-                >(approx, args...);
+                >(approx, input);
         const auto& r = get_approx
                 <
                     Exacts,
                     typename node::right,
                     typename ApproxArr::value_type
-                >(approx, args...);
+                >(approx, input);
         if ( (l > 0 && r <= 0) || (l >= 0 && r < 0) )
         {
             out = 1;
@@ -524,7 +524,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl
     <
@@ -536,12 +536,12 @@ struct deduce_sign_binary_impl
         operator_types::difference,
         true,
         false,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         int& out = signs[boost::mp11::mp_find<All, node>::value];
@@ -550,7 +550,7 @@ struct deduce_sign_binary_impl
                     Exacts,
                     typename node::left,
                     typename ApproxArr::value_type
-                >(approx, args...);
+                >(approx, input);
         const int& sr =
             signs[boost::mp11::mp_find<All, typename node::right>::value];
         if ( sr == sign_uncertain )
@@ -583,7 +583,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl
     <
@@ -595,12 +595,12 @@ struct deduce_sign_binary_impl
         operator_types::difference,
         false,
         true,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         int& out = signs[boost::mp11::mp_find<All, node>::value];
@@ -609,7 +609,7 @@ struct deduce_sign_binary_impl
                     Exacts,
                     typename node::right,
                     typename ApproxArr::value_type
-                >(approx, args...);
+                >(approx, input);
         const int& sl =
             signs[boost::mp11::mp_find<All, typename node::left>::value];
         if ( sl == sign_uncertain )
@@ -642,7 +642,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_binary_impl
     <
@@ -654,12 +654,12 @@ struct deduce_sign_binary_impl
         operator_types::difference,
         false,
         false,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr&)
     {
         using node = boost::mp11::mp_front<Remaining>;
         int& out = signs[boost::mp11::mp_find<All, node>::value];
@@ -694,7 +694,7 @@ template
     typename SignArr,
     typename ApproxArr,
     operator_arities Arity,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_arity_helper_impl {};
 
@@ -705,7 +705,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_sign_arity_helper_impl
     <
@@ -715,10 +715,10 @@ struct deduce_sign_arity_helper_impl
         SignArr,
         ApproxArr,
         operator_arities::binary,
-        Reals...
+        InputArr
     >
 {
-    static inline void apply(SignArr& s, const ApproxArr& a, const Reals&... r)
+    static inline void apply(SignArr& s, const ApproxArr& a, const InputArr& i)
     {
         using node = boost::mp11::mp_front<Remaining>;
         deduce_sign_binary_impl
@@ -731,8 +731,8 @@ struct deduce_sign_arity_helper_impl
                 node::operator_type,
                 node::left::sign_exact,
                 node::right::sign_exact,
-                Reals...
-            >::apply(s, a, r...);
+                InputArr
+            >::apply(s, a, i);
     }
 };
 
@@ -744,13 +744,13 @@ template
     typename SignArr,
     typename ApproxArr,
     std::size_t RemainingSize,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_signs_remainder_impl
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         deduce_sign_arity_helper_impl
@@ -761,8 +761,8 @@ struct deduce_signs_remainder_impl
                 SignArr,
                 ApproxArr,
                 node::operator_arity,
-                Reals...
-            >::apply(signs, approx, args...);
+                InputArr
+            >::apply(signs, approx, input);
         deduce_signs_remainder_impl
             <
                 Exacts,
@@ -771,8 +771,8 @@ struct deduce_signs_remainder_impl
                 SignArr,
                 ApproxArr,
                 boost::mp11::mp_size<Remaining>::value - 1,
-                Reals...
-            >::apply(signs, approx, args...);
+                InputArr
+            >::apply(signs, approx, input);
     }
 };
 
@@ -783,7 +783,7 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 struct deduce_signs_remainder_impl
     <
@@ -793,12 +793,12 @@ struct deduce_signs_remainder_impl
         SignArr,
         ApproxArr,
         1,
-        Reals...
+        InputArr
     >
 {
     static inline void apply(SignArr& signs,
                              const ApproxArr& approx,
-                             const Reals&... args)
+                             const InputArr& input)
     {
         using node = boost::mp11::mp_front<Remaining>;
         deduce_sign_arity_helper_impl
@@ -809,8 +809,8 @@ struct deduce_signs_remainder_impl
                 SignArr,
                 ApproxArr,
                 node::operator_arity,
-                Reals...
-            >::apply(signs, approx, args...);
+                InputArr
+            >::apply(signs, approx, input);
     }
 };
 
@@ -821,11 +821,11 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 inline void deduce_signs_remainder(SignArr& signs,
                                   const ApproxArr& approx,
-                                  const Reals&... args)
+                                  const InputArr& input)
 {
     deduce_signs_remainder_impl
         <
@@ -835,8 +835,8 @@ inline void deduce_signs_remainder(SignArr& signs,
             SignArr,
             ApproxArr,
             boost::mp11::mp_size<Remaining>::value,
-            Reals...
-        >::apply(signs, approx, args...);
+            InputArr
+        >::apply(signs, approx, input);
 }
 
 template
@@ -846,18 +846,18 @@ template
     typename Remaining,
     typename SignArr,
     typename ApproxArr,
-    typename ...Reals
+    typename InputArr
 >
 inline void deduce_signs(SignArr& signs,
                          const ApproxArr& approx,
-                         const Reals&... args)
+                         const InputArr& input)
 {
     deduce_signs_remainder
         <
             Exacts,
             All,
             Remaining
-        >(signs, approx, args...);
+        >(signs, approx, input);
 }
 
 template <typename Expression, typename Real>
@@ -876,6 +876,7 @@ public:
     template <typename ...Reals>
     static inline int apply(const Reals&... args)
     {
+        std::array<Real, sizeof...(args)> input {{ static_cast<Real>(args)... }};
         std::array<Real, boost::mp11::mp_size<evals_sign_exact>::value>
             results_sign_exact;
         approximate_interim
@@ -883,7 +884,7 @@ public:
                 evals_sign_exact,
                 evals_sign_exact,
                 Real
-            >(results_sign_exact, args...);
+            >(results_sign_exact, input);
         std::array<int, boost::mp11::mp_size<non_exact_signs>::value>
             remainder_signs;
         deduce_signs
@@ -891,7 +892,7 @@ public:
                 evals_sign_exact,
                 non_exact_signs,
                 non_exact_signs
-            >(remainder_signs, results_sign_exact, args...);
+            >(remainder_signs, results_sign_exact, input);
         return remainder_signs[
             boost::mp11::mp_find<non_exact_signs, Expression>::value];
     }
