@@ -44,6 +44,10 @@ private:
         >;
     Real m_error_bound;
 public:
+    static constexpr bool stateful = true;
+    static constexpr bool updates = false;
+    using computations = boost::mp11::mp_list<Expression>;
+
     inline static_filter() {}
 
     Real error_bound() { return m_error_bound; }

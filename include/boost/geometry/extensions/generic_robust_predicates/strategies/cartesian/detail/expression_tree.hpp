@@ -40,6 +40,7 @@ template <typename... Children>
 struct internal_node
 {
     static constexpr bool is_leaf = false;
+    using all_children = boost::mp11::mp_list<Children...>; //for convenience
 };
 
 template <typename Left, typename Right>

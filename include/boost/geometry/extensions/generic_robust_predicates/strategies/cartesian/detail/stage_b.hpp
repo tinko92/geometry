@@ -118,6 +118,10 @@ struct all_differences_zero_tail
 template <typename Expression, typename Real>
 struct stage_b
 {
+    static constexpr bool stateful = false;
+    static constexpr bool updates = false;
+    using computations = boost::mp11::mp_list<>; //TODO: implement reusing previous computations later
+
     template <typename ...Reals>
     static inline int apply(const Reals&... args)
     {

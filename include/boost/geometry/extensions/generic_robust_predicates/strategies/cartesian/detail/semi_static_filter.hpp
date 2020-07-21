@@ -48,10 +48,15 @@ private:
             error_eval_stack_remainder
         >;
 public:
+    static constexpr bool stateful = false;
+    static constexpr bool updates = false;
+    using computations = boost::mp11::mp_list<Expression, ErrorExpression>;
+
     template <typename ...Reals>
     static inline int apply(const Reals&... args)
     {
-        std::array<Real, sizeof...(Reals)> input {{ static_cast<Real>(args)... }};
+        std::array<Real, sizeof...(Reals)> input
+            {{ static_cast<Real>(args)... }};
         std::array<Real, boost::mp11::mp_size<all_evals>::value> results;
         approximate_interim<all_evals, all_evals, Real>(results, input);
         const Real error_bound =

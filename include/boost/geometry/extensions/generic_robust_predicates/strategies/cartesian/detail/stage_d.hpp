@@ -31,6 +31,9 @@ namespace detail { namespace generic_robust_predicates
 template <typename Expression, typename Real>
 struct stage_d
 {
+    static constexpr bool stateful = false;
+    static constexpr bool updates = false;
+    using computations = boost::mp11::mp_list<>; //TODO: make use of previous comps
 
     template <typename ...Reals>
     static inline int apply(const Reals&... args)

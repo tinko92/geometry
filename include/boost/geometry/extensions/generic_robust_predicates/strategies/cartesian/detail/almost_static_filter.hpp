@@ -60,6 +60,10 @@ private:
     extrema_array m_extrema;
     StaticFilter m_filter;
 public:
+    static constexpr bool stateful = true;
+    static constexpr bool updates = true;
+    using computations = typename StaticFilter::computations;
+
     const StaticFilter& filter() const { return m_filter; }
     inline almost_static_filter()
     {

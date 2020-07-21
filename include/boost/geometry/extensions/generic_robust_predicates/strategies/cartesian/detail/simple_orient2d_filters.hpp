@@ -138,9 +138,9 @@ struct simple_orient2d_static_error_expression_impl
 {
 private:
     using m_x = max < _1, max < _3, _5 > >;
-    using n_x = min < _1, min < _3, _5 > >;
+    using n_x = min < _7, min < _9, _11 > >;
     using m_y = max < _2, max < _4, _6 > >;
-    using n_y = min < _2, min < _4, _6 > >;
+    using n_y = min < _8, min < _10, _12 > >;
     using alpha = difference < m_x, n_x >;
     using beta = difference < m_y, n_y >;
     using summand1 = product < product < two_u<Real>, alpha >, ufp < beta > >;

@@ -873,6 +873,9 @@ private:
     using evals_sign_exact =
         typename boost::mp11::mp_copy_if<evals, is_sign_exact>;
 public:
+    static constexpr bool stateful = false;
+    static constexpr bool updates = false;
+    using computations = evals_sign_exact;
     template <typename ...Reals>
     static inline int apply(const Reals&... args)
     {
