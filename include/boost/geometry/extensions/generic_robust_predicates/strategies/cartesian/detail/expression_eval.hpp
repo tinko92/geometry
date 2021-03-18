@@ -29,16 +29,34 @@ namespace detail { namespace generic_robust_predicates
 //expressions with floating-point precision and floating-point rounding.
 //The most important template in this file is approximate_interim.
 
-template <operator_types Op>
+template <typename Expression, operator_types Op>
 struct evaluate_expression_unary_impl {};
 
-template <>
-struct evaluate_expression_unary_impl<operator_types::abs>
+template <typename Expression>
+struct evaluate_expression_unary_impl
+    <
+        Expression,
+        operator_types::abs
+    >
 {
     template<typename CT>
     static constexpr void apply(const CT& c, CT& out)
     {
         out = std::abs(c);
+    }
+};
+
+template <typename Expression>
+struct evaluate_expression_unary_impl
+    <
+        Expression,
+        operator_types::times_pow_of_two
+    >
+{
+    template<typename CT>
+    static constexpr void apply(const CT& c, CT& out)
+    {
+        out = c * Expression::value;
     }
 };
 
@@ -220,7 +238,7 @@ struct evaluate_expression_impl
     {
         auto& out = output[i_out];
         const auto& c = get_arg_or_out_impl<i_child, child>::apply(input, output);
-        evaluate_expression_unary_impl<Expression::operator_type>
+        evaluate_expression_unary_impl<Expression, Expression::operator_type>
             ::apply(c, out);
     }
 };

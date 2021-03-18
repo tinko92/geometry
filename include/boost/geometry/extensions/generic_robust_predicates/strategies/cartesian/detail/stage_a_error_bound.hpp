@@ -15,7 +15,7 @@ namespace detail { namespace generic_robust_predicates
 {
 
 enum class stage_a_error_propagation_cases {
-    exact, op_on_exacts, sum_or_diff, product
+    exact, op_on_exacts, sum_or_diff, product, exact_rescale
 };
 
 template
@@ -25,6 +25,16 @@ template
 >
 constexpr stage_a_error_propagation_cases stage_a_error_propagation_case =
     stage_a_error_propagation_cases::exact;
+
+template <typename Expression>
+constexpr stage_a_error_propagation_cases stage_a_error_propagation_case
+    <
+        Expression,
+        operator_arities::unary
+    >
+    = Expression::operator_type == operator_types::times_pow_of_two ?
+        stage_a_error_propagation_cases::exact_rescale :
+        stage_a_error_propagation_cases::exact;
 
 template <typename Expression>
 constexpr stage_a_error_propagation_cases stage_a_error_propagation_case
@@ -137,6 +147,20 @@ public:
     static constexpr std::array<int, 3> a = coeff_inc_first(coeff_mult_by_1_plus_eps(a_prod));
 };
 
+template <typename Expression>
+struct stage_a_error_bound<Expression, stage_a_error_propagation_cases::exact_rescale>
+{
+private:
+    using ceb  = stage_a_error_bound<typename Expression::child>;
+public:
+    using magnitude = times_pow_of_two
+        <
+            typename ceb::magnitude,
+            Expression::exponent
+        >;
+    static constexpr std::array<int, 3> a = ceb::a;
+};
+
 template
 <
     typename Expression,
@@ -152,7 +176,7 @@ struct stage_a_condition
         stage_a_error_propagation_cases::sum_or_diff
     >
 {
-public: //TODO make private:
+private:
     using leb = stage_a_error_bound<typename Expression::left>;
     using reb = stage_a_error_bound<typename Expression::right>;
     static constexpr auto max_a = coeff_max(leb::a, reb::a);

@@ -15,6 +15,7 @@
 #include <cassert>
 #include <cmath>
 #include <algorithm>
+#include <numeric>
 #include <iterator>
 #include <type_traits>
 
@@ -1372,7 +1373,7 @@ constexpr OutIter expansion_plus(
     Real y = two_sum_tail(e, f, *(h_begin + 1));
     OutIter h_it = h_begin;
     h_it = insert_ze<ze<result>::value>(h_it, y);
-    h_it = insert_ze_final<ze<result>::value>(h_it, x);
+    h_it = insert_ze_final<ze<result>::value>(h_it, h_begin, x);
     return h_it;
 }
 
@@ -1418,7 +1419,7 @@ template
     bool inplace,
     bool StageB,
     template<int> class ZE = default_zero_elimination_policy,
-    template<int, int> class FE = default_fast_expansion_sum_policy,
+    template<int, int> class = default_fast_expansion_sum_policy,
     bool MostSigOnly = false,
     typename InIter,
     typename Real,
@@ -1431,18 +1432,19 @@ constexpr OutIter expansion_minus(InIter e_begin,
                                   OutIter h_begin,
                                   OutIter h_end)
 {
+    zero_init<MostSigOnly>::apply(*h_begin);
     static_assert(f_length == 1, "f_length must be 1 if f is a single component.");
-    return expansion_plus
+    auto end = grow_expansion
         <
-            e_length,
-            f_length,
-            inplace,
+            ZE<result>::value,
+            MostSigOnly,
+            InIter,
+            OutIter,
+            Real,
             false,
-            true,
-            ZE,
-            FE,
-            MostSigOnly
+            true
         >(e_begin, e_end, f, h_begin, h_end);
+    return end;
 }
 
 template
@@ -1451,7 +1453,7 @@ template
     int f_length,
     bool inplace,
     bool StageB,
-    template<int> class ze = default_zero_elimination_policy,
+    template<int> class ZE = default_zero_elimination_policy,
     template<int, int> class = default_fast_expansion_sum_policy,
     bool MostSigOnly = false,
     typename Real,
@@ -1469,13 +1471,13 @@ constexpr OutIter expansion_minus(Real e,
     static_assert(e_length == 1, "e_length must be 1 if e is a single component.");
     return grow_expansion
         <
-            ze<result>::value,
+            ZE<result>::value,
             MostSigOnly,
             InIter,
             OutIter,
             Real,
-            false,
-            true
+            true,
+            false
         >(f_begin, f_end, e, h_begin, h_end);
 }
 

@@ -485,6 +485,39 @@ public:
 
 using insphere_no_translation = insphere_no_translation_impl::type;
 
+struct indiametral2d_impl
+{
+private:
+    using adx = difference< argument<1>, argument<5> >;
+    using ady = difference< argument<2>, argument<6> >;
+    using alift = sum <product<adx, adx>, product<ady, ady>>;
+    using bdx = difference< argument<3>, argument<5> >;
+    using bdy = difference< argument<4>, argument<6> >;
+    using blift = sum <product<bdx, bdx>, product<bdy, bdy>>;
+    using cx = difference
+        <
+            half < sum < argument<1>, argument<3> > >,
+            half < difference < argument<4>, argument<2> > >
+        >;
+    using cy = sum
+        <
+            half < sum < argument<2>, argument<4> > >,
+            half < difference < argument<3>, argument<1> > >
+        >;
+    using cdx = difference < cx, argument<5> >;
+    using cdy = difference < cy, argument<6> >;
+    using clift = sum <product<cdx, cdx>, product<cdy, cdy>>;
+public:
+    using type = det
+        <
+            adx, ady, alift,
+            bdx, bdy, blift,
+            cdx, cdy, clift
+        >;
+};
+
+using indiametral2d = indiametral2d_impl::type;
+
 }} // namespace detail::generic_robust_predicates
 
 }} // namespace boost::geometry

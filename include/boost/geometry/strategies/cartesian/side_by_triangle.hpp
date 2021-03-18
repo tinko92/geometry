@@ -36,6 +36,15 @@
 
 #include <boost/geometry/algorithms/detail/equals/point_point.hpp>
 
+#include <algorithm>
+#include <numeric>
+
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/expressions.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/stage_a.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/stage_d.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/stage_b.hpp>
+#include <boost/geometry/extensions/generic_robust_predicates/strategies/cartesian/detail/staged_predicate.hpp>
+
 
 namespace boost { namespace geometry
 {
@@ -228,7 +237,19 @@ public :
         typedef typename coordinate_type<P1>::type coordinate_type1;
         typedef typename coordinate_type<P2>::type coordinate_type2;
         typedef typename coordinate_type<P>::type coordinate_type3;
+#ifdef ROBUST
+        using namespace boost::geometry::detail::generic_robust_predicates;
 
+        using ct = double;
+        using expression = orient2d;
+        using filter1 = stage_a_semi_static<expression, ct>;
+        using filter2 = stage_d<expression, ct>;
+        using staged = staged_predicate<ct, filter1, filter2>;
+        staged pred;
+        return pred.apply(
+                get<0>(p1), get<1>(p1), get<0>(p2), get<1>(p2), get<0>(p), get<1>(p)
+            );
+#else
         typedef typename boost::mpl::if_c
             <
                 boost::is_void<CalculationType>::type::value,
@@ -265,6 +286,7 @@ public :
         return math::detail::equals_by_policy(s, zero, epsp.policy) ? 0
             : s > zero ? 1
             : -1;
+#endif
     }
 
 private:

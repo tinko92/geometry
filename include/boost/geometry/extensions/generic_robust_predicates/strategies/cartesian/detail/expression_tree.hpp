@@ -40,7 +40,7 @@ namespace detail { namespace generic_robust_predicates
 //the placeholders for std::bind.
 
 enum class operator_types {
-    sum, difference, product, abs, no_op, max, min
+    sum, difference, product, abs, no_op, max, min, times_pow_of_two
 };
 
 enum class operator_arities { nullary, unary, binary };
@@ -134,6 +134,40 @@ struct abs : public internal_unary_node<Child>
     static constexpr bool sign_exact = Child::sign_exact;
     static constexpr bool non_negative = true;
 };
+
+template <typename Child, int Exp>
+struct times_pow_of_two : public internal_unary_node<Child>
+{
+private:
+    static constexpr double pow_of_two_val(int exp)
+    {
+        double factor = 1.;
+        double val = 1.;
+        if (exp < 0)
+        {
+            factor = .5;
+            exp = -exp;
+        }
+        else
+        {
+            factor = 2.;
+        }
+        for (int i = 0; i < exp; ++i)
+        {
+            val *= factor;
+        }
+        return val;
+    }
+public:
+    using error_type = no_error_type;
+    static constexpr operator_types operator_type = operator_types::times_pow_of_two;
+    static constexpr bool sign_exact = Child::sign_exact;
+    static constexpr bool non_negative = Child::non_negative;
+    static constexpr double value = pow_of_two_val(Exp);
+};
+
+template <typename Child>
+using half = times_pow_of_two<Child, -1>;
 
 struct leaf
 {
