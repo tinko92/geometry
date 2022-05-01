@@ -21,7 +21,7 @@ namespace strategy { namespace side
 {
 
 
-template <typename CalculationType>
+template <typename CalculationType, int Coeff1 = 5, int Coeff2 = 32>
 struct side_rounded_input
 {
     using cs_tag = cartesian_tag;
@@ -46,7 +46,7 @@ struct side_rounded_input
 
         auto det = (_1 - _5) * (_4 - _6) - (_2 - _6) * (_3 - _5);
         constexpr CT eps = std::numeric_limits<CT>::epsilon() / 2;
-        const CT err_bound = (5 * eps + 32 * eps * eps) *
+        const CT err_bound = (Coeff1 * eps + Coeff2 * eps * eps) *
             (  (std::abs(_1) + std::abs(_5)) * (std::abs(_4) + std::abs(_6))
              + (std::abs(_3) + std::abs(_5)) * (std::abs(_2) + std::abs(_6)));
         return (det > err_bound) - (det < -err_bound);
