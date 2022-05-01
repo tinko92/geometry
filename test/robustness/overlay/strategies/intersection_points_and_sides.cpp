@@ -30,7 +30,9 @@ struct test_settings : public common_settings
 {
     long long seed{static_cast<long long>(std::time(0))};
     std::size_t count{1};
+    int dis{0};
     long double size{10};
+    long double lower_size{10};
     long double epsilon_multiplier{1.0e15};
 };
 
@@ -149,17 +151,38 @@ void test_all(Settings const& settings)
     std::size_t errors_bsp_rounded = 0;
 
     std::mt19937 gen(settings.seed);
-    std::uniform_real_distribution<T> dis(0, settings.size);
+    std::uniform_real_distribution<T> dis(settings.lower_size, settings.size);
+    std::uniform_int_distribution<> dis_grid_int(static_cast<int>(settings.lower_size), static_cast<int>(settings.size));
+    auto dis_grid = [&](std::mt19937& gen)
+    {
+        return dis_grid_int(gen) / 1000.;
+    };
 
     T sum_distance_error = 0;
     T sum_distance_for_rounded_error = 0;
 
     for (std::size_t index = 0; index < settings.count; index++)
     {
-        const point_t p1 = random_point<point_t>(gen, dis);
-        const point_t p2 = random_point<point_t>(gen, dis);
-        const point_t q1 = random_point<point_t>(gen, dis);
-        const point_t q2 = random_point<point_t>(gen, dis);
+        point_t p1;
+        if(settings.dis == 0)
+            p1 = random_point<point_t>(gen, dis);
+        else
+            p1 = random_point<point_t>(gen, dis_grid);
+        point_t p2;
+        if(settings.dis == 0)
+            p2 = random_point<point_t>(gen, dis);
+        else
+            p2 = random_point<point_t>(gen, dis_grid);
+        point_t q1;
+        if(settings.dis == 0)
+            q1 = random_point<point_t>(gen, dis);
+        else
+            q1 = random_point<point_t>(gen, dis_grid);
+        point_t q2;
+        if(settings.dis == 0)
+            q2 = random_point<point_t>(gen, dis);
+        else
+            q2 = random_point<point_t>(gen, dis_grid);
 
         segment_type p(p1, p2);
         segment_type q(q1, q2);
@@ -284,6 +307,8 @@ int main(int argc, char** argv)
             ("seed", po::value<decltype(settings.seed)>(&settings.seed), "Initialization seed for random generator")
             ("count", po::value<decltype(settings.count)>(&settings.count)->default_value(1), "Number of tests")
             ("size", po::value<decltype(settings.size)>(&settings.size)->default_value(10), "Size of the field")
+            ("dis", po::value<decltype(settings.size)>(&settings.size)->default_value(0), "Coordinate distrubtion (0 = uniform, 1 = grid)")
+            ("lower_size", po::value<decltype(settings.lower_size)>(&settings.lower_size)->default_value(0), "Size of the field (lower bound)")
             ("multiplier", po::value<decltype(settings.epsilon_multiplier)>(&settings.epsilon_multiplier), "Epsilon multiplier")
             ("type", po::value<std::string>(&type)->default_value("double"), "Type (int,float,double)")
             ("wkt", po::value<bool>(&settings.wkt)->default_value(false), "Create a WKT of the inputs, for all tests")
