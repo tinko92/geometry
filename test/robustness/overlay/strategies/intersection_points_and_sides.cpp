@@ -22,6 +22,7 @@
 
 #include <boost/geometry/strategy/cartesian/side_non_robust.hpp>
 #include <boost/geometry/strategies/cartesian/side_rounded_input.hpp>
+#include <boost/geometry/util/precise_cartesian_intersection.hpp>
 
 #include <geometry_test_common.hpp>
 #include <robustness/common/common_settings.hpp>
@@ -31,6 +32,7 @@ struct test_settings : public common_settings
     long long seed{static_cast<long long>(std::time(0))};
     std::size_t count{1};
     int dis{0};
+    int intersection_calculation{0};
     long double size{10};
     long double lower_size{10};
     long double epsilon_multiplier{1.0e15};
@@ -135,6 +137,7 @@ void test_all(Settings const& settings)
     using side_robust_fp_3 = bg::strategy::side::side_robust<T, bg::strategy::side::fp_equals_policy, 3>;
     using side_robust_eq_3 = bg::strategy::side::side_robust<T, bg::strategy::side::epsilon_equals_policy, 3>;
     using side_rounded_input = bg::strategy::side::side_rounded_input<T>;
+    using side_rounded_input404 = bg::strategy::side::side_rounded_input<T, 404, 0>;
 
     auto const t0 = std::chrono::high_resolution_clock::now();
 
@@ -144,11 +147,13 @@ void test_all(Settings const& settings)
     std::size_t errors_robust_fp_3 = 0;
     std::size_t errors_robust_eq_3 = 0;
     std::size_t errors_rounded = 0;
+    std::size_t errors_rounded404 = 0;
     std::size_t errors_bsp_triangle = 0;
     std::size_t errors_bsp_non_robust = 0;
     std::size_t errors_bsp_robust_fp_3 = 0;
     std::size_t errors_bsp_robust_eq_3 = 0;
     std::size_t errors_bsp_rounded = 0;
+    std::size_t errors_bsp_rounded404 = 0;
 
     std::mt19937 gen(settings.seed);
     std::uniform_real_distribution<T> dis(settings.lower_size, settings.size);
@@ -201,13 +206,50 @@ void test_all(Settings const& settings)
 
         count++;
 
-        auto const& ip = is.intersections[0];
+        auto ip = is.intersections[0];
+        if(settings.intersection_calculation == 1)
+        {
+            auto ip_ = boost::geometry::detail::precise_math::intersection_robust(p1.x(),
+                                                                                  p1.y(),
+                                                                                  p2.x(),
+                                                                                  p2.y(),
+                                                                                  q1.x(),
+                                                                                  q1.y(),
+                                                                                  q2.x(),
+                                                                                  q2.y());
+            ip = point_t(ip_[0], ip_[1]);
+        }
+        else if(settings.intersection_calculation == 2)
+        {
+            auto ip_ = boost::geometry::detail::precise_math::intersection_nonrobust(p1.x(),
+                                                                                     p1.y(),
+                                                                                     p2.x(),
+                                                                                     p2.y(),
+                                                                                     q1.x(),
+                                                                                     q1.y(),
+                                                                                     q2.x(),
+                                                                                     q2.y());
+            ip = point_t(ip_[0], ip_[1]);
+        }
+        else if(settings.intersection_calculation == 1)
+        {
+            auto ip_ = boost::geometry::detail::precise_math::intersection_filtered(p1.x(),
+                                                                                    p1.y(),
+                                                                                    p2.x(),
+                                                                                    p2.y(),
+                                                                                    q1.x(),
+                                                                                    q1.y(),
+                                                                                    q2.x(),
+                                                                                    q2.y());
+
+        }
 
         bool const side_triangle_ok = verify_collinear<side_by_triangle>(p1, p2, q1, q2, ip);
         bool const side_non_robust_ok = verify_collinear<side_non_robust>(p1, p2, q1, q2, ip);
         bool const side_robust_fp_3_ok = verify_collinear<side_robust_fp_3>(p1, p2, q1, q2, ip);
         bool const side_robust_eq_3_ok = verify_collinear<side_robust_eq_3>(p1, p2, q1, q2, ip);
         bool const side_rounded_ok = verify_collinear<side_rounded_input>(p1, p2, q1, q2, ip);
+        bool const side_rounded404_ok = verify_collinear<side_rounded_input404>(p1, p2, q1, q2, ip);
 
         // Calculate the distance of the IP w.r.t. both lines
         auto const dm1 = bg::detail_dispatch::get_distance_measure<T, bg::cartesian_tag>::apply(p1, p2, ip);
@@ -223,7 +265,8 @@ void test_all(Settings const& settings)
             && side_non_robust_ok
             && side_robust_fp_3_ok
             && side_robust_eq_3_ok
-            && side_rounded_ok )
+            && side_rounded_ok
+            && side_rounded404_ok)
         {
             continue;
         }
@@ -236,18 +279,21 @@ void test_all(Settings const& settings)
         bool const side_robust_fp_3_bsp = verify_not_collinear<side_robust_fp_3>(p1, p2, q1, q2, bsp);
         bool const side_robust_eq_3_bsp = verify_not_collinear<side_robust_eq_3>(p1, p2, q1, q2, bsp);
         bool const side_rounded_bsp = verify_not_collinear<side_rounded_input>(p1, p2, q1, q2, bsp);
+        bool const side_rounded404_bsp = verify_not_collinear<side_rounded_input404>(p1, p2, q1, q2, bsp);
 
         if (! side_triangle_ok) { errors_triangle++; }
         if (! side_non_robust_ok) { errors_non_robust++; }
         if (! side_robust_fp_3_ok) { errors_robust_fp_3++; }
         if (! side_robust_eq_3_ok) { errors_robust_eq_3++; }
         if (! side_rounded_ok) { errors_rounded++; }
+        if (! side_rounded404_ok) { errors_rounded404++; }
 
         if (! side_triangle_bsp) { errors_bsp_triangle++; }
         if (! side_non_robust_bsp) { errors_bsp_non_robust++; }
         if (! side_robust_fp_3_bsp) { errors_bsp_robust_fp_3++; }
         if (! side_robust_eq_3_bsp) { errors_bsp_robust_eq_3++; }
         if (! side_rounded_bsp) { errors_bsp_rounded++; }
+        if (! side_rounded404_bsp) { errors_bsp_rounded404++; }
 
         std::string filename;
 
@@ -285,6 +331,7 @@ void test_all(Settings const& settings)
         << "  errors (side robust fp 3): " << errors_robust_fp_3 << " " << errors_bsp_robust_fp_3 << std::endl
         << "  errors (side robust eq 3): " << errors_robust_eq_3 << " " << errors_bsp_robust_eq_3 << std::endl
         << "  errors (rounded): " << errors_rounded << " " << errors_bsp_rounded << std::endl
+        << "  errors (rounded404): " << errors_rounded404 << " " << errors_bsp_rounded404 << std::endl
         << "  distance (avg): " << std::setprecision(32) << avg
         << "  distance (avg, rnd): " << avg_rounded
         << "  time: " << std::setprecision(5) << elapsed_ms / 1000.0 << std::endl;
@@ -307,7 +354,10 @@ int main(int argc, char** argv)
             ("seed", po::value<decltype(settings.seed)>(&settings.seed), "Initialization seed for random generator")
             ("count", po::value<decltype(settings.count)>(&settings.count)->default_value(1), "Number of tests")
             ("size", po::value<decltype(settings.size)>(&settings.size)->default_value(10), "Size of the field")
-            ("dis", po::value<decltype(settings.size)>(&settings.size)->default_value(0), "Coordinate distrubtion (0 = uniform, 1 = grid)")
+            ("dis", po::value<decltype(settings.dis)>(&settings.dis)->default_value(0), "Coordinate distrubtion (0 = uniform, 1 = grid)")
+            ("intersection_calculation",
+             po::value<decltype(settings.intersection_calculation)>(&settings.intersection_calculation)->default_value(0),
+             "Intersection calculation (0 = default, 1 = robust, 2 = fast, 3 = filtered)")
             ("lower_size", po::value<decltype(settings.lower_size)>(&settings.lower_size)->default_value(0), "Size of the field (lower bound)")
             ("multiplier", po::value<decltype(settings.epsilon_multiplier)>(&settings.epsilon_multiplier), "Epsilon multiplier")
             ("type", po::value<std::string>(&type)->default_value("double"), "Type (int,float,double)")
