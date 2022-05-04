@@ -231,7 +231,7 @@ void test_all(Settings const& settings)
                                                                                      q2.y());
             ip = point_t(ip_[0], ip_[1]);
         }
-        else if(settings.intersection_calculation == 1)
+        else if(settings.intersection_calculation == 3)
         {
             auto ip_ = boost::geometry::detail::precise_math::intersection_filtered(p1.x(),
                                                                                     p1.y(),
@@ -241,7 +241,7 @@ void test_all(Settings const& settings)
                                                                                     q1.y(),
                                                                                     q2.x(),
                                                                                     q2.y());
-
+            ip = point_t(ip_[0], ip_[1]);
         }
 
         bool const side_triangle_ok = verify_collinear<side_by_triangle>(p1, p2, q1, q2, ip);

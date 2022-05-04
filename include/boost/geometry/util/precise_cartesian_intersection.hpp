@@ -127,7 +127,7 @@ FPT divide_approx(const std::array<FPT, NSize>& n,
     // the unit in the last place), so will compute the remainder and based on its sign
     // a second candidate (nextafter(q_approx, +-INFINITY)) and test which candidate has
     // the smaller remainder.
-    if constexpr(CorrectRounding)
+    if (CorrectRounding)
     {
         std::array<FPT, NSize + DSize * 2> remainder;
         const int remainder_size = compute_remainder(n, d, q_approx, remainder, n_size, d_size);
