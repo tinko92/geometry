@@ -6,9 +6,11 @@
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
+#include <cmath>
 #include <array>
 #include <cassert>
 #include <limits>
+#include <numeric>
 
 #include <boost/geometry/util/precise_math.hpp>
 
@@ -180,6 +182,34 @@ FPT divide_approx(const std::array<FPT, NSize>& n,
 }
 
 template <typename FPT>
+void intersection_common(FPT x1,
+                             FPT y1,
+                             FPT x2,
+                             FPT y2,
+                             FPT x3,
+                             FPT y3,
+                             FPT x4,
+                             FPT y4,
+                             std::array<FPT, 2>& x1y3,
+                             std::array<FPT, 2>& x1y4,
+                             std::array<FPT, 2>& x2y3,
+                             std::array<FPT, 2>& x2y4,
+                             std::array<FPT, 2>& x3y1,
+                             std::array<FPT, 2>& x3y2,
+                             std::array<FPT, 2>& x4y1,
+                             std::array<FPT, 2>& x4y2)
+{
+    x1y3 = two_product(x1, y3);
+    x1y4 = two_product(x1, y4);
+    x2y3 = two_product(x2, y3);
+    x2y4 = two_product(x2, y4);
+    x3y1 = two_product(x3, y1);
+    x3y2 = two_product(x3, y2);
+    x4y1 = two_product(x4, y1);
+    x4y2 = two_product(x4, y2);
+}
+
+template <typename FPT>
 int intersection_denominator(FPT x1,
                              FPT y1,
                              FPT x2,
@@ -188,19 +218,19 @@ int intersection_denominator(FPT x1,
                              FPT y3,
                              FPT x4,
                              FPT y4,
+                             const std::array<FPT, 2>& x1y3,
+                             const std::array<FPT, 2>& x1y4,
+                             const std::array<FPT, 2>& x2y3,
+                             const std::array<FPT, 2>& x2y4,
+                             const std::array<FPT, 2>& x3y1,
+                             const std::array<FPT, 2>& x3y2,
+                             const std::array<FPT, 2>& x4y1,
+                             const std::array<FPT, 2>& x4y2,
                              std::array<FPT, 16>& d)
 {
-    const auto x1y3 = two_product(x1, y3);
-    const auto x1y4 = two_product(x1, y4);
     const auto d1 = two_two_expansion_diff(x1y3, x1y4);
-    const auto x2y3 = two_product(x2, y3);
-    const auto x2y4 = two_product(x2, y4);
     const auto d2 = two_two_expansion_diff(x2y4, x2y3);
-    const auto x3y1 = two_product(x3, y1);
-    const auto x3y2 = two_product(x3, y2);
     const auto d3 = two_two_expansion_diff(x3y2, x3y1);
-    const auto x4y1 = two_product(x4, y1);
-    const auto x4y2 = two_product(x4, y2);
     const auto d4 = two_two_expansion_diff(x4y1, x4y2);
     int d_size;
     std::array<FPT, 8> d12;
@@ -209,6 +239,131 @@ int intersection_denominator(FPT x1,
     const auto d34_size = fast_expansion_sum_zeroelim(d3, d4, d34);
     d_size = fast_expansion_sum_zeroelim(d12, d34, d, d12_size, d34_size);
     return d_size;
+}
+
+template <typename FPT>
+int intersection_x_nominator(FPT x1,
+                             FPT y1,
+                             FPT x2,
+                             FPT y2,
+                             FPT x3,
+                             FPT y3,
+                             FPT x4,
+                             FPT y4,
+                             const std::array<FPT, 2>& x1y3,
+                             const std::array<FPT, 2>& x1y4,
+                             const std::array<FPT, 2>& x2y3,
+                             const std::array<FPT, 2>& x2y4,
+                             const std::array<FPT, 2>& x3y1,
+                             const std::array<FPT, 2>& x3y2,
+                             const std::array<FPT, 2>& x4y1,
+                             const std::array<FPT, 2>& x4y2,
+                             std::array<FPT, 32>& pxn)
+{
+    const auto r = [](const std::array<FPT, 2>& a){ return std::array<FPT, 2> { a[1], a[0] }; };
+    int pxn_size;
+    {
+        std::array<FPT, 4> x1x3y2;
+        const auto x1x3y2_size = scale_expansion_zeroelim(r(x3y2), x1, x1x3y2);
+        std::array<FPT, 4> x1x4y2;
+        const auto x1x4y2_size = scale_expansion_zeroelim(r(x4y2), -x1, x1x4y2);
+        std::array<FPT, 8> pxn1;
+        const auto pxn1_size =
+            fast_expansion_sum_zeroelim(x1x3y2, x1x4y2, pxn1, x1x3y2_size, x1x4y2_size);
+        std::array<FPT, 4> x2x3y1;
+        const auto x2x3y1_size = scale_expansion_zeroelim(r(x3y1), -x2, x2x3y1);
+        std::array<FPT, 4> x2x4y1;
+        const auto x2x4y1_size = scale_expansion_zeroelim(r(x4y1), x2, x2x4y1);
+        std::array<FPT, 8> pxn2;
+        const auto pxn2_size =
+            fast_expansion_sum_zeroelim(x2x3y1, x2x4y1, pxn2, x2x3y1_size, x2x4y1_size);
+        std::array<FPT, 16> pxn12;
+        const auto pxn12_size =
+            fast_expansion_sum_zeroelim(pxn1, pxn2, pxn12, pxn1_size, pxn2_size);
+
+        std::array<FPT, 4> x1x3y4;
+        const auto x1x3y4_size = scale_expansion_zeroelim(r(x1y4), -x3, x1x3y4);
+        std::array<FPT, 4> x1x4y3;
+        const auto x1x4y3_size = scale_expansion_zeroelim(r(x1y3), x4, x1x4y3);
+        std::array<FPT, 8> pxn3;
+        const auto pxn3_size =
+            fast_expansion_sum_zeroelim(x1x3y4, x1x4y3, pxn3, x1x3y4_size, x1x4y3_size);
+        std::array<FPT, 4> x2x3y4;
+        const auto x2x3y4_size = scale_expansion_zeroelim(r(x2y4), x3, x2x3y4);
+        std::array<FPT, 4> x2x4y3;
+        const auto x2x4y3_size = scale_expansion_zeroelim(r(x2y3), -x4, x2x4y3);
+        std::array<FPT, 8> pxn4;
+        const auto pxn4_size =
+            fast_expansion_sum_zeroelim(x2x3y4, x2x4y3, pxn4, x2x3y4_size, x2x4y3_size);
+        std::array<FPT, 16> pxn34;
+        const auto pxn34_size =
+            fast_expansion_sum_zeroelim(pxn3, pxn4, pxn34, pxn3_size, pxn4_size);
+        pxn_size =
+            fast_expansion_sum_zeroelim(pxn12, pxn34, pxn, pxn12_size, pxn34_size);
+    }
+    return pxn_size;
+}
+
+template <typename FPT>
+int intersection_y_nominator(FPT x1,
+                             FPT y1,
+                             FPT x2,
+                             FPT y2,
+                             FPT x3,
+                             FPT y3,
+                             FPT x4,
+                             FPT y4,
+                             const std::array<FPT, 2>& x1y3,
+                             const std::array<FPT, 2>& x1y4,
+                             const std::array<FPT, 2>& x2y3,
+                             const std::array<FPT, 2>& x2y4,
+                             const std::array<FPT, 2>& x3y1,
+                             const std::array<FPT, 2>& x3y2,
+                             const std::array<FPT, 2>& x4y1,
+                             const std::array<FPT, 2>& x4y2,
+                             std::array<FPT, 32>& pyn)
+{
+    const auto r = [](const std::array<FPT, 2>& a){ return std::array<FPT, 2> { a[1], a[0] }; };
+    int pyn_size;
+    {
+        std::array<FPT, 4> x1y2y3;
+        const auto x1y2y3_size = scale_expansion_zeroelim(r(x1y3), y2, x1y2y3);
+        std::array<FPT, 4> x1y2y4;
+        const auto x1y2y4_size = scale_expansion_zeroelim(r(x1y4), -y2, x1y2y4);
+        std::array<FPT, 8> pyn1;
+        const auto pyn1_size =
+            fast_expansion_sum_zeroelim(x1y2y3, x1y2y4, pyn1, x1y2y3_size, x1y2y4_size);
+        std::array<FPT, 4> x2y1y3;
+        const auto x2y1y3_size = scale_expansion_zeroelim(r(x2y3), -y1, x2y1y3);
+        std::array<FPT, 4> x2y1y4;
+        const auto x2y1y4_size = scale_expansion_zeroelim(r(x2y4), y1, x2y1y4);
+        std::array<FPT, 8> pyn2;
+        const auto pyn2_size =
+            fast_expansion_sum_zeroelim(x2y1y3, x2y1y4, pyn2, x2y1y3_size, x2y1y4_size);
+        std::array<FPT, 16> pyn12;
+        const auto pyn12_size =
+            fast_expansion_sum_zeroelim(pyn1, pyn2, pyn12, pyn1_size, pyn2_size);
+
+        std::array<FPT, 4> x3y1y4;
+        const auto x3y1y4_size = scale_expansion_zeroelim(r(x3y1), -y4, x3y1y4);
+        std::array<FPT, 4> x4y1y3;
+        const auto x4y1y3_size = scale_expansion_zeroelim(r(x4y1), y3, x4y1y3);
+        std::array<FPT, 8> pyn3;
+        const auto pyn3_size =
+            fast_expansion_sum_zeroelim(x3y1y4, x4y1y3, pyn3, x3y1y4_size, x4y1y3_size);
+        std::array<FPT, 4> x3y2y4;
+        const auto x3y2y4_size = scale_expansion_zeroelim(r(x3y2), y4, x3y2y4);
+        std::array<FPT, 4> x4y2y3;
+        const auto x4y2y3_size = scale_expansion_zeroelim(r(x4y2), -y3, x4y2y3);
+        std::array<FPT, 8> pyn4;
+        const auto pyn4_size =
+            fast_expansion_sum_zeroelim(x3y2y4, x4y2y3, pyn4, x3y2y4_size, x4y2y3_size);
+        std::array<FPT, 16> pyn34;
+        const auto pyn34_size =
+            fast_expansion_sum_zeroelim(pyn3, pyn4, pyn34, pyn3_size, pyn4_size);
+        pyn_size = fast_expansion_sum_zeroelim(pyn12, pyn34, pyn, pyn12_size, pyn34_size);
+    }
+    return pyn_size;
 }
 
 // Returns true iff lines (x1, y1), (x2, y2) and (x3, y3), (x4, y4) are guaranteed to be
@@ -242,15 +397,22 @@ bool non_parallel(FPT x1, FPT y1, FPT x2, FPT y2, FPT x3, FPT y3, FPT x4, FPT y4
     const FPT error =   (3 * eps + 16 * eps * eps)
                       * (   std::abs((x1 - x2) * (y3 - y4))
                           + std::abs((y1 - y2) * (x3 - x4)) );
-    if( std::abs(d) > std::abs(error) )
+    if ( std::abs(d) > error )
         return true;
+    if ( d == 0 && error == 0 )
+        return false;
+    std::array<FPT, 2> x1y3, x1y4, x2y3, x2y4, x3y1, x3y2, x4y1, x4y2;
+    intersection_common(x1, y1, x2, y2, x3, y3, x4, y4, x1y3, x1y4, x2y3, x2y4, x3y1, x3y2, x4y1,
+                        x4y2);
     std::array<FPT, 16> exact_d;
-    auto ds = intersection_denominator(x1, y1, x2, y2, x3, y3, x4, y4, exact_d);
+    auto ds = intersection_denominator(x1, y1, x2, y2, x3, y3, x4, y4, x1y3, x1y4, x2y3, x2y4,
+                                       x3y1, x3y2, x4y1, x4y2, exact_d);
     return exact_d[ds - 1] != 0;
 }
 
 // Compute the intersection (px, py) of lines (x1, y1), (x2, y2) and (x3, y3), (x4, y4) with
 // correctly rounded coordinates, i.e. up to the available precision.
+// Assumes that a unique intersection exists (i.e. d != 0).
 template <typename FPT, bool CorrectRounding = true>
 std::array<FPT, 2> intersection_robust(FPT x1,
                                        FPT y1,
@@ -262,119 +424,27 @@ std::array<FPT, 2> intersection_robust(FPT x1,
                                        FPT y4)
 {
     assert(non_parallel(x1, y1, x2, y2, x3, y3, x4, y4));
-    const auto x1y3 = two_product(x1, y3);
-    const auto x1y4 = two_product(x1, y4);
-    const auto d1 = two_two_expansion_diff(x1y3, x1y4);
-    const auto x2y3 = two_product(x2, y3);
-    const auto x2y4 = two_product(x2, y4);
-    const auto d2 = two_two_expansion_diff(x2y4, x2y3);
-    const auto x3y1 = two_product(x3, y1);
-    const auto x3y2 = two_product(x3, y2);
-    const auto d3 = two_two_expansion_diff(x3y2, x3y1);
-    const auto x4y1 = two_product(x4, y1);
-    const auto x4y2 = two_product(x4, y2);
-    const auto d4 = two_two_expansion_diff(x4y1, x4y2);
+    std::array<FPT, 2> x1y3, x1y4, x2y3, x2y4, x3y1, x3y2, x4y1, x4y2;
+    intersection_common(x1, y1, x2, y2, x3, y3, x4, y4, x1y3, x1y4, x2y3, x2y4, x3y1, x3y2, x4y1,
+                        x4y2);
     std::array<FPT, 16> d;
-    int d_size;
-    {
-        std::array<FPT, 8> d12;
-        const auto d12_size = fast_expansion_sum_zeroelim(d1, d2, d12);
-        std::array<FPT, 8> d34;
-        const auto d34_size = fast_expansion_sum_zeroelim(d3, d4, d34);
-        d_size = fast_expansion_sum_zeroelim(d12, d34, d, d12_size, d34_size);
-    }
+    int d_size = intersection_denominator(x1, y1, x2, y2, x3, y3, x4, y4, x1y3, x1y4, x2y3, x2y4,
+                                          x3y1, x3y2, x4y1, x4y2, d);
     std::array<FPT, 2> d_approx = vec_sum_err_branch_2(d, d_size); //error in O(u²)
-
-    const auto r = [](const std::array<FPT, 2>& a){ return std::array<FPT, 2> {a[1], a[0]}; };
 
     FPT px_approx;
     {
         std::array<FPT, 32> pxn;
-        int pxn_size;
-        {
-            std::array<FPT, 4> x1x3y2;
-            const auto x1x3y2_size = scale_expansion_zeroelim(r(x3y2), x1, x1x3y2);
-            std::array<FPT, 4> x1x4y2;
-            const auto x1x4y2_size = scale_expansion_zeroelim(r(x4y2), -x1, x1x4y2);
-            std::array<FPT, 8> pxn1;
-            const auto pxn1_size =
-                fast_expansion_sum_zeroelim(x1x3y2, x1x4y2, pxn1, x1x3y2_size, x1x4y2_size);
-            std::array<FPT, 4> x2x3y1;
-            const auto x2x3y1_size = scale_expansion_zeroelim(r(x3y1), -x2, x2x3y1);
-            std::array<FPT, 4> x2x4y1;
-            const auto x2x4y1_size = scale_expansion_zeroelim(r(x4y1), x2, x2x4y1);
-            std::array<FPT, 8> pxn2;
-            const auto pxn2_size =
-                fast_expansion_sum_zeroelim(x2x3y1, x2x4y1, pxn2, x2x3y1_size, x2x4y1_size);
-            std::array<FPT, 16> pxn12;
-            const auto pxn12_size =
-                fast_expansion_sum_zeroelim(pxn1, pxn2, pxn12, pxn1_size, pxn2_size);
-
-            std::array<FPT, 4> x1x3y4;
-            const auto x1x3y4_size = scale_expansion_zeroelim(r(x1y4), -x3, x1x3y4);
-            std::array<FPT, 4> x1x4y3;
-            const auto x1x4y3_size = scale_expansion_zeroelim(r(x1y3), x4, x1x4y3);
-            std::array<FPT, 8> pxn3;
-            const auto pxn3_size =
-                fast_expansion_sum_zeroelim(x1x3y4, x1x4y3, pxn3, x1x3y4_size, x1x4y3_size);
-            std::array<FPT, 4> x2x3y4;
-            const auto x2x3y4_size = scale_expansion_zeroelim(r(x2y4), x3, x2x3y4);
-            std::array<FPT, 4> x2x4y3;
-            const auto x2x4y3_size = scale_expansion_zeroelim(r(x2y3), -x4, x2x4y3);
-            std::array<FPT, 8> pxn4;
-            const auto pxn4_size =
-                fast_expansion_sum_zeroelim(x2x3y4, x2x4y3, pxn4, x2x3y4_size, x2x4y3_size);
-            std::array<FPT, 16> pxn34;
-            const auto pxn34_size =
-                fast_expansion_sum_zeroelim(pxn3, pxn4, pxn34, pxn3_size, pxn4_size);
-            pxn_size =
-                fast_expansion_sum_zeroelim(pxn12, pxn34, pxn, pxn12_size, pxn34_size);
-        }
+        int pxn_size = intersection_x_nominator(x1, y1, x2, y2, x3, y3, x4, y4, x1y3, x1y4, x2y3,
+                                                x2y4, x3y1, x3y2, x4y1, x4y2, pxn);
         px_approx = divide_approx<CorrectRounding>(pxn, d, d_approx, pxn_size, d_size);
     }
 
     FPT py_approx;
     {
         std::array<FPT, 32> pyn;
-        int pyn_size;
-        {
-            std::array<FPT, 4> x1y2y3;
-            const auto x1y2y3_size = scale_expansion_zeroelim(r(x1y3), y2, x1y2y3);
-            std::array<FPT, 4> x1y2y4;
-            const auto x1y2y4_size = scale_expansion_zeroelim(r(x1y4), -y2, x1y2y4);
-            std::array<FPT, 8> pyn1;
-            const auto pyn1_size =
-                fast_expansion_sum_zeroelim(x1y2y3, x1y2y4, pyn1, x1y2y3_size, x1y2y4_size);
-            std::array<FPT, 4> x2y1y3;
-            const auto x2y1y3_size = scale_expansion_zeroelim(r(x2y3), -y1, x2y1y3);
-            std::array<FPT, 4> x2y1y4;
-            const auto x2y1y4_size = scale_expansion_zeroelim(r(x2y4), y1, x2y1y4);
-            std::array<FPT, 8> pyn2;
-            const auto pyn2_size =
-                fast_expansion_sum_zeroelim(x2y1y3, x2y1y4, pyn2, x2y1y3_size, x2y1y4_size);
-            std::array<FPT, 16> pyn12;
-            const auto pyn12_size =
-                fast_expansion_sum_zeroelim(pyn1, pyn2, pyn12, pyn1_size, pyn2_size);
-
-            std::array<FPT, 4> x3y1y4;
-            const auto x3y1y4_size = scale_expansion_zeroelim(r(x3y1), -y4, x3y1y4);
-            std::array<FPT, 4> x4y1y3;
-            const auto x4y1y3_size = scale_expansion_zeroelim(r(x4y1), y3, x4y1y3);
-            std::array<FPT, 8> pyn3;
-            const auto pyn3_size =
-                fast_expansion_sum_zeroelim(x3y1y4, x4y1y3, pyn3, x3y1y4_size, x4y1y3_size);
-            std::array<FPT, 4> x3y2y4;
-            const auto x3y2y4_size = scale_expansion_zeroelim(r(x3y2), y4, x3y2y4);
-            std::array<FPT, 4> x4y2y3;
-            const auto x4y2y3_size = scale_expansion_zeroelim(r(x4y2), -y3, x4y2y3);
-            std::array<FPT, 8> pyn4;
-            const auto pyn4_size =
-                fast_expansion_sum_zeroelim(x3y2y4, x4y2y3, pyn4, x3y2y4_size, x4y2y3_size);
-            std::array<FPT, 16> pyn34;
-            const auto pyn34_size =
-                fast_expansion_sum_zeroelim(pyn3, pyn4, pyn34, pyn3_size, pyn4_size);
-            pyn_size = fast_expansion_sum_zeroelim(pyn12, pyn34, pyn, pyn12_size, pyn34_size);
-        }
+        int pyn_size = intersection_x_nominator(x1, y1, x2, y2, x3, y3, x4, y4, x1y3, x1y4, x2y3,
+                                                x2y4, x3y1, x3y2, x4y1, x4y2, pyn);
         py_approx = divide_approx<CorrectRounding>(pyn, d, d_approx, pyn_size, d_size);
     }
     return std::array<FPT, 2> {px_approx, py_approx};
@@ -399,7 +469,8 @@ std::array<FPT, 2> intersection_nonrobust(FPT x1,
 
 // Computes line intersections with an relative error of less than 200 * u. This is fast in most
 // cases (assuming mostly non-degenerate input) but slow in some cases.
-// Should be consistent with side_rounded_input<FPT, 404, 0>.
+// Should be consistent with side_rounded_input<FPT, 404, 0>. Assumes that a unique intersection
+// exists (i.e. d != 0).
 template <typename FPT>
 std::array<FPT, 2> intersection_filtered(FPT x1,
                                          FPT y1,
@@ -410,9 +481,10 @@ std::array<FPT, 2> intersection_filtered(FPT x1,
                                          FPT x4,
                                          FPT y4)
 {
-    const FPT d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-    const FPT xn = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4);
-    const FPT yn = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
+    assert(non_parallel(x1, y1, x2, y2, x3, y3, x4, y4));
+    FPT d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    FPT xn = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4);
+    FPT yn = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
     constexpr FPT u = std::numeric_limits<FPT>::epsilon() / 2;
     constexpr FPT d_coeff = 4 * u + 12 * u * u;
     constexpr FPT n_coeff = 5 * u + 24 * u * u;
@@ -424,11 +496,37 @@ std::array<FPT, 2> intersection_filtered(FPT x1,
     const FPT yn_err = n_coeff * yn_mag;
     constexpr FPT bound = 99 * u;
     if (    std::abs(d_err / d) < bound
-         && std::abs(xn_err / xn) < bound
-         && std::abs(yn_err / yn) < bound)
+         && ( xn_err == 0. || std::abs(xn_err / xn) < bound)
+         && ( yn_err == 0. || std::abs(yn_err / yn) < bound) )
         return std::array<FPT, 2> { xn / d, yn / d };
     else
-        return intersection_robust<FPT, false>(x1, y1, x2, y2, x3, y3, x4, y4);
+    {
+        std::array<FPT, 2> x1y3, x1y4, x2y3, x2y4, x3y1, x3y2, x4y1, x4y2;
+        intersection_common(x1, y1, x2, y2, x3, y3, x4, y4, x1y3, x1y4, x2y3, x2y4, x3y1, x3y2,
+                            x4y1, x4y2);
+        if ( std::abs(d_err / d) >= bound )
+        {
+            std::array<FPT, 16> d_exact;
+            int d_size = intersection_denominator(x1, y1, x2, y2, x3, y3, x4, y4, x1y3, x1y4, x2y3,
+                                                  x2y4, x3y1, x3y2, x4y1, x4y2, d_exact);
+            d = std::accumulate( d_exact.begin(), d_exact.begin() + d_size, FPT(0) );
+        }
+        if ( std::abs(xn_err / xn) >= bound && xn_err != 0. )
+        {
+            std::array<FPT, 32> xn_exact;
+            int xn_size = intersection_x_nominator(x1, y1, x2, y2, x3, y3, x4, y4, x1y3, x1y4, x2y3,
+                                                   x2y4, x3y1, x3y2, x4y1, x4y2, xn_exact);
+            xn = std::accumulate( xn_exact.begin(), xn_exact.begin() + xn_size, FPT(0) );
+        }
+        if ( std::abs(yn_err / yn) >= bound && yn_err != 0. )
+        {
+            std::array<FPT, 32> yn_exact;
+            int yn_size = intersection_y_nominator(x1, y1, x2, y2, x3, y3, x4, y4, x1y3, x1y4, x2y3,
+                                                   x2y4, x3y1, x3y2, x4y1, x4y2, yn_exact);
+            yn = std::accumulate( yn_exact.begin(), yn_exact.begin() + yn_size, FPT(0) );
+        }
+        return {{ xn / d, yn / d }};
+    }
 }
 
 }}
