@@ -443,7 +443,7 @@ std::array<FPT, 2> intersection_robust(FPT x1,
     FPT py_approx;
     {
         std::array<FPT, 32> pyn;
-        int pyn_size = intersection_x_nominator(x1, y1, x2, y2, x3, y3, x4, y4, x1y3, x1y4, x2y3,
+        int pyn_size = intersection_y_nominator(x1, y1, x2, y2, x3, y3, x4, y4, x1y3, x1y4, x2y3,
                                                 x2y4, x3y1, x3y2, x4y1, x4y2, pyn);
         py_approx = divide_approx<CorrectRounding>(pyn, d, d_approx, pyn_size, d_size);
     }
