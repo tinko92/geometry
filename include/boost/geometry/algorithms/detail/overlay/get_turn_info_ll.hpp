@@ -51,13 +51,13 @@ struct get_turn_info_linear_linear
                 RobustPolicy const& robust_policy,
                 OutputIterator out)
     {
-        typedef intersection_info
+        using inters_info = intersection_info
             <
                 UniqueSubRange1, UniqueSubRange2,
                 typename TurnInfo::point_type,
                 UmbrellaStrategy,
                 RobustPolicy
-            > inters_info;
+            >;
 
         inters_info inters(range_p, range_q, umbrella_strategy, robust_policy);
 

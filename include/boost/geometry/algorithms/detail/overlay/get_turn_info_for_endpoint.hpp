@@ -232,7 +232,7 @@ private:
 template <bool EnableFirst, bool EnableLast>
 struct get_turn_info_for_endpoint
 {
-    typedef std::pair<operation_type, operation_type> operations_pair;
+    using operations_pair = std::pair<operation_type, operation_type>;
 
     BOOST_STATIC_ASSERT(EnableFirst || EnableLast);
 
@@ -321,8 +321,8 @@ struct get_turn_info_for_endpoint
         bool append_first = EnableFirst && (is_p_first_ip || is_q_first_ip);
         bool append_last = EnableLast && (is_p_last_ip || is_q_last_ip);
 
-        operation_type p_operation = ip_info.p_operation;
-        operation_type q_operation = ip_info.q_operation;
+        auto p_operation = ip_info.p_operation;
+        auto q_operation = ip_info.q_operation;
 
         if ( append_first || append_last )
         {

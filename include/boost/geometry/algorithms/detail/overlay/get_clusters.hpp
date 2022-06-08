@@ -179,10 +179,9 @@ inline void get_clusters(Turns& turns, Clusters& clusters,
                 // Most recent clusters (with this y-value) are at the bottom
                 // therefore we can stop as soon as the y-value is out of reach (TODO)
                 bool found = false;
-                for (auto cit = clustered_points.begin();
-                     cit != clustered_points.end(); ++cit)
+                for (auto const& cp : clustered_points)
                 {
-                    found = equal_policy.equals(cit->pnt, it1->pnt);
+                    found = equal_policy.equals(cp.pnt, it1->pnt);
                     if (found)
                     {
                         break;

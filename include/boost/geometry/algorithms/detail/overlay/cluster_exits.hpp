@@ -48,8 +48,6 @@ struct cluster_exits
 {
 private :
     static const operation_type target_operation = operation_from_overlay<OverlayType>::value;
-    typedef typename boost::range_value<Turns>::type turn_type;
-    typedef typename turn_type::turn_operation_type turn_operation_type;
 
     struct linked_turn_op_info
     {
@@ -67,16 +65,11 @@ private :
         signed_size_type rank_index;
     };
 
-    typedef typename std::vector<linked_turn_op_info>::const_iterator const_it_type;
-    typedef typename std::vector<linked_turn_op_info>::iterator it_type;
-    typedef typename std::set<signed_size_type>::const_iterator sit_type;
-
     inline signed_size_type get_rank(Sbs const& sbs,
             linked_turn_op_info const& info) const
     {
-        for (std::size_t i = 0; i < sbs.m_ranked_points.size(); i++)
+        for (auto const& rp : sbs.m_ranked_points)
         {
-            typename Sbs::rp const& rp = sbs.m_ranked_points[i];
             if (rp.turn_index == info.turn_index
                     && rp.operation_index == info.op_index
                     && rp.direction == sort_by_side::dir_to)
@@ -95,10 +88,9 @@ private :
 
     bool collect(Turns const& turns)
     {
-        for (sit_type it = m_ids.begin(); it != m_ids.end(); ++it)
+        for (auto cluster_turn_index : m_ids)
         {
-            signed_size_type cluster_turn_index = *it;
-            turn_type const& cluster_turn = turns[cluster_turn_index];
+            auto const& cluster_turn = turns[cluster_turn_index];
             if (cluster_turn.discarded)
             {
                 continue;
@@ -110,9 +102,9 @@ private :
             }
             for (int i = 0; i < 2; i++)
             {
-                turn_operation_type const& op = cluster_turn.operations[i];
-                turn_operation_type const& other_op = cluster_turn.operations[1 - i];
-                signed_size_type const ni = op.enriched.get_next_turn_index();
+                auto const& op = cluster_turn.operations[i];
+                auto const& other_op = cluster_turn.operations[1 - i];
+                auto const ni = op.enriched.get_next_turn_index();
 
                 if (op.operation == target_operation
                     || op.operation == operation_continue)
@@ -148,23 +140,19 @@ private :
             return true;
         }
 
-        for (it_type it = possibilities.begin(); it != possibilities.end(); ++it)
+        for (auto& info : possibilities)
         {
-            linked_turn_op_info& info = *it;
             info.rank_index = get_rank(sbs, info);
         }
-        for (it_type it = blocked.begin(); it != blocked.end(); ++it)
+        for (auto& info : blocked)
         {
-            linked_turn_op_info& info = *it;
             info.rank_index = get_rank(sbs, info);
         }
 
-        for (const_it_type it = possibilities.begin(); it != possibilities.end(); ++it)
+        for (auto const& lti : possibilities)
         {
-            linked_turn_op_info const& lti = *it;
-            for (const_it_type bit = blocked.begin(); bit != blocked.end(); ++bit)
+            for (auto const& blti : blocked)
             {
-                linked_turn_op_info const& blti = *bit;
                 if (blti.next_turn_index == lti.next_turn_index
                         && blti.rank_index == lti.rank_index)
                 {
@@ -198,10 +186,8 @@ public :
         // If there is one (and only one) possibility pointing outside
         // the cluster, take that one.
         linked_turn_op_info target;
-        for (const_it_type it = possibilities.begin();
-             it != possibilities.end(); ++it)
+        for (auto const& lti : possibilities)
         {
-            linked_turn_op_info const& lti = *it;
             if (m_ids.count(lti.next_turn_index) == 0)
             {
                 if (target.turn_index >= 0

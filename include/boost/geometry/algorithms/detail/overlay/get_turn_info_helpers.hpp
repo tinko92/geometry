@@ -50,7 +50,7 @@ template
 >
 struct side_calculator
 {
-    typedef decltype(std::declval<Strategy>().side()) side_strategy_type;
+    using side_strategy_type = decltype(std::declval<Strategy>().side());
 
     inline side_calculator(UniqueSubRange1 const& range_p,
                            UniqueSubRange2 const& range_q,
@@ -93,7 +93,7 @@ struct side_calculator
 template<typename Point, typename UniqueSubRange, typename RobustPolicy>
 struct robust_subrange_adapter
 {
-    typedef Point point_type;
+    using point_type = Point;
 
     robust_subrange_adapter(UniqueSubRange const& unique_sub_range,
                      Point const& robust_point_i, Point const& robust_point_j,
@@ -149,14 +149,14 @@ template
 >
 struct robust_point_calculator
 {
-    typedef typename geometry::robust_point_type
+    using robust_point1_type = typename geometry::robust_point_type
         <
             typename UniqueSubRange1::point_type, RobustPolicy
-        >::type robust_point1_type;
-    typedef typename geometry::robust_point_type
+        >::type;
+    using robust_point2_type = typename geometry::robust_point_type
         <
             typename UniqueSubRange2::point_type, RobustPolicy
-        >::type robust_point2_type;
+        >::type;
 
     inline robust_point_calculator(UniqueSubRange1 const& range_p,
                                    UniqueSubRange2 const& range_q,
@@ -230,41 +230,40 @@ template
 class intersection_info_base<UniqueSubRange1, UniqueSubRange2,
         TurnPoint, UmbrellaStrategy, RobustPolicy, rescale_policy_tag>
 {
-    typedef robust_point_calculator
-    <
-        UniqueSubRange1, UniqueSubRange2,
-        RobustPolicy
-    >
-    robust_calc_type;
+    using robust_calc_type = robust_point_calculator
+        <
+            UniqueSubRange1, UniqueSubRange2,
+            RobustPolicy
+        >;
 
 public:
-    typedef segment_intersection_points
-    <
-        TurnPoint,
-        geometry::segment_ratio<boost::long_long_type>
-    > intersection_point_type;
-    typedef policies::relate::segments_intersection_policy
+    using intersection_point_type = segment_intersection_points
+        <
+            TurnPoint,
+            geometry::segment_ratio<boost::long_long_type>
+        >;
+    using intersection_policy_type = policies::relate::segments_intersection_policy
         <
             intersection_point_type
-        > intersection_policy_type;
+        >;
 
-    typedef typename intersection_policy_type::return_type result_type;
+    using result_type = typename intersection_policy_type::return_type;
 
-    typedef typename robust_calc_type::robust_point1_type robust_point1_type;
-    typedef typename robust_calc_type::robust_point2_type robust_point2_type;
+    using robust_point1_type = typename robust_calc_type::robust_point1_type;
+    using robust_point2_type = typename robust_calc_type::robust_point2_type;
 
-    typedef robust_subrange_adapter<robust_point1_type, UniqueSubRange1, RobustPolicy> robust_subrange1;
-    typedef robust_subrange_adapter<robust_point2_type, UniqueSubRange2, RobustPolicy> robust_subrange2;
+    using robust_subrange1 = robust_subrange_adapter<robust_point1_type, UniqueSubRange1, RobustPolicy>;
+    using robust_subrange2 = robust_subrange_adapter<robust_point2_type, UniqueSubRange2, RobustPolicy>;
 
-    typedef side_calculator
+    using side_calculator_type = side_calculator
         <
             robust_subrange1, robust_subrange2, UmbrellaStrategy
-        > side_calculator_type;
+        >;
 
-    typedef side_calculator
+    using robust_swapped_side_calculator_type = side_calculator
         <
             robust_subrange2, robust_subrange1, UmbrellaStrategy
-        > robust_swapped_side_calculator_type;
+        >;
 
     intersection_info_base(UniqueSubRange1 const& range_p,
                            UniqueSubRange2 const& range_q,
@@ -328,23 +327,23 @@ class intersection_info_base<UniqueSubRange1, UniqueSubRange2,
 {
 public:
 
-    typedef segment_intersection_points<TurnPoint> intersection_point_type;
-    typedef policies::relate::segments_intersection_policy
+    using intersection_point_type = segment_intersection_points<TurnPoint>;
+    using intersection_policy_type = policies::relate::segments_intersection_policy
         <
             intersection_point_type
-        > intersection_policy_type;
+        >;
 
-    typedef typename intersection_policy_type::return_type result_type;
+    using result_type = typename intersection_policy_type::return_type;
 
-    typedef side_calculator
+    using side_calculator_type = side_calculator
         <
             UniqueSubRange1, UniqueSubRange2, UmbrellaStrategy
-        > side_calculator_type;
+        >;
 
-    typedef side_calculator
+    using swapped_side_calculator_type = side_calculator
         <
             UniqueSubRange2, UniqueSubRange1, UmbrellaStrategy
-        > swapped_side_calculator_type;
+        >;
     
     intersection_info_base(UniqueSubRange1 const& range_p,
                            UniqueSubRange2 const& range_q,
@@ -400,18 +399,18 @@ class intersection_info
     : public intersection_info_base<UniqueSubRange1, UniqueSubRange2,
         TurnPoint, UmbrellaStrategy, RobustPolicy>
 {
-    typedef intersection_info_base<UniqueSubRange1, UniqueSubRange2,
-        TurnPoint, UmbrellaStrategy, RobustPolicy> base;
+    using base = intersection_info_base<UniqueSubRange1, UniqueSubRange2,
+        TurnPoint, UmbrellaStrategy, RobustPolicy>;
 
 public:
 
-    typedef typename UmbrellaStrategy::cs_tag cs_tag;
+    using cs_tag = typename UmbrellaStrategy::cs_tag;
 
-    typedef typename base::side_calculator_type side_calculator_type;
-    typedef typename base::result_type result_type;
+    using side_calculator_type = typename base::side_calculator_type;
+    using result_type = typename base::result_type;
     
-    typedef typename result_type::intersection_points_type i_info_type;
-    typedef typename result_type::direction_type d_info_type;
+    using i_info_type = typename result_type::intersection_points_type;
+    using d_info_type = typename result_type::direction_type;
 
     intersection_info(UniqueSubRange1 const& range_p,
                       UniqueSubRange2 const& range_q,

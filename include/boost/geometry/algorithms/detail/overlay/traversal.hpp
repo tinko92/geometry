@@ -92,18 +92,18 @@ struct traversal
 {
 private :
 
-    static const operation_type target_operation = operation_from_overlay<OverlayType>::value;
+    static const auto target_operation = operation_from_overlay<OverlayType>::value;
 
-    typedef typename sort_by_side::side_compare<target_operation>::type side_compare_type;
-    typedef typename boost::range_value<Turns>::type turn_type;
-    typedef typename turn_type::turn_operation_type turn_operation_type;
+    using side_compare_type = typename sort_by_side::side_compare<target_operation>::type;
+    using turn_type = typename boost::range_value<Turns>::type;
+    using turn_operation_type = typename turn_type::turn_operation_type;
 
-    typedef typename geometry::point_type<Geometry1>::type point_type;
-    typedef sort_by_side::side_sorter
+    using point_type = typename geometry::point_type<Geometry1>::type;
+    using sbs_type = sort_by_side::side_sorter
         <
             Reverse1, Reverse2, OverlayType,
             point_type, SideStrategy, side_compare_type
-        > sbs_type;
+        >;
 
 public :
     inline traversal(Geometry1 const& geometry1, Geometry2 const& geometry2,
@@ -123,29 +123,24 @@ public :
     template <typename TurnInfoMap>
     inline void finalize_visit_info(TurnInfoMap& turn_info_map)
     {
-        for (typename boost::range_iterator<Turns>::type
-            it = boost::begin(m_turns);
-            it != boost::end(m_turns);
-            ++it)
+        for (auto& turn : m_turns)
         {
-            turn_type& turn = *it;
             for (int i = 0; i < 2; i++)
             {
-                turn_operation_type& op = turn.operations[i];
+                auto& op = turn.operations[i];
                 if (op.visited.visited()
                     || op.visited.started()
                     || op.visited.finished() )
                 {
-                   ring_identifier const ring_id = ring_id_by_seg_id(op.seg_id);
+                   auto const ring_id = ring_id_by_seg_id(op.seg_id);
                    turn_info_map[ring_id].has_traversed_turn = true;
 
                    if (op.operation == operation_continue)
                    {
                        // Continue operations should mark the other operation
                        // as traversed too
-                       turn_operation_type& other_op = turn.operations[1 - i];
-                       ring_identifier const other_ring_id
-                               = ring_id_by_seg_id(other_op.seg_id);
+                       auto& other_op = turn.operations[1 - i];
+                       auto const other_ring_id = ring_id_by_seg_id(other_op.seg_id);
                        turn_info_map[other_ring_id].has_traversed_turn = true;
                    }
                 }
@@ -158,21 +153,19 @@ public :
     inline void set_visited_in_cluster(signed_size_type cluster_id,
                                        signed_size_type rank)
     {
-        typename Clusters::const_iterator mit = m_clusters.find(cluster_id);
+        auto mit = m_clusters.find(cluster_id);
         BOOST_ASSERT(mit != m_clusters.end());
 
-        cluster_info const& cinfo = mit->second;
-        std::set<signed_size_type> const& ids = cinfo.turn_indices;
+        auto const& cinfo = mit->second;
+        auto const& ids = cinfo.turn_indices;
 
-        for (typename std::set<signed_size_type>::const_iterator it = ids.begin();
-             it != ids.end(); ++it)
+        for (auto const turn_index : ids)
         {
-            signed_size_type const turn_index = *it;
             turn_type& turn = m_turns[turn_index];
 
             for (int i = 0; i < 2; i++)
             {
-                turn_operation_type& op = turn.operations[i];
+                auto& op = turn.operations[i];
                 if (op.visited.none()
                     && op.enriched.rank == rank)
                 {
@@ -188,7 +181,7 @@ public :
             // On "continue", all go in same direction so set "visited" for ALL
             for (int i = 0; i < 2; i++)
             {
-                turn_operation_type& turn_op = turn.operations[i];
+                auto& turn_op = turn.operations[i];
                 if (turn_op.visited.none())
                 {
                     turn_op.visited.set_visited();
@@ -216,8 +209,8 @@ public :
             segment_identifier const& current,
             segment_identifier const& previous) const
     {
-        turn_operation_type const& op0 = turn.operations[0];
-        turn_operation_type const& op1 = turn.operations[1];
+        auto const& op0 = turn.operations[0];
+        auto const& op1 = turn.operations[1];
 
         bool const switch_source = op0.enriched.region_id != -1
                 && op0.enriched.region_id == op1.enriched.region_id;
@@ -269,7 +262,7 @@ public :
             return false;
         }
 
-        turn_type const& turn = m_turns[turn_index];
+        auto const& turn = m_turns[turn_index];
 
         // It is not a dead end if there is an operation to continue, or of
         // there is a cluster (assuming for now we can get out of the cluster)
@@ -283,7 +276,7 @@ public :
                              signed_size_type origin_turn_index,
                              std::size_t level = 1) const
     {
-        signed_size_type next_turn_index = op.enriched.get_next_turn_index();
+        auto next_turn_index = op.enriched.get_next_turn_index();
         if (next_turn_index == -1)
         {
             return 0;
@@ -304,10 +297,10 @@ public :
             return 0;
         }
 
-        turn_type const& next_turn = m_turns[next_turn_index];
+        auto const& next_turn = m_turns[next_turn_index];
         for (int i = 0; i < 2; i++)
         {
-            turn_operation_type const& next_op = next_turn.operations[i];
+            auto const& next_op = next_turn.operations[i];
             if (next_op.operation == target_operation
                 && ! next_op.visited.finished()
                 && ! next_op.visited.visited())
@@ -388,7 +381,7 @@ public :
                 continue;
             }
 
-            turn_operation_type const& op = turn.operations[i];
+            auto const& op = turn.operations[i];
 
             if (! result
                 || (is_union && op.remaining_distance > best_remaining_distance)
@@ -444,7 +437,7 @@ public :
         std::size_t shortcut_level[2] = {0};
         for (int i = 0; i < 2; i++)
         {
-            turn_operation_type const& op = turn.operations[i];
+            auto const& op = turn.operations[i];
 
             if (op.operation == target_operation
                 && ! op.visited.finished()
@@ -547,7 +540,7 @@ public :
 
     inline int starting_operation_index(const turn_type& turn) const
     {
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 2; ++i)
         {
             if (turn.operations[i].visited.started())
             {
@@ -661,12 +654,12 @@ public :
         int& op_index, sbs_type const& sbs,
         signed_size_type start_turn_index, int start_op_index) const
     {
-        sort_by_side::rank_type const selected_rank = select_rank(sbs);
+        auto const selected_rank = select_rank(sbs);
 
         int current_priority = 0;
         for (std::size_t i = 1; i < sbs.m_ranked_points.size(); i++)
         {
-            typename sbs_type::rp const& ranked_point = sbs.m_ranked_points[i];
+            auto const& ranked_point = sbs.m_ranked_points[i];
 
             if (ranked_point.rank > selected_rank)
             {
@@ -690,7 +683,7 @@ public :
                 int& op_index, sbs_type const& sbs) const
     {
         // Select the rank based on regions and isolation
-        sort_by_side::rank_type const selected_rank = select_rank(sbs);
+        auto const selected_rank = select_rank(sbs);
 
         if (selected_rank <= 0)
         {
@@ -702,7 +695,7 @@ public :
         typename turn_operation_type::comparable_distance_type
                 min_remaining_distance = 0;
 
-        std::size_t selected_index = sbs.m_ranked_points.size();
+        auto selected_index = sbs.m_ranked_points.size();
         for (std::size_t i = 0; i < sbs.m_ranked_points.size(); i++)
         {
             auto const& ranked_point = sbs.m_ranked_points[i];
@@ -752,7 +745,7 @@ public :
 
         for (auto cluster_turn_index : cluster_indices)
         {
-            turn_type const& cluster_turn = m_turns[cluster_turn_index];
+            auto const& cluster_turn = m_turns[cluster_turn_index];
             if (cluster_turn.discarded)
             {
                 // Defensive check, discarded turns should not be in cluster
@@ -773,7 +766,7 @@ public :
         {
             return false;
         }
-        turn_type const& turn = m_turns[turn_index];
+        auto const& turn = m_turns[turn_index];
         sbs.apply(turn.point);
         return true;
     }
@@ -786,14 +779,14 @@ public :
     {
         bool const is_union = target_operation == operation_union;
 
-        turn_type const& turn = m_turns[turn_index];
+        auto const& turn = m_turns[turn_index];
         BOOST_ASSERT(turn.is_clustered());
 
-        typename Clusters::const_iterator mit = m_clusters.find(turn.cluster_id);
+        auto mit = m_clusters.find(turn.cluster_id);
         BOOST_ASSERT(mit != m_clusters.end());
 
-        cluster_info const& cinfo = mit->second;
-        std::set<signed_size_type> const& cluster_indices = cinfo.turn_indices;
+        auto const& cinfo = mit->second;
+        auto const& cluster_indices = cinfo.turn_indices;
 
         sbs_type sbs(m_strategy);
 

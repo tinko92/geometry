@@ -103,10 +103,6 @@ template
 >
 inline void get_ring_turn_info(TurnInfoMap& turn_info_map, Turns const& turns, Clusters const& clusters)
 {
-    typedef typename boost::range_value<Turns>::type turn_type;
-    typedef typename turn_type::turn_operation_type turn_operation_type;
-    typedef typename turn_type::container_type container_type;
-
     static const operation_type target_operation
             = operation_from_overlay<OverlayType>::value;
     static const operation_type opposite_operation
@@ -114,13 +110,8 @@ inline void get_ring_turn_info(TurnInfoMap& turn_info_map, Turns const& turns, C
             ? operation_intersection
             : operation_union;
 
-    for (typename boost::range_iterator<Turns const>::type
-            it = boost::begin(turns);
-         it != boost::end(turns);
-         ++it)
+    for (auto const& turn : turns)
     {
-        turn_type const& turn = *it;
-
         bool cluster_checked = false;
         bool has_blocked = false;
 
@@ -130,12 +121,8 @@ inline void get_ring_turn_info(TurnInfoMap& turn_info_map, Turns const& turns, C
             continue;
         }
 
-        for (typename boost::range_iterator<container_type const>::type
-                op_it = boost::begin(turn.operations);
-            op_it != boost::end(turn.operations);
-            ++op_it)
+        for (auto const& op : turn.operations)
         {
-            turn_operation_type const& op = *op_it;
             ring_identifier const ring_id = ring_id_by_seg_id(op.seg_id);
 
             if (! is_self_turn<OverlayType>(turn)
@@ -197,14 +184,14 @@ inline OutputIterator return_if_one_input_is_empty(Geometry1 const& geometry1,
             Geometry2 const& geometry2,
             OutputIterator out, Strategy const& strategy)
 {
-    typedef typename geometry::ring_type<GeometryOut>::type ring_type;
-    typedef std::deque<ring_type> ring_container_type;
+    using ring_type = typename geometry::ring_type<GeometryOut>::type;
+    using ring_container_type = std::deque<ring_type>;
 
-    typedef ring_properties
+    using properties = ring_properties
         <
             typename geometry::point_type<ring_type>::type,
             typename geometry::area_result<ring_type, Strategy>::type
-        > properties;
+        >;
 
 // Silence warning C4127: conditional expression is constant
 #if defined(_MSC_VER)
@@ -269,23 +256,23 @@ struct overlay
                 >(geometry1, geometry2, out, strategy);
         }
 
-        typedef typename geometry::point_type<GeometryOut>::type point_type;
-        typedef detail::overlay::traversal_turn_info
-        <
-            point_type,
-            typename segment_ratio_type<point_type, RobustPolicy>::type
-        > turn_info;
-        typedef std::deque<turn_info> turn_container_type;
+        using point_type = typename geometry::point_type<GeometryOut>::type;
+        using turn_info = detail::overlay::traversal_turn_info
+            <
+                point_type,
+                typename segment_ratio_type<point_type, RobustPolicy>::type
+            >;
+        using turn_container_type = std::deque<turn_info>;
 
-        typedef typename geometry::ring_type<GeometryOut>::type ring_type;
-        typedef std::deque<ring_type> ring_container_type;
+        using ring_type = typename geometry::ring_type<GeometryOut>::type;
+        using ring_container_type = std::deque<ring_type>;
 
         // Define the clusters, mapping cluster_id -> turns
-        typedef std::map
+        using cluster_type = std::map
             <
                 signed_size_type,
                 cluster_info
-            > cluster_type;
+            >;
 
         turn_container_type turns;
 
@@ -355,11 +342,11 @@ std::cout << "traverse" << std::endl;
 
         get_ring_turn_info<OverlayType>(turn_info_per_ring, turns, clusters);
 
-        typedef ring_properties
+        using properties = ring_properties
             <
                 point_type,
                 typename geometry::area_result<ring_type, Strategy>::type
-            > properties;
+            >;
 
         // Select all rings which are NOT touched by any intersection point
         std::map<ring_identifier, properties> selected_ring_properties;

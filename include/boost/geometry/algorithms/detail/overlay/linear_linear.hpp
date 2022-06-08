@@ -82,12 +82,10 @@ struct linear_linear_no_intersections
     static inline OutputIterator apply(MultiLineString const& multilinestring,
                                        OutputIterator oit)
     {
-        for (typename boost::range_iterator<MultiLineString const>::type
-                 it = boost::begin(multilinestring);
-             it != boost::end(multilinestring); ++it)
+        for (auto const& linestring : multilinestring)
         {
             LineStringOut ls_out;
-            geometry::convert(*it, ls_out);
+            geometry::convert(linestring, ls_out);
             *oit++ = ls_out;
         }
         return oit;
@@ -108,11 +106,6 @@ struct linear_linear_no_intersections
         return oit;
     }
 };
-
-
-
-
-
 
 
 template
@@ -231,7 +224,7 @@ public:
                                        OutputIterator oit,
                                        Strategy const& strategy)
     {
-        typedef typename detail::relate::turns::get_turns
+        using turn_info = typename detail::relate::turns::get_turns
             <
                 Linear1,
                 Linear2,
@@ -241,9 +234,9 @@ public:
                         Linear2,
                         assign_policy
                     >
-            >::template turn_info_type<Strategy, RobustPolicy>::type turn_info;
+            >::template turn_info_type<Strategy, RobustPolicy>::type;
 
-        typedef std::vector<turn_info> turns_container;
+        using turns_container = std::vector<turn_info>;
 
         turns_container turns;
         compute_turns(turns, linear1, linear2, strategy, robust_policy);

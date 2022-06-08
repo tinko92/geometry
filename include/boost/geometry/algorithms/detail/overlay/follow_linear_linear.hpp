@@ -181,16 +181,16 @@ class follow_linestring_linear
 {
 protected:
     // allow spikes (false indicates: do not remove spikes)
-    typedef following::action_selector<OverlayType, false> action;
+    using action = following::action_selector<OverlayType, false>;
 
-    typedef geometry::detail::output_geometry_access
+    using linear = geometry::detail::output_geometry_access
         <
             GeometryOut, linestring_tag, linestring_tag
-        > linear;
-    typedef geometry::detail::output_geometry_access
+        >;
+    using pointlike = geometry::detail::output_geometry_access
         <
             GeometryOut, point_tag, linestring_tag
-        > pointlike;
+        >;
 
     template
     <
@@ -370,20 +370,20 @@ class follow_multilinestring_linear
         >
 {
 protected:
-    typedef typename boost::range_value<MultiLinestring>::type Linestring;
+    using Linestring = typename boost::range_value<MultiLinestring>::type;
 
-    typedef follow_linestring_linear
+    using Base = follow_linestring_linear
         <
             LinestringOut, Linestring, Linear,
             OverlayType, FollowIsolatedPoints, FollowContinueTurns
-        > Base;
+        >;
 
-    typedef following::action_selector<OverlayType> action;
+    using action = following::action_selector<OverlayType>;
 
-    typedef typename boost::range_iterator
+    using linestring_iterator = typename boost::range_iterator
         <
             MultiLinestring const
-        >::type linestring_iterator;
+        >::type;
 
 
     template <typename OutputIt, overlay_type OT>
@@ -446,18 +446,18 @@ public:
     {
         BOOST_GEOMETRY_ASSERT( first != beyond );
 
-        typedef copy_linestrings_in_range
+        using copy_linestrings = copy_linestrings_in_range
             <
                 OutputIterator, OverlayType
-            > copy_linestrings;
+            >;
 
-        linestring_iterator ls_first = boost::begin(multilinestring);
-        linestring_iterator ls_beyond = boost::end(multilinestring);
+        auto ls_first = boost::begin(multilinestring);
+        auto ls_beyond = boost::end(multilinestring);
 
         // Iterate through all intersection points (they are
         // ordered along the each linestring)
 
-        signed_size_type current_multi_id = get_multi_index(first);
+        auto current_multi_id = get_multi_index(first);
 
         oit = copy_linestrings::apply(ls_first,
                                       ls_first + current_multi_id,

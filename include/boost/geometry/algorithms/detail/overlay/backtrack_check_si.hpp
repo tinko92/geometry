@@ -38,21 +38,11 @@ namespace detail { namespace overlay
 template <typename Turns>
 inline void clear_visit_info(Turns& turns)
 {
-    typedef typename boost::range_value<Turns>::type tp_type;
-
-    for (typename boost::range_iterator<Turns>::type
-        it = boost::begin(turns);
-        it != boost::end(turns);
-        ++it)
+    for (auto& turn : turns)
     {
-        for (typename boost::range_iterator
-            <
-                typename tp_type::container_type
-            >::type op_it = boost::begin(it->operations);
-            op_it != boost::end(it->operations);
-            ++op_it)
+        for (auto& op : turn.operations)
         {
-            op_it->visited.clear();
+            op.visited.clear();
         }
     }
 }
@@ -110,7 +100,7 @@ class backtrack_check_self_intersections
         {}
     };
 public :
-    typedef state state_type;
+    using state_type = state;
 
     template
     <
@@ -167,7 +157,7 @@ template
 class backtrack_debug
 {
 public :
-    typedef backtrack_state state_type;
+    using state_type = backtrack_state;
 
     template <typename Operation, typename Rings, typename Turns>
     static inline void apply(std::size_t size_at_start,
@@ -189,11 +179,11 @@ public :
         clear_visit_info(turns);
 
         int c = 0;
-        for (int i = 0; i < turns.size(); i++)
+        for (auto const& turn : turns)
         {
             for (int j = 0; j < 2; j++)
             {
-                if (turns[i].operations[j].visited.rejected())
+                if (turn.operations[j].visited.rejected())
                 {
                     c++;
                 }

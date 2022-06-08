@@ -90,21 +90,20 @@ struct intersection_segment_segment_point
                typename rescale_policy_type<RobustPolicy>::type
            >::value));
 
-        typedef typename point_type<PointOut>::type point_type;
+        using point_type = typename point_type<PointOut>::type;
 
         // Get the intersection point (or two points)
-        typedef segment_intersection_points<point_type> intersection_return_type;
+        using intersection_return_type = segment_intersection_points<point_type>;
 
-        typedef policies::relate::segments_intersection_points
+        using policy_type = policies::relate::segments_intersection_points
             <
                 intersection_return_type
-            > policy_type;
+            >;
 
         detail::segment_as_subrange<Segment1> sub_range1(segment1);
         detail::segment_as_subrange<Segment2> sub_range2(segment2);
 
-        intersection_return_type
-            is = strategy.relate().apply(sub_range1, sub_range2, policy_type());
+        auto is = strategy.relate().apply(sub_range1, sub_range2, policy_type());
 
         for (std::size_t i = 0; i < is.count; i++)
         {
@@ -139,17 +138,16 @@ struct intersection_linestring_linestring_point
                typename rescale_policy_type<RobustPolicy>::type
            >::value));
 
-        typedef detail::overlay::turn_info<PointOut> turn_info;
+        using turn_info = detail::overlay::turn_info<PointOut>;
         std::deque<turn_info> turns;
 
         geometry::get_intersection_points(linestring1, linestring2,
                                           robust_policy, turns, strategy);
 
-        for (typename boost::range_iterator<std::deque<turn_info> const>::type
-            it = boost::begin(turns); it != boost::end(turns); ++it)
+        for (auto const& turn : turns)
         {
             PointOut p;
-            geometry::convert(it->point, p);
+            geometry::convert(turn.point, p);
             *out++ = p;
         }
         return out;
@@ -212,11 +210,10 @@ struct intersection_of_linestring_with_areal
         bool found_union = false;
         bool found_front = false;
 
-        for (typename Turns::const_iterator it = turns.begin();
-                it != turns.end(); ++it)
+        for (auto const& turn : turns)
         {
-            method_type const method = it->method;
-            operation_type const op = it->operations[0].operation;
+            method_type const method = turn.method;
+            operation_type const op = turn.operations[0].operation;
 
             if (method == method_crosses)
             {
@@ -240,7 +237,7 @@ struct intersection_of_linestring_with_areal
                 return false;
             }
 
-            if (it->operations[0].position == position_front)
+            if (turn.operations[0].position == position_front)
             {
                 found_front = true;
             }
@@ -302,7 +299,7 @@ struct intersection_of_linestring_with_areal
             return out;
         }
 
-        typedef detail::overlay::follow
+        using follower = detail::overlay::follow
                 <
                     GeometryOut,
                     LineString,
@@ -310,24 +307,24 @@ struct intersection_of_linestring_with_areal
                     OverlayType,
                     false, // do not remove spikes for linear geometries
                     FollowIsolatedPoints
-                > follower;
+                >;
 
-        typedef typename geometry::detail::output_geometry_access
+        using linear = typename geometry::detail::output_geometry_access
             <
                 GeometryOut, linestring_tag, linestring_tag
-            > linear;
+            >;
 
-        typedef typename point_type
+        using point_type = typename point_type
             <
                 typename linear::type
-            >::type point_type;
+            >::type;
 
-        typedef geometry::segment_ratio
+        using ratio_type = geometry::segment_ratio
             <
                 typename coordinate_type<point_type>::type
-            > ratio_type;
+            >;
 
-        typedef detail::overlay::turn_info
+        using turn_info = detail::overlay::turn_info
             <
                 point_type,
                 ratio_type,
@@ -336,16 +333,16 @@ struct intersection_of_linestring_with_areal
                         point_type,
                         ratio_type
                     >
-            > turn_info;
+            >;
 
         std::deque<turn_info> turns;
 
         detail::get_turns::no_interrupt_policy policy;
 
-        typedef detail::overlay::get_turn_info_linear_areal
+        using turn_policy = detail::overlay::get_turn_info_linear_areal
             <
                 detail::overlay::assign_null_policy
-            > turn_policy;
+            >;
 
         dispatch::get_turns
             <
@@ -381,10 +378,9 @@ struct intersection_of_linestring_with_areal
         
 #if defined(BOOST_GEOMETRY_DEBUG_FOLLOW)
         int index = 0;
-        for(typename std::deque<turn_info>::const_iterator
-            it = turns.begin(); it != turns.end(); ++it)
+        for (auto const& turn : turns)
         {
-            debug_follow(*it, it->operations[0], index++);
+            debug_follow(turn, turn.operations[0], index++);
         }
 #endif
 
@@ -402,10 +398,9 @@ template <typename Turns, typename OutputIterator>
 inline OutputIterator intersection_output_turn_points(Turns const& turns,
                                                       OutputIterator out)
 {
-    for (typename Turns::const_iterator
-            it = turns.begin(); it != turns.end(); ++it)
+    for (auto const& turn : turns)
     {
-        *out++ = it->point;
+        *out++ = turn.point;
     }
 
     return out;
@@ -427,11 +422,11 @@ struct intersection_areal_areal_point
                                        OutputIterator out,
                                        Strategy const& strategy)
     {
-        typedef detail::overlay::turn_info
+        using turn_info = detail::overlay::turn_info
             <
                 PointOut,
                 typename segment_ratio_type<PointOut, RobustPolicy>::type
-            > turn_info;
+            >;
         std::vector<turn_info> turns;
 
         detail::get_turns::no_interrupt_policy policy;
@@ -468,9 +463,9 @@ struct intersection_linear_areal_point
                typename rescale_policy_type<RobustPolicy>::type
            >::value));
 
-        typedef geometry::segment_ratio<typename geometry::coordinate_type<PointOut>::type> ratio_type;
+        using ratio_type = geometry::segment_ratio<typename geometry::coordinate_type<PointOut>::type>;
 
-        typedef detail::overlay::turn_info
+        using turn_info = detail::overlay::turn_info
             <
                 PointOut,
                 ratio_type,
@@ -479,12 +474,12 @@ struct intersection_linear_areal_point
                         PointOut,
                         ratio_type
                     >
-            > turn_info;
+            >;
 
-        typedef detail::overlay::get_turn_info_linear_areal
+        using turn_policy = detail::overlay::get_turn_info_linear_areal
             <
                 detail::overlay::assign_null_policy
-            > turn_policy;
+            >;
 
         std::vector<turn_info> turns;
 
@@ -679,7 +674,7 @@ struct intersection_insert
             RobustPolicy const& robust_policy,
             OutputIterator out, Strategy const& )
     {
-        typedef typename point_type<GeometryOut>::type point_type;
+        using point_type = typename point_type<GeometryOut>::type;
         strategy::intersection::liang_barsky<Box, point_type> lb_strategy;
         return detail::intersection::clip_range_with_box
             <GeometryOut>(box, linestring, robust_policy, out, lb_strategy);
@@ -761,7 +756,7 @@ struct intersection_insert
     {
         geometry::segment_view<Segment> range(segment);
 
-        typedef typename point_type<GeometryOut>::type point_type;
+        using point_type = typename point_type<GeometryOut>::type;
         strategy::intersection::liang_barsky<Box, point_type> lb_strategy;
         return detail::intersection::clip_range_with_box
             <GeometryOut>(box, range, robust_policy, out, lb_strategy);
@@ -1491,12 +1486,12 @@ inline OutputIterator intersection_insert(Geometry1 const& geometry1,
     concepts::check<Geometry1 const>();
     concepts::check<Geometry2 const>();
 
-    typedef typename geometry::rescale_overlay_policy_type
+    using rescale_policy_type = typename geometry::rescale_overlay_policy_type
         <
             Geometry1,
             Geometry2,
             typename Strategy::cs_tag
-        >::type rescale_policy_type;
+        >::type;
 
     rescale_policy_type robust_policy
             = geometry::get_rescale_policy<rescale_policy_type>(
@@ -1539,10 +1534,10 @@ inline OutputIterator intersection_insert(Geometry1 const& geometry1,
     concepts::check<Geometry1 const>();
     concepts::check<Geometry2 const>();
 
-    typedef typename strategies::relate::services::default_strategy
+    using strategy_type = typename strategies::relate::services::default_strategy
         <
             Geometry1, Geometry2
-        >::type strategy_type;
+        >::type;
     
     return intersection_insert<GeometryOut>(geometry1, geometry2, out,
                                             strategy_type());

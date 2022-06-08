@@ -39,7 +39,7 @@ namespace detail { namespace overlay
 template <typename TurnOperation>
 struct indexed_turn_operation
 {
-    typedef TurnOperation type;
+    using type = TurnOperation;
 
     std::size_t turn_index;
     std::size_t operation_index;
@@ -85,14 +85,11 @@ struct less_by_segment_ratio
     }
 
 private :
-
     Turns const& m_turns;
     Geometry1 const& m_geometry1;
     Geometry2 const& m_geometry2;
     RobustPolicy const& m_robust_policy;
     SideStrategy const& m_strategy;
-
-    typedef typename geometry::point_type<Geometry1>::type point_type;
 
     inline bool default_order(Indexed const& left, Indexed const& right) const
     {
@@ -103,6 +100,7 @@ private :
     inline bool consider_relative_order(Indexed const& left,
                     Indexed const& right) const
     {
+        using point_type = typename geometry::point_type<Geometry1>::type;
         point_type pi, pj, ri, rj, si, sj;
 
         geometry::copy_segment_points<Reverse1, Reverse2>(m_geometry1, m_geometry2,
@@ -156,10 +154,8 @@ public :
             return left.subject->fraction < right.subject->fraction;
         }
 
-
-        typedef typename boost::range_value<Turns>::type turn_type;
-        turn_type const& left_turn = m_turns[left.turn_index];
-        turn_type const& right_turn = m_turns[right.turn_index];
+        auto const& left_turn = m_turns[left.turn_index];
+        auto const& right_turn = m_turns[right.turn_index];
 
         // First check "real" intersection (crosses)
         // -> distance zero due to precision, solve it by sorting

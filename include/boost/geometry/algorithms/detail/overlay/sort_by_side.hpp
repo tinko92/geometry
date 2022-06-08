@@ -39,8 +39,7 @@ namespace detail { namespace overlay { namespace sort_by_side
 
 enum direction_type { dir_unknown = -1, dir_from = 0, dir_to = 1 };
 
-typedef signed_size_type rank_type;
-
+using rank_type = signed_size_type;
 
 // Point-wrapper, adding some properties
 template <typename Point>
@@ -139,7 +138,7 @@ struct less_by_side
     template <typename T>
     inline bool operator()(const T& first, const T& second) const
     {
-        typedef typename SideStrategy::cs_tag cs_tag;
+        using cs_tag = typename SideStrategy::cs_tag;
 
         LessOnSame on_same;
         Compare compare;
@@ -226,7 +225,7 @@ template
 >
 struct side_sorter
 {
-    typedef ranked_point<Point> rp;
+    using rp = ranked_point<Point>;
 
 private :
     struct include_union
@@ -475,7 +474,7 @@ public :
 
         // Move iterator after rank==0
         bool has_first = false;
-        typename container_type::iterator it = m_ranked_points.begin() + 1;
+        auto it = m_ranked_points.begin() + 1;
         for (; it != m_ranked_points.end() && it->rank == 0; ++it)
         {
             has_first = true;
@@ -486,8 +485,7 @@ public :
             // Reverse first part (having rank == 0), if any,
             // but skip the very first row
             std::reverse(m_ranked_points.begin() + 1, it);
-            for (typename container_type::iterator fit = m_ranked_points.begin();
-                 fit != it; ++fit)
+            for (auto fit = m_ranked_points.begin(); fit != it; ++fit)
             {
                 BOOST_ASSERT(fit->rank == 0);
             }
@@ -509,7 +507,7 @@ public :
 
 //private :
 
-    typedef std::vector<rp> container_type;
+    using container_type = std::vector<rp>;
     container_type m_ranked_points;
     Point m_origin;
     std::size_t m_origin_count;
@@ -524,10 +522,8 @@ private :
     {
         std::size_t result = 0;
         rank_type last_rank = 0;
-        for (std::size_t i = 0; i < m_ranked_points.size(); i++)
+        for (auto const& ranked_point : m_ranked_points)
         {
-            rp const& ranked_point = m_ranked_points[i];
-
             if (ranked_point.rank > last_rank
                 && ranked_point.direction == sort_by_side::dir_to
                 && include_functor(ranked_point))
@@ -559,9 +555,8 @@ private :
 
     void assign_ranks(rank_type min_rank, rank_type max_rank, int side_index)
     {
-        for (std::size_t i = 0; i < m_ranked_points.size(); i++)
+        for (auto& ranked : m_ranked_points)
         {
-            rp& ranked = m_ranked_points[i];
             // Suppose there are 8 ranks, if min=4,max=6: assign 4,5,6
             // if min=5,max=2: assign from 5,6,7,1,2
             bool const in_range
@@ -721,13 +716,13 @@ struct side_compare {};
 template <>
 struct side_compare<operation_union>
 {
-    typedef std::greater<int> type;
+    using type = std::greater<int>;
 };
 
 template <>
 struct side_compare<operation_intersection>
 {
-    typedef std::less<int> type;
+    using type = std::less<int>;
 };
 
 

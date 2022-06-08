@@ -300,7 +300,7 @@ struct action_selector<overlay_intersection, RemoveSpikes>
 template <bool RemoveSpikes>
 struct action_selector<overlay_difference, RemoveSpikes>
 {
-    typedef action_selector<overlay_intersection, RemoveSpikes> normal_action;
+    using normal_action = action_selector<overlay_intersection, RemoveSpikes>;
 
     template
     <
@@ -389,14 +389,14 @@ template
 >
 class follow
 {
-    typedef geometry::detail::output_geometry_access
+    using linear = geometry::detail::output_geometry_access
         <
             GeometryOut, linestring_tag, linestring_tag
-        > linear;
-    typedef geometry::detail::output_geometry_access
+        >;
+    using pointlike = geometry::detail::output_geometry_access
         <
             GeometryOut, point_tag, linestring_tag
-        > pointlike;
+        >;
 
 public :
 
@@ -422,24 +422,17 @@ public :
                 OutputIterator out,
                 Strategy const& strategy)
     {
-        typedef typename boost::range_iterator<Turns>::type turn_iterator;
-        typedef typename boost::range_value<Turns>::type turn_type;
-        typedef typename boost::range_iterator
-            <
-                typename turn_type::container_type
-            >::type turn_operation_iterator_type;
-
-        typedef following::action_selector<OverlayType, RemoveSpikes> action;
+        using action = following::action_selector<OverlayType, RemoveSpikes>;
 
         // Sort intersection points on segments-along-linestring, and distance
         // (like in enrich is done for poly/poly)
         // sort turns by Linear seg_id, then by fraction, then
         // for same ring id: x, u, i, c
         // for different ring id: c, i, u, x
-        typedef relate::turns::less
+        using turn_less = relate::turns::less
             <
                 0, relate::turns::less_op_linear_areal_single<0>, Strategy
-            > turn_less;
+            >;
         std::sort(boost::begin(turns), boost::end(turns), turn_less());
 
         typename linear::type current_piece;
@@ -448,51 +441,51 @@ public :
         // Iterate through all intersection points (they are ordered along the line)
         bool entered = false;
         bool first = true;
-        for (turn_iterator it = boost::begin(turns); it != boost::end(turns); ++it)
+        for (auto& turn : turns)
         {
-            turn_operation_iterator_type iit = boost::begin(it->operations);
+            auto iit = boost::begin(turn.operations);
 
-            if (following::was_entered(*it, *iit, first, linestring, polygon, strategy))
+            if (following::was_entered(turn, *iit, first, linestring, polygon, strategy))
             {
-                debug_traverse(*it, *iit, "-> Was entered");
+                debug_traverse(turn, *iit, "-> Was entered");
                 entered = true;
             }
 
-            if (following::is_staying_inside(*it, *iit, entered, first, linestring, polygon, strategy))
+            if (following::is_staying_inside(turn, *iit, entered, first, linestring, polygon, strategy))
             {
-                debug_traverse(*it, *iit, "-> Staying inside");
+                debug_traverse(turn, *iit, "-> Staying inside");
 
                 entered = true;
             }
-            else if (following::is_entering(*it, *iit))
+            else if (following::is_entering(turn, *iit))
             {
-                debug_traverse(*it, *iit, "-> Entering");
+                debug_traverse(turn, *iit, "-> Entering");
 
                 entered = true;
                 action::enter(current_piece, linestring, current_segment_id,
-                    iit->seg_id.segment_index, it->point, *iit,
+                    iit->seg_id.segment_index, turn.point, *iit,
                     strategy, robust_policy,
                     linear::get(out));
             }
-            else if (following::is_leaving(*it, *iit, entered, first, linestring, polygon, strategy))
+            else if (following::is_leaving(turn, *iit, entered, first, linestring, polygon, strategy))
             {
-                debug_traverse(*it, *iit, "-> Leaving");
+                debug_traverse(turn, *iit, "-> Leaving");
 
                 entered = false;
                 action::leave(current_piece, linestring, current_segment_id,
-                    iit->seg_id.segment_index, it->point, *iit,
+                    iit->seg_id.segment_index, turn.point, *iit,
                     strategy, robust_policy,
                     linear::get(out));
             }
             else if (BOOST_GEOMETRY_CONDITION(FollowIsolatedPoints)
-                  && following::is_touching(*it, *iit, entered))
+                  && following::is_touching(turn, *iit, entered))
             {
-                debug_traverse(*it, *iit, "-> Isolated point");
+                debug_traverse(turn, *iit, "-> Isolated point");
 
                 action::template isolated_point
                     <
                         typename pointlike::type
-                    >(it->point, pointlike::get(out));
+                    >(turn.point, pointlike::get(out));
             }
 
             first = false;

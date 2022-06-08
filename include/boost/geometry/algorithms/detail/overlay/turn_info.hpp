@@ -50,13 +50,13 @@ enum method_type
 template <typename Point, typename SegmentRatio>
 struct turn_operation
 {
-    typedef SegmentRatio segment_ratio_type;
+    using segment_ratio_type = SegmentRatio;
 
     operation_type operation;
     segment_identifier seg_id;
     SegmentRatio fraction;
 
-    typedef typename coordinate_type<Point>::type comparable_distance_type;
+    using comparable_distance_type = typename coordinate_type<Point>::type;
     comparable_distance_type remaining_distance;
 
     inline turn_operation()
@@ -84,10 +84,10 @@ template
 >
 struct turn_info
 {
-    typedef Point point_type;
-    typedef SegmentRatio segment_ratio_type;
-    typedef Operation turn_operation_type;
-    typedef Container container_type;
+    using point_type = Point;
+    using segment_ratio_type = SegmentRatio;
+    using turn_operation_type = Operation;
+    using container_type = Container;
 
     Point point;
     method_type method;

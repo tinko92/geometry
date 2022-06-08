@@ -55,19 +55,19 @@ namespace detail { namespace overlay
 template <typename Turns, typename Clusters>
 inline void remove_clusters(Turns& turns, Clusters& clusters)
 {
-    typename Clusters::iterator it = clusters.begin();
+    auto it = clusters.begin();
     while (it != clusters.end())
     {
         // Hold iterator and increase. We can erase cit, this keeps the
         // iterator valid (cf The standard associative-container erase idiom)
-        typename Clusters::iterator current_it = it;
+        auto current_it = it;
         ++it;
 
         std::set<signed_size_type> const& turn_indices
                 = current_it->second.turn_indices;
         if (turn_indices.size() == 1)
         {
-            signed_size_type const turn_index = *turn_indices.begin();
+            auto const turn_index = *turn_indices.begin();
             turns[turn_index].cluster_id = -1;
             clusters.erase(current_it);
         }
@@ -78,13 +78,11 @@ template <typename Turns, typename Clusters>
 inline void cleanup_clusters(Turns& turns, Clusters& clusters)
 {
     // Removes discarded turns from clusters
-    for (typename Clusters::iterator mit = clusters.begin();
-         mit != clusters.end(); ++mit)
+    for (auto& cluster : clusters)
     {
-        cluster_info& cinfo = mit->second;
+        cluster_info& cinfo = cluster.second;
         std::set<signed_size_type>& ids = cinfo.turn_indices;
-        for (std::set<signed_size_type>::iterator sit = ids.begin();
-             sit != ids.end(); /* no increment */)
+        for (auto sit = ids.begin(); sit != ids.end(); /* no increment */)
         {
             std::set<signed_size_type>::iterator current_it = sit;
             ++sit;
@@ -167,22 +165,17 @@ template
 >
 inline void discard_interior_exterior_turns(Turns& turns, Clusters& clusters)
 {
-    typedef std::set<signed_size_type>::const_iterator set_iterator;
-    typedef typename boost::range_value<Turns>::type turn_type;
-
     std::set<signed_size_type> ids_to_remove;
 
-    for (typename Clusters::iterator cit = clusters.begin();
-         cit != clusters.end(); ++cit)
+    for (auto& cluster : clusters)
     {
-        cluster_info& cinfo = cit->second;
-        std::set<signed_size_type>& ids = cinfo.turn_indices;
+        std::set<signed_size_type>& ids = cluster.second.turn_indices;
 
         ids_to_remove.clear();
 
-        for (set_iterator it = ids.begin(); it != ids.end(); ++it)
+        for (const auto& id : ids)
         {
-            turn_type& turn = turns[*it];
+            auto& turn = turns[id];
             segment_identifier const& seg_0 = turn.operations[0].seg_id;
             segment_identifier const& seg_1 = turn.operations[1].seg_id;
 
@@ -193,34 +186,33 @@ inline void discard_interior_exterior_turns(Turns& turns, Clusters& clusters)
                 continue;
             }
 
-            for (set_iterator int_it = ids.begin(); int_it != ids.end(); ++int_it)
+            for (const auto& int_id : ids)
             {
-                if (*it == *int_it)
+                if (id == int_id)
                 {
                     continue;
                 }
 
                 // Turn with, possibly, an interior ring involved
-                turn_type& int_turn = turns[*int_it];
+                auto& int_turn = turns[int_id];
                 segment_identifier const& int_seg_0 = int_turn.operations[0].seg_id;
                 segment_identifier const& int_seg_1 = int_turn.operations[1].seg_id;
 
                 if (is_ie_turn<Reverse0, Reverse1>(seg_0, seg_1, int_seg_0, int_seg_1))
                 {
-                    discard_colocated_turn(int_turn, ids_to_remove, *int_it);
+                    discard_colocated_turn(int_turn, ids_to_remove, int_id);
                 }
                 if (is_ie_turn<Reverse1, Reverse0>(seg_1, seg_0, int_seg_1, int_seg_0))
                 {
-                    discard_colocated_turn(int_turn, ids_to_remove, *int_it);
+                    discard_colocated_turn(int_turn, ids_to_remove, int_id);
                 }
             }
         }
 
         // Erase from the ids (which cannot be done above)
-        for (set_iterator sit = ids_to_remove.begin();
-             sit != ids_to_remove.end(); ++sit)
+        for (const auto& s : ids_to_remove)
         {
-            ids.erase(*sit);
+            ids.erase(s);
         }
     }
 }
@@ -233,19 +225,14 @@ template
 >
 inline void set_colocation(Turns& turns, Clusters const& clusters)
 {
-    typedef std::set<signed_size_type>::const_iterator set_iterator;
-    typedef typename boost::range_value<Turns>::type turn_type;
-
-    for (typename Clusters::const_iterator cit = clusters.begin();
-         cit != clusters.end(); ++cit)
+    for (auto const& cluster : clusters)
     {
-        cluster_info const& cinfo = cit->second;
-        std::set<signed_size_type> const& ids = cinfo.turn_indices;
+        std::set<signed_size_type> const& ids = cluster.second.turn_indices;
 
         bool both_target = false;
-        for (set_iterator it = ids.begin(); it != ids.end(); ++it)
+        for (auto const& id : ids)
         {
-            turn_type const& turn = turns[*it];
+            auto const& turn = turns[id];
             if (turn.both(operation_from_overlay<OverlayType>::value))
             {
                 both_target = true;
@@ -255,9 +242,9 @@ inline void set_colocation(Turns& turns, Clusters const& clusters)
 
         if (both_target)
         {
-            for (set_iterator it = ids.begin(); it != ids.end(); ++it)
+            for (const auto& id : ids)
             {
-                turn_type& turn = turns[*it];
+                auto& turn = turns[id];
                 turn.has_colocated_both = true;
             }
         }
@@ -272,23 +259,19 @@ template
 inline void check_colocation(bool& has_blocked,
         signed_size_type cluster_id, Turns const& turns, Clusters const& clusters)
 {
-    typedef typename boost::range_value<Turns>::type turn_type;
-
     has_blocked = false;
 
-    typename Clusters::const_iterator mit = clusters.find(cluster_id);
+    auto mit = clusters.find(cluster_id);
     if (mit == clusters.end())
     {
         return;
     }
 
-    cluster_info const& cinfo = mit->second;
+    auto const& cinfo = mit->second;
 
-    for (std::set<signed_size_type>::const_iterator it
-         = cinfo.turn_indices.begin();
-         it != cinfo.turn_indices.end(); ++it)
+    for (auto const& tid : cinfo.turn_indices)
     {
-        turn_type const& turn = turns[*it];
+        auto const& turn = turns[tid];
         if (turn.any_blocked())
         {
             has_blocked = true;
@@ -336,8 +319,7 @@ template
 inline bool handle_colocations(Turns& turns, Clusters& clusters,
                                RobustPolicy const& robust_policy)
 {
-    static const detail::overlay::operation_type target_operation
-            = detail::overlay::operation_from_overlay<OverlayType>::value;
+    static const auto target_operation = detail::overlay::operation_from_overlay<OverlayType>::value;
 
     get_clusters(turns, clusters, robust_policy);
 
@@ -410,8 +392,6 @@ inline bool fill_sbs(Sbs& sbs, Point& turn_point,
                      Turns const& turns,
                      Geometry1 const& geometry1, Geometry2 const& geometry2)
 {
-    typedef typename boost::range_value<Turns>::type turn_type;
-
     std::set<signed_size_type> const& ids = cinfo.turn_indices;
 
     if (ids.empty())
@@ -424,7 +404,7 @@ inline bool fill_sbs(Sbs& sbs, Point& turn_point,
          sit != ids.end(); ++sit)
     {
         signed_size_type turn_index = *sit;
-        turn_type const& turn = turns[turn_index];
+        auto const& turn = turns[turn_index];
         if (first)
         {
             turn_point = turn.point;
@@ -453,21 +433,20 @@ inline void gather_cluster_properties(Clusters& clusters, Turns& turns,
         Geometry1 const& geometry1, Geometry2 const& geometry2,
         SideStrategy const& strategy)
 {
-    typedef typename boost::range_value<Turns>::type turn_type;
-    typedef typename turn_type::point_type point_type;
-    typedef typename turn_type::turn_operation_type turn_operation_type;
+    using turn_type = typename boost::range_value<Turns>::type;
+    using point_type = typename turn_type::point_type;
+    using turn_operation_type = typename turn_type::turn_operation_type;
 
     // Define sorter, sorting counter-clockwise such that polygons are on the
     // right side
-    typedef sort_by_side::side_sorter
+    using sbs_type = sort_by_side::side_sorter
         <
             Reverse1, Reverse2, OverlayType, point_type, SideStrategy, std::less<int>
-        > sbs_type;
+        >;
 
-    for (typename Clusters::iterator mit = clusters.begin();
-         mit != clusters.end(); ++mit)
+    for (auto& cluster : clusters)
     {
-        cluster_info& cinfo = mit->second;
+        cluster_info& cinfo = cluster.second;
 
         sbs_type sbs(strategy);
         point_type turn_point; // should be all the same for all turns in cluster

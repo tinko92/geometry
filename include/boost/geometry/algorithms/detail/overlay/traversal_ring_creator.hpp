@@ -51,19 +51,19 @@ template
 >
 struct traversal_ring_creator
 {
-    typedef traversal
+    using traversal_type = traversal
             <
                 Reverse1, Reverse2, OverlayType,
                 Geometry1, Geometry2, Turns, Clusters,
                 RobustPolicy,
                 decltype(std::declval<Strategy>().side()),
                 Visitor
-            > traversal_type;
+            >;
 
-    typedef typename boost::range_value<Turns>::type turn_type;
-    typedef typename turn_type::turn_operation_type turn_operation_type;
+    using turn_type = typename boost::range_value<Turns>::type;
+    using turn_operation_type = typename turn_type::turn_operation_type;
 
-    static const operation_type target_operation
+    static const auto target_operation
         = operation_from_overlay<OverlayType>::value;
 
     inline traversal_ring_creator(Geometry1 const& geometry1, Geometry2 const& geometry2,
@@ -93,9 +93,9 @@ struct traversal_ring_creator
                 bool is_start)
     {
         int const previous_op_index = op_index;
-        signed_size_type const previous_turn_index = turn_index;
-        turn_type& previous_turn = m_turns[turn_index];
-        turn_operation_type& previous_op = previous_turn.operations[op_index];
+        auto const previous_turn_index = turn_index;
+        auto& previous_turn = m_turns[turn_index];
+        auto& previous_op = previous_turn.operations[op_index];
         segment_identifier previous_seg_id;
 
         signed_size_type to_vertex_index = -1;
@@ -159,8 +159,8 @@ struct traversal_ring_creator
         }
 
         // Update registration and append point
-        turn_type& current_turn = m_turns[turn_index];
-        turn_operation_type& op = current_turn.operations[op_index];
+        auto& current_turn = m_turns[turn_index];
+        auto& op = current_turn.operations[op_index];
         detail::overlay::append_no_collinear(current_ring, current_turn.point,
                                              m_strategy, m_robust_policy);
 
@@ -175,16 +175,16 @@ struct traversal_ring_creator
     inline traverse_error_type traverse(Ring& ring,
             signed_size_type start_turn_index, int start_op_index)
     {
-        turn_type const& start_turn = m_turns[start_turn_index];
-        turn_operation_type& start_op = m_turns[start_turn_index].operations[start_op_index];
+        auto const& start_turn = m_turns[start_turn_index];
+        auto& start_op = m_turns[start_turn_index].operations[start_op_index];
 
         detail::overlay::append_no_collinear(ring, start_turn.point,
                                              m_strategy, m_robust_policy);
 
-        signed_size_type current_turn_index = start_turn_index;
+        auto current_turn_index = start_turn_index;
         int current_op_index = start_op_index;
 
-        traverse_error_type error = travel_to_next_turn(start_turn_index,
+        auto error = travel_to_next_turn(start_turn_index,
                     start_op_index,
                     current_turn_index, current_op_index,
                     ring, true);
@@ -205,8 +205,8 @@ struct traversal_ring_creator
 
         if (start_turn.is_clustered())
         {
-            turn_type& turn = m_turns[current_turn_index];
-            turn_operation_type& op = turn.operations[current_op_index];
+            auto& turn = m_turns[current_turn_index];
+            auto& op = turn.operations[current_op_index];
             if (turn.cluster_id == start_turn.cluster_id
                 && op.enriched.get_next_turn_index() == start_turn_index)
             {
@@ -256,7 +256,7 @@ struct traversal_ring_creator
             Rings& rings, std::size_t& finalized_ring_size,
             typename Backtrack::state_type& state)
     {
-        typedef typename boost::range_value<Rings>::type ring_type;
+        using ring_type = typename boost::range_value<Rings>::type;
 
         turn_operation_type const& start_op = start_turn.operations[op_index];
 
@@ -270,7 +270,7 @@ struct traversal_ring_creator
         }
 
         ring_type ring;
-        traverse_error_type traverse_error = traverse(ring, turn_index, op_index);
+        auto traverse_error = traverse(ring, turn_index, op_index);
 
         if (traverse_error == traverse_error_none)
         {
@@ -311,8 +311,8 @@ struct traversal_ring_creator
         static const bool is_union
             = operation_from_overlay<OverlayType>::value == operation_union;
 
-        turn_operation_type const& op0 = turn.operations[0];
-        turn_operation_type const& op1 = turn.operations[1];
+        auto const& op0 = turn.operations[0];
+        auto const& op1 = turn.operations[1];
         return op0.remaining_distance <= op1.remaining_distance
                 ? (is_union ? 1 : 0)
                 : (is_union ? 0 : 1);
@@ -324,7 +324,7 @@ struct traversal_ring_creator
     {
         for (std::size_t turn_index = 0; turn_index < m_turns.size(); ++turn_index)
         {
-            turn_type const& turn = m_turns[turn_index];
+            auto const& turn = m_turns[turn_index];
 
             if (turn.discarded || turn.blocked())
             {
@@ -356,7 +356,7 @@ struct traversal_ring_creator
     {
         for (std::size_t turn_index = 0; turn_index < m_turns.size(); ++turn_index)
         {
-            turn_type const& turn = m_turns[turn_index];
+            auto const& turn = m_turns[turn_index];
 
             if (turn.discarded || turn.blocked())
             {

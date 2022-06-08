@@ -11,7 +11,6 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_RANGE_IN_GEOMETRY_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_RANGE_IN_GEOMETRY_HPP
 
-
 #include <boost/geometry/algorithms/covered_by.hpp>
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/tags.hpp>
@@ -34,7 +33,7 @@ template
 >
 struct points_range
 {
-    typedef geometry::point_iterator<Geometry const> iterator_type;
+    using iterator_type = geometry::point_iterator<Geometry const>;
 
     explicit points_range(Geometry const& geometry)
         : m_geometry(geometry)
@@ -56,8 +55,8 @@ struct points_range
 template <typename Box>
 struct points_range<Box, box_tag>
 {
-    typedef typename geometry::point_type<Box>::type point_type;
-    typedef const point_type * iterator_type;
+    using point_type = typename geometry::point_type<Box>::type;
+    using iterator_type = const point_type *;
 
     explicit points_range(Box const& box)
     {
@@ -114,9 +113,8 @@ static inline int range_in_geometry(Geometry1 const& geometry1,
 {
     int result = 0;
     points_range<Geometry1> points(geometry1);
-    typedef typename points_range<Geometry1>::iterator_type iterator_type;
-    iterator_type const end = points.end();
-    iterator_type it = points.begin();
+    auto const end = points.end();
+    auto it = points.begin();
     if (it == end)
     {
         return result;
@@ -125,7 +123,6 @@ static inline int range_in_geometry(Geometry1 const& geometry1,
     {
         ++it;
     }
-
     for ( ; it != end; ++it)
     {
         result = point_in_geometry_helper<Geometry2>::apply(*it, geometry2, strategy);
