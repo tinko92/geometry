@@ -75,7 +75,7 @@ struct full_section_multi
     static inline typename ring_return_type<MultiGeometry const>::type apply(
                 MultiGeometry const& multi, Section const& section)
     {
-        typedef typename boost::range_size<MultiGeometry>::type size_type;
+        using size_type = typename boost::range_size<MultiGeometry>::type;
 
         BOOST_GEOMETRY_ASSERT
             (

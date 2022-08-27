@@ -710,8 +710,7 @@ struct sectionalize_multi
                 std::size_t max_count)
     {
         ring_id.multi_index = 0;
-        for (typename boost::range_iterator<MultiGeometry const>::type
-                    it = boost::begin(multi);
+        for (auto it = boost::begin(multi);
             it != boost::end(multi);
             ++it, ++ring_id.multi_index)
         {
@@ -897,18 +896,18 @@ inline void sectionalize(Geometry const& geometry,
 
     // Compiletime check for point type of section boxes
     // and point type related to robust policy
-    typedef typename geometry::coordinate_type
+    using ctype1 = typename geometry::coordinate_type
     <
         typename section_type::box_type
-    >::type ctype1;
-    typedef typename geometry::coordinate_type
+    >::type;
+    using ctype2 = typename geometry::coordinate_type
     <
         typename geometry::robust_point_type
         <
             typename geometry::point_type<Geometry>::type,
             RobustPolicy
         >::type
-    >::type ctype2;
+    >::type;
 
     BOOST_STATIC_ASSERT((std::is_same<ctype1, ctype2>::value));
 
