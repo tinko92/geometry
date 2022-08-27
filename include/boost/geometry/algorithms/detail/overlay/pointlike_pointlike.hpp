@@ -223,7 +223,7 @@ struct point_multipoint_point
                                        OutputIterator oit,
                                        Strategy const& strategy)
     {
-        typedef action_selector_pl<PointOut, OverlayType> action;
+        using action = action_selector_pl<PointOut, OverlayType>;
 
         for (typename boost::range_iterator<MultiPoint const>::type
                  it = boost::begin(multipoint);
@@ -260,7 +260,7 @@ struct multipoint_multipoint_point
                                        OutputIterator oit,
                                        Strategy const& strategy)
     {
-        typedef geometry::less<void, -1, typename Strategy::cs_tag> less_type;
+        using less_type = geometry::less<void, -1, typename Strategy::cs_tag>;
 
         if ( OverlayType != overlay_difference
              && boost::size(multipoint1) > boost::size(multipoint2) )
@@ -271,7 +271,7 @@ struct multipoint_multipoint_point
                 >::apply(multipoint2, multipoint1, robust_policy, oit, strategy);
         }
 
-        typedef typename boost::range_value<MultiPoint2>::type point2_type;
+        using point2_type = typename boost::range_value<MultiPoint2>::type;
 
         std::vector<point2_type> points2(boost::begin(multipoint2),
                                          boost::end(multipoint2));

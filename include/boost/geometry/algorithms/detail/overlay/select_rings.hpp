@@ -114,8 +114,8 @@ namespace dispatch
                     ring_identifier id, RingPropertyMap& ring_properties,
                     Strategy const& strategy)
         {
-            typedef typename geometry::ring_type<Polygon>::type ring_type;
-            typedef select_rings<ring_tag, ring_type> per_ring;
+            using ring_type = typename geometry::ring_type<Polygon>::type;
+            using per_ring = select_rings<ring_tag, ring_type>;
 
             per_ring::apply(exterior_ring(polygon), geometry, id, ring_properties, strategy);
 
@@ -134,8 +134,8 @@ namespace dispatch
                 ring_identifier id, RingPropertyMap& ring_properties,
                 Strategy const& strategy)
         {
-            typedef typename geometry::ring_type<Polygon>::type ring_type;
-            typedef select_rings<ring_tag, ring_type> per_ring;
+            using ring_type = typename geometry::ring_type<Polygon>::type;
+            using per_ring = select_rings<ring_tag, ring_type>;
 
             per_ring::apply(exterior_ring(polygon), id, ring_properties, strategy);
 
@@ -158,15 +158,10 @@ namespace dispatch
                     ring_identifier id, RingPropertyMap& ring_properties,
                     Strategy const& strategy)
         {
-            typedef typename boost::range_iterator
-                <
-                    Multi const
-                >::type iterator_type;
-
-            typedef select_rings<polygon_tag, typename boost::range_value<Multi>::type> per_polygon;
+            using per_polygon = select_rings<polygon_tag, typename boost::range_value<Multi>::type>;
 
             id.multi_index = 0;
-            for (iterator_type it = boost::begin(multi); it != boost::end(multi); ++it)
+            for (auto it = boost::begin(multi); it != boost::end(multi); ++it)
             {
                 id.ring_index = -1;
                 per_polygon::apply(*it, geometry, id, ring_properties, strategy);
@@ -319,8 +314,8 @@ inline void select_rings(Geometry1 const& geometry1, Geometry2 const& geometry2,
             RingPropertyMap& selected_ring_properties,
             Strategy const& strategy)
 {
-    typedef typename geometry::tag<Geometry1>::type tag1;
-    typedef typename geometry::tag<Geometry2>::type tag2;
+    using tag1 = typename geometry::tag<Geometry1>::type;
+    using tag2 = typename geometry::tag<Geometry2>::type;
     
     RingPropertyMap all_ring_properties;
     dispatch::select_rings<tag1, Geometry1>::apply(geometry1, geometry2,
@@ -348,7 +343,7 @@ inline void select_rings(Geometry const& geometry,
             RingPropertyMap& selected_ring_properties,
             Strategy const& strategy)
 {
-    typedef typename geometry::tag<Geometry>::type tag;
+    using tag = typename geometry::tag<Geometry>::type;
 
     RingPropertyMap all_ring_properties;
     dispatch::select_rings<tag, Geometry>::apply(geometry,

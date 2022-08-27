@@ -124,7 +124,7 @@ inline void check_detailed(MetaTurns& meta_turns, MetaTurn const& meta_turn,
 template <typename TurnPoints>
 inline bool check_graph(TurnPoints& turn_points, operation_type for_operation)
 {
-    typedef typename boost::range_value<TurnPoints>::type turn_point_type;
+    using turn_point_type = typename boost::range_value<TurnPoints>::type;
 
     bool error = false;
     int index = 0;

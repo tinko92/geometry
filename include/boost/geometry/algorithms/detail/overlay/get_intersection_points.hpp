@@ -65,12 +65,12 @@ struct get_turn_without_info
                typename rescale_policy_type<RobustPolicy>::type
            >::value));
 
-        typedef typename TurnInfo::point_type turn_point_type;
+        using turn_point_type = typename TurnInfo::point_type;
 
-        typedef policies::relate::segments_intersection_points
+        using policy_type = policies::relate::segments_intersection_points
             <
                 segment_intersection_points<turn_point_type>
-            > policy_type;
+            >;
 
         typename policy_type::return_type const result
             = strategy.relate().apply(range_p, range_q, policy_type());
@@ -108,12 +108,12 @@ inline void get_intersection_points(Geometry1 const& geometry1,
 {
     concepts::check_concepts_and_equal_dimensions<Geometry1 const, Geometry2 const>();
 
-    typedef detail::get_intersection_points::get_turn_without_info
+    using TurnPolicy = detail::get_intersection_points::get_turn_without_info
                         <
                             typename point_type<Geometry1>::type,
                             typename point_type<Geometry2>::type,
                             typename boost::range_value<Turns>::type
-                        > TurnPolicy;
+                        >;
 
     detail::get_turns::no_interrupt_policy interrupt_policy;
 

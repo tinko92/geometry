@@ -42,18 +42,16 @@ struct intersection_box_box
             BoxOut& box_out,
             Strategy const& strategy)
     {
-        typedef typename coordinate_type<BoxOut>::type ct;
-
-        ct max1 = get<max_corner, Dimension>(box1);
-        ct min2 = get<min_corner, Dimension>(box2);
+        auto max1 = get<max_corner, Dimension>(box1);
+        auto min2 = get<min_corner, Dimension>(box2);
 
         if (max1 < min2)
         {
             return false;
         }
 
-        ct max2 = get<max_corner, Dimension>(box2);
-        ct min1 = get<min_corner, Dimension>(box1);
+        auto max2 = get<max_corner, Dimension>(box2);
+        auto min1 = get<min_corner, Dimension>(box1);
 
         if (max2 < min1)
         {

@@ -38,7 +38,7 @@ namespace detail { namespace overlay
 template <typename Turns>
 inline void clear_visit_info(Turns& turns)
 {
-    typedef typename boost::range_value<Turns>::type tp_type;
+    using tp_type = typename boost::range_value<Turns>::type;
 
     for (typename boost::range_iterator<Turns>::type
         it = boost::begin(turns);
@@ -110,7 +110,7 @@ class backtrack_check_self_intersections
         {}
     };
 public :
-    typedef state state_type;
+    using state_type = state;
 
     template
     <
@@ -167,7 +167,7 @@ template
 class backtrack_debug
 {
 public :
-    typedef backtrack_state state_type;
+    using state_type = backtrack_state;
 
     template <typename Operation, typename Rings, typename Turns>
     static inline void apply(std::size_t size_at_start,

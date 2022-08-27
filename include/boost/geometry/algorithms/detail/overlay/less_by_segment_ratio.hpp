@@ -39,7 +39,7 @@ namespace detail { namespace overlay
 template <typename TurnOperation>
 struct indexed_turn_operation
 {
-    typedef TurnOperation type;
+    using type = TurnOperation;
 
     std::size_t turn_index;
     std::size_t operation_index;
@@ -92,7 +92,7 @@ private :
     RobustPolicy const& m_robust_policy;
     SideStrategy const& m_strategy;
 
-    typedef typename geometry::point_type<Geometry1>::type point_type;
+    using point_type = typename geometry::point_type<Geometry1>::type;
 
     inline bool default_order(Indexed const& left, Indexed const& right) const
     {
@@ -156,10 +156,8 @@ public :
             return left.subject->fraction < right.subject->fraction;
         }
 
-
-        typedef typename boost::range_value<Turns>::type turn_type;
-        turn_type const& left_turn = m_turns[left.turn_index];
-        turn_type const& right_turn = m_turns[right.turn_index];
+        auto const& left_turn = m_turns[left.turn_index];
+        auto const& right_turn = m_turns[right.turn_index];
 
         // First check "real" intersection (crosses)
         // -> distance zero due to precision, solve it by sorting

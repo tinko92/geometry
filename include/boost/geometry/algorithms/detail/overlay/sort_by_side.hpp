@@ -39,7 +39,7 @@ namespace detail { namespace overlay { namespace sort_by_side
 
 enum direction_type { dir_unknown = -1, dir_from = 0, dir_to = 1 };
 
-typedef signed_size_type rank_type;
+using rank_type = signed_size_type;
 
 
 // Point-wrapper, adding some properties
@@ -139,7 +139,7 @@ struct less_by_side
     template <typename T>
     inline bool operator()(const T& first, const T& second) const
     {
-        typedef typename SideStrategy::cs_tag cs_tag;
+        using cs_tag = typename SideStrategy::cs_tag;
 
         LessOnSame on_same;
         Compare compare;
@@ -226,7 +226,7 @@ template
 >
 struct side_sorter
 {
-    typedef ranked_point<Point> rp;
+    using rp = ranked_point<Point>;
 
 private :
     struct include_union
@@ -509,7 +509,7 @@ public :
 
 //private :
 
-    typedef std::vector<rp> container_type;
+    using container_type = std::vector<rp>;
     container_type m_ranked_points;
     Point m_origin;
     std::size_t m_origin_count;
@@ -721,13 +721,13 @@ struct side_compare {};
 template <>
 struct side_compare<operation_union>
 {
-    typedef std::greater<int> type;
+    using type = std::greater<int>;
 };
 
 template <>
 struct side_compare<operation_intersection>
 {
-    typedef std::less<int> type;
+    using type = std::less<int>;
 };
 
 

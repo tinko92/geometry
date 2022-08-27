@@ -106,14 +106,12 @@ struct discard_closed_turns<overlay_union, operation_union>
                Geometry0 const& geometry0, Geometry1 const& geometry1,
                Strategy const& strategy)
     {
-        typedef typename boost::range_value<Turns>::type turn_type;
-
         for (typename boost::range_iterator<Turns>::type
                 it = boost::begin(turns);
              it != boost::end(turns);
              ++it)
         {
-            turn_type& turn = *it;
+            auto& turn = *it;
 
             if (! turn.discarded
                 && is_self_turn<overlay_union>(turn)
@@ -203,14 +201,12 @@ public :
     {
         discard_clusters(turns, clusters, geometry0, geometry1, strategy);
 
-        typedef typename boost::range_value<Turns>::type turn_type;
-
         for (typename boost::range_iterator<Turns>::type
                 it = boost::begin(turns);
              it != boost::end(turns);
              ++it)
         {
-            turn_type& turn = *it;
+            auto& turn = *it;
 
             // It is a ii self-turn
             // Check if it is within the other geometry

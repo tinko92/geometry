@@ -58,11 +58,11 @@ inline bool points_equal_or_close(Point1 const& point1,
     }
 
     // Try using specified robust policy
-    typedef typename geometry::robust_point_type
+    using robust_point_type = typename geometry::robust_point_type
     <
         Point1,
         RobustPolicy
-    >::type robust_point_type;
+    >::type;
 
     robust_point_type point1_rob, point2_rob;
     geometry::recalculate(point1_rob, point1, robust_policy);
@@ -174,7 +174,6 @@ inline void clean_closing_dups_and_spikes(Range& range,
         return;
     }
 
-    typedef typename boost::range_iterator<Range>::type iterator_type;
     static bool const closed = geometry::closure<Range>::value == geometry::closed;
 
 // TODO: the following algorithm could be rewritten to first look for spikes
@@ -184,9 +183,9 @@ inline void clean_closing_dups_and_spikes(Range& range,
     do
     {
         found = false;
-        iterator_type first = boost::begin(range);
-        iterator_type second = first + 1;
-        iterator_type ultimate = boost::end(range) - 1;
+        auto first = boost::begin(range);
+        auto second = first + 1;
+        auto ultimate = boost::end(range) - 1;
         if (BOOST_GEOMETRY_CONDITION(closed))
         {
             ultimate--;
