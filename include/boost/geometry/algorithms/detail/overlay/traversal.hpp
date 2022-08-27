@@ -361,7 +361,7 @@ public :
             }
         }
 
-        static bool const is_union = target_operation == operation_union;
+        bool constexpr is_union = target_operation == operation_union;
 
         typename turn_operation_type::comparable_distance_type
                 best_remaining_distance = 0;
@@ -610,7 +610,7 @@ public :
 
     inline sort_by_side::rank_type select_rank(sbs_type const& sbs) const
     {
-        static bool const is_intersection
+        bool constexpr is_intersection
                 = target_operation == operation_intersection;
 
         // Take the first outgoing rank corresponding to incoming region,

@@ -391,13 +391,12 @@ inline void enrich_intersection_points(Turns& turns,
     RobustPolicy const& robust_policy,
     IntersectionStrategy const& strategy)
 {
-    static const detail::overlay::operation_type target_operation
-            = detail::overlay::operation_from_overlay<OverlayType>::value;
-    static const detail::overlay::operation_type opposite_operation
+    auto constexpr target_operation = detail::overlay::operation_from_overlay<OverlayType>::value;
+    auto constexpr opposite_operation
             = target_operation == detail::overlay::operation_union
             ? detail::overlay::operation_intersection
             : detail::overlay::operation_union;
-    static const bool is_dissolve = OverlayType == overlay_dissolve;
+    bool constexpr is_dissolve = OverlayType == overlay_dissolve;
 
     using turn_type = typename boost::range_value<Turns>::type;
     using op_type = typename turn_type::turn_operation_type;

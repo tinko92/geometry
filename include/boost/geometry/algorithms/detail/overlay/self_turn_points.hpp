@@ -47,8 +47,8 @@ namespace detail { namespace self_get_turn_points
 
 struct no_interrupt_policy
 {
-    static bool const enabled = false;
-    static bool const has_intersections = false;
+    static bool constexpr enabled = false;
+    static bool constexpr has_intersections = false;
 
 
     template <typename Range>
@@ -422,7 +422,7 @@ inline void self_turns(Geometry const& geometry,
 {
     concepts::check<Geometry const>();
 
-    static bool const reverse =  detail::overlay::do_reverse
+    bool constexpr reverse =  detail::overlay::do_reverse
         <
             geometry::point_order<Geometry>::value
         >::value;

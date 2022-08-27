@@ -64,20 +64,20 @@ namespace detail { namespace overlay
 
 struct policy_verify_nothing
 {
-    static bool const use_side_verification = false;
-    static bool const use_start_turn = false;
-    static bool const use_handle_as_touch = false;
-    static bool const use_handle_as_equal = false;
-    static bool const use_handle_imperfect_touch = false;
+    static bool constexpr use_side_verification = false;
+    static bool constexpr use_start_turn = false;
+    static bool constexpr use_handle_as_touch = false;
+    static bool constexpr use_handle_as_equal = false;
+    static bool constexpr use_handle_imperfect_touch = false;
 };
 
 struct policy_verify_all
 {
-    static bool const use_side_verification = true;
-    static bool const use_start_turn = true;
-    static bool const use_handle_as_touch = true;
-    static bool const use_handle_as_equal = true;
-    static bool const use_handle_imperfect_touch = true;
+    static bool constexpr use_side_verification = true;
+    static bool constexpr use_start_turn = true;
+    static bool constexpr use_handle_as_touch = true;
+    static bool constexpr use_handle_as_equal = true;
+    static bool constexpr use_handle_imperfect_touch = true;
 };
 
 
@@ -1361,18 +1361,18 @@ struct only_convert : public base_turn_handler
  */
 struct assign_null_policy
 {
-    static bool const include_no_turn = false;
-    static bool const include_degenerate = false;
-    static bool const include_opposite = false;
-    static bool const include_start_turn = false;
+    static bool constexpr include_no_turn = false;
+    static bool constexpr include_degenerate = false;
+    static bool constexpr include_opposite = false;
+    static bool constexpr include_start_turn = false;
 };
 
 struct assign_policy_only_start_turns
 {
-    static bool const include_no_turn = false;
-    static bool const include_degenerate = false;
-    static bool const include_opposite = false;
-    static bool const include_start_turn = true;
+    static bool constexpr include_no_turn = false;
+    static bool constexpr include_degenerate = false;
+    static bool constexpr include_opposite = false;
+    static bool constexpr include_start_turn = true;
 };
 
 /*!

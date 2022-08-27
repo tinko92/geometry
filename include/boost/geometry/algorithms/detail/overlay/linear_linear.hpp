@@ -133,10 +133,10 @@ class linear_linear_linestring
 protected:
     struct assign_policy
     {
-        static bool const include_no_turn = false;
-        static bool const include_degenerate = EnableDegenerateTurns;
-        static bool const include_opposite = false;
-        static bool const include_start_turn = false;
+        static bool constexpr include_no_turn = false;
+        static bool constexpr include_degenerate = EnableDegenerateTurns;
+        static bool constexpr include_opposite = false;
+        static bool constexpr include_start_turn = false;
     };
 
 

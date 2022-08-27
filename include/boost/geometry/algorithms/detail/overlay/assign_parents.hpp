@@ -241,10 +241,10 @@ inline void assign_parents(Geometry1 const& geometry1,
             RingMap& ring_map,
             Strategy const& strategy)
 {
-    static bool const is_difference = OverlayType == overlay_difference;
-    static bool const is_buffer = OverlayType == overlay_buffer;
-    static bool const is_dissolve = OverlayType == overlay_dissolve;
-    static bool const check_for_orientation = is_buffer || is_dissolve;
+    bool constexpr is_difference = OverlayType == overlay_difference;
+    bool constexpr is_buffer = OverlayType == overlay_buffer;
+    bool constexpr is_dissolve = OverlayType == overlay_dissolve;
+    bool constexpr check_for_orientation = is_buffer || is_dissolve;
 
     using tag1 = typename geometry::tag<Geometry1>::type;
     using tag2 = typename geometry::tag<Geometry2>::type;

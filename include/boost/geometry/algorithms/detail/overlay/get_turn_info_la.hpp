@@ -37,7 +37,7 @@ struct get_turn_info_linear_areal
 {
     // Currently only Linear spikes are handled
     // Areal spikes are ignored
-    static const bool handle_spikes = true;
+    static bool constexpr handle_spikes = true;
 
     template
     <
@@ -521,7 +521,7 @@ struct get_turn_info_linear_areal
                                               IntersectionInfo const& inters,
                                               OutIt out)
     {
-        static const bool is_version_touches = (Version == append_touches);
+        constexpr bool is_version_touches = (Version == append_touches);
 
         bool is_p_spike = ( is_version_touches ?
                             ( tp.operations[0].operation == operation_continue

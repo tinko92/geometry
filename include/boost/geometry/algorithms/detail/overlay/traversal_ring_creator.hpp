@@ -308,7 +308,7 @@ struct traversal_ring_creator
         // remaining distance (#8310b)
         // Also to avoid skipping a turn in between, which can happen
         // in rare cases (e.g. #130)
-        static const bool is_union
+        bool constexpr is_union
             = operation_from_overlay<OverlayType>::value == operation_union;
 
         turn_operation_type const& op0 = turn.operations[0];

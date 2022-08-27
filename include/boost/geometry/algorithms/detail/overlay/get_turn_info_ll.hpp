@@ -32,7 +32,7 @@ namespace detail { namespace overlay {
 template<typename AssignPolicy>
 struct get_turn_info_linear_linear
 {
-    static const bool handle_spikes = true;
+    static bool constexpr handle_spikes = true;
 
     template
     <
@@ -538,7 +538,7 @@ struct get_turn_info_linear_linear
                                               IntersectionInfo const& inters,
                                               OutIt out)
     {
-        static const bool is_version_touches = (Version == append_touches);
+        bool constexpr is_version_touches = (Version == append_touches);
 
         bool is_p_spike = ( is_version_touches ?
                             ( tp.operations[0].operation == operation_continue

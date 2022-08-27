@@ -87,10 +87,10 @@ namespace detail { namespace get_turns
 
 struct no_interrupt_policy
 {
-    static bool const enabled = false;
+    static bool constexpr enabled = false;
 
     // variable required by self_get_turn_points::get_turns
-    static bool const has_intersections = false;
+    static bool constexpr has_intersections = false;
 
     template <typename Range>
     static inline bool apply(Range const&)
@@ -266,8 +266,8 @@ public :
     {
         boost::ignore_unused(interrupt_policy);
 
-        static bool const areal1 = util::is_areal<Geometry1>::value;
-        static bool const areal2 = util::is_areal<Geometry2>::value;
+        bool constexpr areal1 = util::is_areal<Geometry1>::value;
+        bool constexpr areal2 = util::is_areal<Geometry2>::value;
 
         if ((sec1.duplicate && (sec1.count + 1) < sec1.range_count)
            || (sec2.duplicate && (sec2.count + 1) < sec2.range_count))

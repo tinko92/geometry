@@ -174,7 +174,7 @@ inline void clean_closing_dups_and_spikes(Range& range,
         return;
     }
 
-    static bool const closed = geometry::closure<Range>::value == geometry::closed;
+    bool constexpr closed = geometry::closure<Range>::value == geometry::closed;
 
 // TODO: the following algorithm could be rewritten to first look for spikes
 // and then erase some number of points from the beginning of the Range

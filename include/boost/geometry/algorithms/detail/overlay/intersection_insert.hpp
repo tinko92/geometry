@@ -1072,7 +1072,7 @@ struct intersection_insert
     {
         namespace bgt = boost::geometry::tuples;
 
-        static const bool out_point_index = bgt::find_index_if
+        bool constexpr out_point_index = bgt::find_index_if
             <
                 TupledOut, geometry::detail::is_tag_same_as_pred<point_tag>::template pred
             >::value;
