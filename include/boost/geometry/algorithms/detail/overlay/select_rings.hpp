@@ -17,8 +17,6 @@
 
 #include <map>
 
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
 
 #include <boost/geometry/core/tags.hpp>
@@ -121,11 +119,10 @@ namespace dispatch
 
             typename interior_return_type<Polygon const>::type
                 rings = interior_rings(polygon);
-            for (typename detail::interior_iterator<Polygon const>::type
-                    it = boost::begin(rings); it != boost::end(rings); ++it)
+            for (auto const& ring : rings)
             {
                 id.ring_index++;
-                per_ring::apply(*it, geometry, id, ring_properties, strategy);
+                per_ring::apply(ring, geometry, id, ring_properties, strategy);
             }
         }
 
@@ -141,11 +138,10 @@ namespace dispatch
 
             typename interior_return_type<Polygon const>::type
                 rings = interior_rings(polygon);
-            for (typename detail::interior_iterator<Polygon const>::type
-                    it = boost::begin(rings); it != boost::end(rings); ++it)
+            for (auto const& ring : rings)
             {
                 id.ring_index++;
-                per_ring::apply(*it, id, ring_properties, strategy);
+                per_ring::apply(ring, id, ring_properties, strategy);
             }
         }
     };
@@ -161,10 +157,10 @@ namespace dispatch
             using per_polygon = select_rings<polygon_tag, typename boost::range_value<Multi>::type>;
 
             id.multi_index = 0;
-            for (auto it = boost::begin(multi); it != boost::end(multi); ++it)
+            for (auto const& poly : multi)
             {
                 id.ring_index = -1;
-                per_polygon::apply(*it, geometry, id, ring_properties, strategy);
+                per_polygon::apply(poly, geometry, id, ring_properties, strategy);
                 id.multi_index++;
             }
         }
@@ -249,11 +245,9 @@ inline void update_ring_selection(Geometry1 const& geometry1,
 {
     selected_ring_properties.clear();
 
-    for (typename RingPropertyMap::const_iterator it = boost::begin(all_ring_properties);
-        it != boost::end(all_ring_properties);
-        ++it)
+    for (auto const& entry : all_ring_properties)
     {
-        ring_identifier const& id = it->first;
+        auto const& id = entry.first;
 
         ring_turn_info info;
 
@@ -276,12 +270,12 @@ inline void update_ring_selection(Geometry1 const& geometry1,
         {
             // within
             case 0 :
-                info.within_other = range_in_geometry(it->second.point,
+                info.within_other = range_in_geometry(entry.second.point,
                                                       geometry1, geometry2,
                                                       strategy) > 0;
                 break;
             case 1 :
-                info.within_other = range_in_geometry(it->second.point,
+                info.within_other = range_in_geometry(entry.second.point,
                                                       geometry2, geometry1,
                                                       strategy) > 0;
                 break;
@@ -289,7 +283,7 @@ inline void update_ring_selection(Geometry1 const& geometry1,
 
         if (decide<OverlayType>::include(id, info))
         {
-            typename RingPropertyMap::mapped_type properties = it->second; // Copy by value
+            auto properties = entry.second; // Copy by value
             properties.reversed = decide<OverlayType>::reversed(id, info);
             selected_ring_properties[id] = properties;
         }

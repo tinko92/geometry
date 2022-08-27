@@ -17,10 +17,6 @@
 #include <iterator>
 #include <vector>
 
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
-#include <boost/range/value_type.hpp>
-
 #include <boost/geometry/algorithms/disjoint.hpp>
 #include <boost/geometry/algorithms/envelope.hpp>
 #include <boost/geometry/algorithms/expand.hpp>
@@ -98,15 +94,12 @@ struct multipoint_single_point
                                        OutputIterator oit,
                                        Strategy const& strategy)
     {
-        for (typename boost::range_iterator<MultiPoint const>::type
-                 it = boost::begin(multipoint);
-             it != boost::end(multipoint);
-             ++it)
+        for (auto const& point : multipoint)
         {
             action_selector_pl
                 <
                     PointOut, OverlayType
-                >::apply(*it, Policy::apply(*it, geometry, strategy), oit);
+                >::apply(point, Policy::apply(point, geometry, strategy), oit);
         }
 
         return oit;

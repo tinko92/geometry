@@ -31,7 +31,6 @@
 
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
-#include <boost/range/value_type.hpp>
 
 #include <boost/geometry/algorithms/detail/ring_identifier.hpp>
 #include <boost/geometry/algorithms/detail/overlay/discard_duplicate_turns.hpp>
@@ -117,13 +116,12 @@ inline void enrich_assign(Operations& operations, Turns& turns,
         geometry::ever_circling_range_iterator<Operations const> next(operations);
         ++next;
 
-        for (auto it = boost::begin(operations);
-             it != boost::end(operations); ++it)
+        for (auto const& entry : operations)
         {
-            auto& turn = turns[it->turn_index];
-            auto& op = turn.operations[it->operation_index];
+            auto& turn = turns[entry.turn_index];
+            auto& op = turn.operations[entry.operation_index];
 
-            if (check_turns && it->turn_index == next->turn_index)
+            if (check_turns && entry.turn_index == next->turn_index)
             {
                 // Normal behaviour: next points at next turn, increase next.
                 // For dissolve this should not be done, turn_index is often
@@ -135,7 +133,7 @@ inline void enrich_assign(Operations& operations, Turns& turns,
             // their seg_ids are not the same
             // (For dissolve, this is still to be examined - TODO)
             while (turn.is_clustered()
-                   && it->turn_index != next->turn_index
+                   && entry.turn_index != next->turn_index
                    && turn.cluster_id == turns[next->turn_index].cluster_id
                    && op.seg_id == turns[next->turn_index].operations[next->operation_index].seg_id)
             {
@@ -169,25 +167,23 @@ inline void enrich_assign(Operations& operations, Turns& turns,
     // DEBUG
 #ifdef BOOST_GEOMETRY_DEBUG_ENRICH
     {
-        for (auto it = boost::begin(operations);
-             it != boost::end(operations);
-             ++it)
+        for (auto const& entry : operations)
         {
-            auto const& op = turns[it->turn_index]
-                .operations[it->operation_index];
+            auto const& op = turns[entry.turn_index]
+                .operations[entry.operation_index];
 
-            std::cout << it->turn_index
-                << " cl=" << turns[it->turn_index].cluster_id
-                << " meth=" << method_char(turns[it->turn_index].method)
+            std::cout << entry.turn_index
+                << " cl=" << turns[entry.turn_index].cluster_id
+                << " meth=" << method_char(turns[entry.turn_index].method)
                 << " seg=" << op.seg_id
                 << " dst=" << op.fraction // needs define
-                << " op=" << operation_char(turns[it->turn_index].operations[0].operation)
-                << operation_char(turns[it->turn_index].operations[1].operation)
+                << " op=" << operation_char(turns[entry.turn_index].operations[0].operation)
+                << operation_char(turns[entry.turn_index].operations[1].operation)
                 << " (" << operation_char(op.operation) << ")"
                 << " nxt=" << op.enriched.next_ip_index
                 << " / " << op.enriched.travels_to_ip_index
                 << " [vx " << op.enriched.travels_to_vertex_index << "]"
-                << (turns[it->turn_index].discarded ? " discarded" : "")
+                << (turns[entry.turn_index].discarded ? " discarded" : "")
                 << std::endl;
                 ;
         }
@@ -245,12 +241,8 @@ inline void enrich_adapt(Operations& operations, Turns& turns)
 
     // Discard turns which are both non-startable
     next_phase = false;
-    for (typename boost::range_iterator<Turns>::type
-            it = boost::begin(turns);
-         it != boost::end(turns);
-         ++it)
+    for (auto& turn : turns)
     {
-        auto& turn = *it;
         if (! turn.operations[0].enriched.startable
             && ! turn.operations[1].enriched.startable)
         {
@@ -288,40 +280,34 @@ inline void create_map(Turns const& turns, MappedVector& mapped_vector,
     using indexed_type = typename boost::range_value<mapped_type>::type;
 
     std::size_t index = 0;
-    for (typename boost::range_iterator<Turns const>::type
-            it = boost::begin(turns);
-         it != boost::end(turns);
-         ++it, ++index)
+    for (auto const& turn : turns)
     {
         // Add all (non discarded) operations on this ring
         // Blocked operations or uu on clusters (for intersection)
         // should be included, to block potential paths in clusters
-        auto const& turn = *it;
-        if (turn.discarded)
+        if (!turn.discarded)
         {
-            continue;
-        }
-
-        std::size_t op_index = 0;
-        for (auto op_it = boost::begin(turn.operations);
-            op_it != boost::end(turn.operations);
-            ++op_it, ++op_index)
-        {
-            if (include_policy.include(op_it->operation))
+            std::size_t op_index = 0;
+            for (auto const& op : turn.operations)
             {
-                ring_identifier const ring_id
-                    (
-                        op_it->seg_id.source_index,
-                        op_it->seg_id.multi_index,
-                        op_it->seg_id.ring_index
-                    );
-                mapped_vector[ring_id].push_back
-                    (
-                        indexed_type(index, op_index, *op_it,
-                            it->operations[1 - op_index].seg_id)
-                    );
+                if (include_policy.include(op.operation))
+                {
+                    ring_identifier const ring_id
+                        (
+                            op.seg_id.source_index,
+                            op.seg_id.multi_index,
+                            op.seg_id.ring_index
+                        );
+                    mapped_vector[ring_id].push_back
+                        (
+                            indexed_type(index, op_index, op,
+                                turn.operations[1 - op_index].seg_id)
+                        );
+                }
+	        ++op_index;
             }
-        }
+	}
+	++index;
     }
 }
 
@@ -344,12 +330,10 @@ inline void calculate_remaining_distance(Turns& turns)
 
     typename op_type::comparable_distance_type const zero_distance = 0;
 
-    for (auto it = boost::begin(turns); it != boost::end(turns); ++it)
+    for (auto& turn : turns)
     {
-        turn_type& turn = *it;
-
-        op_type& op0 = turn.operations[0];
-        op_type& op1 = turn.operations[1];
+        auto& op0 = turn.operations[0];
+        auto& op1 = turn.operations[1];
 
         if (op0.remaining_distance != zero_distance
          || op1.remaining_distance != zero_distance)
@@ -440,13 +424,8 @@ inline void enrich_intersection_points(Turns& turns,
             >(turns, clusters, robust_policy);
 
     // Discard turns not part of target overlay
-    for (typename boost::range_iterator<Turns>::type
-            it = boost::begin(turns);
-         it != boost::end(turns);
-         ++it)
+    for (auto& turn : turns)
     {
-        auto& turn = *it;
-
         if (turn.both(detail::overlay::operation_none)
             || turn.both(opposite_operation)
             || turn.both(detail::overlay::operation_blocked)
@@ -501,18 +480,15 @@ inline void enrich_intersection_points(Turns& turns,
 
     // No const-iterator; contents of mapped copy is temporary,
     // and changed by enrich
-    for (typename mapped_vector_type::iterator mit
-        = mapped_vector.begin();
-        mit != mapped_vector.end();
-        ++mit)
+    for (auto& entry : mapped_vector)
     {
         detail::overlay::enrich_sort<Reverse1, Reverse2>(
-                    mit->second, turns,
+                    entry.second, turns,
                     geometry1, geometry2,
                     robust_policy, strategy.side()); // TODO: pass strategy
 #ifdef BOOST_GEOMETRY_DEBUG_ENRICH
-        std::cout << "ENRICH-sort Ring " << mit->first << std::endl;
-        for (auto const& op : mit->second)
+        std::cout << "ENRICH-sort Ring " << entry.first << std::endl;
+        for (auto const& op : entry.second)
         {
             std::cout << op.turn_index << " " << op.operation_index << std::endl;
         }
@@ -536,20 +512,17 @@ inline void enrich_intersection_points(Turns& turns,
 
     // After cleaning up clusters assign the next turns
 
-    for (typename mapped_vector_type::iterator mit
-        = mapped_vector.begin();
-        mit != mapped_vector.end();
-        ++mit)
+    for (auto& entry : mapped_vector)
     {
 #ifdef BOOST_GEOMETRY_DEBUG_ENRICH
-    std::cout << "ENRICH-assign Ring " << mit->first << std::endl;
+    std::cout << "ENRICH-assign Ring " << entry.first << std::endl;
 #endif
         if (is_dissolve)
         {
-            detail::overlay::enrich_adapt(mit->second, turns);
+            detail::overlay::enrich_adapt(entry.second, turns);
         }
 
-        detail::overlay::enrich_assign(mit->second, turns, ! is_dissolve);
+        detail::overlay::enrich_assign(entry.second, turns, ! is_dissolve);
     }
 
     if (has_cc)

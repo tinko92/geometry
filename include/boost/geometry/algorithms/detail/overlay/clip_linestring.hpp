@@ -198,9 +198,9 @@ OutputIterator clip_range_with_box(Box const& b, Range const& range,
     OutputLinestring line_out;
 
     auto vertex = boost::begin(range);
-    for(auto previous = vertex++;
-            vertex != boost::end(range);
-            ++previous, ++vertex)
+    for (auto previous = vertex++;
+              vertex != boost::end(range);
+              ++previous, ++vertex)
     {
         point_type p1, p2;
         geometry::convert(*previous, p1);

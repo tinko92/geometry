@@ -21,7 +21,6 @@
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
-#include <boost/range/value_type.hpp>
 
 #include <boost/geometry/algorithms/clear.hpp>
 #include <boost/geometry/algorithms/detail/covered_by/implementation.hpp>
@@ -441,51 +440,51 @@ public :
         // Iterate through all intersection points (they are ordered along the line)
         bool entered = false;
         bool first = true;
-        for (auto it = boost::begin(turns); it != boost::end(turns); ++it)
+        for (auto const& turn : turns)
         {
-            auto iit = boost::begin(it->operations);
+            auto iit = boost::begin(turn.operations);
 
-            if (following::was_entered(*it, *iit, first, linestring, polygon, strategy))
+            if (following::was_entered(turn, *iit, first, linestring, polygon, strategy))
             {
-                debug_traverse(*it, *iit, "-> Was entered");
+                debug_traverse(turn, *iit, "-> Was entered");
                 entered = true;
             }
 
-            if (following::is_staying_inside(*it, *iit, entered, first, linestring, polygon, strategy))
+            if (following::is_staying_inside(turn, *iit, entered, first, linestring, polygon, strategy))
             {
-                debug_traverse(*it, *iit, "-> Staying inside");
+                debug_traverse(turn, *iit, "-> Staying inside");
 
                 entered = true;
             }
-            else if (following::is_entering(*it, *iit))
+            else if (following::is_entering(turn, *iit))
             {
-                debug_traverse(*it, *iit, "-> Entering");
+                debug_traverse(turn, *iit, "-> Entering");
 
                 entered = true;
                 action::enter(current_piece, linestring, current_segment_id,
-                    iit->seg_id.segment_index, it->point, *iit,
+                    iit->seg_id.segment_index, turn.point, *iit,
                     strategy, robust_policy,
                     linear::get(out));
             }
-            else if (following::is_leaving(*it, *iit, entered, first, linestring, polygon, strategy))
+            else if (following::is_leaving(turn, *iit, entered, first, linestring, polygon, strategy))
             {
-                debug_traverse(*it, *iit, "-> Leaving");
+                debug_traverse(turn, *iit, "-> Leaving");
 
                 entered = false;
                 action::leave(current_piece, linestring, current_segment_id,
-                    iit->seg_id.segment_index, it->point, *iit,
+                    iit->seg_id.segment_index, turn.point, *iit,
                     strategy, robust_policy,
                     linear::get(out));
             }
             else if (BOOST_GEOMETRY_CONDITION(FollowIsolatedPoints)
-                  && following::is_touching(*it, *iit, entered))
+                  && following::is_touching(turn, *iit, entered))
             {
-                debug_traverse(*it, *iit, "-> Isolated point");
+                debug_traverse(turn, *iit, "-> Isolated point");
 
                 action::template isolated_point
                     <
                         typename pointlike::type
-                    >(it->point, pointlike::get(out));
+                    >(turn.point, pointlike::get(out));
             }
 
             first = false;

@@ -25,7 +25,6 @@
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
-#include <boost/range/value_type.hpp>
 
 #include <boost/geometry/algorithms/detail/disjoint/box_box.hpp>
 #include <boost/geometry/algorithms/detail/disjoint/point_point.hpp>
@@ -844,16 +843,15 @@ struct get_turns_polygon_cs
 
         typename interior_return_type<Polygon const>::type
             rings = interior_rings(polygon);
-        for (typename detail::interior_iterator<Polygon const>::type
-                it = boost::begin(rings); it != boost::end(rings); ++it, ++i)
+        for (auto const& ring : rings)
         {
             intersector_type::apply(
-                    source_id1, *it,
+                    source_id1, ring,
                     source_id2, box,
                     intersection_strategy,
                     robust_policy,
                     turns, interrupt_policy,
-                    multi_index, i);
+                    multi_index, i++);
         }
 
     }
@@ -878,9 +876,7 @@ struct get_turns_multi_polygon_cs
             InterruptPolicy& interrupt_policy)
     {
         signed_size_type i = 0;
-        for (auto it = boost::begin(multi);
-             it != boost::end(multi);
-             ++it, ++i)
+        for (auto const& single : multi)
         {
             // Call its single version
             get_turns_polygon_cs
@@ -888,9 +884,9 @@ struct get_turns_multi_polygon_cs
                     typename boost::range_value<Multi>::type, Box,
                     Reverse, ReverseBox,
                     TurnPolicy
-                >::apply(source_id1, *it, source_id2, box,
+                >::apply(source_id1, single, source_id2, box,
                          intersection_strategy, robust_policy,
-                         turns, interrupt_policy, i);
+                         turns, interrupt_policy, i++);
         }
     }
 };

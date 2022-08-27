@@ -486,10 +486,9 @@ public :
             // Reverse first part (having rank == 0), if any,
             // but skip the very first row
             std::reverse(m_ranked_points.begin() + 1, it);
-            for (typename container_type::iterator fit = m_ranked_points.begin();
-                 fit != it; ++fit)
+            for (auto const& rp : m_ranked_points)
             {
-                BOOST_ASSERT(fit->rank == 0);
+                BOOST_ASSERT(rp.rank == 0);
             }
         }
 
@@ -524,10 +523,8 @@ private :
     {
         std::size_t result = 0;
         rank_type last_rank = 0;
-        for (std::size_t i = 0; i < m_ranked_points.size(); i++)
+        for (auto const& ranked_point : m_ranked_points)
         {
-            rp const& ranked_point = m_ranked_points[i];
-
             if (ranked_point.rank > last_rank
                 && ranked_point.direction == sort_by_side::dir_to
                 && include_functor(ranked_point))
@@ -559,9 +556,8 @@ private :
 
     void assign_ranks(rank_type min_rank, rank_type max_rank, int side_index)
     {
-        for (std::size_t i = 0; i < m_ranked_points.size(); i++)
+        for (auto& ranked : m_ranked_points)
         {
-            rp& ranked = m_ranked_points[i];
             // Suppose there are 8 ranks, if min=4,max=6: assign 4,5,6
             // if min=5,max=2: assign from 5,6,7,1,2
             bool const in_range

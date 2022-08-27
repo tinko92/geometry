@@ -15,10 +15,6 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_HANDLE_SELF_TURNS_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_HANDLE_SELF_TURNS_HPP
 
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
-#include <boost/range/value_type.hpp>
-
 #include <boost/geometry/algorithms/detail/covered_by/implementation.hpp>
 #include <boost/geometry/algorithms/detail/overlay/cluster_info.hpp>
 #include <boost/geometry/algorithms/detail/overlay/is_self_turn.hpp>
@@ -106,13 +102,8 @@ struct discard_closed_turns<overlay_union, operation_union>
                Geometry0 const& geometry0, Geometry1 const& geometry1,
                Strategy const& strategy)
     {
-        for (typename boost::range_iterator<Turns>::type
-                it = boost::begin(turns);
-             it != boost::end(turns);
-             ++it)
+        for (auto& turn : turns)
         {
-            auto& turn = *it;
-
             if (! turn.discarded
                 && is_self_turn<overlay_union>(turn)
                 && check_within<overlay_union>::apply(turn, geometry0,
@@ -135,18 +126,16 @@ private :
     bool is_self_cluster(signed_size_type cluster_id,
             const Turns& turns, Clusters const& clusters)
     {
-        typename Clusters::const_iterator cit = clusters.find(cluster_id);
+        auto cit = clusters.find(cluster_id);
         if (cit == clusters.end())
         {
             return false;
         }
 
         cluster_info const& cinfo = cit->second;
-        for (std::set<signed_size_type>::const_iterator it
-             = cinfo.turn_indices.begin();
-             it != cinfo.turn_indices.end(); ++it)
+        for (auto turn_index : cinfo.turn_indices)
         {
-            if (! is_self_turn<OverlayType>(turns[*it]))
+            if (! is_self_turn<OverlayType>(turns[turn_index]))
             {
                 return false;
             }
@@ -162,28 +151,25 @@ private :
             Geometry0 const& geometry0, Geometry1 const& geometry1,
             Strategy const& strategy)
     {
-        for (typename Clusters::const_iterator cit = clusters.begin();
-             cit != clusters.end(); ++cit)
+        for (auto const& cluster : clusters)
         {
-            signed_size_type const cluster_id = cit->first;
+            signed_size_type const cluster_id = cluster.first;
 
             // If there are only self-turns in the cluster, the cluster should
             // be located within the other geometry, for intersection
-            if (! cit->second.turn_indices.empty()
+            if (! cluster.second.turn_indices.empty()
                 && is_self_cluster(cluster_id, turns, clusters))
             {
-                cluster_info const& cinfo = cit->second;
+                cluster_info const& cinfo = cluster.second;
                 signed_size_type const index = *cinfo.turn_indices.begin();
                 if (! check_within<OverlayType>::apply(turns[index],
                                                        geometry0, geometry1,
                                                        strategy))
                 {
                     // Discard all turns in cluster
-                    for (std::set<signed_size_type>::const_iterator sit
-                         = cinfo.turn_indices.begin();
-                         sit != cinfo.turn_indices.end(); ++sit)
+                    for (auto turn_index : cinfo.turn_indices)
                     {
-                        turns[*sit].discarded = true;
+                        turns[turn_index].discarded = true;
                     }
                 }
             }
@@ -201,13 +187,8 @@ public :
     {
         discard_clusters(turns, clusters, geometry0, geometry1, strategy);
 
-        for (typename boost::range_iterator<Turns>::type
-                it = boost::begin(turns);
-             it != boost::end(turns);
-             ++it)
+        for (auto& turn : turns)
         {
-            auto& turn = *it;
-
             // It is a ii self-turn
             // Check if it is within the other geometry
             if (! turn.discarded

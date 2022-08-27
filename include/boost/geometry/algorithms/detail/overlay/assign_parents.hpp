@@ -14,9 +14,6 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_ASSIGN_PARENTS_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_ASSIGN_PARENTS_HPP
 
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
-
 #include <boost/geometry/core/coordinate_type.hpp>
 #include <boost/geometry/algorithms/envelope.hpp>
 #include <boost/geometry/algorithms/expand.hpp>
@@ -272,23 +269,22 @@ inline void assign_parents(Geometry1 const& geometry1,
         // Copy to vector (with new approach this might be obsolete as well, using the map directly)
         vector_type vector(count_total);
 
-        for (auto it = boost::begin(ring_map);
-            it != boost::end(ring_map); ++it, ++index)
+        for (auto const& ring_entry : ring_map)
         {
-            vector[index] = helper(it->first, it->second.get_area());
+            vector[index] = helper(ring_entry.first, ring_entry.second.get_area());
             helper& item = vector[index];
-            switch(it->first.source_index)
+            switch(ring_entry.first.source_index)
             {
                 case 0 :
-                    geometry::envelope(get_ring<tag1>::apply(it->first, geometry1),
+                    geometry::envelope(get_ring<tag1>::apply(ring_entry.first, geometry1),
                                        item.envelope, strategy);
                     break;
                 case 1 :
-                    geometry::envelope(get_ring<tag2>::apply(it->first, geometry2),
+                    geometry::envelope(get_ring<tag2>::apply(ring_entry.first, geometry2),
                                        item.envelope, strategy);
                     break;
                 case 2 :
-                    geometry::envelope(get_ring<void>::apply(it->first, collection),
+                    geometry::envelope(get_ring<void>::apply(ring_entry.first, collection),
                                        item.envelope, strategy);
                     break;
             }
@@ -301,6 +297,7 @@ inline void assign_parents(Geometry1 const& geometry1,
                 count_positive++;
                 index_positive = index;
             }
+	    ++index;
         }
 
         if (! check_for_orientation)
@@ -323,15 +320,15 @@ inline void assign_parents(Geometry1 const& geometry1,
                 ring_identifier id_of_positive = vector[index_positive].id;
                 ring_info_type& outer = ring_map[id_of_positive];
                 index = 0;
-                for (auto it = boost::begin(vector);
-                    it != boost::end(vector); ++it, ++index)
+                for (auto const& ri_helper : vector)
                 {
                     if (index != index_positive)
                     {
-                        ring_info_type& inner = ring_map[it->id];
+                        ring_info_type& inner = ring_map[ri_helper.id];
                         inner.parent = id_of_positive;
-                        outer.children.push_back(it->id);
+                        outer.children.push_back(ri_helper.id);
                     }
+		    ++index;
                 }
                 return;
             }
@@ -354,10 +351,9 @@ inline void assign_parents(Geometry1 const& geometry1,
 
     if (check_for_orientation)
     {
-        for (auto it = boost::begin(ring_map);
-            it != boost::end(ring_map); ++it)
+        for (auto& entry : ring_map)
         {
-            ring_info_type& info = it->second;
+            ring_info_type& info = entry.second;
             if (geometry::math::equals(info.get_area(), 0))
             {
                 info.discarded = true;
@@ -394,12 +390,11 @@ inline void assign_parents(Geometry1 const& geometry1,
     }
 
     // Assign childlist
-    for (auto it = boost::begin(ring_map);
-        it != boost::end(ring_map); ++it)
+    for (auto const& entry : ring_map)
     {
-        if (it->second.parent.source_index >= 0)
+        if (entry.second.parent.source_index >= 0)
         {
-            ring_map[it->second.parent].children.push_back(it->first);
+            ring_map[entry.second.parent].children.push_back(entry.first);
         }
     }
 }

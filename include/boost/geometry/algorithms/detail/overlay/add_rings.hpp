@@ -15,9 +15,6 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_ADD_RINGS_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_ADD_RINGS_HPP
 
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
-#include <boost/range/value_type.hpp>
 #include <boost/throw_exception.hpp>
 
 #include <boost/geometry/core/closure.hpp>
@@ -108,29 +105,24 @@ inline OutputIterator add_rings(SelectionMap const& map,
         >::value;
 
 
-    for (auto it = boost::begin(map);
-        it != boost::end(map);
-        ++it)
+    for (auto const& entry : map)
     {
-        if (! it->second.discarded
-            && it->second.parent.source_index == -1)
+        if (! entry.second.discarded
+            && entry.second.parent.source_index == -1)
         {
             GeometryOut result;
             convert_and_add(result, geometry1, geometry2, collection,
-                    it->first, it->second.reversed, false);
+                    entry.first, entry.second.reversed, false);
 
             // Add children
-            for (typename std::vector<ring_identifier>::const_iterator child_it
-                        = it->second.children.begin();
-                child_it != it->second.children.end();
-                ++child_it)
+            for (auto const& child : entry.second.children)
             {
-                auto mit = map.find(*child_it);
+                auto mit = map.find(child);
                 if (mit != map.end()
                     && ! mit->second.discarded)
                 {
                     convert_and_add(result, geometry1, geometry2, collection,
-                            *child_it, mit->second.reversed, true);
+                            child, mit->second.reversed, true);
                 }
             }
 

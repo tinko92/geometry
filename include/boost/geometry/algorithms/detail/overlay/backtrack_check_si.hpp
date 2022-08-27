@@ -16,10 +16,6 @@
 #include <cstddef>
 #include <string>
 
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
-#include <boost/range/value_type.hpp>
-
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/algorithms/detail/overlay/turn_info.hpp>
 #include <boost/geometry/algorithms/detail/has_self_intersections.hpp>
@@ -38,21 +34,11 @@ namespace detail { namespace overlay
 template <typename Turns>
 inline void clear_visit_info(Turns& turns)
 {
-    using tp_type = typename boost::range_value<Turns>::type;
-
-    for (typename boost::range_iterator<Turns>::type
-        it = boost::begin(turns);
-        it != boost::end(turns);
-        ++it)
+    for (auto& t : turns)
     {
-        for (typename boost::range_iterator
-            <
-                typename tp_type::container_type
-            >::type op_it = boost::begin(it->operations);
-            op_it != boost::end(it->operations);
-            ++op_it)
+        for (auto& op : t.operations)
         {
-            op_it->visited.clear();
+            op.visited.clear();
         }
     }
 }
@@ -189,11 +175,11 @@ public :
         clear_visit_info(turns);
 
         int c = 0;
-        for (int i = 0; i < turns.size(); i++)
+        for (auto const& t : turns)
         {
-            for (int j = 0; j < 2; j++)
+            for (auto const& op : t.operations)
             {
-                if (turns[i].operations[j].visited.rejected())
+                if (op.visited.rejected())
                 {
                     c++;
                 }

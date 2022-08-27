@@ -17,10 +17,6 @@
 #include <cstddef>
 #include <set>
 
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
-#include <boost/range/value_type.hpp>
-
 #include <boost/geometry/algorithms/detail/overlay/cluster_info.hpp>
 #include <boost/geometry/algorithms/detail/overlay/cluster_exits.hpp>
 #include <boost/geometry/algorithms/detail/overlay/is_self_turn.hpp>
@@ -123,12 +119,8 @@ public :
     template <typename TurnInfoMap>
     inline void finalize_visit_info(TurnInfoMap& turn_info_map)
     {
-        for (typename boost::range_iterator<Turns>::type
-            it = boost::begin(m_turns);
-            it != boost::end(m_turns);
-            ++it)
+        for (auto& turn : m_turns)
         {
-            turn_type& turn = *it;
             for (int i = 0; i < 2; i++)
             {
                 turn_operation_type& op = turn.operations[i];
@@ -164,15 +156,12 @@ public :
         cluster_info const& cinfo = mit->second;
         std::set<signed_size_type> const& ids = cinfo.turn_indices;
 
-        for (typename std::set<signed_size_type>::const_iterator it = ids.begin();
-             it != ids.end(); ++it)
+        for (auto turn_index : ids)
         {
-            signed_size_type const turn_index = *it;
             turn_type& turn = m_turns[turn_index];
 
-            for (int i = 0; i < 2; i++)
+            for (auto& op : turn.operations)
             {
-                turn_operation_type& op = turn.operations[i];
                 if (op.visited.none()
                     && op.enriched.rank == rank)
                 {
@@ -186,9 +175,8 @@ public :
         if (op.operation == detail::overlay::operation_continue)
         {
             // On "continue", all go in same direction so set "visited" for ALL
-            for (int i = 0; i < 2; i++)
+            for (auto& turn_op : turn.operations)
             {
-                turn_operation_type& turn_op = turn.operations[i];
                 if (turn_op.visited.none())
                 {
                     turn_op.visited.set_visited();
@@ -305,9 +293,8 @@ public :
         }
 
         turn_type const& next_turn = m_turns[next_turn_index];
-        for (int i = 0; i < 2; i++)
+        for (auto const& next_op : next_turn.operations)
         {
-            turn_operation_type const& next_op = next_turn.operations[i];
             if (next_op.operation == target_operation
                 && ! next_op.visited.finished()
                 && ! next_op.visited.visited())
@@ -559,9 +546,9 @@ public :
 
     inline bool both_finished(const turn_type& turn) const
     {
-        for (int i = 0; i < 2; i++)
+        for (auto const& op : turn.operations)
         {
-            if (! turn.operations[i].visited.finished())
+            if (! op.visited.finished())
             {
                 return false;
             }
@@ -630,9 +617,8 @@ public :
         // or take another region if it is not isolated
         auto const& in_op = operation_from_rank(sbs.m_ranked_points.front());
 
-        for (std::size_t i = 0; i < sbs.m_ranked_points.size(); i++)
+        for (auto const& rp : sbs.m_ranked_points)
         {
-            auto const& rp = sbs.m_ranked_points[i];
             if (rp.rank == 0 || rp.direction == sort_by_side::dir_from)
             {
                 continue;
@@ -664,10 +650,8 @@ public :
         sort_by_side::rank_type const selected_rank = select_rank(sbs);
 
         int current_priority = 0;
-        for (std::size_t i = 1; i < sbs.m_ranked_points.size(); i++)
+        for (auto const& ranked_point : sbs.m_ranked_points)
         {
-            typename sbs_type::rp const& ranked_point = sbs.m_ranked_points[i];
-
             if (ranked_point.rank > selected_rank)
             {
                 break;
@@ -786,14 +770,14 @@ public :
     {
         bool const is_union = target_operation == operation_union;
 
-        turn_type const& turn = m_turns[turn_index];
+        auto const& turn = m_turns[turn_index];
         BOOST_ASSERT(turn.is_clustered());
 
-        typename Clusters::const_iterator mit = m_clusters.find(turn.cluster_id);
+        auto mit = m_clusters.find(turn.cluster_id);
         BOOST_ASSERT(mit != m_clusters.end());
 
         cluster_info const& cinfo = mit->second;
-        std::set<signed_size_type> const& cluster_indices = cinfo.turn_indices;
+        auto const& cluster_indices = cinfo.turn_indices;
 
         sbs_type sbs(m_strategy);
 
