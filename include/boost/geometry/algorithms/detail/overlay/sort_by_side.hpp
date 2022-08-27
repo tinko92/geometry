@@ -475,7 +475,7 @@ public :
 
         // Move iterator after rank==0
         bool has_first = false;
-        typename container_type::iterator it = m_ranked_points.begin() + 1;
+        auto it = m_ranked_points.begin() + 1;
         for (; it != m_ranked_points.end() && it->rank == 0; ++it)
         {
             has_first = true;

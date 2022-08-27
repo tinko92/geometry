@@ -251,7 +251,7 @@ inline void update_ring_selection(Geometry1 const& geometry1,
 
         ring_turn_info info;
 
-        typename TurnInfoMap::const_iterator tcit = turn_info_map.find(id);
+        auto tcit = turn_info_map.find(id);
         if (tcit != turn_info_map.end())
         {
             info = tcit->second; // Copy by value

@@ -150,7 +150,7 @@ public :
     inline void set_visited_in_cluster(signed_size_type cluster_id,
                                        signed_size_type rank)
     {
-        typename Clusters::const_iterator mit = m_clusters.find(cluster_id);
+        auto mit = m_clusters.find(cluster_id);
         BOOST_ASSERT(mit != m_clusters.end());
 
         cluster_info const& cinfo = mit->second;

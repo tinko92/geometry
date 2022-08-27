@@ -52,12 +52,12 @@ namespace detail { namespace overlay
 template <typename Turns, typename Clusters>
 inline void remove_clusters(Turns& turns, Clusters& clusters)
 {
-    typename Clusters::iterator it = clusters.begin();
+    auto it = clusters.begin();
     while (it != clusters.end())
     {
         // Hold iterator and increase. We can erase cit, this keeps the
         // iterator valid (cf The standard associative-container erase idiom)
-        typename Clusters::iterator current_it = it;
+        auto current_it = it;
         ++it;
 
         std::set<signed_size_type> const& turn_indices
@@ -77,12 +77,12 @@ inline void cleanup_clusters(Turns& turns, Clusters& clusters)
     // Removes discarded turns from clusters
     for (auto& cluster : clusters)
     {
-        cluster_info& cinfo = cluster.second;
-        std::set<signed_size_type>& ids = cinfo.turn_indices;
-        for (std::set<signed_size_type>::iterator sit = ids.begin();
+        auto& cinfo = cluster.second;
+        auto& ids = cinfo.turn_indices;
+        for (auto sit = ids.begin();
              sit != ids.end(); /* no increment */)
         {
-            std::set<signed_size_type>::iterator current_it = sit;
+            auto current_it = sit;
             ++sit;
 
             signed_size_type const turn_index = *current_it;
@@ -261,7 +261,7 @@ inline void check_colocation(bool& has_blocked,
 {
     has_blocked = false;
 
-    typename Clusters::const_iterator mit = clusters.find(cluster_id);
+    auto mit = clusters.find(cluster_id);
     if (mit == clusters.end())
     {
         return;
