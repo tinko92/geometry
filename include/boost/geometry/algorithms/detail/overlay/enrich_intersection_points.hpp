@@ -304,10 +304,10 @@ inline void create_map(Turns const& turns, MappedVector& mapped_vector,
                                 turn.operations[1 - op_index].seg_id)
                         );
                 }
-	        ++op_index;
+                ++op_index;
             }
-	}
-	++index;
+        }
+        ++index;
     }
 }
 

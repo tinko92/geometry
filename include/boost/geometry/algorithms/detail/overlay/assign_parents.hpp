@@ -297,7 +297,7 @@ inline void assign_parents(Geometry1 const& geometry1,
                 count_positive++;
                 index_positive = index;
             }
-	    ++index;
+            ++index;
         }
 
         if (! check_for_orientation)
@@ -328,7 +328,7 @@ inline void assign_parents(Geometry1 const& geometry1,
                         inner.parent = id_of_positive;
                         outer.children.push_back(ri_helper.id);
                     }
-		    ++index;
+                    ++index;
                 }
                 return;
             }
