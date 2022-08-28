@@ -19,6 +19,8 @@
 
 #include <boost/core/ignore_unused.hpp>
 
+#include <boost/range/iterator_range_core.hpp>
+
 #include <boost/geometry/algorithms/detail/overlay/get_turn_info_helpers.hpp>
 #include <boost/geometry/algorithms/detail/overlay/overlay_type.hpp>
 #include <boost/geometry/algorithms/detail/overlay/segment_identifier.hpp>
@@ -82,9 +84,9 @@ struct for_each_disjoint_geometry_if<OpId, Geometry, Tag, true>
     {
         // O(N)
         // check predicate for each contained geometry without generated turn
-        for (auto it = boost::begin(geometry); it != boost::end(geometry) ; ++it)
+        for (auto const& geo : boost::make_iterator_range(geometry))
         {
-            if (! pred(*it))
+            if (! pred(geo))
             {
                 break;
             }
@@ -101,7 +103,7 @@ struct for_each_disjoint_geometry_if<OpId, Geometry, Tag, true>
         // O(I)
         // gather info about turns generated for contained geometries
         std::vector<bool> detected_intersections(count, false);
-        for (TurnIt it = first; it != last; ++it)
+        for (auto it = first; it != last; ++it)
         {
             signed_size_type multi_index = it->operations[OpId].seg_id.multi_index;
             BOOST_GEOMETRY_ASSERT(multi_index >= 0);
@@ -227,11 +229,11 @@ private:
 template <typename TurnInfo, std::size_t OpId>
 class exit_watcher
 {
-    static const std::size_t op_id = OpId;
-    static const std::size_t other_op_id = (OpId + 1) % 2;
+    static constexpr std::size_t op_id = OpId;
+    static constexpr std::size_t other_op_id = (OpId + 1) % 2;
 
-    typedef typename TurnInfo::point_type point_type;
-    typedef detail::relate::point_info<point_type> point_info;
+    using point_type = typename TurnInfo::point_type;
+    using point_info = detail::relate::point_info<point_type>;
 
 public:
     exit_watcher()

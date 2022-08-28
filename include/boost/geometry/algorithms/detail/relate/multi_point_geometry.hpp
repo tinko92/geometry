@@ -11,7 +11,7 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_RELATE_MULTI_POINT_GEOMETRY_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_RELATE_MULTI_POINT_GEOMETRY_HPP
 
-
+#include <boost/range/iterator_range_core.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
@@ -55,8 +55,8 @@ template
 struct multi_point_geometry_eb
 {
     template <typename MultiPoint, typename Strategy>
-    static inline bool apply(MultiPoint const& ,
-                             detail::relate::topology_check<Geometry, Strategy> const& )
+    static constexpr bool apply(MultiPoint const& ,
+                                detail::relate::topology_check<Geometry, Strategy> const& )
     {
         return true;
     }
@@ -134,7 +134,7 @@ struct multi_point_geometry_eb<Geometry, multi_linestring_tag>
         template <typename Point, typename Strategy>
         bool apply(Point const& boundary_point, Strategy const&)
         {
-            typedef geometry::less<void, -1, typename Strategy::cs_tag> less_type;
+            using less_type = geometry::less<void, -1, typename Strategy::cs_tag>;
 
             if (! std::binary_search(m_points.begin(), m_points.end(),
                                      boundary_point, less_type()) )
@@ -156,9 +156,9 @@ struct multi_point_geometry_eb<Geometry, multi_linestring_tag>
     static inline bool apply(MultiPoint const& multi_point,
                              detail::relate::topology_check<Geometry, Strategy> const& tc)
     {
-        typedef typename boost::range_value<MultiPoint>::type point_type;
-        typedef std::vector<point_type> points_type;
-        typedef geometry::less<void, -1, typename Strategy::cs_tag> less_type;
+        using point_type = typename boost::range_value<MultiPoint>::type;
+        using points_type = std::vector<point_type>;
+        using less_type = geometry::less<void, -1, typename Strategy::cs_tag>;
 
         points_type points(boost::begin(multi_point), boost::end(multi_point));        
         std::sort(points.begin(), points.end(), less_type());
@@ -173,7 +173,7 @@ struct multi_point_geometry_eb<Geometry, multi_linestring_tag>
 template <typename MultiPoint, typename SingleGeometry, bool Transpose = false>
 struct multi_point_single_geometry
 {
-    static const bool interruption_enabled = true;
+    static constexpr bool interruption_enabled = true;
 
     template <typename Result, typename Strategy>
     static inline void apply(MultiPoint const& multi_point,
@@ -181,15 +181,14 @@ struct multi_point_single_geometry
                              Result & result,
                              Strategy const& strategy)
     {
-        typedef typename point_type<SingleGeometry>::type point2_type;
-        typedef model::box<point2_type> box2_type;
+        using point2_type = typename point_type<SingleGeometry>::type;
+        using box2_type = model::box<point2_type>;
         
         box2_type box2;
         geometry::envelope(single_geometry, box2, strategy);
         geometry::detail::expand_by_epsilon(box2);
 
-        typedef typename boost::range_const_iterator<MultiPoint>::type iterator;
-        for ( iterator it = boost::begin(multi_point) ; it != boost::end(multi_point) ; ++it )
+        for ( auto const& p : boost::make_iterator_range(multi_point) )
         {
             if (! (relate::may_update<interior, interior, '0', Transpose>(result)
                 || relate::may_update<interior, boundary, '0', Transpose>(result)
@@ -199,13 +198,13 @@ struct multi_point_single_geometry
             }
 
             // The default strategy is enough for Point/Box
-            if (detail::disjoint::disjoint_point_box(*it, box2, strategy))
+            if (detail::disjoint::disjoint_point_box(p, box2, strategy))
             {
                 update<interior, exterior, '0', Transpose>(result);
             }
             else
             {
-                int in_val = detail::within::point_in_geometry(*it, single_geometry, strategy);
+                int in_val = detail::within::point_in_geometry(p, single_geometry, strategy);
 
                 if (in_val > 0) // within
                 {
@@ -227,7 +226,7 @@ struct multi_point_single_geometry
             }
         }
 
-        typedef detail::relate::topology_check<SingleGeometry, Strategy> tc_t;
+        using tc_t = detail::relate::topology_check<SingleGeometry, Strategy>;
 
         if ( relate::may_update<exterior, interior, tc_t::interior, Transpose>(result)
           || relate::may_update<exterior, boundary, tc_t::boundary, Transpose>(result) )
@@ -338,7 +337,7 @@ class multi_point_multi_geometry_ii_ib
     template <typename Result, typename Strategy>
     class item_visitor_type
     {
-        typedef detail::relate::topology_check<MultiGeometry, Strategy> topology_check_type;
+        using topology_check_type = detail::relate::topology_check<MultiGeometry, Strategy>;
 
     public:
         item_visitor_type(MultiGeometry const& multi_geometry,
@@ -402,11 +401,11 @@ class multi_point_multi_geometry_ii_ib
     };
 
 public:
-    typedef typename point_type<MultiPoint>::type point1_type;
-    typedef typename point_type<MultiGeometry>::type point2_type;
-    typedef model::box<point1_type> box1_type;
-    typedef model::box<point2_type> box2_type;
-    typedef std::pair<box2_type, std::size_t> box_pair_type;
+    using point1_type = typename point_type<MultiPoint>::type;
+    using point2_type = typename point_type<MultiGeometry>::type;
+    using box1_type = model::box<point1_type>;
+    using box2_type = model::box<point2_type>;
+    using box_pair_type = std::pair<box2_type, std::size_t>;
 
     template <typename Result, typename Strategy>
     static inline void apply(MultiPoint const& multi_point,
@@ -439,13 +438,12 @@ public:
 template <typename MultiPoint, typename MultiGeometry, bool Transpose>
 struct multi_point_multi_geometry_ii_ib_ie
 {
-    typedef typename point_type<MultiPoint>::type point1_type;
-    typedef typename point_type<MultiGeometry>::type point2_type;
-    typedef model::box<point1_type> box1_type;
-    typedef model::box<point2_type> box2_type;
-    typedef std::pair<box2_type, std::size_t> box_pair_type;
-    typedef std::vector<box_pair_type> boxes_type;
-    typedef typename boxes_type::const_iterator boxes_iterator;
+    using point1_type = typename point_type<MultiPoint>::type;
+    using point2_type = typename point_type<MultiGeometry>::type;
+    using box1_type = model::box<point1_type>;
+    using box2_type = model::box<point2_type>;
+    using box_pair_type = std::pair<box2_type, std::size_t>;
+    using boxes_type = std::vector<box_pair_type>;
 
     template <typename Result, typename Strategy>
     static inline void apply(MultiPoint const& multi_point,
@@ -458,16 +456,15 @@ struct multi_point_multi_geometry_ii_ib_ie
                              Result & result,
                              Strategy const& strategy)
     {
-        typedef index::parameters
+        using index_parameters_type = index::parameters
             <
                 index::rstar<4>, Strategy
-            > index_parameters_type;
+            >;
         index::rtree<box_pair_type, index_parameters_type>
             rtree(boxes.begin(), boxes.end(),
                   index_parameters_type(index::rstar<4>(), strategy));
 
-        typedef typename boost::range_const_iterator<MultiPoint>::type iterator;
-        for ( iterator it = boost::begin(multi_point) ; it != boost::end(multi_point) ; ++it )
+        for ( auto const& point : boost::make_iterator_range(multi_point) )
         {
             if (! (relate::may_update<interior, interior, '0', Transpose>(result)
                 || relate::may_update<interior, boundary, '0', Transpose>(result)
@@ -476,16 +473,14 @@ struct multi_point_multi_geometry_ii_ib_ie
                 return;
             }
 
-            typename boost::range_value<MultiPoint>::type const& point = *it;
-
             boxes_type boxes_found;
             rtree.query(index::intersects(point), std::back_inserter(boxes_found));
 
             bool found_ii_or_ib = false;
-            for (boxes_iterator bi = boxes_found.begin() ; bi != boxes_found.end() ; ++bi)
+            for (auto const& bp : boxes_found)
             {
                 typename boost::range_value<MultiGeometry>::type const&
-                    single = range::at(multi_geometry, bi->second);
+                    single = range::at(multi_geometry, bp.second);
 
                 int in_val = detail::within::point_in_geometry(point, single, strategy);
 
@@ -526,7 +521,7 @@ struct multi_point_multi_geometry_ii_ib_ie
 template <typename MultiPoint, typename MultiGeometry, bool Transpose = false>
 struct multi_point_multi_geometry
 {
-    static const bool interruption_enabled = true;
+    static constexpr bool interruption_enabled = true;
 
     template <typename Result, typename Strategy>
     static inline void apply(MultiPoint const& multi_point,
@@ -534,9 +529,9 @@ struct multi_point_multi_geometry
                              Result & result,
                              Strategy const& strategy)
     {
-        typedef typename point_type<MultiGeometry>::type point2_type;
-        typedef model::box<point2_type> box2_type;
-        typedef std::pair<box2_type, std::size_t> box_pair_type;
+        using point2_type = typename point_type<MultiGeometry>::type;
+        using box2_type = model::box<point2_type>;
+        using box_pair_type = std::pair<box2_type, std::size_t>;
 
         std::size_t count2 = boost::size(multi_geometry);
         std::vector<box_pair_type> boxes(count2);
@@ -547,7 +542,7 @@ struct multi_point_multi_geometry
             boxes[i].second = i;
         }
 
-        typedef detail::relate::topology_check<MultiGeometry, Strategy> tc_t;
+        using tc_t = detail::relate::topology_check<MultiGeometry, Strategy>;
         tc_t tc(multi_geometry, strategy);
 
         if ( relate::may_update<interior, interior, '0', Transpose>(result)
@@ -619,7 +614,7 @@ struct multi_point_geometry<MultiPoint, Geometry, Transpose, true>
 template <typename Geometry, typename MultiPoint>
 struct geometry_multi_point
 {
-    static const bool interruption_enabled = true;
+    static constexpr bool interruption_enabled = true;
 
     template <typename Result, typename Strategy>
     static inline void apply(Geometry const& geometry, MultiPoint const& multi_point,

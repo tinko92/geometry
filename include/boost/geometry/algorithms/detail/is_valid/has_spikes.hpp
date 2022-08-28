@@ -71,9 +71,7 @@ struct has_spikes
     {
         boost::ignore_unused(visitor);
 
-        typedef typename boost::range_iterator<View const>::type iterator;
-
-        iterator cur = boost::begin(view);
+        auto cur = boost::begin(view);
         typename boost::range_reverse_iterator
             <
                 View const
@@ -81,7 +79,7 @@ struct has_spikes
                                                      boost::rend(view),
                                                      strategy);
 
-        iterator next = find_different_from_first(cur, boost::end(view),
+        auto next = find_different_from_first(cur, boost::end(view),
                                                   strategy);
         if (detail::is_spike_or_equal(*next, *cur, *prev, strategy.side()))
         {

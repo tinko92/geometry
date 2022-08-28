@@ -266,8 +266,8 @@ inline bool calculate_from_inside(Geometry1 const& geometry1,
                                   Turn const& turn,
                                   Strategy const& strategy)
 {
-    static const std::size_t op_id = OpId;
-    static const std::size_t other_op_id = (OpId + 1) % 2;
+    constexpr std::size_t op_id = OpId;
+    constexpr std::size_t other_op_id = (OpId + 1) % 2;
 
     if (turn.operations[op_id].position == overlay::position_front)
     {
@@ -330,7 +330,7 @@ struct linear_areal
     BOOST_STATIC_ASSERT(topological_dimension<Geometry1>::value == 1
                      && topological_dimension<Geometry2>::value == 2);
 
-    static const bool interruption_enabled = true;
+    static constexpr bool interruption_enabled = true;
 
     template <typename Geom1, typename Geom2, typename Strategy>
     struct multi_turn_info
@@ -663,7 +663,7 @@ struct linear_areal
         // For the same IP and multi_index - the same other's single geometry
         // set priorities as the least operation found for the whole single geometry
         // so e.g. single geometries containing 'u' will always be before those only containing 'i'
-        typedef turns::op_to_int<0,2,3,1,4,0> op_to_int_xuic;
+        using op_to_int_xuic = turns::op_to_int<0,2,3,1,4,0>;
         for_each_equal_range(first, last,
                              set_turns_group_priority<op_to_int_xuic>(), // least operation in xuic order
                              same_ip_and_multi_index()); // other's multi_index
@@ -750,10 +750,8 @@ struct linear_areal
     template <typename TurnInfo>
     class turns_analyser
     {
-        typedef typename TurnInfo::point_type turn_point_type;
-
-        static const std::size_t op_id = 0;
-        static const std::size_t other_op_id = 1;
+        static constexpr std::size_t op_id = 0;
+        static constexpr std::size_t other_op_id = 1;
 
     public:
         turns_analyser()
@@ -1468,7 +1466,7 @@ struct areal_linear
 {
     typedef linear_areal<Geometry2, Geometry1, true> linear_areal_type;
 
-    static const bool interruption_enabled = linear_areal_type::interruption_enabled;
+    static constexpr bool interruption_enabled = linear_areal_type::interruption_enabled;
 
     template <typename Result, typename Strategy>
     static inline void apply(Geometry1 const& geometry1, Geometry2 const& geometry2,

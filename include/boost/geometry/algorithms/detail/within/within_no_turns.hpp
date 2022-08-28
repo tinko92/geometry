@@ -17,6 +17,8 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_WITHIN_WITHIN_NO_TURNS_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_WITHIN_WITHIN_NO_TURNS_HPP
 
+#include <boost/range/iterator_range_core.hpp>
+
 #include <boost/geometry/algorithms/detail/point_on_border.hpp>
 #include <boost/geometry/algorithms/detail/within/point_in_geometry.hpp>
 
@@ -39,7 +41,7 @@ struct within_no_turns
     template <typename Strategy> static inline
     bool apply(Geometry1 const& geometry1, Geometry2 const& geometry2, Strategy const& strategy)
     {
-        typedef typename geometry::point_type<Geometry1>::type point1_type;
+        using point1_type = typename geometry::point_type<Geometry1>::type;
         point1_type p;
         if ( !geometry::point_on_border(p, geometry1) )
             return false;
@@ -54,8 +56,8 @@ struct within_no_turns<Geometry1, Geometry2, ring_tag, polygon_tag>
     template <typename Strategy> static inline
     bool apply(Geometry1 const& geometry1, Geometry2 const& geometry2, Strategy const& strategy)
     {
-        typedef typename geometry::point_type<Geometry1>::type point1_type;
-        typedef typename geometry::point_type<Geometry2>::type point2_type;
+        using point1_type = typename geometry::point_type<Geometry1>::type;
+        using point2_type = typename geometry::point_type<Geometry2>::type;
         point1_type p;
         if ( !geometry::point_on_border(p, geometry1) )
             return false;
@@ -63,16 +65,10 @@ struct within_no_turns<Geometry1, Geometry2, ring_tag, polygon_tag>
         if ( detail::within::point_in_geometry(p, geometry2, strategy) < 0 )
             return false;
         // Now check if holes of G2 aren't inside G1
-        typedef typename boost::range_const_iterator
-            <
-                typename geometry::interior_type<Geometry2>::type
-            >::type iterator;
-        for ( iterator it = boost::begin(geometry::interior_rings(geometry2)) ;
-              it != boost::end(geometry::interior_rings(geometry2)) ;
-              ++it )
+        for ( auto const& ring : boost::make_iterator_range(geometry::interior_rings(geometry2)) )
         {
             point2_type p;
-            if ( !geometry::point_on_border(p, *it) )
+            if ( !geometry::point_on_border(p, ring) )
                 return false;
             if ( detail::within::point_in_geometry(p, geometry1, strategy) > 0 )
                 return false;
@@ -87,8 +83,8 @@ struct within_no_turns<Geometry1, Geometry2, polygon_tag, polygon_tag>
     template <typename Strategy> static inline
     bool apply(Geometry1 const& geometry1, Geometry2 const& geometry2, Strategy const& strategy)
     {
-        typedef typename geometry::point_type<Geometry1>::type point1_type;
-        typedef typename geometry::point_type<Geometry2>::type point2_type;
+        using point1_type = typename geometry::point_type<Geometry1>::type;
+        using point2_type = typename geometry::point_type<Geometry2>::type;
         point1_type p;
         if ( !geometry::point_on_border(p, geometry1) )
             return false;
@@ -96,31 +92,19 @@ struct within_no_turns<Geometry1, Geometry2, polygon_tag, polygon_tag>
         if ( detail::within::point_in_geometry(p, geometry2, strategy) < 0 )
             return false;
         // Now check if holes of G2 aren't inside G1
-        typedef typename boost::range_const_iterator
-            <
-                typename geometry::interior_type<Geometry2>::type
-            >::type iterator2;
-        for ( iterator2 it = boost::begin(geometry::interior_rings(geometry2)) ;
-              it != boost::end(geometry::interior_rings(geometry2)) ;
-              ++it )
+        for ( auto const& ring2 : boost::make_iterator_range(geometry::interior_rings(geometry2)) )
         {
             point2_type p2;
-            if ( !geometry::point_on_border(p2, *it) )
+            if ( !geometry::point_on_border(p2, ring2) )
                 return false;
             // if the hole of G2 is inside G1
             if ( detail::within::point_in_geometry(p2, geometry1, strategy) > 0 )
             {
                 // if it's also inside one of the G1 holes, it's ok
                 bool ok = false;
-                typedef typename boost::range_const_iterator
-                    <
-                        typename geometry::interior_type<Geometry1>::type
-                    >::type iterator1;
-                for ( iterator1 it1 = boost::begin(geometry::interior_rings(geometry1)) ;
-                      it1 != boost::end(geometry::interior_rings(geometry1)) ;
-                      ++it1 )
+                for ( auto const& ring1 : geometry::interior_rings(geometry1) )
                 {
-                    if ( detail::within::point_in_geometry(p2, *it1, strategy) < 0 )
+                    if ( detail::within::point_in_geometry(p2, ring1, strategy) < 0 )
                     {
                         ok = true;
                         break;
@@ -156,11 +140,10 @@ struct within_no_turns_multi<Geometry1, Geometry2, Tag1, Tag2, true, false>
     bool apply(Geometry1 const& geometry1, Geometry2 const& geometry2, Strategy const& strategy)
     {
         // All values of G1 must be inside G2
-        typedef typename boost::range_value<Geometry1>::type subgeometry1;
-        typedef typename boost::range_const_iterator<Geometry1>::type iterator;
-        for ( iterator it = boost::begin(geometry1) ; it != boost::end(geometry1) ; ++it )
+        using subgeometry1 = typename boost::range_value<Geometry1>::type;
+        for ( auto const& single1 : boost::make_iterator_range(geometry1) )
         {
-            if ( !within_no_turns<subgeometry1, Geometry2>::apply(*it, geometry2, strategy) )
+            if ( !within_no_turns<subgeometry1, Geometry2>::apply(single1, geometry2, strategy) )
                 return false;
         }
         return true;
@@ -174,11 +157,10 @@ struct within_no_turns_multi<Geometry1, Geometry2, Tag1, Tag2, false, true>
     bool apply(Geometry1 const& geometry1, Geometry2 const& geometry2, Strategy const& strategy)
     {
         // G1 must be within at least one value of G2
-        typedef typename boost::range_value<Geometry2>::type subgeometry2;
-        typedef typename boost::range_const_iterator<Geometry2>::type iterator;
-        for ( iterator it = boost::begin(geometry2) ; it != boost::end(geometry2) ; ++it )
+        using subgeometry2 = typename boost::range_value<Geometry2>::type;
+        for ( auto const& single2 : boost::make_iterator_range(geometry2) )
         {
-            if ( within_no_turns<Geometry1, subgeometry2>::apply(geometry1, *it, strategy) )
+            if ( within_no_turns<Geometry1, subgeometry2>::apply(geometry1, single2, strategy) )
                 return true;
         }
         return false;
@@ -192,11 +174,10 @@ struct within_no_turns_multi<Geometry1, Geometry2, Tag1, Tag2, true, true>
     bool apply(Geometry1 const& geometry1, Geometry2 const& geometry2, Strategy const& strategy)
     {
         // each value of G1 must be inside at least one value of G2
-        typedef typename boost::range_value<Geometry1>::type subgeometry1;
-        typedef typename boost::range_const_iterator<Geometry1>::type iterator;
-        for ( iterator it = boost::begin(geometry1) ; it != boost::end(geometry1) ; ++it )
+        using subgeometry1 = typename boost::range_value<Geometry1>::type;
+        for ( auto const& single1 : boost::make_iterator_range(geometry1) )
         {
-            if ( !within_no_turns_multi<subgeometry1, Geometry2>::apply(*it, geometry2, strategy) )
+            if ( !within_no_turns_multi<subgeometry1, Geometry2>::apply(single1, geometry2, strategy) )
                 return false;
         }
         return true;

@@ -67,11 +67,11 @@ class is_valid_multipolygon
         >
 {
 private:
-    typedef is_valid_polygon
+    using base = is_valid_polygon
         <
             typename boost::range_value<MultiPolygon>::type,
             true
-        > base;
+        >;
 
 
 
@@ -103,8 +103,8 @@ private:
             }
         }
 
-        typedef geometry::model::box<typename point_type<MultiPolygon>::type> box_type;
-        typedef typename base::template partition_item<PolygonIterator, box_type> item_type;
+        using box_type = geometry::model::box<typename point_type<MultiPolygon>::type>;
+        using item_type = typename base::template partition_item<PolygonIterator, box_type>;
 
         // put polygon iterators without turns in a vector
         std::vector<item_type> polygon_iterators;
@@ -183,10 +183,10 @@ private:
             {
                 has_multi_index index_predicate(multi_index);
 
-                typedef boost::filter_iterator
+                using filtered_turn_iterator = boost::filter_iterator
                     <
                         has_multi_index, TurnIterator
-                    > filtered_turn_iterator;
+                    >;
 
                 filtered_turn_iterator filtered_turns_first(index_predicate,
                                                             turns_first,

@@ -55,7 +55,7 @@ struct assign_zero_point
     template <typename Point>
     static inline void apply(Point& point)
     {
-        typedef typename coordinate_type<Point>::type coordinate_type;
+        using coordinate_type = typename coordinate_type<Point>::type;
 
         coordinate_type const zero = 0;
         detail::for_each_dimension<Point>([&](auto dimension)
@@ -72,10 +72,10 @@ struct assign_inverse_box_or_segment
     template <typename BoxOrSegment>
     static inline void apply(BoxOrSegment& geometry)
     {
-        typedef typename coordinate_type<BoxOrSegment>::type coordinate_type;
+        using coordinate_type = typename coordinate_type<BoxOrSegment>::type;
 
-        coordinate_type const highest = geometry::bounds<coordinate_type>::highest();
-        coordinate_type const lowest = geometry::bounds<coordinate_type>::lowest();
+        auto const highest = geometry::bounds<coordinate_type>::highest();
+        auto const lowest = geometry::bounds<coordinate_type>::lowest();
         detail::for_each_dimension<BoxOrSegment>([&](auto dimension)
         {
             set<0, dimension>(geometry, highest);
@@ -91,7 +91,7 @@ struct assign_zero_box_or_segment
     template <typename BoxOrSegment>
     static inline void apply(BoxOrSegment& geometry)
     {
-        typedef typename coordinate_type<BoxOrSegment>::type coordinate_type;
+        using coordinate_type = typename coordinate_type<BoxOrSegment>::type;
 
         coordinate_type const zero = 0;
         detail::for_each_dimension<BoxOrSegment>([&](auto dimension)
@@ -115,7 +115,7 @@ inline void assign_box_2d_corner(Box const& box, Point& point)
     assert_dimension<Point, 2>();
 
     // Copy coordinates
-    typedef typename coordinate_type<Point>::type coordinate_type;
+    using coordinate_type = typename coordinate_type<Point>::type;
 
     geometry::set<0>(point, boost::numeric_cast<coordinate_type>(get<Corner1, 0>(box)));
     geometry::set<1>(point, boost::numeric_cast<coordinate_type>(get<Corner2, 1>(box)));
@@ -126,7 +126,7 @@ inline void assign_box_2d_corner(Box const& box, Point& point)
 template <typename Geometry>
 struct assign_2d_box_or_segment
 {
-    typedef typename coordinate_type<Geometry>::type coordinate_type;
+    using coordinate_type = typename coordinate_type<Geometry>::type;
 
     // Here we assign 4 coordinates to a box of segment
     // -> Most logical is: x1,y1,x2,y2
@@ -162,7 +162,7 @@ struct assign
 template <typename Point>
 struct assign<point_tag, Point, 2>
 {
-    typedef typename coordinate_type<Point>::type coordinate_type;
+    using coordinate_type = typename coordinate_type<Point>::type;
 
     template <typename T>
     static inline void apply(Point& point, T const& c1, T const& c2)
@@ -175,7 +175,7 @@ struct assign<point_tag, Point, 2>
 template <typename Point>
 struct assign<point_tag, Point, 3>
 {
-    typedef typename coordinate_type<Point>::type coordinate_type;
+    using coordinate_type = typename coordinate_type<Point>::type;
 
     template <typename T>
     static inline void apply(Point& point, T const& c1, T const& c2, T const& c3)

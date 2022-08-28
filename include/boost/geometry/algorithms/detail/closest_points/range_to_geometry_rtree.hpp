@@ -51,14 +51,14 @@ public:
                              Segment& shortest_seg,
                              Strategies const& strategies)
     {
-        typedef typename std::iterator_traits
+        using point_or_segment_type = typename std::iterator_traits
         <
             PointOrSegmentIterator
-        >::value_type point_or_segment_type;
+        >::value_type;
 
-        typedef distance::iterator_selector<Geometry const> selector_type;
+        using selector_type = distance::iterator_selector<Geometry const>;
 
-        typedef detail::closest_feature::range_to_range_rtree range_to_range;
+        using range_to_range = detail::closest_feature::range_to_range_rtree;
 
         BOOST_GEOMETRY_ASSERT( first != last );
 

@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <vector>
 
+#include <boost/range/iterator_range_core.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 
@@ -82,7 +83,7 @@ struct linear_linear_no_intersections
     static inline OutputIterator apply(MultiLineString const& multilinestring,
                                        OutputIterator oit)
     {
-        for (auto const& ls : multilinestring)
+        for (auto const& ls : boost::make_iterator_range(multilinestring))
         {
             LineStringOut ls_out;
             geometry::convert(ls, ls_out);

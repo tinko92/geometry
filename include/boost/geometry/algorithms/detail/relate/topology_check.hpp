@@ -12,6 +12,8 @@
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_RELATE_TOPOLOGY_CHECK_HPP
 
 
+#include <boost/range/iterator_range_core.hpp>
+
 #include <boost/geometry/algorithms/detail/equals/point_point.hpp>
 #include <boost/geometry/algorithms/not_implemented.hpp>
 
@@ -55,8 +57,8 @@ struct topology_check
 template <typename Linestring, typename Strategy>
 struct topology_check<Linestring, Strategy, linestring_tag>
 {
-    static const char interior = '1';
-    static const char boundary = '0';
+    static constexpr char interior = '1';
+    static constexpr char boundary = '0';
 
     topology_check(Linestring const& ls, Strategy const& strategy)
         : m_ls(ls)
@@ -125,8 +127,8 @@ private:
 template <typename MultiLinestring, typename Strategy>
 struct topology_check<MultiLinestring, Strategy, multi_linestring_tag>
 {
-    static const char interior = '1';
-    static const char boundary = '0';
+    static constexpr char interior = '1';
+    static constexpr char boundary = '0';
 
     topology_check(MultiLinestring const& mls, Strategy const& strategy)
         : m_mls(mls)
@@ -170,7 +172,7 @@ struct topology_check<MultiLinestring, Strategy, multi_linestring_tag>
     }
 
 private:
-    typedef geometry::less<void, -1, typename Strategy::cs_tag> less_type;
+    using less_type = geometry::less<void, -1, typename Strategy::cs_tag>;
 
     void init() const
     {
@@ -181,12 +183,8 @@ private:
 
         m_has_interior = false;
 
-        typedef typename boost::range_iterator<MultiLinestring const>::type ls_iterator;
-        for ( ls_iterator it = boost::begin(m_mls) ; it != boost::end(m_mls) ; ++it )
+        for ( auto const& ls : boost::make_iterator_range(m_mls))
         {
-            typename boost::range_reference<MultiLinestring const>::type
-                ls = *it;
-
             std::size_t count = boost::size(ls);
 
             if (count > 0)
@@ -309,14 +307,14 @@ private:
     mutable bool m_has_interior;
     mutable bool m_has_boundary;
 
-    typedef typename geometry::point_type<MultiLinestring>::type point_type;
+    using point_type = typename geometry::point_type<MultiLinestring>::type;
     mutable std::vector<point_type> m_endpoints;
 };
 
 struct topology_check_areal
 {
-    static const char interior = '2';
-    static const char boundary = '1';
+    static constexpr char interior = '2';
+    static constexpr char boundary = '1';
 
     static bool has_interior() { return true; }
     static bool has_boundary() { return true; }

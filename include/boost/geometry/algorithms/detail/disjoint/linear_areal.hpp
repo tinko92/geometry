@@ -22,8 +22,7 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_DISJOINT_LINEAR_AREAL_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_DISJOINT_LINEAR_AREAL_HPP
 
-#include <iterator>
-
+#include <boost/range/iterator_range_core.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/value_type.hpp>
@@ -89,12 +88,11 @@ struct disjoint_no_intersections_policy<Geometry1, Geometry2, Tag1, multi_tag>
     static inline bool apply(Geometry1 const& g1, Geometry2 const& g2, Strategy const& strategy)
     {
         // TODO: use partition or rtree on g2
-        typedef typename boost::range_iterator<Geometry1 const>::type iterator;
-        for ( iterator it = boost::begin(g1) ; it != boost::end(g1) ; ++it )
+        for ( auto const& gg1 : boost::make_iterator_range(g1))
         {
-            typedef typename boost::range_value<Geometry1 const>::type value_type;
+            using value_type = typename boost::range_value<Geometry1 const>::type;
             if ( ! disjoint_no_intersections_policy<value_type const, Geometry2>
-                    ::apply(*it, g2, strategy) )
+                    ::apply(gg1, g2, strategy) )
             {
                 return false;
             }

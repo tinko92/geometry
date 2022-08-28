@@ -29,10 +29,10 @@ namespace detail
 template <typename Geometry>
 struct interior_iterator
 {
-    typedef typename boost::range_iterator
+    using type = typename boost::range_iterator
         <
             typename geometry::interior_type<Geometry>::type        
-        >::type type;
+        >::type;
 };
 
 template <typename BaseT, typename T>
@@ -44,13 +44,13 @@ struct copy_const
 template <typename BaseT, typename T>
 struct copy_const<BaseT const, T>
 {
-    typedef T const type;
+    using type = T const;
 };
 
 template <typename Geometry>
 struct interior_ring_iterator
 {
-    typedef typename boost::range_iterator
+    using type = typename boost::range_iterator
         <
             typename copy_const
                 <
@@ -60,7 +60,7 @@ struct interior_ring_iterator
                             typename geometry::interior_type<Geometry>::type
                         >::type
                 >::type
-        >::type type;
+        >::type;
 };
 
 } // namespace detail

@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <vector>
 
+#include <boost/range/iterator_range_core.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
@@ -54,11 +55,9 @@ struct multi_point_point
                              Strategy const& strategy)
     {
         auto const s = strategy.relate(multi_point, point);
-
-        typedef typename boost::range_const_iterator<MultiPoint>::type iterator;
-        for ( iterator it = boost::begin(multi_point) ; it != boost::end(multi_point) ; ++it )
+        for ( auto const& p : boost::make_iterator_range(multi_point) )
         {
-            if (! s.apply(*it, point))
+            if (! s.apply(p, point))
             {
                 return false;
             }
@@ -77,9 +76,9 @@ struct multi_point_multi_point
                              MultiPoint2 const& multi_point2,
                              Strategy const& /*strategy*/)
     {
-        typedef typename boost::range_value<MultiPoint2>::type point2_type;
-        typedef typename Strategy::cs_tag cs_tag;
-        typedef geometry::less<void, -1, cs_tag> less_type;
+        using point2_type = typename boost::range_value<MultiPoint2>::type;
+        using cs_tag = typename Strategy::cs_tag;
+        using less_type = geometry::less<void, -1, cs_tag>;
 
         less_type const less = less_type();
 
@@ -88,10 +87,9 @@ struct multi_point_multi_point
 
         bool result = false;
 
-        typedef typename boost::range_const_iterator<MultiPoint1>::type iterator;
-        for ( iterator it = boost::begin(multi_point1) ; it != boost::end(multi_point1) ; ++it )
+        for ( auto const& point1 : boost::make_iterator_range(multi_point1))
         {
-            if (! std::binary_search(points2.begin(), points2.end(), *it, less))
+            if (! std::binary_search(points2.begin(), points2.end(), point1, less))
             {
                 return false;
             }
@@ -122,8 +120,8 @@ struct multi_point_single_geometry
                              Strategy const& strategy)
     {
         //typedef typename boost::range_value<MultiPoint>::type point1_type;
-        typedef typename point_type<LinearOrAreal>::type point2_type;
-        typedef model::box<point2_type> box2_type;
+        using point2_type = typename point_type<LinearOrAreal>::type;
+        using box2_type = model::box<point2_type>;
 
         // Create envelope of geometry
         box2_type box;
@@ -134,16 +132,15 @@ struct multi_point_single_geometry
         // If in the exterior, break
         bool result = false;
 
-        typedef typename boost::range_const_iterator<MultiPoint>::type iterator;
-        for ( iterator it = boost::begin(multi_point) ; it != boost::end(multi_point) ; ++it )
+        for ( auto const& point : boost::make_iterator_range(multi_point) )
         {
-            typedef decltype(strategy.covered_by(*it, box)) point_in_box_type;
+            using point_in_box_type = decltype(strategy.covered_by(point, box));
 
             int in_val = 0;
             
             // exterior of box and of geometry
-            if (! point_in_box_type::apply(*it, box)
-                || (in_val = point_in_geometry(*it, linear_or_areal, strategy)) < 0)
+            if (! point_in_box_type::apply(point, box)
+                || (in_val = point_in_geometry(point, linear_or_areal, strategy)) < 0)
             {
                 result = false;
                 break;
@@ -170,16 +167,16 @@ struct multi_point_multi_geometry
                              LinearOrAreal const& linear_or_areal,
                              Strategy const& strategy)
     {
-        typedef typename point_type<LinearOrAreal>::type point2_type;
-        typedef model::box<point2_type> box2_type;
-        static const bool is_linear = util::is_linear<LinearOrAreal>::value;
+        using point2_type = typename point_type<LinearOrAreal>::type;
+        using box2_type = model::box<point2_type>;
+        constexpr bool is_linear = util::is_linear<LinearOrAreal>::value;
 
         // TODO: box pairs could be constructed on the fly, inside the rtree
 
         // Prepare range of envelopes and ids
         std::size_t count2 = boost::size(linear_or_areal);
-        typedef std::pair<box2_type, std::size_t> box_pair_type;
-        typedef std::vector<box_pair_type> box_pair_vector;
+        using box_pair_type = std::pair<box2_type, std::size_t>;
+        using box_pair_vector = std::vector<box_pair_type>;
         box_pair_vector boxes(count2);
         for (std::size_t i = 0 ; i < count2 ; ++i)
         {
@@ -189,7 +186,7 @@ struct multi_point_multi_geometry
         }
 
         // Create R-tree
-        typedef index::parameters<index::rstar<4>, Strategy> index_parameters_type;
+        using index_parameters_type = index::parameters<index::rstar<4>, Strategy>;
         index::rtree<box_pair_type, index_parameters_type>
             rtree(boxes.begin(), boxes.end(),
                   index_parameters_type(index::rstar<4>(), strategy));
@@ -198,24 +195,21 @@ struct multi_point_multi_geometry
         // If a point is in the exterior break
         bool result = false;
 
-        typedef typename boost::range_const_iterator<MultiPoint>::type iterator;
-        for ( iterator it = boost::begin(multi_point) ; it != boost::end(multi_point) ; ++it )
+        for ( auto const& point : boost::make_iterator_range(multi_point) )
         {
             // TODO: investigate the possibility of using satisfies
             // TODO: investigate the possibility of using iterative queries (optimization below)
             box_pair_vector inters_boxes;
-            rtree.query(index::intersects(*it), std::back_inserter(inters_boxes));
+            rtree.query(index::intersects(point), std::back_inserter(inters_boxes));
 
             bool found_interior = false;
             bool found_boundary = false;
             int boundaries = 0;
 
-            typedef typename box_pair_vector::const_iterator box_iterator;
-            for (box_iterator box_it = inters_boxes.begin() ;
-                 box_it != inters_boxes.end() ; ++box_it )
+            for (auto const& box : inters_boxes)
             {
-                int const in_val = point_in_geometry(*it,
-                    range::at(linear_or_areal, box_it->second), strategy);
+                int const in_val = point_in_geometry(point,
+                    range::at(linear_or_areal, box.second), strategy);
 
                 if (in_val > 0)
                 {

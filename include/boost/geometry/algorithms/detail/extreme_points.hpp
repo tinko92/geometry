@@ -123,9 +123,9 @@ template<typename Ring, std::size_t Dimension>
 struct extreme_points_on_ring
 {
 
-    typedef typename geometry::coordinate_type<Ring>::type coordinate_type;
-    typedef typename boost::range_iterator<Ring const>::type range_iterator;
-    typedef typename geometry::point_type<Ring>::type point_type;
+    using coordinate_type = typename geometry::coordinate_type<Ring>::type;
+    using range_iterator = typename boost::range_iterator<Ring const>::type;
+    using point_type = typename geometry::point_type<Ring>::type;
 
     template <typename CirclingIterator, typename Points>
     static inline bool extend(CirclingIterator& it,
@@ -326,9 +326,9 @@ struct extreme_points_on_ring
 
         // Get all maxima, usually one. In case of self-tangencies, or self-crossings,
         // the max might be is not valid. A valid max should make a right turn
-        range_iterator max_it = boost::begin(ring);
+        auto max_it = boost::begin(ring);
         compare<Dimension> smaller;
-        for (range_iterator it = max_it + 1; it != boost::end(ring); ++it)
+        for (auto it = max_it + 1; it != boost::end(ring); ++it)
         {
             if (smaller(*max_it, *it) && right_turn(ring, it, strategy))
             {
@@ -416,11 +416,11 @@ struct extreme_points<Polygon, Dimension, polygon_tag>
     static inline bool apply(Polygon const& polygon, Extremes& extremes, Intruders& intruders,
                              SideStrategy const& strategy)
     {
-        typedef typename geometry::ring_type<Polygon>::type ring_type;
-        typedef detail::extreme_points::extreme_points_on_ring
+        using ring_type = typename geometry::ring_type<Polygon>::type;
+        using ring_implementation = detail::extreme_points::extreme_points_on_ring
             <
                 ring_type, Dimension
-            > ring_implementation;
+            >;
 
         if (! ring_implementation::apply(geometry::exterior_ring(polygon),
                                          extremes, intruders, strategy))
@@ -552,10 +552,10 @@ inline bool extreme_points(Geometry const& geometry,
                            Extremes& extremes,
                            Intruders& intruders)
 {
-    typedef typename strategy::side::services::default_strategy
+    using strategy_type = typename strategy::side::services::default_strategy
             <
                 typename cs_tag<Geometry>::type
-            >::type strategy_type;
+            >::type;
 
     return geometry::extreme_points<Edge>(geometry,extremes, intruders, strategy_type());
 }

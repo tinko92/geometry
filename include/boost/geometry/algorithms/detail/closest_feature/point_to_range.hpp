@@ -41,7 +41,7 @@ template
 class point_to_point_range
 {
 protected:
-    typedef typename boost::range_iterator<Range const>::type iterator_type;
+    using iterator_type = typename boost::range_iterator<Range const>::type;
 
     template <typename Strategy, typename Distance>
     static inline void apply(Point const& point,
@@ -95,7 +95,7 @@ protected:
     }
 
 public:
-    typedef typename std::pair<iterator_type, iterator_type> return_type;
+    using return_type = typename std::pair<iterator_type, iterator_type>;
 
     template <typename Strategy, typename Distance>
     static inline return_type apply(Point const& point,
@@ -156,8 +156,8 @@ class point_to_point_range<Point, Range, open>
     : point_to_point_range<Point, Range, closed>
 {
 private:
-    typedef point_to_point_range<Point, Range, closed> base_type;
-    typedef typename base_type::iterator_type iterator_type;
+    using base_type = point_to_point_range<Point, Range, closed>;
+    using iterator_type = typename base_type::iterator_type;
 
     template <typename Strategy, typename Distance>
     static inline void apply(Point const& point,
@@ -192,7 +192,7 @@ private:
     }    
 
 public:
-    typedef typename std::pair<iterator_type, iterator_type> return_type;
+    using return_type = typename std::pair<iterator_type, iterator_type>;
 
     template <typename Strategy, typename Distance>
     static inline return_type apply(Point const& point,
@@ -214,12 +214,12 @@ public:
                                     iterator_type last,
                                     Strategy const& strategy)
     {
-        typedef typename strategy::distance::services::return_type
+        using distance_return_type = typename strategy::distance::services::return_type
             <
                 Strategy,
                 Point,
                 typename boost::range_value<Range>::type
-            >::type distance_return_type;
+            >::type;
 
         distance_return_type dist_min;
 

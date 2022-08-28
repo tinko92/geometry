@@ -39,7 +39,7 @@ template <bool IncludeDegenerate = false>
 struct assign_policy
     : overlay::assign_null_policy
 {
-    static bool const include_degenerate = IncludeDegenerate;
+    static bool constexpr include_degenerate = IncludeDegenerate;
 };
 
 // turn retriever, calling get_turns
@@ -96,7 +96,7 @@ struct get_turns
                              InterruptPolicy & interrupt_policy,
                              Strategy const& strategy)
     {
-        typedef typename robust_policy_type<Strategy>::type robust_policy_t;
+        using robust_policy_t = typename robust_policy_type<Strategy>::type;
 
         robust_policy_t robust_policy
                 = geometry::get_rescale_policy<robust_policy_t>(
@@ -113,12 +113,12 @@ struct get_turns
                              Strategy const& strategy,
                              RobustPolicy const& robust_policy)
     {
-        static const bool reverse1 = detail::overlay::do_reverse
+        constexpr bool reverse1 = detail::overlay::do_reverse
             <
                 geometry::point_order<Geometry1>::value
             >::value;
 
-        static const bool reverse2 = detail::overlay::do_reverse
+        constexpr bool reverse2 = detail::overlay::do_reverse
             <
                 geometry::point_order<Geometry2>::value
             >::value;
@@ -181,16 +181,15 @@ struct less_op_linear_areal_single
     template <typename Turn>
     inline bool operator()(Turn const& left, Turn const& right) const
     {
-        static const std::size_t other_op_id = (OpId + 1) % 2;
+        constexpr std::size_t other_op_id = (OpId + 1) % 2;
         static turns::op_to_int<0,2,3,1,4,0> op_to_int_xuic;
         static turns::op_to_int<0,3,2,1,4,0> op_to_int_xiuc;
 
         segment_identifier const& left_other_seg_id = left.operations[other_op_id].seg_id;
         segment_identifier const& right_other_seg_id = right.operations[other_op_id].seg_id;
 
-        typedef typename Turn::turn_operation_type operation_type;
-        operation_type const& left_operation = left.operations[OpId];
-        operation_type const& right_operation = right.operations[OpId];
+        auto const& left_operation = left.operations[OpId];
+        auto const& right_operation = right.operations[OpId];
 
         if ( left_other_seg_id.ring_index == right_other_seg_id.ring_index )
         {
@@ -216,16 +215,15 @@ struct less_op_areal_areal
     template <typename Turn>
     inline bool operator()(Turn const& left, Turn const& right) const
     {
-        static const std::size_t other_op_id = (OpId + 1) % 2;
+        constexpr std::size_t other_op_id = (OpId + 1) % 2;
         static op_to_int<0, 1, 2, 3, 4, 0> op_to_int_uixc;
         static op_to_int<0, 2, 1, 3, 4, 0> op_to_int_iuxc;
 
         segment_identifier const& left_other_seg_id = left.operations[other_op_id].seg_id;
         segment_identifier const& right_other_seg_id = right.operations[other_op_id].seg_id;
 
-        typedef typename Turn::turn_operation_type operation_type;
-        operation_type const& left_operation = left.operations[OpId];
-        operation_type const& right_operation = right.operations[OpId];
+        auto const& left_operation = left.operations[OpId];
+        auto const& right_operation = right.operations[OpId];
 
         if ( left_other_seg_id.multi_index == right_other_seg_id.multi_index )
         {
@@ -263,7 +261,7 @@ struct less_op_areal_areal
 template <std::size_t OpId>
 struct less_other_multi_index
 {
-    static const std::size_t other_op_id = (OpId + 1) % 2;
+    static constexpr std::size_t other_op_id = (OpId + 1) % 2;
 
     template <typename Turn>
     inline bool operator()(Turn const& left, Turn const& right) const

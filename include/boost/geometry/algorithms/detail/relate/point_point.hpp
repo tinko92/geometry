@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <vector>
 
+#include <boost/range/iterator_range_core.hpp>
 #include <boost/range/empty.hpp>
 
 #include <boost/geometry/algorithms/detail/equals/point_point.hpp>
@@ -34,7 +35,7 @@ namespace detail { namespace relate {
 template <typename Point1, typename Point2>
 struct point_point
 {
-    static const bool interruption_enabled = false;
+    static constexpr bool interruption_enabled = false;
 
     template <typename Result, typename Strategy>
     static inline void apply(Point1 const& point1, Point2 const& point2,
@@ -67,12 +68,9 @@ std::pair<bool, bool> point_multipoint_check(Point const& point,
     // point_in_geometry could be used here but why iterate over MultiPoint twice?
     // we must search for a point in the exterior because all points in MultiPoint can be equal
 
-    typedef typename boost::range_iterator<MultiPoint const>::type iterator;
-    iterator it = boost::begin(multi_point);
-    iterator last = boost::end(multi_point);
-    for ( ; it != last ; ++it )
+    for ( const auto& p : boost::make_iterator_range(multi_point) )
     {
-        bool ii = detail::equals::equals_point_point(point, *it, strategy);
+        bool ii = detail::equals::equals_point_point(point, p, strategy);
 
         if ( ii )
             found_inside = true;
@@ -89,7 +87,7 @@ std::pair<bool, bool> point_multipoint_check(Point const& point,
 template <typename Point, typename MultiPoint, bool Transpose = false>
 struct point_multipoint
 {
-    static const bool interruption_enabled = false;
+    static constexpr bool interruption_enabled = false;
 
     template <typename Result, typename Strategy>
     static inline void apply(Point const& point, MultiPoint const& multi_point,
@@ -127,7 +125,7 @@ struct point_multipoint
 template <typename MultiPoint, typename Point>
 struct multipoint_point
 {
-    static const bool interruption_enabled = false;
+    static constexpr bool interruption_enabled = false;
 
     template <typename Result, typename Strategy>
     static inline void apply(MultiPoint const& multi_point, Point const& point,
@@ -141,14 +139,14 @@ struct multipoint_point
 template <typename MultiPoint1, typename MultiPoint2>
 struct multipoint_multipoint
 {
-    static const bool interruption_enabled = true;
+    static constexpr bool interruption_enabled = true;
 
     template <typename Result, typename Strategy>
     static inline void apply(MultiPoint1 const& multi_point1, MultiPoint2 const& multi_point2,
                              Result & result,
                              Strategy const& /*strategy*/)
     {
-        typedef typename Strategy::cs_tag cs_tag;
+        using cs_tag = typename Strategy::cs_tag;
 
         {
             // TODO: throw on empty input?
@@ -217,8 +215,8 @@ struct multipoint_multipoint
                               Result & result)
     {
         // sort points from the 1 MPt
-        typedef typename geometry::point_type<SortedMultiPoint>::type point_type;
-        typedef geometry::less<void, -1, CSTag> less_type;
+        using point_type = typename geometry::point_type<SortedMultiPoint>::type;
+        using less_type = geometry::less<void, -1, CSTag>;
 
         std::vector<point_type> points(boost::begin(sorted_mpt), boost::end(sorted_mpt));
 
@@ -229,12 +227,9 @@ struct multipoint_multipoint
         bool found_outside = false;
 
         // for each point in the second MPt
-        typedef typename boost::range_iterator<IteratedMultiPoint const>::type iterator;
-        for ( iterator it = boost::begin(iterated_mpt) ;
-              it != boost::end(iterated_mpt) ; ++it )
+        for ( auto const& p : boost::make_iterator_range(iterated_mpt) )
         {
-            bool ii =
-                std::binary_search(points.begin(), points.end(), *it, less);
+            bool ii = std::binary_search(points.begin(), points.end(), p, less);
             if ( ii )
                 found_inside = true;
             else

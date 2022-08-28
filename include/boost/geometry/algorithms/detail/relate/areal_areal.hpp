@@ -206,7 +206,7 @@ struct areal_areal
     BOOST_STATIC_ASSERT(topological_dimension<Geometry1>::value == 2
                      && topological_dimension<Geometry2>::value == 2);
 
-    static const bool interruption_enabled = true;
+    static constexpr bool interruption_enabled = true;
 
     template <typename Result, typename Strategy>
     static inline void apply(Geometry1 const& geometry1, Geometry2 const& geometry2,
@@ -362,7 +362,7 @@ struct areal_areal
         inline void per_turn(Turn const& turn)
         {
             //static const std::size_t other_op_id = (OpId + 1) % 2;
-            static const bool transpose_result = OpId != 0;
+            constexpr bool transpose_result = OpId != 0;
 
             overlay::operation_type const op = turn.operations[OpId].operation;
 
@@ -413,11 +413,9 @@ struct areal_areal
     template <typename TurnInfo, std::size_t OpId>
     class turns_analyser
     {
-        typedef typename TurnInfo::point_type turn_point_type;
-
-        static const std::size_t op_id = OpId;
-        static const std::size_t other_op_id = (OpId + 1) % 2;
-        static const bool transpose_result = OpId != 0;
+        static constexpr std::size_t op_id = OpId;
+        static constexpr std::size_t other_op_id = (OpId + 1) % 2;
+        static constexpr bool transpose_result = OpId != 0;
 
     public:
         turns_analyser()
@@ -602,8 +600,8 @@ struct areal_areal
     >
     class uncertain_rings_analyser
     {
-        static const bool transpose_result = OpId != 0;
-        static const int other_id = (OpId + 1) % 2;
+        static constexpr bool transpose_result = OpId != 0;
+        static constexpr int other_id = (OpId + 1) % 2;
 
     public:
         inline uncertain_rings_analyser(Result & result,

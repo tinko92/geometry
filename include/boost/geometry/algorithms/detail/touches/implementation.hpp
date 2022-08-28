@@ -23,6 +23,8 @@
 
 #include <type_traits>
 
+#include <boost/range/iterator_range_core.hpp>
+
 #include <boost/geometry/algorithms/detail/for_each_range.hpp>
 #include <boost/geometry/algorithms/detail/gc_topological_dimension.hpp>
 #include <boost/geometry/algorithms/detail/overlay/overlay.hpp>
@@ -67,13 +69,10 @@ struct box_box_loop
     template <typename Box1, typename Box2>
     static inline bool apply(Box1 const& b1, Box2 const& b2, bool & touch)
     {
-        typedef typename coordinate_type<Box1>::type coordinate_type1;
-        typedef typename coordinate_type<Box2>::type coordinate_type2;
-
-        coordinate_type1 const& min1 = get<min_corner, Dimension>(b1);
-        coordinate_type1 const& max1 = get<max_corner, Dimension>(b1);
-        coordinate_type2 const& min2 = get<min_corner, Dimension>(b2);
-        coordinate_type2 const& max2 = get<max_corner, Dimension>(b2);
+        auto const& min1 = get<min_corner, Dimension>(b1);
+        auto const& max1 = get<max_corner, Dimension>(b1);
+        auto const& min2 = get<min_corner, Dimension>(b2);
+        auto const& max2 = get<max_corner, Dimension>(b2);
 
         // TODO assert or exception?
         //BOOST_GEOMETRY_ASSERT(min1 <= max1 && min2 <= max2);
@@ -160,16 +159,15 @@ struct areal_interrupt_policy
         if ( found_not_touch )
             return true;
 
-        typedef typename boost::range_iterator<Range const>::type iterator;
-        for ( iterator it = boost::begin(range) ; it != boost::end(range) ; ++it )
+        for ( auto const& el : boost::make_iterator_range(range) )
         {
-            if ( it->has(overlay::operation_intersection) )
+            if ( el.has(overlay::operation_intersection) )
             {
                 found_not_touch = true;
                 return true;
             }
 
-            switch(it->method)
+            switch(el.method)
             {
                 case overlay::method_crosses:
                     found_not_touch = true;
@@ -182,7 +180,7 @@ struct areal_interrupt_policy
                 case overlay::method_touch:
                 case overlay::method_touch_interior:
                 case overlay::method_collinear:
-                    if ( ok_for_touch(*it) )
+                    if ( ok_for_touch(el) )
                     {
                         found_touch = true;
                     }
@@ -506,17 +504,17 @@ struct self_touches
     {
         concepts::check<Geometry const>();
 
-        typedef typename strategies::relate::services::default_strategy
+        using strategy_type = typename strategies::relate::services::default_strategy
             <
                 Geometry, Geometry
-            >::type strategy_type;
-        typedef typename geometry::point_type<Geometry>::type point_type;
-        typedef detail::overlay::turn_info<point_type> turn_info;
+            >::type;
+        using point_type = typename geometry::point_type<Geometry>::type;
+        using turn_info = detail::overlay::turn_info<point_type>;
 
-        typedef detail::overlay::get_turn_info
+        using policy_type = detail::overlay::get_turn_info
             <
                 detail::overlay::assign_null_policy
-            > policy_type;
+            >;
 
         std::deque<turn_info> turns;
         detail::touches::areal_interrupt_policy policy;

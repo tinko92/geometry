@@ -22,6 +22,7 @@
 #include <boost/array.hpp>
 #include <boost/concept_check.hpp>
 #include <boost/core/ignore_unused.hpp>
+#include <boost/range/iterator_range_core.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
@@ -843,7 +844,7 @@ struct get_turns_polygon_cs
 
         typename interior_return_type<Polygon const>::type
             rings = interior_rings(polygon);
-        for (auto const& ring : rings)
+        for (auto const& ring : boost::make_iterator_range(rings))
         {
             intersector_type::apply(
                     source_id1, ring,
@@ -876,7 +877,7 @@ struct get_turns_multi_polygon_cs
             InterruptPolicy& interrupt_policy)
     {
         signed_size_type i = 0;
-        for (auto const& single : multi)
+        for (auto const& single : boost::make_iterator_range(multi))
         {
             // Call its single version
             get_turns_polygon_cs

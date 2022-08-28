@@ -17,6 +17,8 @@
 #include <iterator>
 #include <vector>
 
+#include <boost/range/iterator_range_core.hpp>
+
 #include <boost/geometry/algorithms/disjoint.hpp>
 #include <boost/geometry/algorithms/envelope.hpp>
 #include <boost/geometry/algorithms/expand.hpp>
@@ -94,7 +96,7 @@ struct multipoint_single_point
                                        OutputIterator oit,
                                        Strategy const& strategy)
     {
-        for (auto const& point : multipoint)
+        for (auto const& point : boost::make_iterator_range(multipoint))
         {
             action_selector_pl
                 <

@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <vector>
 
+#include <boost/range/iterator_range_core.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
@@ -74,7 +75,7 @@ struct copy_points<PointOut, MultiPointIn, multi_point_tag>
     static inline void apply(MultiPointIn const& multi_point_in,
                              OutputIterator& oit)
     {
-        for (auto const& point_in : multi_point_in)
+        for (auto const& point_in : boost::make_iterator_range(multi_point_in))
         {
             PointOut point_out;
             geometry::convert(point_in, point_out);
@@ -186,7 +187,7 @@ struct multipoint_point_point
     {
         BOOST_GEOMETRY_ASSERT( OverlayType == overlay_difference );
 
-        for (auto const& p : multipoint)
+        for (auto const& p : boost::make_iterator_range(multipoint))
         {
             action_selector_pl
                 <
@@ -220,7 +221,7 @@ struct point_multipoint_point
     {
         using action = action_selector_pl<PointOut, OverlayType>;
 
-        for (auto const& p : multipoint)
+        for (auto const& p : boost::make_iterator_range(multipoint))
         {
             if ( detail::equals::equals_point_point(p, point, strategy) )
             {
@@ -272,7 +273,7 @@ struct multipoint_multipoint_point
         less_type const less = less_type();
         std::sort(points2.begin(), points2.end(), less);
 
-        for (auto const& point1 : multipoint1)
+        for (auto const& point1 : boost::make_iterator_range(multipoint1))
         {
             bool found = std::binary_search(points2.begin(), points2.end(),
                                             point1, less);

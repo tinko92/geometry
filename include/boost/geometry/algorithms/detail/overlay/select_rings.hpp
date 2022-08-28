@@ -17,6 +17,7 @@
 
 #include <map>
 
+#include <boost/range/iterator_range_core.hpp>
 #include <boost/range/size.hpp>
 
 #include <boost/geometry/core/tags.hpp>
@@ -119,7 +120,7 @@ namespace dispatch
 
             typename interior_return_type<Polygon const>::type
                 rings = interior_rings(polygon);
-            for (auto const& ring : rings)
+            for (auto const& ring : boost::make_iterator_range(rings))
             {
                 id.ring_index++;
                 per_ring::apply(ring, geometry, id, ring_properties, strategy);
@@ -138,7 +139,7 @@ namespace dispatch
 
             typename interior_return_type<Polygon const>::type
                 rings = interior_rings(polygon);
-            for (auto const& ring : rings)
+            for (auto const& ring : boost::make_iterator_range(rings))
             {
                 id.ring_index++;
                 per_ring::apply(ring, id, ring_properties, strategy);
@@ -157,7 +158,7 @@ namespace dispatch
             using per_polygon = select_rings<polygon_tag, typename boost::range_value<Multi>::type>;
 
             id.multi_index = 0;
-            for (auto const& poly : multi)
+            for (auto const& poly : boost::make_iterator_range(multi))
             {
                 id.ring_index = -1;
                 per_polygon::apply(poly, geometry, id, ring_properties, strategy);

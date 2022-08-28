@@ -85,8 +85,8 @@ inline void simplify_input(RangeIn const& range,
 template <typename RingOutput>
 struct buffer_range
 {
-    typedef typename point_type<RingOutput>::type output_point_type;
-    typedef typename coordinate_type<RingOutput>::type coordinate_type;
+    using output_point_type = typename point_type<RingOutput>::type;
+    using coordinate_type = typename coordinate_type<RingOutput>::type;
 
     template
     <
@@ -179,7 +179,7 @@ struct buffer_range
             output_point_type const& p1,
             output_point_type const& p2)
     {
-        typedef typename cs_tag<output_point_type>::type cs_tag;
+        using cs_tag = typename cs_tag<output_point_type>::type;
         return direction_code<cs_tag>(p0, p1, p2) == 1;
     }
 
@@ -225,10 +225,10 @@ struct buffer_range
     {
         boost::ignore_unused(segment_strategy);
 
-        typedef typename std::iterator_traits
+        using point_type = typename std::iterator_traits
         <
             Iterator
-        >::value_type point_type;
+        >::value_type;
 
         point_type second_point, penultimate_point, ultimate_point; // last two points from begin/end
 
@@ -253,7 +253,7 @@ struct buffer_range
             = linear
                 && end_strategy.get_piece_type() == geometry::strategy::buffer::buffered_flat_end;
 
-        geometry::strategy::buffer::result_code result = geometry::strategy::buffer::result_no_output;
+        auto result = geometry::strategy::buffer::result_no_output;
         bool first = true;
 
         Iterator it = begin;
@@ -482,7 +482,7 @@ struct buffer_inserter_ring
     {
         output_point_type first_p1, first_p2, last_p1, last_p2;
 
-        typedef detail::buffer::buffer_range<RingOutput> buffer_range;
+        using buffer_range = detail::buffer::buffer_range<RingOutput>;
 
         geometry::strategy::buffer::result_code result
             = buffer_range::iterate(collection, begin, end,
@@ -768,10 +768,10 @@ template
 struct buffer_inserter<polygon_tag, PolygonInput, PolygonOutput>
 {
 private:
-    typedef typename ring_type<PolygonInput>::type input_ring_type;
-    typedef typename ring_type<PolygonOutput>::type output_ring_type;
+    using input_ring_type = typename ring_type<PolygonInput>::type;
+    using output_ring_type = typename ring_type<PolygonOutput>::type;
 
-    typedef buffer_inserter_ring<input_ring_type, output_ring_type> policy;
+    using policy = buffer_inserter_ring<input_ring_type, output_ring_type>;
 
 
     template
@@ -945,13 +945,13 @@ inline void buffer_inserter(GeometryInput const& geometry_input, OutputIterator 
 {
     boost::ignore_unused(visit_pieces_policy);
 
-    typedef detail::buffer::buffered_piece_collection
+    using collection_type = detail::buffer::buffered_piece_collection
     <
         typename geometry::ring_type<GeometryOutput>::type,
         Strategies,
         DistanceStrategy,
         RobustPolicy
-    > collection_type;
+    >;
     collection_type collection(strategies, distance_strategy, robust_policy);
     collection_type const& const_collection = collection;
 

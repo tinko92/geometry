@@ -599,7 +599,7 @@ private:
         typename Geometry, typename Strategy,
         std::enable_if_t<! util::is_linear<Geometry>::value, int> = 0
     >
-    static inline bool has_linear_boundary(Geometry const& , Strategy const& )
+    static constexpr bool has_linear_boundary(Geometry const& , Strategy const& )
     {
         return false;
     }

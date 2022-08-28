@@ -59,14 +59,14 @@ template <std::size_t Height, std::size_t Width = Height>
 class matrix
 {
 public:
-    typedef char value_type;
-    typedef std::size_t size_type;
-    typedef const char * const_iterator;
-    typedef const_iterator iterator;
+    using value_type = char;
+    using size_type = std::size_t;
+    using const_iterator = const char *;
+    using iterator = const_iterator;
 
-    static const std::size_t static_width = Width;
-    static const std::size_t static_height = Height;
-    static const std::size_t static_size = Width * Height;
+    static constexpr std::size_t static_width = Width;
+    static constexpr std::size_t static_height = Height;
+    static constexpr std::size_t static_size = Width * Height;
     
     inline matrix()
     {
@@ -80,7 +80,7 @@ public:
     >
     inline char get() const
     {
-        static const std::size_t index = F1 * Width + F2;
+        static constexpr std::size_t index = F1 * Width + F2;
         BOOST_STATIC_ASSERT(index < static_size);
         return m_array[index];
     }
@@ -92,7 +92,7 @@ public:
     >
     inline void set()
     {
-        static const std::size_t index = F1 * Width + F2;
+        static constexpr std::size_t index = F1 * Width + F2;
         BOOST_STATIC_ASSERT(index < static_size);
         m_array[index] = V;
     }
@@ -140,7 +140,7 @@ class matrix_handler
 public:
     typedef Matrix result_type;
 
-    static const bool interrupt = false;
+    static constexpr bool interrupt = false;
 
     matrix_handler()
     {}
@@ -205,9 +205,9 @@ template <std::size_t Height, std::size_t Width = Height>
 class mask
 {
 public:
-    static const std::size_t static_width = Width;
-    static const std::size_t static_height = Height;
-    static const std::size_t static_size = Width * Height;
+    static constexpr std::size_t static_width = Width;
+    static constexpr std::size_t static_height = Height;
+    static constexpr std::size_t static_size = Width * Height;
 
     inline mask(const char * s)
     {
@@ -249,7 +249,7 @@ public:
     >
     inline char get() const
     {
-        static const std::size_t index = F1 * Width + F2;
+        static constexpr std::size_t index = F1 * Width + F2;
         BOOST_STATIC_ASSERT(index < static_size);
         return m_array[index];
     }
@@ -311,8 +311,8 @@ struct interrupt_dispatch_tuple
     template <field F1, field F2, char V>
     static inline bool apply(Masks const& masks)
     {
-        typedef typename std::tuple_element<I, Masks>::type mask_type;
-        mask_type const& mask = std::get<I>(masks);
+        using mask_type = typename std::tuple_element<I, Masks>::type;
+        auto const& mask = std::get<I>(masks);
         return interrupt_dispatch<mask_type, true>::template apply<F1, F2, V>(mask)
             && interrupt_dispatch_tuple<Masks, I+1>::template apply<F1, F2, V>(masks);
     }
@@ -331,7 +331,7 @@ struct interrupt_dispatch_tuple<Masks, N, N>
 template <typename ...Masks>
 struct interrupt_dispatch<std::tuple<Masks...>, true>
 {
-    typedef std::tuple<Masks...> mask_type;
+    using mask_type = std::tuple<Masks...>;
 
     template <field F1, field F2, char V>
     static inline bool apply(mask_type const& mask)
@@ -384,8 +384,8 @@ struct may_update_dispatch_tuple
     template <field F1, field F2, char D, typename Matrix>
     static inline bool apply(Masks const& masks, Matrix const& matrix)
     {
-        typedef typename std::tuple_element<I, Masks>::type mask_type;
-        mask_type const& mask = std::get<I>(masks);
+        using mask_type = typename std::tuple_element<I, Masks>::type;
+        auto const& mask = std::get<I>(masks);
         return may_update_dispatch<mask_type>::template apply<F1, F2, D>(mask, matrix)
             || may_update_dispatch_tuple<Masks, I+1>::template apply<F1, F2, D>(masks, matrix);
     }
@@ -404,7 +404,7 @@ struct may_update_dispatch_tuple<Masks, N, N>
 template <typename ...Masks>
 struct may_update_dispatch<std::tuple<Masks...>>
 {
-    typedef std::tuple<Masks...> mask_type;
+    using mask_type = std::tuple<Masks...>;
 
     template <field F1, field F2, char D, typename Matrix>
     static inline bool apply(mask_type const& mask, Matrix const& matrix)
@@ -468,7 +468,7 @@ struct check_dispatch_tuple
     template <typename Matrix>
     static inline bool apply(Masks const& masks, Matrix const& matrix)
     {
-        typedef typename std::tuple_element<I, Masks>::type mask_type;
+        using mask_type = typename std::tuple_element<I, Masks>::type;
         mask_type const& mask = std::get<I>(masks);
         return check_dispatch<mask_type>::apply(mask, matrix)
             || check_dispatch_tuple<Masks, I+1>::apply(masks, matrix);
@@ -488,7 +488,7 @@ struct check_dispatch_tuple<Masks, N, N>
 template <typename ...Masks>
 struct check_dispatch<std::tuple<Masks...>>
 {
-    typedef std::tuple<Masks...> mask_type;
+    using mask_type = std::tuple<Masks...>;
 
     template <typename Matrix>
     static inline bool apply(mask_type const& mask, Matrix const& matrix)
@@ -508,7 +508,7 @@ inline bool check_matrix(Mask const& mask, Matrix const& matrix)
 template <typename MatrixOrMask>
 struct matrix_width
 {
-    static const std::size_t value = MatrixOrMask::static_width;
+    static constexpr std::size_t value = MatrixOrMask::static_width;
 };
 
 template <typename Tuple,
@@ -516,25 +516,25 @@ template <typename Tuple,
           int N = std::tuple_size<Tuple>::value>
 struct matrix_width_tuple
 {
-    static const std::size_t
+    static constexpr std::size_t
         current = matrix_width<typename std::tuple_element<I, Tuple>::type>::value;
-    static const std::size_t
+    static constexpr std::size_t
         next = matrix_width_tuple<Tuple, I+1>::value;
 
-    static const std::size_t
+    static constexpr std::size_t
         value = current > next ? current : next;
 };
 
 template <typename Tuple, int N>
 struct matrix_width_tuple<Tuple, N, N>
 {
-    static const std::size_t value = 0;
+    static constexpr std::size_t value = 0;
 };
 
 template <typename ...Masks>
 struct matrix_width<std::tuple<Masks...>>
 {
-    static const std::size_t
+    static constexpr std::size_t
         value = matrix_width_tuple<std::tuple<Masks...>>::value;
 };
 
@@ -553,7 +553,7 @@ class mask_handler
         > base_t;
 
 public:
-    typedef bool result_type;
+    using result_type = bool;
 
     bool interrupt;
 
@@ -624,9 +624,9 @@ template <char C, char ...Cs>
 struct static_check_characters<std::integer_sequence<char, C, Cs...>>
     : static_check_characters<std::integer_sequence<char, Cs...>>
 {
-    typedef std::integer_sequence<char, C, Cs...> type;
-    static const bool is_valid = (C >= '0' && C <= '9')
-                               || C == 'T' || C == 'F' || C == '*';
+    using type = std::integer_sequence<char, C, Cs...>;
+    static constexpr bool is_valid = (C >= '0' && C <= '9')
+                                   || C == 'T' || C == 'F' || C == '*';
     BOOST_GEOMETRY_STATIC_ASSERT((is_valid),
                                  "Invalid static mask character",
                                  type);
@@ -641,9 +641,9 @@ struct static_check_characters<std::integral_constant<char, Cs...>>
 template <typename Seq, std::size_t Height, std::size_t Width = Height>
 struct static_mask
 {
-    static const std::size_t static_width = Width;
-    static const std::size_t static_height = Height;
-    static const std::size_t static_size = Width * Height;
+    static constexpr std::size_t static_width = Width;
+    static constexpr std::size_t static_height = Height;
+    static constexpr std::size_t static_size = Width * Height;
 
     BOOST_STATIC_ASSERT(
         std::size_t(util::sequence_size<Seq>::value) == static_size);
@@ -654,7 +654,7 @@ struct static_mask
         BOOST_STATIC_ASSERT(std::size_t(F1) < static_height);
         BOOST_STATIC_ASSERT(std::size_t(F2) < static_width);
 
-        static const char value
+        static constexpr char value
             = util::sequence_element<F1 * static_width + F2, Seq>::value;
     };
 
@@ -672,10 +672,10 @@ template
 >
 struct static_should_handle_element_dispatch
 {
-    static const char mask_el = StaticMask::template static_get<F1, F2>::value;
-    static const bool value = mask_el == 'F'
-                           || mask_el == 'T'
-                           || ( mask_el >= '0' && mask_el <= '9' );
+    static constexpr char mask_el = StaticMask::template static_get<F1, F2>::value;
+    static constexpr bool value = mask_el == 'F'
+                               || mask_el == 'T'
+                               || ( mask_el >= '0' && mask_el <= '9' );
 };
 
 template
@@ -686,9 +686,9 @@ template
 >
 struct static_should_handle_element_sequence
 {
-    typedef typename util::sequence_element<I, Seq>::type StaticMask;
+    using StaticMask = typename util::sequence_element<I, Seq>::type;
 
-    static const bool value
+    static constexpr bool value
         = static_should_handle_element_dispatch
             <
                 StaticMask, F1, F2
@@ -702,13 +702,13 @@ struct static_should_handle_element_sequence
 template <typename Seq, field F1, field F2, std::size_t N>
 struct static_should_handle_element_sequence<Seq, F1, F2, N, N>
 {
-    static const bool value = false;
+    static constexpr bool value = false;
 };
 
 template <typename StaticMask, field F1, field F2>
 struct static_should_handle_element_dispatch<StaticMask, F1, F2, true>
 {
-    static const bool value
+    static constexpr bool value
         = static_should_handle_element_sequence
             <
                 StaticMask, F1, F2
@@ -718,7 +718,7 @@ struct static_should_handle_element_dispatch<StaticMask, F1, F2, true>
 template <typename StaticMask, field F1, field F2>
 struct static_should_handle_element
 {
-    static const bool value
+    static constexpr bool value
         = static_should_handle_element_dispatch
             <
                 StaticMask, F1, F2
@@ -735,15 +735,15 @@ template
 >
 struct static_interrupt_dispatch
 {
-    static const bool value = false;
+    static constexpr bool value = false;
 };
 
 template <typename StaticMask, char V, field F1, field F2, bool IsSequence>
 struct static_interrupt_dispatch<StaticMask, V, F1, F2, true, IsSequence>
 {
-    static const char mask_el = StaticMask::template static_get<F1, F2>::value;
+    static constexpr char mask_el = StaticMask::template static_get<F1, F2>::value;
 
-    static const bool value
+    static constexpr bool value
         = ( V >= '0' && V <= '9' ) ? 
           ( mask_el == 'F' || ( mask_el < V && mask_el >= '0' && mask_el <= '9' ) ) :
           ( ( V == 'T' ) ? mask_el == 'F' : false );
@@ -757,9 +757,9 @@ template
 >
 struct static_interrupt_sequence
 {
-    typedef typename util::sequence_element<I, Seq>::type StaticMask;
+    using StaticMask = typename util::sequence_element<I, Seq>::type;
 
-    static const bool value
+    static constexpr bool value
         = static_interrupt_dispatch
             <
                 StaticMask, V, F1, F2, true
@@ -773,13 +773,13 @@ struct static_interrupt_sequence
 template <typename Seq, char V, field F1, field F2, std::size_t N>
 struct static_interrupt_sequence<Seq, V, F1, F2, N, N>
 {
-    static const bool value = true;
+    static constexpr bool value = true;
 };
 
 template <typename StaticMask, char V, field F1, field F2>
 struct static_interrupt_dispatch<StaticMask, V, F1, F2, true, true>
 {
-    static const bool value
+    static constexpr bool value
         = static_interrupt_sequence
             <
                 StaticMask, V, F1, F2
@@ -789,7 +789,7 @@ struct static_interrupt_dispatch<StaticMask, V, F1, F2, true, true>
 template <typename StaticMask, char V, field F1, field F2, bool EnableInterrupt>
 struct static_interrupt
 {
-    static const bool value
+    static constexpr bool value
         = static_interrupt_dispatch
             <
                 StaticMask, V, F1, F2, EnableInterrupt
@@ -805,8 +805,8 @@ template
 >
 struct static_may_update_dispatch
 {
-    static const char mask_el = StaticMask::template static_get<F1, F2>::value;
-    static const int version
+    static constexpr char mask_el = StaticMask::template static_get<F1, F2>::value;
+    static constexpr int version
                         = mask_el == 'F' ? 0
                         : mask_el == 'T' ? 1
                         : mask_el >= '0' && mask_el <= '9' ? 2
@@ -856,7 +856,7 @@ template
 >
 struct static_may_update_sequence
 {
-    typedef typename util::sequence_element<I, Seq>::type StaticMask;
+    using StaticMask = typename util::sequence_element<I, Seq>::type;
 
     template <typename Matrix>
     static inline bool apply(Matrix const& matrix)
@@ -934,8 +934,8 @@ struct static_check_dispatch
     template <field F1, field F2>
     struct per_one
     {
-        static const char mask_el = StaticMask::template static_get<F1, F2>::value;
-        static const int version
+        static constexpr char mask_el = StaticMask::template static_get<F1, F2>::value;
+        static constexpr int version
                             = mask_el == 'F' ? 0
                             : mask_el == 'T' ? 1
                             : mask_el >= '0' && mask_el <= '9' ? 2
@@ -981,7 +981,7 @@ template
 >
 struct static_check_sequence
 {
-    typedef typename util::sequence_element<I, Seq>::type StaticMask;
+    using StaticMask = typename util::sequence_element<I, Seq>::type;
 
     template <typename Matrix>
     static inline bool apply(Matrix const& matrix)
@@ -1039,10 +1039,10 @@ template <typename StaticMask, bool Interrupt>
 class static_mask_handler
     : private matrix_handler< matrix<3> >
 {
-    typedef matrix_handler< relate::matrix<3> > base_type;
+    using base_type = matrix_handler< relate::matrix<3> >;
 
 public:
-    typedef bool result_type;
+    using result_type = bool;
 
     bool interrupt;
 
@@ -1070,11 +1070,11 @@ public:
     template <field F1, field F2, char V>
     inline void update()
     {
-        static const bool interrupt_c = static_interrupt<StaticMask, V, F1, F2, Interrupt>::value;
-        static const bool should_handle = static_should_handle_element<StaticMask, F1, F2>::value;
-        static const int version = interrupt_c ? 0
-                                 : should_handle ? 1
-                                 : 2;
+        static constexpr bool interrupt_c = static_interrupt<StaticMask, V, F1, F2, Interrupt>::value;
+        static constexpr bool should_handle = static_should_handle_element<StaticMask, F1, F2>::value;
+        static constexpr int version = interrupt_c ? 0
+                                     : should_handle ? 1
+                                     : 2;
 
         update_dispatch<F1, F2, V>(integral_constant<int, version>());
     }
@@ -1187,9 +1187,9 @@ inline bool may_update(Result const& res)
 template <typename Geometry>
 struct result_dimension
 {
-    static const std::size_t dim = geometry::dimension<Geometry>::value;
+    static constexpr std::size_t dim = geometry::dimension<Geometry>::value;
     BOOST_STATIC_ASSERT(dim >= 0);
-    static const char value = (dim <= 9) ? ('0' + dim) : 'T';
+    static constexpr char value = (dim <= 9) ? ('0' + dim) : 'T';
 };
 
 }} // namespace detail::relate

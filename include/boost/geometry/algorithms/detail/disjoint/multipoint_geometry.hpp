@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <vector>
 
+#include <boost/range/iterator_range_core.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
@@ -291,12 +292,11 @@ public:
         geometry::envelope(single_geometry, box2, strategy);
         geometry::detail::expand_by_epsilon(box2);
 
-        typedef typename boost::range_const_iterator<MultiPoint>::type iterator;
-        for ( iterator it = boost::begin(multi_point) ; it != boost::end(multi_point) ; ++it )
+        for ( auto const& point : boost::make_iterator_range(multi_point) )
         {
             // The default strategy is enough for Point/Box
-            if (! detail::disjoint::disjoint_point_box(*it, box2, strategy)
-                && ! dispatch::disjoint<point1_type, SingleGeometry>::apply(*it, single_geometry, strategy))
+            if (! detail::disjoint::disjoint_point_box(point, box2, strategy)
+                && ! dispatch::disjoint<point1_type, SingleGeometry>::apply(point, single_geometry, strategy))
             {
                 return false;
             }

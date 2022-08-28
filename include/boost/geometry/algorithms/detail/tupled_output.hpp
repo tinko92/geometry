@@ -9,7 +9,7 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_TUPLED_OUTPUT_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_TUPLED_OUTPUT_HPP
 
-#include <boost/range/value_type.hpp>
+#include <boost/range/iterator_range_core.hpp>
 
 #include <boost/geometry/algorithms/convert.hpp>
 #include <boost/geometry/core/config.hpp>
@@ -175,17 +175,17 @@ struct tupled_range_values;
 template <typename ...Ts>
 struct tupled_range_values<std::tuple<Ts...> >
 {
-    typedef std::tuple<typename boost::range_value<Ts>::type...> type;
+    using type = std::tuple<typename boost::range_value<Ts>::type...>;
 };
 
 template <typename F, typename S>
 struct tupled_range_values<std::pair<F, S> >
 {
-    typedef std::pair
+    using type = std::pair
         <
             typename boost::range_value<F>::type,
             typename boost::range_value<S>::type
-        > type;
+        >;
 };
 
 template
@@ -196,20 +196,20 @@ template
 >
 struct tupled_range_values_bt
 {
-    typedef boost::tuples::cons
+    using type = boost::tuples::cons
         <
             typename boost::range_value
                 <
                     typename boost::tuples::element<I, Tuple>::type
                 >::type,
             typename tupled_range_values_bt<Tuple, I+1, N>::type
-        > type;
+        >;
 };
 
 template <typename Tuple, size_t N>
 struct tupled_range_values_bt<Tuple, N, N>
 {
-    typedef boost::tuples::null_type type;
+    using type = boost::tuples::null_type;
 };
 
 template <typename ...Ts>
@@ -235,7 +235,7 @@ struct tupled_back_inserters_st;
 template <std::size_t ...Is, typename ...Ts>
 struct tupled_back_inserters_st<std::index_sequence<Is...>, std::tuple<Ts...> >
 {
-    typedef std::tuple<geometry::range::back_insert_iterator<Ts>...> type;
+    using type = std::tuple<geometry::range::back_insert_iterator<Ts>...>;
 
     static type apply(std::tuple<Ts...> & tup)
     {
@@ -255,11 +255,11 @@ struct tupled_back_inserters<std::tuple<Ts...> >
 template <typename F, typename S>
 struct tupled_back_inserters<std::pair<F, S> >
 {
-    typedef std::pair
+    using type = std::pair
         <
             geometry::range::back_insert_iterator<F>,
             geometry::range::back_insert_iterator<S>
-        > type;
+        >;
 
     static type apply(std::pair<F, S> & p)
     {
@@ -273,14 +273,14 @@ template <typename Tuple,
           size_t N = boost::tuples::length<Tuple>::value>
 struct tupled_back_inserters_bt
 {
-    typedef boost::tuples::cons
+    using type = boost::tuples::cons
         <
             geometry::range::back_insert_iterator
                 <
                     typename boost::tuples::element<I, Tuple>::type
                 >,
             typename tupled_back_inserters_bt<Tuple, I+1, N>::type
-        > type;
+        >;
 
     static type apply(Tuple & tup)
     {
@@ -292,7 +292,7 @@ struct tupled_back_inserters_bt
 template <typename Tuple, size_t N>
 struct tupled_back_inserters_bt<Tuple, N, N>
 {
-    typedef boost::tuples::null_type type;
+    using type = boost::tuples::null_type;
 
     static type apply(Tuple const&)
     {
@@ -333,7 +333,7 @@ template
 >
 struct output_geometry_back_inserter_
 {
-    typedef geometry::range::back_insert_iterator<GeometryOut> type;
+    using type = geometry::range::back_insert_iterator<GeometryOut>;
 
     static type apply(GeometryOut & out)
     {
@@ -383,12 +383,12 @@ struct output_geometry_access
 template <typename TupledOut, typename Tag, typename DefaultTag>
 struct output_geometry_access<TupledOut, Tag, DefaultTag, void>
 {
-    static const int index = geometry::tuples::find_index_if
+    static constexpr int index = geometry::tuples::find_index_if
         <
             TupledOut, is_tag_same_as_pred<Tag>::template pred
         >::value;
 
-    typedef typename geometry::tuples::element<index, TupledOut>::type type;
+    using type = typename geometry::tuples::element<index, TupledOut>::type;
     
     template <typename Tuple>
     static typename geometry::tuples::element<index, Tuple>::type&
@@ -401,7 +401,7 @@ struct output_geometry_access<TupledOut, Tag, DefaultTag, void>
 template <typename GeometryOut, typename Tag, typename DefaultTag>
 struct output_geometry_access<GeometryOut, Tag, DefaultTag, DefaultTag>
 {
-    typedef GeometryOut type;
+    using type = GeometryOut;
 
     template <typename T>
     static T& get(T & v)
@@ -547,19 +547,19 @@ struct single_tag_from_base_tag;
 template <>
 struct single_tag_from_base_tag<pointlike_tag>
 {
-    typedef point_tag type;
+    using type = point_tag;
 };
 
 template <>
 struct single_tag_from_base_tag<linear_tag>
 {
-    typedef linestring_tag type;
+    using type = linestring_tag;
 };
 
 template <>
 struct single_tag_from_base_tag<areal_tag>
 {
-    typedef polygon_tag type;
+    using type = polygon_tag;
 };
 
 
@@ -593,11 +593,10 @@ struct convert_to_output<Geometry, SingleOut, true>
     static OutputIterator apply(Geometry const& geometry,
                                 OutputIterator oit)
     {
-        typedef typename boost::range_iterator<Geometry const>::type iterator;
-        for (iterator it = boost::begin(geometry); it != boost::end(geometry); ++it)
+        for (auto const& single : boost::make_iterator_range(geometry))
         {
             SingleOut single_out;
-            geometry::convert(*it, single_out);
+            geometry::convert(single, single_out);
             *oit++ = single_out;
         }
         return oit;

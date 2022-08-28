@@ -21,6 +21,7 @@
 #include <type_traits>
 #include <vector>
 
+#include <boost/range/iterator_range_core.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/empty.hpp>
 #include <boost/range/end.hpp>
@@ -822,9 +823,9 @@ public:
         }
         else
         {
-            for (auto const& el1 : forward_range1)
+            for (auto const& el1 : boost::make_iterator_range(forward_range1))
             {
-                for (auto const& el2 : forward_range2)
+                for (auto const& el2 : boost::make_iterator_range(forward_range2))
                 {
                     if (! visitor.apply(el1, el2))
                     {
