@@ -433,9 +433,9 @@ struct sectionalize_part
         robust_point_type previous_robust_point;
         geometry::recalculate(previous_robust_point, *it, robust_policy);
 
-        for(Iterator previous = it++;
-            it != end;
-            ++previous, ++it, index++)
+        for (Iterator previous = it++;
+             it != end;
+             ++previous, ++it, index++)
         {
             robust_point_type current_robust_point;
             geometry::recalculate(current_robust_point, *it, robust_policy);

@@ -206,7 +206,7 @@ struct visit_breadth_first_impl
 
         iter_t it = iter_t{ boost::begin(geom) };
         iter_t end = iter_t{ boost::end(geom) };
-        for(;;)
+        for (;;)
         {
             for (; it != end; ++it)
             {

@@ -146,10 +146,8 @@ inline void assign_ranges(InputProxy const& in_proxy,
 template <typename InputPoint>
 class graham_andrew
 {
-    typedef InputPoint point_type;
-    typedef typename std::vector<point_type> container_type;
-    typedef typename std::vector<point_type>::const_iterator iterator;
-    typedef typename std::vector<point_type>::const_reverse_iterator rev_iterator;
+    using point_type = InputPoint;
+    using container_type = typename std::vector<point_type>;
 
     class partitions
     {
@@ -228,7 +226,7 @@ private:
             SideStrategy const& side)
     {
         output.push_back(left);
-        for(iterator it = input.begin(); it != input.end(); ++it)
+        for (auto it = input.begin(); it != input.end(); ++it)
         {
             add_to_hull<Factor>(*it, output, side);
         }
@@ -244,7 +242,7 @@ private:
         std::size_t output_size = output.size();
         while (output_size >= 3)
         {
-            rev_iterator rit = output.rbegin();
+            auto rit = output.rbegin();
             point_type const last = *rit++;
             point_type const& last2 = *rit++;
 
@@ -291,8 +289,7 @@ private:
                   closed ? boost::rend(second) : --boost::rend(second), // skip the last Point if open
                   out);
 
-        typedef typename boost::range_size<container_type>::type size_type;
-        size_type const count = boost::size(first) + boost::size(second) - 1;
+        auto const count = boost::size(first) + boost::size(second) - 1;
         // count describes a closed case but comparison with min size of closed
         // gives the result compatible also with open
         // here core_detail::closure::minimum_ring_size<closed> could be used

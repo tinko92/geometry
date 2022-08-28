@@ -16,8 +16,6 @@
 
 #include <deque>
 
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
 #include <boost/throw_exception.hpp>
 
 #include <boost/geometry/core/point_type.hpp>
@@ -73,12 +71,12 @@ inline bool has_self_intersections(Geometry const& geometry,
         RobustPolicy const& robust_policy,
         bool throw_on_self_intersection = true)
 {
-    typedef typename point_type<Geometry>::type point_type;
-    typedef turn_info
+    using point_type = typename point_type<Geometry>::type;
+    using turn_info = turn_info
     <
         point_type,
         typename segment_ratio_type<point_type, RobustPolicy>::type
-    > turn_info;
+    >;
     std::deque<turn_info> turns;
     detail::disjoint::disjoint_interrupt_policy policy;
 
@@ -91,10 +89,8 @@ inline bool has_self_intersections(Geometry const& geometry,
 #ifdef BOOST_GEOMETRY_DEBUG_HAS_SELF_INTERSECTIONS
     bool first = true;
 #endif
-    for(typename std::deque<turn_info>::const_iterator it = boost::begin(turns);
-        it != boost::end(turns); ++it)
+    for (auto const& info : turns)
     {
-        turn_info const& info = *it;
         bool const both_union_turn =
             info.operations[0].operation == detail::overlay::operation_union
             && info.operations[1].operation == detail::overlay::operation_union;

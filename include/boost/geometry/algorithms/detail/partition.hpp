@@ -60,7 +60,7 @@ struct divide_interval<T, true>
 template <int Dimension, typename Box>
 inline void divide_box(Box const& box, Box& lower_box, Box& upper_box)
 {
-    typedef typename coordinate_type<Box>::type ctype;
+    using ctype = typename coordinate_type<Box>::type;
 
     // Divide input box into two parts, e.g. left/right
     ctype mid = divide_interval<ctype>::apply(
@@ -85,27 +85,22 @@ inline void divide_into_subsets(Box const& lower_box,
                                 IteratorVector& exceeding,
                                 OverlapsPolicy const& overlaps_policy)
 {
-    typedef typename boost::range_iterator
-        <
-            IteratorVector const
-        >::type it_type;
-
-    for(it_type it = boost::begin(input); it != boost::end(input); ++it)
+    for (auto iter : input)
     {
-        bool const lower_overlapping = overlaps_policy.apply(lower_box, **it);
-        bool const upper_overlapping = overlaps_policy.apply(upper_box, **it);
+        bool const lower_overlapping = overlaps_policy.apply(lower_box, *iter);
+        bool const upper_overlapping = overlaps_policy.apply(upper_box, *iter);
 
         if (lower_overlapping && upper_overlapping)
         {
-            exceeding.push_back(*it);
+            exceeding.push_back(iter);
         }
         else if (lower_overlapping)
         {
-            lower.push_back(*it);
+            lower.push_back(iter);
         }
         else if (upper_overlapping)
         {
-            upper.push_back(*it);
+            upper.push_back(iter);
         }
         else
         {
@@ -124,10 +119,9 @@ template
 inline void expand_with_elements(Box& total, IteratorVector const& input,
                                  ExpandPolicy const& expand_policy)
 {
-    typedef typename boost::range_iterator<IteratorVector const>::type it_type;
-    for(it_type it = boost::begin(input); it != boost::end(input); ++it)
+    for (auto iter : input)
     {
-        expand_policy.apply(total, **it);
+        expand_policy.apply(total, *iter);
     }
 }
 
@@ -141,12 +135,10 @@ inline bool handle_one(IteratorVector const& input, VisitPolicy& visitor)
         return true;
     }
 
-    typedef typename boost::range_iterator<IteratorVector const>::type it_type;
-
     // Quadratic behaviour at lowest level (lowest quad, or all exceeding)
-    for (it_type it1 = boost::begin(input); it1 != boost::end(input); ++it1)
+    for (auto it1 = boost::begin(input); it1 != boost::end(input); ++it1)
     {
-        it_type it2 = it1;
+        auto it2 = it1;
         for (++it2; it2 != boost::end(input); ++it2)
         {
             if (! visitor.apply(**it1, **it2))
@@ -170,30 +162,16 @@ inline bool handle_two(IteratorVector1 const& input1,
                        IteratorVector2 const& input2,
                        VisitPolicy& visitor)
 {
-    typedef typename boost::range_iterator
-        <
-            IteratorVector1 const
-        >::type iterator_type1;
-
-    typedef typename boost::range_iterator
-        <
-            IteratorVector2 const
-        >::type iterator_type2;
-
     if (boost::empty(input1) || boost::empty(input2))
     {
         return true;
     }
 
-    for(iterator_type1 it1 = boost::begin(input1);
-        it1 != boost::end(input1);
-        ++it1)
+    for (auto iter1 : input1)
     {
-        for(iterator_type2 it2 = boost::begin(input2);
-            it2 != boost::end(input2);
-            ++it2)
+        for (auto iter2 : input2)
         {
-            if (! visitor.apply(**it1, **it2))
+            if (! visitor.apply(*iter1, *iter2))
             {
                 return false; // interrupt
             }
@@ -629,10 +607,7 @@ class partition
                                        IteratorVector& iterator_vector,
                                        ExpandPolicy const& expand_policy)
     {
-        for(typename boost::range_iterator<ForwardRange const>::type
-                it = boost::begin(forward_range);
-            it != boost::end(forward_range);
-            ++it)
+        for (auto it = boost::begin(forward_range); it != boost::end(forward_range); ++it)
         {
             if (IncludePolicy::apply(*it))
             {
@@ -691,10 +666,10 @@ public:
                              std::size_t min_elements,
                              VisitBoxPolicy box_visitor)
     {
-        typedef typename boost::range_iterator
+        using iterator_type = typename boost::range_iterator
             <
                 ForwardRange const
-            >::type iterator_type;
+            >::type;
 
         if (std::size_t(boost::size(forward_range)) > min_elements)
         {
@@ -712,12 +687,10 @@ public:
         }
         else
         {
-            for(iterator_type it1 = boost::begin(forward_range);
-                it1 != boost::end(forward_range);
-                ++it1)
+            for (auto it1 = boost::begin(forward_range); it1 != boost::end(forward_range); ++it1)
             {
-                iterator_type it2 = it1;
-                for(++it2; it2 != boost::end(forward_range); ++it2)
+                auto it2 = it1;
+                for (++it2; it2 != boost::end(forward_range); ++it2)
                 {
                     if (! visitor.apply(*it1, *it2))
                     {
@@ -817,15 +790,15 @@ public:
                              std::size_t min_elements,
                              VisitBoxPolicy box_visitor)
     {
-        typedef typename boost::range_iterator
+        using iterator_type1 = typename boost::range_iterator
             <
                 ForwardRange1 const
-            >::type iterator_type1;
+            >::type;
 
-        typedef typename boost::range_iterator
+        using iterator_type2 = typename boost::range_iterator
             <
                 ForwardRange2 const
-            >::type iterator_type2;
+            >::type;
 
         if (std::size_t(boost::size(forward_range1)) > min_elements
             && std::size_t(boost::size(forward_range2)) > min_elements)
@@ -849,15 +822,11 @@ public:
         }
         else
         {
-            for(iterator_type1 it1 = boost::begin(forward_range1);
-                it1 != boost::end(forward_range1);
-                ++it1)
+            for (auto const& el1 : forward_range1)
             {
-                for(iterator_type2 it2 = boost::begin(forward_range2);
-                    it2 != boost::end(forward_range2);
-                    ++it2)
+                for (auto const& el2 : forward_range2)
                 {
-                    if (! visitor.apply(*it1, *it2))
+                    if (! visitor.apply(el1, el2))
                     {
                         return false; // interrupt
                     }

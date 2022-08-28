@@ -427,8 +427,8 @@ private :
         // Mimic section-iterator:
         // Skip to point such that section interects other box
         prev = it++;
-        for(; it != end && detail::section::preceding<0>(dir, *it, section.bounding_box, other_bounding_box, robust_policy);
-            prev = it++, index++, ndi++)
+        for (; it != end && detail::section::preceding<0>(dir, *it, section.bounding_box, other_bounding_box, robust_policy);
+             prev = it++, index++, ndi++)
         {}
         // Go back one step because we want to start completely preceding
         it = prev;

@@ -42,8 +42,8 @@ namespace detail { namespace buffer
 template <typename Ring>
 struct unique_sub_range_from_piece
 {
-    typedef typename boost::range_iterator<Ring const>::type iterator_type;
-    typedef typename geometry::point_type<Ring const>::type point_type;
+    using iterator_type = typename boost::range_iterator<Ring const>::type;
+    using point_type = typename geometry::point_type<Ring const>::type;
 
     unique_sub_range_from_piece(Ring const& ring,
                                 iterator_type iterator_at_i, iterator_type iterator_at_j)
@@ -157,7 +157,7 @@ class piece_turn_visitor
                                     Box const& this_bounding_box,
                                     Box const& other_bounding_box)
     {
-        for(; it_begin != it_beyond
+        for (; it_begin != it_beyond
                 && it_begin + 1 != it_beyond
                 && detail::section::preceding<Dimension>(dir, *(it_begin + 1),
                                                          this_bounding_box,
@@ -192,9 +192,8 @@ class piece_turn_visitor
     inline void calculate_turns(Piece const& piece1, Piece const& piece2,
         Section const& section1, Section const& section2)
     {
-        typedef typename boost::range_value<Rings const>::type ring_type;
-        typedef typename boost::range_value<Turns const>::type turn_type;
-        typedef typename boost::range_iterator<ring_type const>::type iterator;
+        using ring_type = typename boost::range_value<Rings const>::type;
+        using turn_type = typename boost::range_value<Turns const>::type;
 
         signed_size_type const piece1_first_index = piece1.first_seg_id.segment_index;
         signed_size_type const piece2_first_index = piece2.first_seg_id.segment_index;
@@ -213,12 +212,12 @@ class piece_turn_visitor
 
         // get geometry and iterators over these sections
         ring_type const& ring1 = m_rings[piece1.first_seg_id.multi_index];
-        iterator it1_first = boost::begin(ring1) + sec1_first_index;
-        iterator it1_beyond = boost::begin(ring1) + sec1_last_index + 1;
+        auto it1_first = boost::begin(ring1) + sec1_first_index;
+        auto it1_beyond = boost::begin(ring1) + sec1_last_index + 1;
 
         ring_type const& ring2 = m_rings[piece2.first_seg_id.multi_index];
-        iterator it2_first = boost::begin(ring2) + sec2_first_index;
-        iterator it2_beyond = boost::begin(ring2) + sec2_last_index + 1;
+        auto it2_first = boost::begin(ring2) + sec2_first_index;
+        auto it2_beyond = boost::begin(ring2) + sec2_last_index + 1;
 
         // Set begin/end of monotonic ranges, in both x/y directions
         signed_size_type index1 = sec1_first_index;
@@ -246,8 +245,8 @@ class piece_turn_visitor
         the_model.operations[0].seg_id = piece1.first_seg_id;
         the_model.operations[0].seg_id.segment_index = index1; // override
 
-        iterator it1 = it1_first;
-        for (iterator prev1 = it1++;
+        auto it1 = it1_first;
+        for (auto prev1 = it1++;
                 it1 != it1_beyond;
                 prev1 = it1++, the_model.operations[0].seg_id.segment_index++)
         {
@@ -257,17 +256,17 @@ class piece_turn_visitor
 
             unique_sub_range_from_piece<ring_type> unique_sub_range1(ring1, prev1, it1);
 
-            iterator it2 = it2_first;
-            for (iterator prev2 = it2++;
+            auto it2 = it2_first;
+            for (auto prev2 = it2++;
                     it2 != it2_beyond;
                     prev2 = it2++, the_model.operations[1].seg_id.segment_index++)
             {
                 unique_sub_range_from_piece<ring_type> unique_sub_range2(ring2, prev2, it2);
 
-                typedef detail::overlay::get_turn_info
+                using turn_policy = detail::overlay::get_turn_info
                     <
                         detail::overlay::assign_policy_only_start_turns
-                    > turn_policy;
+                    >;
 
                 turn_policy::apply(unique_sub_range1, unique_sub_range2,
                                    the_model,
@@ -298,9 +297,8 @@ public:
     {
         boost::ignore_unused(first);
 
-        typedef typename boost::range_value<Pieces const>::type piece_type;
-        piece_type const& piece1 = m_pieces[section1.ring_id.source_index];
-        piece_type const& piece2 = m_pieces[section2.ring_id.source_index];
+        auto const& piece1 = m_pieces[section1.ring_id.source_index];
+        auto const& piece2 = m_pieces[section2.ring_id.source_index];
 
         if ( piece1.index == piece2.index
           || is_adjacent(piece1, piece2)
