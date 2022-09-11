@@ -24,6 +24,7 @@
 #include <cstddef>
 #include <type_traits>
 #include <vector>
+#include <array>
 
 #include <boost/concept/requires.hpp>
 #include <boost/core/ignore_unused.hpp>
@@ -89,7 +90,7 @@ struct section
     using box_type = Box;
     static std::size_t const dimension_count = DimensionCount;
 
-    int directions[DimensionCount];
+    std::array<int, DimensionCount> directions;
     ring_identifier ring_id;
     Box bounding_box;
 
@@ -116,10 +117,7 @@ struct section
         , is_non_duplicate_last(false)
     {
         assign_inverse(bounding_box);
-        for (std::size_t i = 0; i < DimensionCount; i++)
-        {
-            directions[i] = 0;
-        }
+        directions.fill(0);
     }
 };
 
@@ -164,7 +162,7 @@ struct get_direction_loop
 
     template <typename Segment>
     static inline void apply(Segment const& seg,
-                int directions[Count])
+                std::array<int, Count>& directions)
     {
         auto const& c0 = geometry::get<0, dimension::value>(seg);
         auto const& c1 = geometry::get<1, dimension::value>(seg);
@@ -194,7 +192,7 @@ struct get_direction_loop<Point, DimensionVector, 0, Count, spherical_tag>
 
     template <typename Segment>
     static inline void apply(Segment const& seg,
-                int directions[Count])
+                std::array<int, Count>& directions)
     {
         using coordinate_type = typename coordinate_type<Segment>::type;
         using units_t = typename coordinate_system<Point>::type::units;
@@ -229,52 +227,8 @@ template
 struct get_direction_loop<Point, DimensionVector, Count, Count, CastedCSTag>
 {
     template <typename Segment>
-    static inline void apply(Segment const&, int [Count])
+    static inline void apply(Segment const&, std::array<int, Count>&)
     {}
-};
-
-
-//! Copy one static array to another
-template <typename T, std::size_t Index, std::size_t Count>
-struct copy_loop
-{
-    static inline void apply(T const source[Count], T target[Count])
-    {
-        target[Index] = source[Index];
-        copy_loop<T, Index + 1, Count>::apply(source, target);
-    }
-};
-
-template <typename T, std::size_t Count>
-struct copy_loop<T, Count, Count>
-{
-    static inline void apply(T const [Count], T [Count])
-    {}
-};
-
-//! Compare two static arrays
-template <typename T, std::size_t Index, std::size_t Count>
-struct compare_loop
-{
-    static inline bool apply(T const array1[Count], T const array2[Count])
-    {
-        return array1[Index] != array2[Index]
-            ? false
-            : compare_loop
-                <
-                    T, Index + 1, Count
-                >::apply(array1, array2);
-    }
-};
-
-template <typename T, std::size_t Count>
-struct compare_loop<T, Count, Count>
-{
-    static inline bool apply(T const [Count], T const [Count])
-    {
-
-        return true;
-    }
 };
 
 
@@ -308,25 +262,6 @@ struct check_duplicate_loop<DimensionCount, DimensionCount>
     static inline bool apply(Segment const&)
     {
         return true;
-    }
-};
-
-//! Assign a value to a static array
-template <typename T, std::size_t Index, std::size_t Count>
-struct assign_loop
-{
-    static inline void apply(T dims[Count], T const value)
-    {
-        dims[Index] = value;
-        assign_loop<T, Index + 1, Count>::apply(dims, value);
-    }
-};
-
-template <typename T, std::size_t Count>
-struct assign_loop<T, Count, Count>
-{
-    static inline void apply(T [Count], T const)
-    {
     }
 };
 
@@ -442,7 +377,7 @@ struct sectionalize_part
             model::referring_segment<robust_point_type> robust_segment(
                     previous_robust_point, current_robust_point);
 
-            int direction_classes[dimension_count] = {0};
+            std::array<int, dimension_count> direction_classes {0};
             get_direction_loop
             <
                 point_type, DimensionVector, 0, dimension_count
@@ -469,18 +404,12 @@ struct sectionalize_part
                     // Note that wo consecutive duplicate segments will generate
                     // only one duplicate-section.
                     // Actual value is not important as long as it is not -1,0,1
-                    assign_loop
-                    <
-                        int, 0, dimension_count
-                    >::apply(direction_classes, -99);
+                    direction_classes.fill(-99);
                 }
             }
 
             if (section.count > 0
-                && (! compare_loop
-                        <
-                            int, 0, dimension_count
-                        >::apply(direction_classes, section.directions)
+                && ( direction_classes != section.directions
                     || section.count > max_count)
                 )
             {
@@ -507,10 +436,7 @@ struct sectionalize_part
                     mark_first_non_duplicated = false;
                 }
 
-                copy_loop
-                    <
-                        int, 0, dimension_count
-                    >::apply(direction_classes, section.directions);
+                section.directions = direction_classes;
 
                 // In cartesian this is envelope of previous point expanded with current point
                 // in non-cartesian this is envelope of a segment
