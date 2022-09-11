@@ -25,7 +25,11 @@
 #include <boost/geometry/algorithms/detail/expand/indexed.hpp>
 
 #include <boost/geometry/strategy/expand.hpp>
+#include <boost/geometry/strategy/cartesian/expand_point.hpp>
 
+#include <boost/geometry/util/condition.hpp>
+
+#include <boost/geometry/views/segment_view.hpp>
 
 namespace boost { namespace geometry
 {
@@ -36,13 +40,21 @@ namespace strategy { namespace expand
 class cartesian_segment
 {
 public:
-    template <typename Box, typename Segment>
+    template <bool SkipFirst = false, typename Box, typename Segment>
     static void apply(Box & box, Segment const& segment)
     {
-        geometry::detail::expand::expand_indexed
-            <
-                0, dimension<Segment>::value
-            >::apply(box, segment);
+        if ( BOOST_GEOMETRY_CONDITION(SkipFirst == false) )
+        {
+            geometry::detail::expand::expand_indexed
+                <
+                    0, dimension<Segment>::value
+                >::apply(box, segment);
+        }
+        else
+        {
+            segment_view<Segment> view(segment);
+            cartesian_point::apply(box, *(view.begin() + 1));
+        }
     }
 };
 

@@ -61,10 +61,6 @@
 #include <boost/geometry/util/sequence.hpp>
 #include <boost/geometry/views/detail/closed_clockwise_view.hpp>
 
-// TEMP
-#include <boost/geometry/strategy/envelope.hpp>
-#include <boost/geometry/strategy/expand.hpp>
-
 namespace boost { namespace geometry
 {
 
@@ -170,53 +166,6 @@ struct check_duplicate_loop<DimensionCount, DimensionCount>
     static inline bool apply(Segment const&)
     {
         return true;
-    }
-};
-
-template <typename CSTag>
-struct box_first_in_section
-{
-    template <typename Box, typename Point, typename Strategy>
-    static inline void apply(Box & box, Point const& prev, Point const& curr,
-                             Strategy const& strategy)
-    {
-        geometry::model::referring_segment<Point const> seg(prev, curr);
-        geometry::envelope(seg, box, strategy);
-    }
-};
-
-template <>
-struct box_first_in_section<cartesian_tag>
-{
-    template <typename Box, typename Point, typename Strategy>
-    static inline void apply(Box & box, Point const& prev, Point const& curr,
-                             Strategy const& strategy)
-    {
-        geometry::envelope(prev, box, strategy);
-        geometry::expand(box, curr, strategy);
-    }
-};
-
-template <typename CSTag>
-struct box_next_in_section
-{
-    template <typename Box, typename Point, typename Strategy>
-    static inline void apply(Box & box, Point const& prev, Point const& curr,
-                             Strategy const& strategy)
-    {
-        geometry::model::referring_segment<Point const> seg(prev, curr);
-        geometry::expand(box, seg, strategy);
-    }
-};
-
-template <>
-struct box_next_in_section<cartesian_tag>
-{
-    template <typename Box, typename Point, typename Strategy>
-    static inline void apply(Box & box, Point const& , Point const& curr,
-                             Strategy const& strategy)
-    {
-        geometry::expand(box, curr, strategy);
     }
 };
 
@@ -344,15 +293,20 @@ struct sectionalize_part
 
                 // In cartesian this is envelope of previous point expanded with current point
                 // in non-cartesian this is envelope of a segment
-                box_first_in_section<typename cs_tag<robust_point_type>::type>
-                    ::apply(section.bounding_box, previous_robust_point, current_robust_point, strategy);
+
+                geometry::model::referring_segment<robust_point_type const> seg(
+                                                                            previous_robust_point,
+                                                                            current_robust_point);
+                geometry::envelope(seg, section.bounding_box, strategy);
             }
             else
             {
                 // In cartesian this is expand with current point
                 // in non-cartesian this is expand with a segment
-                box_next_in_section<typename cs_tag<robust_point_type>::type>
-                    ::apply(section.bounding_box, previous_robust_point, current_robust_point, strategy);
+                geometry::model::referring_segment<robust_point_type const> seg(
+                                                                            previous_robust_point,
+                                                                            current_robust_point);
+                strategy.expand(section.bounding_box, seg).template apply<true>(section.bounding_box, seg);
             }
 
             section.end_index = index + 1;

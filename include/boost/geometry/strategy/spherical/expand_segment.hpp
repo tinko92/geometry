@@ -75,7 +75,7 @@ template
 class spherical_segment
 {
 public:
-    template <typename Box, typename Segment>
+    template <bool = false, typename Box, typename Segment>
     static inline void apply(Box& box, Segment const& segment)
     {
         detail::segment_on_spheroid::apply(box, segment,

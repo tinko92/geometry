@@ -60,7 +60,7 @@ public:
         : m_envelope_strategy(spheroid)
     {}
 
-    template <typename Box, typename Segment>
+    template <bool = false, typename Box, typename Segment>
     inline void apply(Box& box, Segment const& segment) const
     {
         detail::segment_on_spheroid::apply(box, segment, m_envelope_strategy);
