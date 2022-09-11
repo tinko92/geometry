@@ -20,6 +20,8 @@
 #include <boost/geometry/strategy/cartesian/envelope_point.hpp>
 #include <boost/geometry/strategy/cartesian/envelope_range.hpp>
 #include <boost/geometry/strategy/cartesian/envelope_segment.hpp>
+#include <boost/geometry/strategy/cartesian/directions.hpp>
+
 
 #include <boost/geometry/strategies/envelope/services.hpp>
 #include <boost/geometry/strategies/expand/cartesian.hpp>
@@ -85,6 +87,11 @@ struct cartesian
                             > * = nullptr)
     {
         return strategy::envelope::cartesian_boxes();
+    }
+
+    static auto directions()
+    {
+        return strategy::directions::cartesian();
     }
 };
 

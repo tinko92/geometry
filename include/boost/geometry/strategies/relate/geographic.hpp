@@ -217,7 +217,6 @@ public:
     {
         return strategy::preceding::spherical_point_box();
     }
-
 };
 
 

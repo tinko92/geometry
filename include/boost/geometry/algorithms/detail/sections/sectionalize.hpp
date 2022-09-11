@@ -140,98 +140,6 @@ struct sections : std::vector<section<Box, DimensionCount> >
 namespace detail { namespace sectionalize
 {
 
-// NOTE: This utility will NOT work for latitudes, dimension 1 in spherical
-// and geographic coordinate system because in these coordinate systems
-// e.g. a segment on northern hemisphere may go towards greater latitude
-// and then towards lesser latitude.
-template
-<
-    typename Point,
-    typename DimensionVector,
-    std::size_t Index,
-    std::size_t Count,
-    typename CastedCSTag = typename tag_cast
-                            <
-                                typename cs_tag<Point>::type,
-                                spherical_tag
-                            >::type
->
-struct get_direction_loop
-{
-    using dimension = typename util::sequence_element<Index, DimensionVector>::type;
-
-    template <typename Segment>
-    static inline void apply(Segment const& seg,
-                std::array<int, Count>& directions)
-    {
-        auto const& c0 = geometry::get<0, dimension::value>(seg);
-        auto const& c1 = geometry::get<1, dimension::value>(seg);
-
-        directions[Index] = c1 > c0 ? 1 : c1 < c0 ? -1 : 0;
-
-        get_direction_loop
-        <
-            Point,
-            DimensionVector,
-            Index + 1,
-            Count,
-            CastedCSTag
-        >::apply(seg, directions);
-    }
-};
-
-template
-<
-    typename Point,
-    typename DimensionVector,
-    std::size_t Count
->
-struct get_direction_loop<Point, DimensionVector, 0, Count, spherical_tag>
-{
-    using dimension = typename util::sequence_element<0, DimensionVector>::type;
-
-    template <typename Segment>
-    static inline void apply(Segment const& seg,
-                std::array<int, Count>& directions)
-    {
-        using coordinate_type = typename coordinate_type<Segment>::type;
-        using units_t = typename coordinate_system<Point>::type::units;
-
-        coordinate_type const diff = math::longitude_distance_signed
-                                        <
-                                            units_t, coordinate_type
-                                        >(geometry::get<0, 0>(seg),
-                                          geometry::get<1, 0>(seg));
-
-        coordinate_type zero = coordinate_type();
-        directions[0] = diff > zero ? 1 : diff < zero ? -1 : 0;
-
-        get_direction_loop
-        <
-            Point,
-            DimensionVector,
-            1,
-            Count,
-            spherical_tag
-        >::apply(seg, directions);
-    }
-};
-
-template
-<
-    typename Point,
-    typename DimensionVector,
-    std::size_t Count,
-    typename CastedCSTag
->
-struct get_direction_loop<Point, DimensionVector, Count, Count, CastedCSTag>
-{
-    template <typename Segment>
-    static inline void apply(Segment const&, std::array<int, Count>&)
-    {}
-};
-
-
 template <std::size_t Dimension, std::size_t DimensionCount>
 struct check_duplicate_loop
 {
@@ -377,11 +285,7 @@ struct sectionalize_part
             model::referring_segment<robust_point_type> robust_segment(
                     previous_robust_point, current_robust_point);
 
-            std::array<int, dimension_count> direction_classes {0};
-            get_direction_loop
-            <
-                point_type, DimensionVector, 0, dimension_count
-            >::apply(robust_segment, direction_classes);
+            auto direction_classes = strategy.directions().template apply<DimensionVector>(robust_segment);
 
             // if "dir" == 0 for all point-dimensions, it is duplicate.
             // Those sections might be omitted, if wished, lateron

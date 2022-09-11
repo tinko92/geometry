@@ -16,6 +16,7 @@
 #include <boost/geometry/strategy/geographic/envelope.hpp> // Not used, for backward compatibility
 #include <boost/geometry/strategy/geographic/envelope_range.hpp>
 #include <boost/geometry/strategy/geographic/envelope_segment.hpp>
+#include <boost/geometry/strategy/spherical/directions.hpp>
 
 #include <boost/geometry/strategies/envelope/spherical.hpp>
 #include <boost/geometry/strategies/expand/geographic.hpp>
@@ -110,6 +111,11 @@ public:
                     > * = nullptr) const
     {
         return strategy::envelope::spherical_boxes();
+    }
+
+    static auto directions()
+    {
+        return strategy::directions::spherical();
     }
 };
 

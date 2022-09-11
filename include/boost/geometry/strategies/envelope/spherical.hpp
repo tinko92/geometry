@@ -19,6 +19,7 @@
 #include <boost/geometry/strategy/spherical/envelope_point.hpp>
 #include <boost/geometry/strategy/spherical/envelope_range.hpp>
 #include <boost/geometry/strategy/spherical/envelope_segment.hpp>
+#include <boost/geometry/strategy/spherical/directions.hpp>
 
 #include <boost/geometry/strategies/envelope/services.hpp>
 #include <boost/geometry/strategies/expand/spherical.hpp>
@@ -101,6 +102,11 @@ struct spherical
                             > * = nullptr)
     {
         return strategy::envelope::spherical_boxes();
+    }
+
+    static auto directions()
+    {
+        return strategy::directions::spherical();
     }
 };
 
