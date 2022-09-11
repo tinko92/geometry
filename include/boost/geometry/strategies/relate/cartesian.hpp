@@ -29,6 +29,7 @@
 #include <boost/geometry/strategy/cartesian/side_robust.hpp>
 #include <boost/geometry/strategy/cartesian/side_by_triangle.hpp>
 #include <boost/geometry/strategy/cartesian/area_box.hpp>
+#include <boost/geometry/strategy/cartesian/preceding_point_box.hpp>
 
 #include <boost/geometry/util/type_traits.hpp>
 
@@ -186,6 +187,13 @@ public:
                             > * = nullptr)
     {
         return strategy::within::cartesian_box_box();
+    }
+
+    // preceding
+
+    static auto preceding()
+    {
+        return strategy::preceding::cartesian_point_box();
     }
 };
 

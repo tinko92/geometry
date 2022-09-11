@@ -25,6 +25,7 @@
 
 #include <boost/geometry/strategy/spherical/area.hpp>
 #include <boost/geometry/strategy/spherical/area_box.hpp>
+#include <boost/geometry/strategy/spherical/preceding_point_box.hpp>
 
 #include <boost/geometry/util/type_traits.hpp>
 
@@ -192,6 +193,13 @@ public:
                             > * = nullptr)
     {
         return strategy::within::spherical_box_box();
+    }
+
+    // preceding
+
+    static auto preceding()
+    {
+        return strategy::preceding::spherical_point_box();
     }
 };
 

@@ -297,7 +297,7 @@ public :
         range1_iterator prev1, it1, end1;
 
         get_start_point_iterator(sec1, view1, prev1, it1, end1,
-                    index1, ndi1, dir1, sec2.bounding_box, robust_policy);
+                    index1, ndi1, dir1, sec2.bounding_box, strategy, robust_policy);
 
         // We need a circular iterator because it might run through the closing point.
         // One circle is actually enough but this one is just convenient.
@@ -308,7 +308,9 @@ public :
         // section 2:    [--------------]
         // section 1: |----|---|---|---|---|
         for (prev1 = it1++, next1++;
-            it1 != end1 && ! detail::section::exceeding<0>(dir1, *prev1, sec1.bounding_box, sec2.bounding_box, robust_policy);
+            it1 != end1 && ! detail::section::exceeding<0>(dir1, *prev1, sec1.bounding_box,
+                                                           sec2.bounding_box, strategy,
+                                                           robust_policy);
             ++prev1, ++it1, ++index1, ++next1, ++ndi1)
         {
             unique_sub_range_from_section
@@ -326,12 +328,14 @@ public :
             range2_iterator prev2, it2, end2;
 
             get_start_point_iterator(sec2, view2, prev2, it2, end2,
-                        index2, ndi2, dir2, sec1.bounding_box, robust_policy);
+                        index2, ndi2, dir2, sec1.bounding_box, strategy, robust_policy);
             circular2_iterator next2(begin_range_2, end_range_2, it2, true);
             next2++;
 
             for (prev2 = it2++, next2++;
-                it2 != end2 && ! detail::section::exceeding<0>(dir2, *prev2, sec2.bounding_box, sec1.bounding_box, robust_policy);
+                it2 != end2 && ! detail::section::exceeding<0>(dir2, *prev2, sec2.bounding_box,
+                                                               sec1.bounding_box, strategy,
+                                                               robust_policy);
                 ++prev2, ++it2, ++index2, ++next2, ++ndi2)
             {
                 bool skip = false;
@@ -413,14 +417,15 @@ private :
     // because of the logistics of "index" (the section-iterator automatically
     // skips to the begin-point, we loose the index or have to recalculate it)
     // So we mimic it here
-    template <typename Range, typename Section, typename Box, typename RobustPolicy>
+    template <typename Range, typename Section, typename Box, typename Strategy, typename RobustPolicy>
     static inline void get_start_point_iterator(Section const& section,
             Range const& range,
             typename boost::range_iterator<Range const>::type& it,
             typename boost::range_iterator<Range const>::type& prev,
             typename boost::range_iterator<Range const>::type& end,
             signed_size_type& index, signed_size_type& ndi,
-            int dir, Box const& other_bounding_box, RobustPolicy const& robust_policy)
+            int dir, Box const& other_bounding_box, Strategy const& strategy,
+            RobustPolicy const& robust_policy)
     {
         it = boost::begin(range) + section.begin_index;
         end = boost::begin(range) + section.end_index + 1;
@@ -428,7 +433,9 @@ private :
         // Mimic section-iterator:
         // Skip to point such that section interects other box
         prev = it++;
-        for (; it != end && detail::section::preceding<0>(dir, *it, section.bounding_box, other_bounding_box, robust_policy);
+        for (; it != end && detail::section::preceding<0>(dir, *it, section.bounding_box,
+                                                          other_bounding_box, strategy,
+                                                          robust_policy);
              prev = it++, index++, ndi++)
         {}
         // Go back one step because we want to start completely preceding

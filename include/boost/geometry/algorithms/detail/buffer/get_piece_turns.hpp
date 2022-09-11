@@ -162,6 +162,7 @@ class piece_turn_visitor
                 && detail::section::preceding<Dimension>(dir, *(it_begin + 1),
                                                          this_bounding_box,
                                                          other_bounding_box,
+                                                         m_strategy,
                                                          m_robust_policy);
             ++it_begin, index++)
         {}
@@ -177,7 +178,7 @@ class piece_turn_visitor
             && it_beyond - 2 != it_begin)
         {
             if (detail::section::exceeding<Dimension>(dir, *(it_beyond - 2),
-                        this_bounding_box, other_bounding_box, m_robust_policy))
+                        this_bounding_box, other_bounding_box, m_strategy, m_robust_policy))
             {
                 --it_beyond;
             }
