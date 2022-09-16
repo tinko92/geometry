@@ -27,6 +27,7 @@
 #include <boost/geometry/strategy/geographic/area_box.hpp>
 #include <boost/geometry/strategy/spherical/preceding_point_box.hpp>
 #include <boost/geometry/strategy/spherical/direction.hpp>
+#include <boost/geometry/strategy/spherical/side_value_zero.hpp>
 
 #include <boost/geometry/util/type_traits.hpp>
 
@@ -225,6 +226,13 @@ public:
     static auto direction(Geometry1 const&, Geometry1 const&, Geometry2 const&)
     {
         return strategy::direction::spherical_equatorial();
+    }
+
+    // side_value_line
+
+    static auto side_value_line()
+    {
+        return strategy::side_value_line::zero();
     }
 };
 

@@ -31,6 +31,7 @@
 #include <boost/geometry/strategy/cartesian/area_box.hpp>
 #include <boost/geometry/strategy/cartesian/preceding_point_box.hpp>
 #include <boost/geometry/strategy/cartesian/direction.hpp>
+#include <boost/geometry/strategy/cartesian/side_value_line.hpp>
 
 #include <boost/geometry/util/type_traits.hpp>
 
@@ -203,6 +204,13 @@ public:
     static auto direction(Geometry1 const&, Geometry1 const&, Geometry2 const&)
     {
         return strategy::direction::cartesian();
+    }
+
+    // side_value_line
+
+    static auto side_value_line()
+    {
+        return strategy::side_value_line::cartesian();
     }
 };
 

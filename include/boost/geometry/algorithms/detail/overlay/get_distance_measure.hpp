@@ -13,12 +13,7 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_GET_DISTANCE_MEASURE_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_GET_DISTANCE_MEASURE_HPP
 
-#include <boost/geometry/core/access.hpp>
-#include <boost/geometry/core/coordinate_system.hpp>
 #include <boost/geometry/core/coordinate_type.hpp>
-#include <boost/geometry/arithmetic/infinite_line_functions.hpp>
-#include <boost/geometry/algorithms/detail/make/make.hpp>
-#include <boost/geometry/algorithms/not_implemented.hpp>
 #include <boost/geometry/util/select_coordinate_type.hpp>
 
 #include <cmath>
@@ -56,60 +51,6 @@ struct distance_measure
 
 } // detail
 
-
-namespace detail_dispatch
-{
-
-// TODO: this is effectively a strategy, but for internal usage.
-// It might be moved to the strategies folder.
-
-template <typename CalculationType, typename CsTag>
-struct get_distance_measure
-    : not_implemented<CsTag>
-{};
-
-template <typename CalculationType>
-struct get_distance_measure<CalculationType, spherical_tag>
-{
-    // By default the distance measure is zero, no side difference
-    using result_type = detail::distance_measure<CalculationType>;
-
-    template <typename SegmentPoint, typename Point>
-    static result_type apply(SegmentPoint const& , SegmentPoint const& ,
-                             Point const& )
-    {
-        const result_type result;
-        return result;
-    }
-};
-
-template <typename CalculationType>
-struct get_distance_measure<CalculationType, geographic_tag>
-    : get_distance_measure<CalculationType, spherical_tag>
-{};
-
-template <typename CalculationType>
-struct get_distance_measure<CalculationType, cartesian_tag>
-{
-    using result_type = detail::distance_measure<CalculationType>;
-
-    template <typename SegmentPoint, typename Point>
-    static result_type apply(SegmentPoint const& p1, SegmentPoint const& p2,
-                             Point const& p)
-    {
-        // Get the distance measure / side value
-        // It is not a real distance and purpose is
-        // to detect small differences in collinearity
-
-        auto const line = detail::make::make_infinite_line<CalculationType>(p1, p2);
-        result_type result;
-        result.measure = arithmetic::side_value(line, p);
-        return result;
-    }
-};
-
-} // namespace detail_dispatch
-
 namespace detail
 {
 
@@ -120,14 +61,12 @@ namespace detail
 
 template <typename SegmentPoint, typename Point, typename Strategies>
 inline auto get_distance_measure(SegmentPoint const& p1, SegmentPoint const& p2, Point const& p,
-                                 Strategies const&)
+                                 Strategies const& strategy)
 {
-    return detail_dispatch::get_distance_measure
-            <
-                typename select_coordinate_type<SegmentPoint, Point>::type,
-                typename Strategies::cs_tag
-            >::apply(p1, p2, p);
-
+    using calculation_type = typename select_coordinate_type<SegmentPoint, Point>::type;
+    detail::distance_measure<calculation_type> result;
+    result.measure = strategy.side_value_line().apply(p1, p2, p);
+    return result;
 }
 
 } // namespace detail
