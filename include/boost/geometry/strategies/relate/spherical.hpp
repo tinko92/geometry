@@ -213,7 +213,7 @@ public:
     static auto direction(Geometry1 const&, Geometry1 const&, Geometry2 const&,
                           std::enable_if_t
                             <
-                                std::template is_same
+                                std::is_same
                                     <
                                         typename cs_tag<Geometry1>::type,
                                         spherical_polar_tag
@@ -227,7 +227,7 @@ public:
     static auto direction(Geometry1 const&, Geometry1 const&, Geometry2 const&,
                           std::enable_if_t
                             <
-                                ! std::template is_same
+                                ! std::is_same
                                     <
                                         typename cs_tag<Geometry1>::type,
                                         spherical_polar_tag
