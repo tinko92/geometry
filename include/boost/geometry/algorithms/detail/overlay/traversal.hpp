@@ -81,7 +81,7 @@ template
     typename Turns,
     typename Clusters,
     typename RobustPolicy,
-    typename SideStrategy,
+    typename Strategy,
     typename Visitor
 >
 struct traversal
@@ -98,13 +98,13 @@ private :
     using sbs_type = sort_by_side::side_sorter
         <
             Reverse1, Reverse2, OverlayType,
-            point_type, SideStrategy, side_compare_type
+            point_type, Strategy, side_compare_type
         >;
 
 public :
     inline traversal(Geometry1 const& geometry1, Geometry2 const& geometry2,
             Turns& turns, Clusters const& clusters,
-            RobustPolicy const& robust_policy, SideStrategy const& strategy,
+            RobustPolicy const& robust_policy, Strategy const& strategy,
             Visitor& visitor)
         : m_geometry1(geometry1)
         , m_geometry2(geometry2)
@@ -1021,7 +1021,7 @@ private :
     Turns& m_turns;
     Clusters const& m_clusters;
     RobustPolicy const& m_robust_policy;
-    SideStrategy m_strategy;
+    Strategy m_strategy;
     Visitor& m_visitor;
 };
 

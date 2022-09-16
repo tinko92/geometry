@@ -10,6 +10,9 @@
 #ifndef BOOST_GEOMETRY_STRATEGIES_RELATE_SPHERICAL_HPP
 #define BOOST_GEOMETRY_STRATEGIES_RELATE_SPHERICAL_HPP
 
+#include <type_traits>
+
+#include <boost/geometry/core/cs.hpp>
 
 // TEMP - move to strategy
 #include <boost/geometry/strategies/agnostic/point_in_box_by_side.hpp>
@@ -26,6 +29,7 @@
 #include <boost/geometry/strategy/spherical/area.hpp>
 #include <boost/geometry/strategy/spherical/area_box.hpp>
 #include <boost/geometry/strategy/spherical/preceding_point_box.hpp>
+#include <boost/geometry/strategy/spherical/direction.hpp>
 
 #include <boost/geometry/util/type_traits.hpp>
 
@@ -200,6 +204,36 @@ public:
     static auto preceding()
     {
         return strategy::preceding::spherical_point_box();
+    }
+
+    // direction
+
+    template <typename Geometry1, typename Geometry2>
+    static auto direction(Geometry1 const&, Geometry1 const&, Geometry2 const&,
+                          std::enable_if_t
+                            <
+                                std::is_same
+                                    <
+                                        typename cs_tag<Geometry1>::type,
+                                        spherical_polar_tag
+                                    >::value
+                            > * = nullptr)
+    {
+        return strategy::direction::spherical_polar();
+    }
+
+    template <typename Geometry1, typename Geometry2>
+    static auto direction(Geometry1 const&, Geometry1 const&, Geometry2 const&,
+                          std::enable_if_t
+                            <
+                                ! std::is_same
+                                    <
+                                        typename cs_tag<Geometry1>::type,
+                                        spherical_polar_tag
+                                    >::value
+                            > * = nullptr)
+    {
+        return strategy::direction::spherical_equatorial();
     }
 };
 

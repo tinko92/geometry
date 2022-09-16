@@ -22,7 +22,6 @@
 #include <boost/geometry/algorithms/detail/overlay/approximately_equals.hpp>
 #include <boost/geometry/algorithms/detail/overlay/copy_segment_point.hpp>
 #include <boost/geometry/algorithms/detail/overlay/get_ring.hpp>
-#include <boost/geometry/algorithms/detail/direction_code.hpp>
 #include <boost/geometry/algorithms/detail/overlay/turn_info.hpp>
 
 #include <boost/geometry/util/condition.hpp>
@@ -127,10 +126,10 @@ struct less_false
     }
 };
 
-template <typename Point, typename SideStrategy, typename LessOnSame, typename Compare>
+template <typename Point, typename Strategy, typename LessOnSame, typename Compare>
 struct less_by_side
 {
-    less_by_side(const Point& p1, const Point& p2, SideStrategy const& strategy)
+    less_by_side(const Point& p1, const Point& p2, Strategy const& strategy)
         : m_origin(p1)
         , m_turn_point(p2)
         , m_strategy(strategy)
@@ -139,21 +138,21 @@ struct less_by_side
     template <typename T>
     inline bool operator()(const T& first, const T& second) const
     {
-        using cs_tag = typename SideStrategy::cs_tag;
-
         LessOnSame on_same;
         Compare compare;
 
-        int const side_first = m_strategy.apply(m_origin, m_turn_point, first.point);
-        int const side_second = m_strategy.apply(m_origin, m_turn_point, second.point);
+        int const side_first = m_strategy.side().apply(m_origin, m_turn_point, first.point);
+        int const side_second = m_strategy.side().apply(m_origin, m_turn_point, second.point);
 
         if (side_first == 0 && side_second == 0)
         {
             // Both collinear. They might point into different directions: <------*------>
             // If so, order the one going backwards as the very first.
 
-            int const first_code = direction_code<cs_tag>(m_origin, m_turn_point, first.point);
-            int const second_code = direction_code<cs_tag>(m_origin, m_turn_point, second.point);
+            int const first_code = m_strategy.direction(m_origin, m_turn_point, first.point)
+                                        .apply(m_origin, m_turn_point, first.point);
+            int const second_code = m_strategy.direction(m_origin, m_turn_point, second.point)
+                                        .apply(m_origin, m_turn_point, second.point);
 
             // Order by code, backwards first, then forward.
             return first_code != second_code
@@ -162,14 +161,16 @@ struct less_by_side
                 ;
         }
         else if (side_first == 0
-                && direction_code<cs_tag>(m_origin, m_turn_point, first.point) == -1)
+                && m_strategy.direction(m_origin, m_turn_point, first.point)
+                    .apply(m_origin, m_turn_point, first.point) == -1)
         {
             // First collinear and going backwards.
             // Order as the very first, so return always true
             return true;
         }
         else if (side_second == 0
-            && direction_code<cs_tag>(m_origin, m_turn_point, second.point) == -1)
+            && m_strategy.direction(m_origin, m_turn_point, second.point)
+                .apply(m_origin, m_turn_point, second.point) == -1)
         {
             // Second is collinear and going backwards
             // Order as very last, so return always false
@@ -185,14 +186,16 @@ struct less_by_side
 
         // They are both left, both right, and/or both collinear (with each other and/or with p1,p2)
         // Check mutual side
-        int const side_second_wrt_first = m_strategy.apply(m_turn_point, first.point, second.point);
+        int const side_second_wrt_first = m_strategy.side().apply(m_turn_point, first.point,
+                                                                  second.point);
 
         if (side_second_wrt_first == 0)
         {
             return on_same(first, second);
         }
 
-        int const side_first_wrt_second = m_strategy.apply(m_turn_point, second.point, first.point);
+        int const side_first_wrt_second = m_strategy.side().apply(m_turn_point, second.point,
+                                                                  first.point);
         if (side_second_wrt_first != -side_first_wrt_second)
         {
             // (FP) accuracy error in side calculation, the sides are not opposite.
@@ -211,7 +214,7 @@ struct less_by_side
 private :
     Point const& m_origin;
     Point const& m_turn_point;
-    SideStrategy const& m_strategy;
+    Strategy const& m_strategy;
 };
 
 // Sorts vectors in counter clockwise order (by default)
@@ -221,7 +224,7 @@ template
     bool Reverse2,
     overlay_type OverlayType,
     typename Point,
-    typename SideStrategy,
+    typename Strategy,
     typename Compare
 >
 struct side_sorter
@@ -252,7 +255,7 @@ private :
     };
 
 public :
-    side_sorter(SideStrategy const& strategy)
+    side_sorter(Strategy const& strategy)
         : m_origin_count(0)
         , m_origin_segment_distance(0)
         , m_strategy(strategy)
@@ -388,8 +391,8 @@ public :
         //    to give colinear points
 
         // Sort by side and assign rank
-        less_by_side<Point, SideStrategy, less_by_index, Compare> less_unique(m_origin, turn_point, m_strategy);
-        less_by_side<Point, SideStrategy, less_false, Compare> less_non_unique(m_origin, turn_point, m_strategy);
+        less_by_side<Point, Strategy, less_by_index, Compare> less_unique(m_origin, turn_point, m_strategy);
+        less_by_side<Point, Strategy, less_false, Compare> less_non_unique(m_origin, turn_point, m_strategy);
 
         std::sort(m_ranked_points.begin(), m_ranked_points.end(), less_unique);
 
@@ -513,7 +516,7 @@ public :
     Point m_origin;
     std::size_t m_origin_count;
     signed_size_type m_origin_segment_distance;
-    SideStrategy m_strategy;
+    Strategy m_strategy;
 
 private :
 

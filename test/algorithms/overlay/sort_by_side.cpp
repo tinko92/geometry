@@ -51,35 +51,34 @@ template
     typename Turns,
     typename Geometry1,
     typename Geometry2,
-    typename SideStrategy
+    typename Strategy
 >
 std::vector<std::size_t> gather_cluster_properties(
         Clusters& clusters, Turns& turns,
         bg::detail::overlay::operation_type for_operation,
         Geometry1 const& geometry1, Geometry2 const& geometry2,
-        SideStrategy const& strategy)
+        Strategy const& strategy)
 {
     using namespace boost::geometry;
     using namespace boost::geometry::detail::overlay;
 
     std::vector<std::size_t> result;
 
-    typedef typename boost::range_value<Turns>::type turn_type;
-    typedef typename turn_type::point_type point_type;
-    typedef typename turn_type::turn_operation_type turn_operation_type;
+    using turn_type = typename boost::range_value<Turns>::type;
+    using point_type = typename turn_type::point_type;
+    using turn_operation_type = typename turn_type::turn_operation_type;
 
     // Define sorter, sorting counter-clockwise such that polygons are on the
     // right side
-    typedef sort_by_side::side_sorter
+    using sbs_type = sort_by_side::side_sorter
         <
-            Reverse1, Reverse2, OverlayType, point_type, SideStrategy, std::less<int>
-        > sbs_type;
+            Reverse1, Reverse2, OverlayType, point_type, Strategy, std::less<int>
+        >;
 
-    for (typename Clusters::iterator mit = clusters.begin();
-         mit != clusters.end(); ++mit)
+    for (auto& c : clusters)
     {
-        cluster_info& cinfo = mit->second;
-        std::set<signed_size_type> const& ids = cinfo.turn_indices;
+        cluster_info& cinfo = c.second;
+        auto const& ids = cinfo.turn_indices;
         if (ids.empty())
         {
             return result;
@@ -89,11 +88,9 @@ std::vector<std::size_t> gather_cluster_properties(
         point_type turn_point; // should be all the same for all turns in cluster
 
         bool first = true;
-        for (typename std::set<signed_size_type>::const_iterator sit = ids.begin();
-             sit != ids.end(); ++sit)
+        for (auto turn_index : ids)
         {
-            signed_size_type turn_index = *sit;
-            turn_type const& turn = turns[turn_index];
+            auto const& turn = turns[turn_index];
             if (first)
             {
                 turn_point = turn.point;
@@ -133,20 +130,20 @@ std::vector<std::size_t> apply_overlay(
 {
     using namespace boost::geometry;
 
-    typedef typename bg::point_type<GeometryOut>::type point_type;
-    typedef bg::detail::overlay::traversal_turn_info
+    using point_type = typename bg::point_type<GeometryOut>::type;
+    using turn_info = bg::detail::overlay::traversal_turn_info
     <
         point_type,
         typename bg::detail::segment_ratio_type<point_type, RobustPolicy>::type
-    > turn_info;
-    typedef std::deque<turn_info> turn_container_type;
+    >;
+    using turn_container_type = std::deque<turn_info>;
 
     // Define the clusters, mapping cluster_id -> turns
-    typedef std::map
+    using cluster_type = std::map
         <
             signed_size_type,
             bg::detail::overlay::cluster_info
-        > cluster_type;
+        >;
 
     turn_container_type turns;
 
@@ -165,7 +162,7 @@ std::vector<std::size_t> apply_overlay(
     // Gather cluster properties, with test option
     return ::gather_cluster_properties<Reverse1, Reverse2, OverlayType>(
             clusters, turns, bg::detail::overlay::operation_from_overlay<OverlayType>::value,
-                geometry1, geometry2, strategy.side());
+                geometry1, geometry2, strategy);
 }
 
 
@@ -186,21 +183,21 @@ void test_sort_by_side(std::string const& case_id,
     bg::correct(g1);
     bg::correct(g2);
 
-    typedef typename boost::range_value<Geometry>::type geometry_out;
+    using geometry_out = typename boost::range_value<Geometry>::type;
 
-    typedef typename bg::rescale_overlay_policy_type
+    using rescale_policy_type = typename bg::rescale_overlay_policy_type
     <
         Geometry,
         Geometry
-    >::type rescale_policy_type;
+    >::type;
 
     rescale_policy_type robust_policy
         = bg::get_rescale_policy<rescale_policy_type>(g1, g2);
 
-    typedef typename bg::strategies::relate::services::default_strategy
+    using strategy_type = typename bg::strategies::relate::services::default_strategy
         <
             Geometry, Geometry
-        >::type strategy_type;
+        >::type;
 
     strategy_type strategy;
 
@@ -226,9 +223,9 @@ void test_sort_by_side(std::string const& case_id,
 template <typename T>
 void test_all()
 {
-    typedef bg::model::point<T, 2, bg::cs::cartesian> point_type;
-    typedef bg::model::polygon<point_type> polygon;
-    typedef bg::model::multi_polygon<polygon> multi_polygon;
+    using point_type = bg::model::point<T, 2, bg::cs::cartesian>;
+    using polygon = bg::model::polygon<point_type>;
+    using multi_polygon = bg::model::multi_polygon<polygon>;
 
     // Selection of test cases having only one cluster
 

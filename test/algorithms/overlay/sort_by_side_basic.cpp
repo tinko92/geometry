@@ -65,13 +65,13 @@ std::vector<std::size_t> apply_get_turns(std::string const& case_id,
     std::vector<std::size_t> result;
 
 //todo: maybe should be enriched to count left/right - but can also be counted from ranks
-    typedef typename bg::point_type<Geometry>::type point_type;
-    typedef bg::detail::overlay::turn_info
+    using point_type = typename bg::point_type<Geometry>::type;
+    using turn_info = bg::detail::overlay::turn_info
     <
         point_type,
         typename bg::detail::segment_ratio_type<point_type, RobustPolicy>::type
-    > turn_info;
-    typedef std::deque<turn_info> turn_container_type;
+    >;
+    using turn_container_type = std::deque<turn_info>;
 
     turn_container_type turns;
 
@@ -85,14 +85,13 @@ std::vector<std::size_t> apply_get_turns(std::string const& case_id,
 
     // Define sorter, sorting counter-clockwise such that polygons are on the
     // right side
-    typedef decltype(strategy.side()) side_strategy;
-    typedef bg::detail::overlay::sort_by_side::side_sorter
+    using sbs_type = bg::detail::overlay::sort_by_side::side_sorter
         <
             false, false, overlay_union,
-            point_type, side_strategy, std::less<int>
-        > sbs_type;
+            point_type, Strategy, std::less<int>
+        >;
 
-    sbs_type sbs(strategy.side());
+    sbs_type sbs(strategy);
 
     std::cout << "Case: " << case_id << std::endl;
 
@@ -224,9 +223,9 @@ void test_basic(std::string const& case_id,
                 std::size_t expected_max_rank,
                 std::vector<bg::signed_size_type> const& expected_right_count)
 {
-    typedef bg::model::point<T, 2, bg::cs::cartesian> point_type;
-    typedef bg::model::polygon<point_type> polygon;
-    typedef bg::model::multi_polygon<polygon> multi_polygon;
+    using point_type = bg::model::point<T, 2, bg::cs::cartesian>;
+    using polygon = bg::model::polygon<point_type>;
+    using multi_polygon = bg::model::multi_polygon<polygon>;
 
     multi_polygon g1;
     bg::read_wkt(wkt1, g1);
@@ -242,19 +241,19 @@ void test_basic(std::string const& case_id,
     bg::correct(g1);
     bg::correct(g2);
 
-    typedef typename bg::rescale_overlay_policy_type
+    using rescale_policy_type = typename bg::rescale_overlay_policy_type
     <
         multi_polygon,
         multi_polygon
-    >::type rescale_policy_type;
+    >::type;
 
     rescale_policy_type robust_policy
         = bg::get_rescale_policy<rescale_policy_type>(g1, g2);
 
-    typedef typename bg::strategies::relate::services::default_strategy
+    using strategy_type = typename bg::strategies::relate::services::default_strategy
         <
             multi_polygon, multi_polygon
-        >::type strategy_type;
+        >::type;
 
     strategy_type strategy;
 

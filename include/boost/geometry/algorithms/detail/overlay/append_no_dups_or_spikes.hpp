@@ -68,13 +68,6 @@ inline bool points_equal_or_close(Point1 const& point1,
     geometry::recalculate(point1_rob, point1, robust_policy);
     geometry::recalculate(point2_rob, point2, robust_policy);
 
-    // Only if this is the case the same strategy can be used.
-    BOOST_STATIC_ASSERT((std::is_same
-                            <
-                                typename geometry::cs_tag<Point1>::type,
-                                typename geometry::cs_tag<robust_point_type>::type
-                            >::value));
-
     return detail::equals::equals_point_point(point1_rob, point2_rob, strategy);
 }
 
@@ -110,7 +103,7 @@ inline void append_no_dups_or_spikes(Range& range, Point const& point,
             && point_is_spike_or_equal(point,
                 *(boost::end(range) - 3),
                 *(boost::end(range) - 2),
-                strategy.side(), // TODO: Pass strategy?
+                strategy,
                 robust_policy))
     {
         // Use the Concept/traits, so resize and append again
@@ -149,7 +142,7 @@ inline void append_no_collinear(Range& range, Point const& point,
             && point_is_collinear(point,
                 *(boost::end(range) - 3),
                 *(boost::end(range) - 2),
-                strategy.side(), // TODO: Pass strategy?
+                strategy,
                 robust_policy))
     {
         // Use the Concept/traits, so resize and append again
@@ -194,7 +187,7 @@ inline void clean_closing_dups_and_spikes(Range& range,
         // Check if closing point is a spike (this is so if the second point is
         // considered as collinear w.r.t. the last segment)
         if (point_is_collinear(*second, *ultimate, *first,
-                               strategy.side(), // TODO: Pass strategy?
+                               strategy,
                                robust_policy))
         {
             range::erase(range, first);

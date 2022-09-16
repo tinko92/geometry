@@ -26,7 +26,6 @@
 #include <boost/range/size.hpp>
 #include <boost/range/value_type.hpp>
 
-#include <boost/geometry/algorithms/detail/direction_code.hpp>
 #include <boost/geometry/algorithms/detail/buffer/buffered_piece_collection.hpp>
 #include <boost/geometry/algorithms/detail/buffer/line_line_intersection.hpp>
 
@@ -175,12 +174,13 @@ struct buffer_range
 
     // Returns true if collinear point p2 continues after p0 and p1.
     // If it turns back (spike), it returns false.
+    template <typename Strategy>
     static inline bool same_direction(output_point_type const& p0,
             output_point_type const& p1,
-            output_point_type const& p2)
+            output_point_type const& p2,
+            Strategy const& strategy)
     {
-        using cs_tag = typename cs_tag<output_point_type>::type;
-        return direction_code<cs_tag>(p0, p1, p2) == 1;
+        return strategy.direction(p0, p1, p2).apply(p0, p1, p2) == 1;
     }
 
     template <typename Strategies>
@@ -193,7 +193,7 @@ struct buffer_range
         int const side = strategies.side().apply(p0, p1, p2);
         return side == -1 ? geometry::strategy::buffer::join_convex
             :  side == 1  ? geometry::strategy::buffer::join_concave
-            :  same_direction(p0, p1, p2) ? geometry::strategy::buffer::join_continue
+            :  same_direction(p0, p1, p2, strategies) ? geometry::strategy::buffer::join_continue
             : geometry::strategy::buffer::join_spike;
     }
 

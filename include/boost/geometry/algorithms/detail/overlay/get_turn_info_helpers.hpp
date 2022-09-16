@@ -14,7 +14,6 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_GET_TURN_INFO_HELPERS_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_GET_TURN_INFO_HELPERS_HPP
 
-#include <boost/geometry/algorithms/detail/direction_code.hpp>
 #include <boost/geometry/algorithms/detail/overlay/turn_info.hpp>
 #include <boost/geometry/algorithms/detail/recalculate.hpp>
 #include <boost/geometry/core/assert.hpp>
@@ -404,8 +403,6 @@ class intersection_info
 
 public:
 
-    using cs_tag = typename UmbrellaStrategy::cs_tag;
-
     using side_calculator_type = typename base::side_calculator_type;
     using result_type = typename base::result_type;
     
@@ -453,7 +450,8 @@ public:
                 {
                     // qk is collinear with both p1 and p2,
                     // verify if pk goes backwards w.r.t. pi/pj
-                    return direction_code<cs_tag>(base::rpi(), base::rpj(), base::rpk()) == -1;
+                    return m_umbrella_strategy.direction(base::rpi(), base::rpj(), base::rpk())
+                        .apply(base::rpi(), base::rpj(), base::rpk()) == -1;
                 }
 
                 // qk is at opposite side of p1/p2, therefore
@@ -489,7 +487,8 @@ public:
             {
                 if (pk_q1 == 0)
                 {
-                    return direction_code<cs_tag>(base::rqi(), base::rqj(), base::rqk()) == -1;
+                    return m_umbrella_strategy.direction(base::rqi(), base::rqj(), base::rqk())
+                        .apply(base::rqi(), base::rqj(), base::rqk()) == -1;
                 }
                         
                 return true;

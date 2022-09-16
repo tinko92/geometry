@@ -26,6 +26,7 @@
 #include <boost/geometry/strategy/geographic/area.hpp>
 #include <boost/geometry/strategy/geographic/area_box.hpp>
 #include <boost/geometry/strategy/spherical/preceding_point_box.hpp>
+#include <boost/geometry/strategy/spherical/direction.hpp>
 
 #include <boost/geometry/util/type_traits.hpp>
 
@@ -216,6 +217,14 @@ public:
     static auto preceding()
     {
         return strategy::preceding::spherical_point_box();
+    }
+
+    // direction
+
+    template <typename Geometry1, typename Geometry2>
+    static auto direction(Geometry1 const&, Geometry1 const&, Geometry2 const&)
+    {
+        return strategy::direction::spherical_equatorial();
     }
 };
 

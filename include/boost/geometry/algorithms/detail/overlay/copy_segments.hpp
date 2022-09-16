@@ -145,14 +145,14 @@ public:
     <
         typename LineString,
         typename SegmentIdentifier,
-        typename SideStrategy,
+        typename Strategy,
         typename RobustPolicy,
         typename RangeOut
     >
     static inline void apply(LineString const& ls,
             SegmentIdentifier const& seg_id,
             signed_size_type to_index,
-            SideStrategy const& strategy,
+            Strategy const& strategy,
             RobustPolicy const& robust_policy,
             RangeOut& current_output)
     {
@@ -186,14 +186,14 @@ struct copy_segments_polygon
     <
         typename Polygon,
         typename SegmentIdentifier,
-        typename SideStrategy,
+        typename Strategy,
         typename RobustPolicy,
         typename RangeOut
     >
     static inline void apply(Polygon const& polygon,
             SegmentIdentifier const& seg_id,
             signed_size_type to_index,
-            SideStrategy const& strategy,
+            Strategy const& strategy,
             RobustPolicy const& robust_policy,
             RangeOut& current_output)
     {
@@ -219,14 +219,14 @@ struct copy_segments_box
     <
         typename Box,
         typename SegmentIdentifier,
-        typename SideStrategy,
+        typename Strategy,
         typename RobustPolicy,
         typename RangeOut
     >
     static inline void apply(Box const& box,
             SegmentIdentifier const& seg_id,
             signed_size_type to_index,
-            SideStrategy const& strategy,
+            Strategy const& strategy,
             RobustPolicy const& robust_policy,
             RangeOut& current_output)
     {
@@ -261,14 +261,14 @@ struct copy_segments_multi
     <
         typename MultiGeometry,
         typename SegmentIdentifier,
-        typename SideStrategy,
+        typename Strategy,
         typename RobustPolicy,
         typename RangeOut
     >
     static inline void apply(MultiGeometry const& multi_geometry,
             SegmentIdentifier const& seg_id,
             signed_size_type to_index,
-            SideStrategy const& strategy,
+            Strategy const& strategy,
             RobustPolicy const& robust_policy,
             RangeOut& current_output)
     {
@@ -352,14 +352,14 @@ template
     bool Reverse,
     typename Geometry,
     typename SegmentIdentifier,
-    typename SideStrategy,
+    typename Strategy,
     typename RobustPolicy,
     typename RangeOut
 >
 inline void copy_segments(Geometry const& geometry,
             SegmentIdentifier const& seg_id,
             signed_size_type to_index,
-            SideStrategy const& strategy,
+            Strategy const& strategy,
             RobustPolicy const& robust_policy,
             RangeOut& range_out)
 {

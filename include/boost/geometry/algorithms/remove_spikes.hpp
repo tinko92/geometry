@@ -41,6 +41,10 @@
 #include <boost/geometry/algorithms/clear.hpp>
 
 #include <boost/geometry/strategies/default_strategy.hpp>
+#include <boost/geometry/strategies/relate/cartesian.hpp>
+#include <boost/geometry/strategies/relate/geographic.hpp>
+#include <boost/geometry/strategies/relate/spherical.hpp>
+#include <boost/geometry/strategies/relate/services.hpp>
 
 #include <boost/geometry/util/condition.hpp>
 #include <boost/geometry/util/range.hpp>
@@ -270,12 +274,12 @@ struct remove_spikes
 
     static void apply(Geometry& geometry, geometry::default_strategy const&)
     {
-        typedef typename strategy::side::services::default_strategy
+        using strategy = typename strategies::relate::services::default_strategy
             <
-                typename cs_tag<Geometry>::type
-            >::type side_strategy;
+                Geometry, Geometry
+            >::type;
 
-        apply(geometry, side_strategy());
+        apply(geometry, strategy());
     }
 };
 

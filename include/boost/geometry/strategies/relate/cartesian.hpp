@@ -30,6 +30,7 @@
 #include <boost/geometry/strategy/cartesian/side_by_triangle.hpp>
 #include <boost/geometry/strategy/cartesian/area_box.hpp>
 #include <boost/geometry/strategy/cartesian/preceding_point_box.hpp>
+#include <boost/geometry/strategy/cartesian/direction.hpp>
 
 #include <boost/geometry/util/type_traits.hpp>
 
@@ -194,6 +195,14 @@ public:
     static auto preceding()
     {
         return strategy::preceding::cartesian_point_box();
+    }
+
+    // direction
+
+    template <typename Geometry1, typename Geometry2>
+    static auto direction(Geometry1 const&, Geometry1 const&, Geometry2 const&)
+    {
+        return strategy::direction::cartesian();
     }
 };
 

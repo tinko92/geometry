@@ -81,7 +81,7 @@ struct has_spikes
 
         auto next = find_different_from_first(cur, boost::end(view),
                                                   strategy);
-        if (detail::is_spike_or_equal(*next, *cur, *prev, strategy.side()))
+        if (detail::is_spike_or_equal(*next, *cur, *prev, strategy))
         {
             return ! visitor.template apply<failure_spikes>(is_linear, *cur);
         }
@@ -127,7 +127,7 @@ struct has_spikes
             // in is_spike_or_equal, but this order calls the side
             // strategy in the way to correctly detect the spikes,
             // also in geographic cases going over the pole
-            if (detail::is_spike_or_equal(*next, *cur, *prev, strategy.side()))
+            if (detail::is_spike_or_equal(*next, *cur, *prev, strategy))
             {
                 return
                     ! visitor.template apply<failure_spikes>(is_linestring, *cur);
