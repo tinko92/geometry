@@ -30,6 +30,7 @@
 #include <boost/geometry/strategy/spherical/area_box.hpp>
 #include <boost/geometry/strategy/spherical/preceding_point_box.hpp>
 #include <boost/geometry/strategy/spherical/direction.hpp>
+#include <boost/geometry/strategy/spherical/side_value_zero.hpp>
 
 #include <boost/geometry/util/type_traits.hpp>
 
@@ -212,7 +213,7 @@ public:
     static auto direction(Geometry1 const&, Geometry1 const&, Geometry2 const&,
                           std::enable_if_t
                             <
-                                std::is_same
+                                std::template is_same
                                     <
                                         typename cs_tag<Geometry1>::type,
                                         spherical_polar_tag
@@ -226,7 +227,7 @@ public:
     static auto direction(Geometry1 const&, Geometry1 const&, Geometry2 const&,
                           std::enable_if_t
                             <
-                                ! std::is_same
+                                ! std::template is_same
                                     <
                                         typename cs_tag<Geometry1>::type,
                                         spherical_polar_tag
@@ -234,6 +235,13 @@ public:
                             > * = nullptr)
     {
         return strategy::direction::spherical_equatorial();
+    }
+
+    //side_value_line
+
+    static auto side_value_line()
+    {
+        return strategy::side_value_line::zero();
     }
 };
 
