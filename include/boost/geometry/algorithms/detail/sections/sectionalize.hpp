@@ -44,7 +44,6 @@
 #include <boost/geometry/algorithms/detail/ring_identifier.hpp>
 #include <boost/geometry/algorithms/detail/signed_size_type.hpp>
 
-#include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/closure.hpp>
 #include <boost/geometry/core/exterior_ring.hpp>
 #include <boost/geometry/core/point_order.hpp>
@@ -56,8 +55,6 @@
 #include <boost/geometry/geometries/segment.hpp>
 #include <boost/geometry/policies/robustness/no_rescale_policy.hpp>
 #include <boost/geometry/policies/robustness/robust_point_type.hpp>
-#include <boost/geometry/util/math.hpp>
-#include <boost/geometry/util/normalize_spheroidal_coordinates.hpp>
 #include <boost/geometry/util/sequence.hpp>
 #include <boost/geometry/views/detail/closed_clockwise_view.hpp>
 
@@ -136,39 +133,6 @@ struct sections : std::vector<section<Box, DimensionCount> >
 namespace detail { namespace sectionalize
 {
 
-template <std::size_t Dimension, std::size_t DimensionCount>
-struct check_duplicate_loop
-{
-    template <typename Segment>
-    static inline bool apply(Segment const& seg)
-    {
-        if (! geometry::math::equals
-                (
-                    geometry::get<0, Dimension>(seg),
-                    geometry::get<1, Dimension>(seg)
-                )
-            )
-        {
-            return false;
-        }
-
-        return check_duplicate_loop
-        <
-                Dimension + 1, DimensionCount
-        >::apply(seg);
-    }
-};
-
-template <std::size_t DimensionCount>
-struct check_duplicate_loop<DimensionCount, DimensionCount>
-{
-    template <typename Segment>
-    static inline bool apply(Segment const&)
-    {
-        return true;
-    }
-};
-
 /// @brief Helper class to create sections of a part of a range, on the fly
 template<typename DimensionVector>
 struct sectionalize_part
@@ -245,11 +209,7 @@ struct sectionalize_part
                 // Recheck because ALL dimensions should be checked,
                 // not only first one.
                 // (dimension_count might be < dimension<P>::value)
-                if (check_duplicate_loop
-                    <
-                        0, geometry::dimension<point_type>::type::value
-                    >::apply(robust_segment)
-                    )
+                if (strategy.degenerate_segment().apply(robust_segment))
                 {
                     duplicate = true;
 

@@ -13,6 +13,8 @@
 
 #include <type_traits>
 
+#include <boost/geometry/strategy/agnostic/degenerate_segment.hpp>
+
 #include <boost/geometry/strategy/spherical/envelope_box.hpp>
 #include <boost/geometry/strategy/spherical/envelope_boxes.hpp>
 #include <boost/geometry/strategy/spherical/envelope_multipoint.hpp>
@@ -107,6 +109,13 @@ struct spherical
     static auto directions()
     {
         return strategy::directions::spherical();
+    }
+
+    // degenerate_segment
+
+    static auto degenerate_segment()
+    {
+        return strategy::degenerate_segment::math_equals();
     }
 };
 
