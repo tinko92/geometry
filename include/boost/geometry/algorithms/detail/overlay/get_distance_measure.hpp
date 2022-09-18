@@ -16,8 +16,6 @@
 #include <boost/geometry/core/coordinate_type.hpp>
 #include <boost/geometry/util/select_coordinate_type.hpp>
 
-#include <cmath>
-
 namespace boost { namespace geometry
 {
 

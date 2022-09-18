@@ -58,7 +58,6 @@
 #include <boost/geometry/strategies/intersection_strategies.hpp>
 #include <boost/geometry/strategies/intersection_result.hpp>
 
-#include <boost/geometry/util/math.hpp>
 #include <boost/geometry/util/type_traits.hpp>
 
 #include <boost/geometry/views/detail/closed_clockwise_view.hpp>
