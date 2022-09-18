@@ -22,6 +22,7 @@
 #include <boost/geometry/strategy/spherical/envelope_range.hpp>
 #include <boost/geometry/strategy/spherical/envelope_segment.hpp>
 #include <boost/geometry/strategy/spherical/directions.hpp>
+#include <boost/geometry/strategy/agnostic/postprocess_section_box.hpp>
 
 #include <boost/geometry/strategies/envelope/services.hpp>
 #include <boost/geometry/strategies/expand/spherical.hpp>
@@ -116,6 +117,13 @@ struct spherical
     static auto degenerate_segment()
     {
         return strategy::degenerate_segment::math_equals();
+    }
+
+    // postprocess_section_box
+
+    static auto postprocess_section_box()
+    {
+        return strategy::postprocess_section_box::expand_by_neps<1000>();
     }
 };
 

@@ -19,6 +19,7 @@
 #include <boost/geometry/strategy/geographic/envelope_range.hpp>
 #include <boost/geometry/strategy/geographic/envelope_segment.hpp>
 #include <boost/geometry/strategy/spherical/directions.hpp>
+#include <boost/geometry/strategy/agnostic/postprocess_section_box.hpp>
 
 #include <boost/geometry/strategies/envelope/spherical.hpp>
 #include <boost/geometry/strategies/expand/geographic.hpp>
@@ -125,6 +126,13 @@ public:
     static auto degenerate_segment()
     {
         return strategy::degenerate_segment::math_equals();
+    }
+
+    // postprocess_section_box
+
+    static auto postprocess_section_box()
+    {
+        return strategy::postprocess_section_box::expand_by_neps<1000>();
     }
 };
 

@@ -37,8 +37,6 @@
 
 #include <boost/geometry/algorithms/assign.hpp>
 #include <boost/geometry/algorithms/envelope.hpp>
-#include <boost/geometry/algorithms/expand.hpp>
-#include <boost/geometry/algorithms/detail/expand_by_epsilon.hpp>
 #include <boost/geometry/algorithms/detail/interior_iterator.hpp>
 #include <boost/geometry/algorithms/detail/recalculate.hpp>
 #include <boost/geometry/algorithms/detail/ring_identifier.hpp>
@@ -465,32 +463,6 @@ struct sectionalize_multi
     }
 };
 
-template <typename Sections, typename Strategy>
-inline void enlarge_sections(Sections& sections, Strategy const&)
-{
-    // Expand the box to avoid missing any intersection. The amount is
-    // should be larger than epsilon. About the value itself: the smaller
-    // it is, the higher the risk to miss intersections. The larger it is,
-    // the more comparisons are made, which is not harmful for the result
-    // (but it might be for the performance).
-    // So it should be on the high side.
-
-    // Use a compilable and workable epsilon for all types, for example:
-    // - for double :~ 2.22e-13
-    // - for float  :~ 1e-4
-    // - for Boost.Multiprecision (50) :~ 5.35e-48
-    // - for Boost.Rational : 0/1
-
-    for (auto& section : sections)
-    {
-        using gt = decltype(section.bounding_box);
-        using ct = typename geometry::coordinate_type<gt>::type;
-        static ct const eps = math::scaled_epsilon<ct>(1000);
-        expand_by_epsilon(section.bounding_box, eps);
-    }
-}
-
-
 }} // namespace detail::sectionalize
 #endif // DOXYGEN_NO_DETAIL
 
@@ -671,7 +643,10 @@ inline void sectionalize(Geometry const& geometry,
                  strategy,
                  ring_id, max_count);
 
-    detail::sectionalize::enlarge_sections(sections, strategy);
+    for (auto& section : sections)
+    {
+        strategy.postprocess_section_box().apply(section.bounding_box);
+    }
 }
 
 

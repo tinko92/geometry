@@ -23,7 +23,7 @@
 #include <boost/geometry/strategy/cartesian/envelope_range.hpp>
 #include <boost/geometry/strategy/cartesian/envelope_segment.hpp>
 #include <boost/geometry/strategy/cartesian/directions.hpp>
-
+#include <boost/geometry/strategy/agnostic/postprocess_section_box.hpp>
 
 #include <boost/geometry/strategies/envelope/services.hpp>
 #include <boost/geometry/strategies/expand/cartesian.hpp>
@@ -101,6 +101,13 @@ struct cartesian
     static auto degenerate_segment()
     {
         return strategy::degenerate_segment::math_equals();
+    }
+
+    // postprocess_section_box
+
+    static auto postprocess_section_box()
+    {
+        return strategy::postprocess_section_box::expand_by_neps<1000>();
     }
 };
 

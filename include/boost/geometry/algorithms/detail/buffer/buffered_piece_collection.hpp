@@ -462,7 +462,10 @@ struct buffered_piece_collection
                 > visitor(m_pieces, offsetted_rings, m_turns,
                           m_strategy, m_robust_policy);
 
-            detail::sectionalize::enlarge_sections(monotonic_sections, m_strategy);
+            for (auto& section : monotonic_sections)
+            {
+                m_strategy.postprocess_section_box().apply(section.bounding_box);
+            }
 
             geometry::partition
                 <
