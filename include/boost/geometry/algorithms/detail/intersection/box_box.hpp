@@ -16,8 +16,11 @@
 
 
 #include <boost/geometry/algorithms/detail/intersection/interface.hpp>
-#include <boost/geometry/algorithms/detail/overlay/intersection_box_box.hpp>
+#include <boost/geometry/algorithms/detail/intersection/box_box_impl.hpp>
 
+#include <boost/geometry/core/tags.hpp>
+
+#include <boost/geometry/util/algorithm.hpp>
 
 namespace boost { namespace geometry
 {
@@ -26,7 +29,6 @@ namespace boost { namespace geometry
 #ifndef DOXYGEN_NO_DISPATCH
 namespace dispatch
 {
-
 
 template
 <
@@ -37,12 +39,7 @@ struct intersection
         Box1, Box2,
         box_tag, box_tag,
         Reverse
-    > : public detail::intersection::intersection_box_box
-            <
-                0, geometry::dimension<Box1>::value
-            >
-{};
-
+    > : detail::intersection::intersection_box_box {};
 
 } // namespace dispatch
 #endif // DOXYGEN_NO_DISPATCH
