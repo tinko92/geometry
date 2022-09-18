@@ -19,7 +19,6 @@
 
 #include <boost/range/value_type.hpp>
 
-#include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/assert.hpp>
 #include <boost/geometry/algorithms/detail/overlay/overlay_type.hpp>
 #include <boost/geometry/algorithms/detail/signed_size_type.hpp>

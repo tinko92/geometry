@@ -21,8 +21,12 @@
 #include <boost/geometry/algorithms/detail/overlay/cluster_info.hpp>
 #include <boost/geometry/algorithms/detail/overlay/is_self_turn.hpp>
 #include <boost/geometry/algorithms/detail/overlay/turn_info.hpp>
-#include <boost/geometry/core/access.hpp>
 #include <boost/geometry/util/condition.hpp>
+
+
+#if defined(BOOST_GEOMETRY_DEBUG_TRAVERSAL_SWITCH_DETECTOR)
+#include <boost/geometry/core/access.hpp>
+#endif
 
 #include <cstddef>
 #include <map>
