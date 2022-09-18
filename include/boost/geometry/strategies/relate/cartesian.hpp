@@ -20,6 +20,7 @@
 #include <boost/geometry/strategies/cartesian/point_in_poly_franklin.hpp>
 #include <boost/geometry/strategies/cartesian/point_in_poly_winding.hpp>
 #include <boost/geometry/strategies/cartesian/disjoint_box_box.hpp>
+#include <boost/geometry/strategies/cartesian/distance_pythagoras.hpp>
 
 #include <boost/geometry/strategies/envelope/cartesian.hpp>
 #include <boost/geometry/strategies/relate/services.hpp>
@@ -211,6 +212,19 @@ public:
     static auto side_value_line()
     {
         return strategy::side_value_line::cartesian();
+    }
+
+    // comparable_distance
+
+    template <typename Geometry1, typename Geometry2>
+    static auto comparable_distance(Geometry1 const&, Geometry2 const&,
+                                    std::enable_if_t
+                                        <
+                                            util::is_pointlike<Geometry1>::value
+                                         && util::is_pointlike<Geometry2>::value
+                                        > * = nullptr)
+    {
+        return strategy::distance::comparable::pythagoras<CalculationType>();
     }
 };
 

@@ -370,7 +370,7 @@ struct get_turn_info_linear_linear
                             using handler = collinear<TurnInfo, verify_policy_ll>;
                             handler::apply(range_p, range_q, tp,
                                            inters.i_info(), inters.d_info(),
-                                           inters.sides());
+                                           inters.sides(), umbrella_strategy);
 
                             //method_replace = method_touch_interior;
                             //spike_op = operation_continue;

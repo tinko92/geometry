@@ -21,6 +21,7 @@
 #include <boost/geometry/strategies/spherical/point_in_point.hpp>
 #include <boost/geometry/strategies/spherical/point_in_poly_winding.hpp>
 #include <boost/geometry/strategies/spherical/disjoint_box_box.hpp>
+#include <boost/geometry/strategies/spherical/distance_haversine.hpp>
 
 #include <boost/geometry/strategies/envelope/spherical.hpp>
 #include <boost/geometry/strategies/relate/services.hpp>
@@ -242,6 +243,22 @@ public:
     static auto side_value_line()
     {
         return strategy::side_value_line::zero();
+    }
+
+    // comparable_distance
+
+    template <typename Geometry1, typename Geometry2>
+    auto comparable_distance(Geometry1 const&, Geometry2 const&,
+                             std::enable_if_t
+                                <
+                                    util::is_pointlike<Geometry1>::value
+                                 && util::is_pointlike<Geometry2>::value
+                                > * = nullptr) const
+    {
+        return strategy::distance::comparable::haversine
+                <
+                    typename base_t::radius_type, CalculationType
+                >(base_t::radius());
     }
 };
 

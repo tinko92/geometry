@@ -309,7 +309,7 @@ struct get_turn_info_linear_areal
                         {
                             using handler = collinear<TurnInfo, verify_policy_la>;
                             handler::apply(range_p, range_q, tp, inters.i_info(),
-                                           inters.d_info(), inters.sides());
+                                           inters.d_info(), inters.sides(), umbrella_strategy);
 
                             //method_replace = method_touch_interior;
                             //version = append_collinear;
