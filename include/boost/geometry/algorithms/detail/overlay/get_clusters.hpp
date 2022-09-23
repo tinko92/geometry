@@ -109,10 +109,12 @@ template
 <
     typename Turns,
     typename Clusters,
-    typename RobustPolicy
+    typename RobustPolicy,
+    typename Strategy
 >
 inline void get_clusters(Turns& turns, Clusters& clusters,
-                         RobustPolicy const& robust_policy)
+                         RobustPolicy const& robust_policy,
+                         Strategy const& strategy)
 {
     using turn_type = typename boost::range_value<Turns>::type;
     using cluster_type = typename Clusters::mapped_type;
@@ -152,9 +154,9 @@ inline void get_clusters(Turns& turns, Clusters& clusters,
     }
 
     // Sort the points from top to bottom
-    std::sort(points.begin(), points.end(), [](auto const& e1, auto const& e2)
+    std::sort(points.begin(), points.end(), [&](auto const& e1, auto const& e2)
     {
-       return geometry::get<1>(e1.pnt) > geometry::get<1>(e2.pnt);
+       return strategy.compare_by_dimension(e1.pnt).template apply<1>(e1.pnt, e2.pnt);
     });
 
     // The output vector will be sorted from bottom too

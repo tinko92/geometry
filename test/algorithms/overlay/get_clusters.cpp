@@ -39,6 +39,10 @@ void do_test(std::string const& case_id,
              std::size_t expected_cluster_count)
 {
     using coor_type = typename bg::coordinate_type<Point>::type;
+    using strategy_type = typename bg::strategies::relate::services::default_strategy
+        <
+            Point, Point
+        >::type;
     using policy_type = bg::detail::no_rescale_policy;
     using turn_info = bg::detail::overlay::turn_info
         <
@@ -59,7 +63,7 @@ void do_test(std::string const& case_id,
     }
 
     cluster_type clusters;
-    bg::detail::overlay::get_clusters(turns, clusters, policy_type());
+    bg::detail::overlay::get_clusters(turns, clusters, policy_type(), strategy_type());
     BOOST_CHECK_MESSAGE(expected_cluster_count == clusters.size(),
                         "Case: " << case_id
                         << " ctype: " << string_from_type<coor_type>::name()

@@ -314,15 +314,17 @@ template
     typename Geometry1,
     typename Turns,
     typename Clusters,
-    typename RobustPolicy
+    typename RobustPolicy,
+    typename Strategy
 >
 inline bool handle_colocations(Turns& turns, Clusters& clusters,
-                               RobustPolicy const& robust_policy)
+                               RobustPolicy const& robust_policy,
+                               Strategy const& strategy)
 {
     static const detail::overlay::operation_type target_operation
             = detail::overlay::operation_from_overlay<OverlayType>::value;
 
-    get_clusters(turns, clusters, robust_policy);
+    get_clusters(turns, clusters, robust_policy, strategy);
 
     if (clusters.empty())
     {

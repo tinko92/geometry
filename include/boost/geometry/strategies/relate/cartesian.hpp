@@ -27,6 +27,7 @@
 #include <boost/geometry/strategies/detail.hpp>
 
 #include <boost/geometry/strategy/agnostic/successor_range_point.hpp>
+#include <boost/geometry/strategy/agnostic/compare_by_dimension.hpp>
 #include <boost/geometry/strategy/cartesian/area.hpp>
 #include <boost/geometry/strategy/cartesian/side_robust.hpp>
 #include <boost/geometry/strategy/cartesian/side_by_triangle.hpp>
@@ -241,6 +242,14 @@ public:
                 double
             >::type;
         return strategy::successor::range_point_tolerance<ct>();
+    }
+
+    // compare_by_dimension
+
+    template <typename Point>
+    static auto compare_by_dimension(Point const&)
+    {
+        return strategy::compare_by_dimension::agnostic<false>();
     }
 };
 

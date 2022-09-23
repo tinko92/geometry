@@ -420,7 +420,7 @@ inline void enrich_intersection_points(Turns& turns,
         = detail::overlay::handle_colocations
             <
                 Reverse1, Reverse2, OverlayType, Geometry1, Geometry2
-            >(turns, clusters, robust_policy);
+            >(turns, clusters, robust_policy, strategy);
 
     // Discard turns not part of target overlay
     for (auto& turn : turns)
