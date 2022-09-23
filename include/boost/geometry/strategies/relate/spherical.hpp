@@ -28,6 +28,7 @@
 #include <boost/geometry/strategies/detail.hpp>
 
 #include <boost/geometry/strategy/agnostic/compare_by_dimension.hpp>
+#include <boost/geometry/strategy/agnostic/cluster.hpp>
 #include <boost/geometry/strategy/agnostic/successor_range_point.hpp>
 #include <boost/geometry/strategy/spherical/area.hpp>
 #include <boost/geometry/strategy/spherical/area_box.hpp>
@@ -284,6 +285,32 @@ public:
     static auto compare_by_dimension(Point const&)
     {
         return strategy::compare_by_dimension::agnostic<false>();
+    }
+
+    // cluster
+
+    template <typename Point>
+    static auto cluster(Point const&,
+                        std::enable_if_t
+                                <
+                                   ! std::is_integral<typename coordinate_type<Point>::type>::value
+                                > * = nullptr)
+    {
+#if defined(BOOST_GEOMETRY_ROBUSTNESS_ALTERNATIVE)
+        return strategy::cluster::integral_neighbours();
+#else
+        return strategy::cluster::approx_equal();
+#endif
+    }
+
+    template <typename Point>
+    static auto cluster(Point const&,
+                        std::enable_if_t
+                                <
+                                    std::is_integral<typename coordinate_type<Point>::type>::value
+                                > * = nullptr)
+    {
+        return strategy::cluster::exact();
     }
 };
 

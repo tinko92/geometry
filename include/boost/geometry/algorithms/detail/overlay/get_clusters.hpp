@@ -13,17 +13,12 @@
 #include <map>
 #include <vector>
 
-#include <boost/geometry/core/access.hpp>
-#include <boost/geometry/algorithms/detail/overlay/approximately_equals.hpp>
+#include <boost/range/value_type.hpp>
+
 #include <boost/geometry/algorithms/detail/overlay/cluster_info.hpp>
 #include <boost/geometry/algorithms/detail/overlay/get_ring.hpp>
 #include <boost/geometry/algorithms/detail/recalculate.hpp>
 #include <boost/geometry/policies/robustness/rescale_policy_tags.hpp>
-#include <boost/range/value_type.hpp>
-#include <boost/geometry/util/math.hpp>
-
-#define BOOST_GEOMETRY_USE_RESCALING_IN_GET_CLUSTERS
-
 
 namespace boost { namespace geometry
 {
@@ -31,64 +26,6 @@ namespace boost { namespace geometry
 #ifndef DOXYGEN_NO_DETAIL
 namespace detail { namespace overlay
 {
-
-template <typename Tag = no_rescale_policy_tag, bool Integral = false>
-struct sweep_equal_policy
-{
-    template <typename P>
-    static inline bool equals(P const& p1, P const& p2)
-    {
-        // Points within a kilo epsilon are considered as equal
-        using coor_t = typename coordinate_type<P>::type;
-        return approximately_equals(p1, p2, coor_t(1000));
-    }
-
-    template <typename T>
-    static inline bool exceeds(T value)
-    {
-        // This threshold is an arbitrary value
-        // as long as it is than the used kilo-epsilon
-        T const limit = T(1) / T(1000);
-        return value > limit;
-    }
-};
-
-template <>
-struct sweep_equal_policy<no_rescale_policy_tag, true>
-{
-    template <typename P>
-    static inline bool equals(P const& p1, P const& p2)
-    {
-        return geometry::get<0>(p1) == geometry::get<0>(p2)
-            && geometry::get<1>(p1) == geometry::get<1>(p2);
-    }
-
-    template <typename T>
-    static inline bool exceeds(T value)
-    {
-        return value > 0;
-    }
-};
-
-#ifdef BOOST_GEOMETRY_USE_RESCALING_IN_GET_CLUSTERS
-template <>
-struct sweep_equal_policy<rescale_policy_tag, true>
-{
-    template <typename P>
-    static inline bool equals(P const& p1, P const& p2)
-    {
-        // Neighbouring cells in the "integer grid" are considered as equal
-        return math::abs(geometry::get<0>(p1) - geometry::get<0>(p2)) <= 1
-            && math::abs(geometry::get<1>(p1) - geometry::get<1>(p2)) <= 1;
-    }
-
-    template <typename T>
-    static inline bool exceeds(T value)
-    {
-        return value > 1;
-    }
-};
-#endif
 
 template <typename Point>
 struct turn_with_point
@@ -130,11 +67,7 @@ inline void get_clusters(Turns& turns, Clusters& clusters,
     using point_type = typename turn_type::point_type;
 #endif
 
-    sweep_equal_policy
-        <
-            typename rescale_policy_type<RobustPolicy>::type,
-            std::is_integral<typename coordinate_type<point_type>::type>::value
-        > equal_policy;
+    auto const& cluster_strategy = strategy.cluster(point_type());
 
     std::vector<turn_with_point<point_type>> points;
     std::size_t turn_index = 0;
@@ -168,13 +101,12 @@ inline void get_clusters(Turns& turns, Clusters& clusters,
         // Inner loop, iterates until it exceeds coordinates in y-direction
         for (auto it2 = it1 + 1; it2 != points.end(); ++it2)
         {
-            auto const d = geometry::get<1>(it1->pnt) - geometry::get<1>(it2->pnt);
-            if (equal_policy.exceeds(d))
+            if (cluster_strategy.template exceeds<1>(it1->pnt, it2->pnt))
             {
                 // Points at this y-coordinate or below cannot be equal
                 break;
             }
-            if (equal_policy.equals(it1->pnt, it2->pnt))
+            if (cluster_strategy.equals(it1->pnt, it2->pnt))
             {
                 std::size_t cindex = 0;
 
@@ -184,7 +116,7 @@ inline void get_clusters(Turns& turns, Clusters& clusters,
                 for (auto cit = clustered_points.begin();
                      cit != clustered_points.end(); ++cit)
                 {
-                    found = equal_policy.equals(cit->pnt, it1->pnt);
+                    found = cluster_strategy.equals(cit->pnt, it1->pnt);
                     if (found)
                     {
                         break;
