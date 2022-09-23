@@ -24,15 +24,6 @@
 
 #include <boost/geometry/algorithms/detail/covered_by/implementation.hpp>
 
-// TODO: those headers probably may be removed
-#include <boost/geometry/algorithms/detail/overlay/get_ring.hpp>
-#include <boost/geometry/algorithms/detail/overlay/get_turns.hpp>
-#include <boost/geometry/algorithms/detail/overlay/copy_segments.hpp>
-#include <boost/geometry/algorithms/detail/overlay/copy_segment_point.hpp>
-#include <boost/geometry/algorithms/detail/overlay/select_rings.hpp>
-#include <boost/geometry/algorithms/detail/sections/range_by_section.hpp>
-#include <boost/geometry/algorithms/detail/sections/sectionalize.hpp>
-
 #include <boost/geometry/algorithms/detail/intersection/interface.hpp>
 
 #include <boost/geometry/algorithms/envelope.hpp>
