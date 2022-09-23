@@ -24,12 +24,15 @@
 #include <boost/geometry/strategies/relate/services.hpp>
 #include <boost/geometry/strategies/detail.hpp>
 
+#include <boost/geometry/strategy/agnostic/successor_range_point.hpp>
 #include <boost/geometry/strategy/geographic/area.hpp>
 #include <boost/geometry/strategy/geographic/area_box.hpp>
 #include <boost/geometry/strategy/spherical/preceding_point_box.hpp>
 #include <boost/geometry/strategy/spherical/direction.hpp>
 #include <boost/geometry/strategy/spherical/side_value_zero.hpp>
 
+#include <boost/geometry/util/select_coordinate_type.hpp>
+#include <boost/geometry/util/select_most_precise.hpp>
 #include <boost/geometry/util/type_traits.hpp>
 
 
@@ -250,6 +253,19 @@ public:
                 <
                     FormulaPolicy, Spheroid, CalculationType
                 >(base_t::m_spheroid);
+    }
+
+    // successor
+
+    template <typename Geometry, typename Point>
+    static auto successor(Geometry const&, Point const&)
+    {
+        using ct = typename geometry::select_most_precise
+            <
+                typename geometry::coordinate_type<Point>::type,
+                double
+            >::type;
+        return strategy::successor::range_point_tolerance<ct>();
     }
 };
 

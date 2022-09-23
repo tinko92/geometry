@@ -26,6 +26,7 @@
 #include <boost/geometry/strategies/relate/services.hpp>
 #include <boost/geometry/strategies/detail.hpp>
 
+#include <boost/geometry/strategy/agnostic/successor_range_point.hpp>
 #include <boost/geometry/strategy/cartesian/area.hpp>
 #include <boost/geometry/strategy/cartesian/side_robust.hpp>
 #include <boost/geometry/strategy/cartesian/side_by_triangle.hpp>
@@ -34,6 +35,8 @@
 #include <boost/geometry/strategy/cartesian/direction.hpp>
 #include <boost/geometry/strategy/cartesian/side_value_line.hpp>
 
+#include <boost/geometry/util/select_coordinate_type.hpp>
+#include <boost/geometry/util/select_most_precise.hpp>
 #include <boost/geometry/util/type_traits.hpp>
 
 
@@ -225,6 +228,19 @@ public:
                                         > * = nullptr)
     {
         return strategy::distance::comparable::pythagoras<CalculationType>();
+    }
+
+    // successor
+
+    template <typename Geometry, typename Point>
+    static auto successor(Geometry const&, Point const&)
+    {
+        using ct = typename geometry::select_most_precise
+            <
+                typename geometry::coordinate_type<Point>::type,
+                double
+            >::type;
+        return strategy::successor::range_point_tolerance<ct>();
     }
 };
 

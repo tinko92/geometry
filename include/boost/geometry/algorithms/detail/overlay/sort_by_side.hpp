@@ -19,15 +19,10 @@
 #include <map>
 #include <vector>
 
-#include <boost/geometry/algorithms/detail/overlay/approximately_equals.hpp>
-#include <boost/geometry/algorithms/detail/overlay/copy_segment_point.hpp>
 #include <boost/geometry/algorithms/detail/overlay/get_ring.hpp>
 #include <boost/geometry/algorithms/detail/overlay/turn_info.hpp>
 
 #include <boost/geometry/util/condition.hpp>
-#include <boost/geometry/util/math.hpp>
-#include <boost/geometry/util/select_coordinate_type.hpp>
-#include <boost/geometry/util/select_most_precise.hpp>
 
 namespace boost { namespace geometry
 {
@@ -201,6 +196,7 @@ struct less_by_side
             // (FP) accuracy error in side calculation, the sides are not opposite.
             // In that case they can be handled as collinear.
             // If not, then the sort-order might not be stable.
+            // TODO eliminate this case
             return on_same(first, second);
         }
 
@@ -294,67 +290,39 @@ public :
         add_segment_to(turn_index, op_index, point_to, op);
     }
 
-    template <typename Operation, typename Geometry1, typename Geometry2>
-    static Point walk_over_ring(Operation const& op, int offset,
-            Geometry1 const& geometry1,
-            Geometry2 const& geometry2)
-    {
-        Point point;
-        geometry::copy_segment_point<Reverse1, Reverse2>(geometry1, geometry2, op.seg_id, offset, point);
-        return point;
-    }
-
     template <typename Turn, typename Operation, typename Geometry1, typename Geometry2>
     Point add(Turn const& turn, Operation const& op, signed_size_type turn_index, int op_index,
-            Geometry1 const& geometry1,
-            Geometry2 const& geometry2,
-            bool is_origin)
+              Geometry1 const& geometry1,
+              Geometry2 const& geometry2,
+              bool is_origin)
     {
-        Point point_from, point2, point3;
-        geometry::copy_segment_points<Reverse1, Reverse2>(geometry1, geometry2,
-                op.seg_id, point_from, point2, point3);
-        Point point_to = op.fraction.is_one() ? point3 : point2;
-
-        // If the point is in the neighbourhood (the limit is arbitrary),
-        // then take a point (or more) further back.
-        // The limit of offset avoids theoretical infinite loops.
-        // In practice it currently walks max 1 point back in all cases.
-        // Use the coordinate type, but if it is too small (e.g. std::int16), use a double
-        using ct_type = typename geometry::select_most_precise
-            <
-                typename geometry::coordinate_type<Point>::type,
-                double
-            >::type;
-
-        ct_type const tolerance = 1000000000;
-
-        int offset = 0;
-        while (approximately_equals(point_from, turn.point, tolerance)
-               && offset > -10)
+        Point point_from, point_to;
+        int successor_offset = op.fraction.is_one() ? 2 : 1;
+        if ( op.seg_id.source_index == 0 )
         {
-            point_from = walk_over_ring(op, --offset, geometry1, geometry2);
+            auto const& s = m_strategy.successor(geometry1, point_from);
+            s.template apply<Reverse1, false>(op.seg_id, geometry1, turn.point, point_from, 0);
+            s.template apply<Reverse1, true>(op.seg_id, geometry1, turn.point, point_to,
+                                             successor_offset);
         }
-
-        // Similarly for the point_to, walk forward
-        offset = 0;
-        while (approximately_equals(point_to, turn.point, tolerance)
-               && offset < 10)
+        else
         {
-            point_to = walk_over_ring(op, ++offset, geometry1, geometry2);
+            auto const& s = m_strategy.successor(geometry1, point_from);
+            s.template apply<Reverse2, false>(op.seg_id, geometry2, turn.point, point_from, 0);
+            s.template apply<Reverse2, true>(op.seg_id, geometry2, turn.point, point_to,
+                                             successor_offset);
         }
-
         add_segment(turn_index, op_index, point_from, point_to, op, is_origin);
-
         return point_from;
     }
 
     template <typename Turn, typename Operation, typename Geometry1, typename Geometry2>
     void add(Turn const& turn,
              Operation const& op, signed_size_type turn_index, int op_index,
-            segment_identifier const& departure_seg_id,
-            Geometry1 const& geometry1,
-            Geometry2 const& geometry2,
-            bool is_departure)
+             segment_identifier const& departure_seg_id,
+             Geometry1 const& geometry1,
+             Geometry2 const& geometry2,
+             bool is_departure)
     {
         Point potential_origin = add(turn, op, turn_index, op_index, geometry1, geometry2, false);
 
