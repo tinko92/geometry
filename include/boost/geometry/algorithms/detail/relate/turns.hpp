@@ -25,8 +25,6 @@
 #include <boost/geometry/policies/robustness/get_rescale_policy.hpp>
 #include <boost/geometry/policies/robustness/segment_ratio_type.hpp>
 
-#include <boost/geometry/strategies/cartesian/point_in_point.hpp>
-#include <boost/geometry/strategies/spherical/point_in_point.hpp>
 #include <boost/geometry/strategies/distance.hpp>
 
 
