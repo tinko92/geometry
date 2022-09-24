@@ -311,19 +311,8 @@ inline void create_map(Turns const& turns, MappedVector& mapped_vector,
     }
 }
 
-template <typename Point1, typename Point2>
-inline typename geometry::coordinate_type<Point1>::type
-        distance_measure(Point1 const& a, Point2 const& b)
-{
-    // TODO: use comparable distance for point-point instead - but that
-    // causes currently cycling include problems
-    auto const dx = get<0>(a) - get<0>(b);
-    auto const dy = get<1>(a) - get<1>(b);
-    return dx * dx + dy * dy;
-}
-
-template <typename Turns>
-inline void calculate_remaining_distance(Turns& turns)
+template <typename Turns, typename Strategy>
+inline void calculate_remaining_distance(Turns& turns, Strategy const& strategy)
 {
     using turn_type = typename boost::range_value<Turns>::type;
     using op_type = typename turn_type::turn_operation_type;
@@ -347,8 +336,10 @@ inline void calculate_remaining_distance(Turns& turns)
                 && to_index1 >= 0
                 && to_index0 != to_index1)
         {
-            op0.remaining_distance = distance_measure(turn.point, turns[to_index0].point);
-            op1.remaining_distance = distance_measure(turn.point, turns[to_index1].point);
+            auto const& distance_measure =
+                strategy.comparable_distance(turn.point, turns[to_index0].point);
+            op0.remaining_distance = distance_measure.apply(turn.point, turns[to_index0].point);
+            op1.remaining_distance = distance_measure.apply(turn.point, turns[to_index1].point);
         }
     }
 }
@@ -526,7 +517,7 @@ inline void enrich_intersection_points(Turns& turns,
 
     if (has_cc)
     {
-        detail::overlay::calculate_remaining_distance(turns);
+        detail::overlay::calculate_remaining_distance(turns, strategy);
     }
 
 #ifdef BOOST_GEOMETRY_DEBUG_ENRICH
