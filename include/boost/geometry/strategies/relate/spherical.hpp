@@ -36,6 +36,8 @@
 #include <boost/geometry/strategy/spherical/direction.hpp>
 #include <boost/geometry/strategy/spherical/side_value_zero.hpp>
 
+#include <boost/geometry/strategy/cartesian/intersection.hpp>
+
 #include <boost/geometry/util/select_coordinate_type.hpp>
 #include <boost/geometry/util/select_most_precise.hpp>
 #include <boost/geometry/util/type_traits.hpp>
@@ -296,11 +298,7 @@ public:
                                    ! std::is_integral<typename coordinate_type<Point>::type>::value
                                 > * = nullptr)
     {
-#if defined(BOOST_GEOMETRY_ROBUSTNESS_ALTERNATIVE)
-        return strategy::cluster::integral_neighbours();
-#else
         return strategy::cluster::approx_equal();
-#endif
     }
 
     template <typename Point>
@@ -311,6 +309,20 @@ public:
                                 > * = nullptr)
     {
         return strategy::cluster::exact();
+    }
+
+    // intersection
+
+    template <typename Geometry1, typename Geometry2>
+    static auto intersection(Geometry1 const&,
+                             Geometry2 const&,
+                             std::enable_if_t
+                                <
+                                    util::is_box<Geometry1>::value
+                                 && util::is_segment<Geometry2>::value
+                                > * = nullptr)
+    {
+        return strategy::intersection::liang_barsky();
     }
 };
 

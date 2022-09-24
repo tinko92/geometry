@@ -36,6 +36,7 @@
 #include <boost/geometry/strategy/cartesian/preceding_point_box.hpp>
 #include <boost/geometry/strategy/cartesian/direction.hpp>
 #include <boost/geometry/strategy/cartesian/side_value_line.hpp>
+#include <boost/geometry/strategy/cartesian/intersection.hpp>
 
 #include <boost/geometry/util/select_coordinate_type.hpp>
 #include <boost/geometry/util/select_most_precise.hpp>
@@ -273,6 +274,20 @@ public:
                                 > * = nullptr)
     {
         return strategy::cluster::exact();
+    }
+
+    // intersection
+
+    template <typename Geometry1, typename Geometry2>
+    static auto intersection(Geometry1 const&,
+                             Geometry2 const&,
+                             std::enable_if_t
+                                <
+                                    util::is_box<Geometry1>::value
+                                 && util::is_segment<Geometry2>::value
+                                > * = nullptr)
+    {
+        return strategy::intersection::liang_barsky();
     }
 };
 
