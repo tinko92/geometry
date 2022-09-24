@@ -36,7 +36,7 @@ struct spherical_point_box
                 <    
                     Point, Box
                 >::type;
-            using units_t = typename detail::cs_angular_units<Point>::type;
+            using units_t = typename geometry::detail::cs_angular_units<Point>::type;
                           
             calc_t const c0 = 0;
                           

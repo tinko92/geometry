@@ -25,7 +25,7 @@ struct cartesian
     static inline auto apply(Point1 const& p1, Point1 const& p2, Point2 const& p)
     {
         using coord_t = typename select_coordinate_type<Point1, Point2>::type;
-        auto const line = detail::make::make_infinite_line<coord_t>(p1, p2);
+        auto const line = geometry::detail::make::make_infinite_line<coord_t>(p1, p2);
         return arithmetic::side_value(line, p);
     }
 };

@@ -41,7 +41,7 @@ struct cartesian
         // If the specified point is located on top of b, it returns 0.
          
         line_type const line
-            = detail::make::make_perpendicular_line<calc_t>(segment_a, segment_b, segment_b);
+            = geometry::detail::make::make_perpendicular_line<calc_t>(segment_a, segment_b, segment_b);
     
         if (arithmetic::is_degenerate(line))
         {

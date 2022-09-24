@@ -64,9 +64,9 @@ struct great_elliptic_segments_calc_policy
         coord_t cos_angle_between(Point3d const& p1, Point3d const& p2) const
         {
             Point3d v1 = p1;
-            detail::vec_normalize(v1);
+            geometry::detail::vec_normalize(v1);
             Point3d v2 = p2;
-            detail::vec_normalize(v2);
+            geometry::detail::vec_normalize(v2);
 
             return dot_product(v1, v2);
         }
@@ -76,9 +76,9 @@ struct great_elliptic_segments_calc_policy
             coord_t const c0 = 0;
 
             Point3d v1 = p1;
-            detail::vec_normalize(v1);
+            geometry::detail::vec_normalize(v1);
             Point3d v2 = p2;
-            detail::vec_normalize(v2);
+            geometry::detail::vec_normalize(v2);
 
             is_forward = dot_product(normal, cross_product(v1, v2)) >= c0;
             return dot_product(v1, v2);
@@ -180,7 +180,7 @@ struct experimental_elliptic_segments_calc_policy
         {
             Point3d v = p;
             subtract_point(v, origin);
-            detail::vec_normalize(v);
+            geometry::detail::vec_normalize(v);
             return v;
         }
 

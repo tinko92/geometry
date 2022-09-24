@@ -10,7 +10,8 @@
 #include <boost/geometry/core/tag.hpp>
 #include <boost/geometry/core/tags.hpp>
 
-#include <boost/geometry/algorithms/detail/overlay/approximately_equals.hpp>
+#include <boost/geometry/strategy/detail/approximately_equals.hpp>
+
 #include <boost/geometry/algorithms/detail/overlay/copy_segment_point.hpp>
 #include <boost/geometry/algorithms/detail/overlay/segment_identifier.hpp>
 
@@ -52,7 +53,7 @@ struct range_point_tolerance
         if ( BOOST_GEOMETRY_CONDITION(Forward) )
         {
             csp::apply(range, seg_id, offset, out);
-            while (detail::overlay::approximately_equals(out, point, tolerance) && offset < Limit)
+            while (detail::approximately_equals(out, point, tolerance) && offset < Limit)
             {
                 csp::apply(range, seg_id, ++offset, out);
             }
@@ -60,7 +61,7 @@ struct range_point_tolerance
         else
         {
             csp::apply(range, seg_id, offset, out);
-            while (detail::overlay::approximately_equals(out, point, tolerance) && offset > -Limit)
+            while (detail::approximately_equals(out, point, tolerance) && offset > -Limit)
             {
                 csp::apply(range, seg_id, --offset, out);
             }
