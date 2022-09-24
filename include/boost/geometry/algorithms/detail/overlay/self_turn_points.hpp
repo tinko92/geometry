@@ -128,7 +128,14 @@ struct self_section_visitor
 template <bool Reverse, typename TurnPolicy>
 struct get_turns
 {
-    template <typename Geometry, typename Strategy, typename RobustPolicy, typename Turns, typename InterruptPolicy>
+    template
+    <
+        typename Geometry,
+        typename Strategy,
+        typename RobustPolicy,
+        typename Turns,
+        typename InterruptPolicy
+    >
     static inline bool apply(
             Geometry const& geometry,
             Strategy const& strategy,
@@ -153,8 +160,7 @@ struct get_turns
         using dimensions = std::integer_sequence<std::size_t, 0, 1>;
 
         sections_type sec;
-        geometry::sectionalize<Reverse, dimensions>(geometry, robust_policy,
-                                                    sec, strategy);
+        geometry::sectionalize<Reverse, dimensions>(geometry, sec, strategy);
 
         self_section_visitor
             <

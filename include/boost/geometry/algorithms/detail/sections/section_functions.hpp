@@ -13,9 +13,6 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_SECTIONS_FUNCTIONS_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_SECTIONS_FUNCTIONS_HPP
 
-#include <boost/geometry/algorithms/detail/recalculate.hpp>
-#include <boost/geometry/policies/robustness/robust_point_type.hpp>
-
 
 namespace boost { namespace geometry
 {
@@ -29,24 +26,15 @@ template
     std::size_t Dimension,
     typename Point,
     typename Box,
-    typename Strategy,
-    typename RobustPolicy
+    typename Strategy
 >
 inline bool preceding(int dir,
                       Point const& point,
                       Box const& point_box,
                       Box const& other_box,
-                      Strategy const& strategy,
-                      RobustPolicy const& robust_policy)
+                      Strategy const& strategy)
 {
-    using box_point_type = typename geometry::point_type<Box>::type;
-    typename geometry::robust_point_type<box_point_type, RobustPolicy>::type robust_point;
-    geometry::recalculate(robust_point, point, robust_policy);
-
-    // After recalculate() to prevent warning: 'robust_point' may be used uninitialized
-    assert_coordinate_type_equal(robust_point, point_box);
-
-    return strategy.preceding().template apply<Dimension>(dir, robust_point,
+    return strategy.preceding().template apply<Dimension>(dir, point,
                                                           point_box,
                                                           other_box);
 }
@@ -56,17 +44,15 @@ template
     std::size_t Dimension,
     typename Point,
     typename Box,
-    typename Strategy,
-    typename RobustPolicy
+    typename Strategy
 >
 inline bool exceeding(int dir,
                       Point const& point,
                       Box const& point_box,
                       Box const& other_box,
-                      Strategy const& strategy,
-                      RobustPolicy const& robust_policy)
+                      Strategy const& strategy)
 {
-    return preceding<Dimension>(-dir, point, point_box, other_box, strategy, robust_policy);
+    return preceding<Dimension>(-dir, point, point_box, other_box, strategy);
 }
 
 

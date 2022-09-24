@@ -227,7 +227,7 @@ struct buffered_piece_collection
             geometry::sectionalize
                 <
                     false, dimensions
-                >(m_ring, detail::no_rescale_policy(), m_sections, strategy);
+                >(m_ring, m_sections, strategy);
         }
 
         clockwise_ring_type m_ring;
@@ -731,7 +731,6 @@ struct buffered_piece_collection
         sectionalizer::apply(monotonic_sections,
             boost::begin(ring) + pc.first_seg_id.segment_index,
             boost::begin(ring) + pc.beyond_last_segment_index,
-            m_robust_policy,
             m_strategy,
             ring_id, 10);
     }

@@ -307,8 +307,7 @@ public :
         // section 1: |----|---|---|---|---|
         for (prev1 = it1++, next1++;
             it1 != end1 && ! detail::section::exceeding<0>(dir1, *prev1, sec1.bounding_box,
-                                                           sec2.bounding_box, strategy,
-                                                           robust_policy);
+                                                           sec2.bounding_box, strategy);
             ++prev1, ++it1, ++index1, ++next1, ++ndi1)
         {
             unique_sub_range_from_section
@@ -332,8 +331,7 @@ public :
 
             for (prev2 = it2++, next2++;
                 it2 != end2 && ! detail::section::exceeding<0>(dir2, *prev2, sec2.bounding_box,
-                                                               sec1.bounding_box, strategy,
-                                                               robust_policy);
+                                                               sec1.bounding_box, strategy);
                 ++prev2, ++it2, ++index2, ++next2, ++ndi2)
             {
                 bool skip = false;
@@ -423,7 +421,7 @@ private :
             typename boost::range_iterator<Range const>::type& end,
             signed_size_type& index, signed_size_type& ndi,
             int dir, Box const& other_bounding_box, Strategy const& strategy,
-            RobustPolicy const& robust_policy)
+            RobustPolicy const&)
     {
         it = boost::begin(range) + section.begin_index;
         end = boost::begin(range) + section.end_index + 1;
@@ -432,8 +430,7 @@ private :
         // Skip to point such that section interects other box
         prev = it++;
         for (; it != end && detail::section::preceding<0>(dir, *it, section.bounding_box,
-                                                          other_bounding_box, strategy,
-                                                          robust_policy);
+                                                          other_bounding_box, strategy);
              prev = it++, index++, ndi++)
         {}
         // Go back one step because we want to start completely preceding
@@ -538,10 +535,8 @@ public:
         sections_type sec1, sec2;
         using dimensions = std::integer_sequence<std::size_t, 0, 1>;
 
-        geometry::sectionalize<Reverse1, dimensions>(geometry1, robust_policy,
-                                                     sec1, strategy, 0);
-        geometry::sectionalize<Reverse2, dimensions>(geometry2, robust_policy,
-                                                     sec2, strategy, 1);
+        geometry::sectionalize<Reverse1, dimensions>(geometry1, sec1, strategy, 0);
+        geometry::sectionalize<Reverse2, dimensions>(geometry2, sec2, strategy, 1);
 
         // ... and then partition them, intersecting overlapping sections in visitor method
         section_visitor
