@@ -65,7 +65,6 @@ template
     typename Turns,
     typename Indexed,
     typename Geometry1, typename Geometry2,
-    typename RobustPolicy,
     typename SideStrategy,
     bool Reverse1, bool Reverse2
 >
@@ -74,12 +73,10 @@ struct less_by_segment_ratio
     inline less_by_segment_ratio(Turns const& turns
             , Geometry1 const& geometry1
             , Geometry2 const& geometry2
-            , RobustPolicy const& robust_policy
             , SideStrategy const& strategy)
         : m_turns(turns)
         , m_geometry1(geometry1)
         , m_geometry2(geometry2)
-        , m_robust_policy(robust_policy)
         , m_strategy(strategy)
     {
     }
@@ -89,7 +86,6 @@ private :
     Turns const& m_turns;
     Geometry1 const& m_geometry1;
     Geometry2 const& m_geometry2;
-    RobustPolicy const& m_robust_policy;
     SideStrategy const& m_strategy;
 
     using point_type = typename geometry::point_type<Geometry1>::type;

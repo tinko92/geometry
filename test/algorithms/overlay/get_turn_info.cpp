@@ -21,6 +21,8 @@
 #include <boost/geometry/algorithms/intersection.hpp>
 #include <boost/geometry/algorithms/make.hpp>
 
+#include <boost/geometry/policies/robustness/segment_ratio.hpp>
+
 #include <boost/geometry/geometries/point_xy.hpp>
 
 #if defined(TEST_WITH_SVG)
@@ -72,29 +74,26 @@ void test_with_point(std::string const& caseid,
     P qj = bg::make<P>(qj_x, qj_y);
     P qk = bg::make<P>(qk_x, qk_y);
 
-    typedef typename bg::strategies::relate::services::default_strategy
+    using strategy_type = typename bg::strategies::relate::services::default_strategy
         <
             P, P
-        >::type strategy_type;
+        >::type;
 
-    typedef typename bg::detail::no_rescale_policy rescale_policy_type;
-
-    typedef bg::detail::overlay::turn_info
+    using turn_info = bg::detail::overlay::turn_info
         <
             P,
-            typename bg::detail::segment_ratio_type<P, rescale_policy_type>::type
-        > turn_info;
-    typedef std::vector<turn_info> tp_vector;
+            bg::segment_ratio<typename bg::coordinate_type<P>::type>
+        >;
+    using tp_vector = std::vector<turn_info>;
     turn_info model;
     tp_vector info;
     strategy_type strategy;
-    rescale_policy_type rescale_policy;
     sub_range_from_points<P> sub_range_p(pi, pj, pk);
     sub_range_from_points<P> sub_range_q(qi, qj, qk);
     bg::detail::overlay::get_turn_info
         <
             bg::detail::overlay::assign_null_policy
-        >::apply(sub_range_p, sub_range_q, model, strategy, rescale_policy, std::back_inserter(info));
+        >::apply(sub_range_p, sub_range_q, model, strategy, std::back_inserter(info));
 
     if (info.size() == 0)
     {
@@ -104,7 +103,7 @@ void test_with_point(std::string const& caseid,
 
     std::string detected;
     std::string method;
-    for (typename tp_vector::const_iterator it = info.begin(); it != info.end(); ++it)
+    for (auto it = info.begin(); it != info.end(); ++it)
     {
         for (int t = 0; t < 2; t++)
         {
@@ -173,9 +172,7 @@ void test_with_point(std::string const& caseid,
 
         int factor = 1; // second info, if any, will go left by factor -1
         int ch = '1';
-        for (typename tp_vector::const_iterator it = info.begin();
-            it != info.end();
-            ++it, factor *= -1, ch++)
+        for (auto it = info.begin(); it != info.end(); ++it, factor *= -1, ch++)
         {
             bool at_j = it->method == bg::detail::overlay::method_crosses;
             std::string op;

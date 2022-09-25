@@ -17,8 +17,6 @@
 
 #include <boost/geometry/algorithms/detail/overlay/cluster_info.hpp>
 #include <boost/geometry/algorithms/detail/overlay/get_ring.hpp>
-#include <boost/geometry/algorithms/detail/recalculate.hpp>
-#include <boost/geometry/policies/robustness/rescale_policy_tags.hpp>
 
 namespace boost { namespace geometry
 {
@@ -46,26 +44,15 @@ template
 <
     typename Turns,
     typename Clusters,
-    typename RobustPolicy,
     typename Strategy
 >
 inline void get_clusters(Turns& turns, Clusters& clusters,
-                         RobustPolicy const& robust_policy,
                          Strategy const& strategy)
 {
     using turn_type = typename boost::range_value<Turns>::type;
     using cluster_type = typename Clusters::mapped_type;
 
-#ifdef BOOST_GEOMETRY_USE_RESCALING_IN_GET_CLUSTERS
-    // For now still use robust points for rescaled, otherwise points do not match
-    using point_type = typename geometry::robust_point_type
-    <
-        typename turn_type::point_type,
-        RobustPolicy
-    >::type;
-#else
     using point_type = typename turn_type::point_type;
-#endif
 
     auto const& cluster_strategy = strategy.cluster(point_type());
 
@@ -75,13 +62,7 @@ inline void get_clusters(Turns& turns, Clusters& clusters,
     {
         if (! turn.discarded)
         {
-#ifdef BOOST_GEOMETRY_USE_RESCALING_IN_GET_CLUSTERS
-            point_type pnt;
-            geometry::recalculate(pnt, turn.point, robust_policy);
-            points.push_back({turn_index, pnt});
-#else
             points.push_back({turn_index, turn.point});
-#endif
         }
         turn_index++;
     }

@@ -39,7 +39,6 @@
 #include <boost/geometry/algorithms/detail/overlay/is_self_turn.hpp>
 #include <boost/geometry/algorithms/detail/overlay/less_by_segment_ratio.hpp>
 #include <boost/geometry/algorithms/detail/overlay/overlay_type.hpp>
-#include <boost/geometry/policies/robustness/robust_type.hpp>
 
 #ifdef BOOST_GEOMETRY_DEBUG_ENRICH
 #  include <boost/geometry/algorithms/detail/overlay/check_enrich.hpp>
@@ -80,14 +79,12 @@ template
     typename Operations,
     typename Turns,
     typename Geometry1, typename Geometry2,
-    typename RobustPolicy,
     typename SideStrategy
 >
 inline void enrich_sort(Operations& operations,
             Turns const& turns,
             Geometry1 const& geometry1,
             Geometry2 const& geometry2,
-            RobustPolicy const& robust_policy,
             SideStrategy const& strategy)
 {
     std::sort(boost::begin(operations),
@@ -97,10 +94,9 @@ inline void enrich_sort(Operations& operations,
                     Turns,
                     typename boost::range_value<Operations>::type,
                     Geometry1, Geometry2,
-                    RobustPolicy,
                     SideStrategy,
                     Reverse1, Reverse2
-                >(turns, geometry1, geometry2, robust_policy, strategy));
+                >(turns, geometry1, geometry2, strategy));
 }
 
 
@@ -372,7 +368,6 @@ inline void calculate_remaining_distance(Turns& turns)
 \param clusters container containing clusters
 \param geometry1 \param_geometry
 \param geometry2 \param_geometry
-\param robust_policy policy to handle robustness issues
 \param strategy point in geometry strategy
  */
 template
@@ -382,13 +377,11 @@ template
     typename Turns,
     typename Clusters,
     typename Geometry1, typename Geometry2,
-    typename RobustPolicy,
     typename IntersectionStrategy
 >
 inline void enrich_intersection_points(Turns& turns,
     Clusters& clusters,
     Geometry1 const& geometry1, Geometry2 const& geometry2,
-    RobustPolicy const& robust_policy,
     IntersectionStrategy const& strategy)
 {
     auto constexpr target_operation = detail::overlay::operation_from_overlay<OverlayType>::value;
@@ -420,7 +413,7 @@ inline void enrich_intersection_points(Turns& turns,
         = detail::overlay::handle_colocations
             <
                 Reverse1, Reverse2, OverlayType, Geometry1, Geometry2
-            >(turns, clusters, robust_policy, strategy);
+            >(turns, clusters, strategy);
 
     // Discard turns not part of target overlay
     for (auto& turn : turns)
@@ -484,7 +477,7 @@ inline void enrich_intersection_points(Turns& turns,
         detail::overlay::enrich_sort<Reverse1, Reverse2>(
                     entry.second, turns,
                     geometry1, geometry2,
-                    robust_policy, strategy.side()); // TODO: pass strategy
+                    strategy.side()); // TODO: pass strategy
 #ifdef BOOST_GEOMETRY_DEBUG_ENRICH
         std::cout << "ENRICH-sort Ring " << entry.first << std::endl;
         for (auto const& op : entry.second)

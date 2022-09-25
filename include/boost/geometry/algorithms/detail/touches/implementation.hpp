@@ -41,8 +41,6 @@
 
 #include <boost/geometry/geometries/helper_geometry.hpp>
 
-#include <boost/geometry/policies/robustness/no_rescale_policy.hpp>
-
 #include <boost/geometry/strategies/relate/cartesian.hpp>
 #include <boost/geometry/strategies/relate/geographic.hpp>
 #include <boost/geometry/strategies/relate/spherical.hpp>
@@ -252,7 +250,7 @@ struct areal_areal
                 detail::overlay::do_reverse<geometry::point_order<Geometry1>::value>::value,
                 detail::overlay::do_reverse<geometry::point_order<Geometry2>::value>::value,
                 detail::overlay::assign_null_policy
-            >(geometry1, geometry2, strategy, detail::no_rescale_policy(), turns, policy);
+            >(geometry1, geometry2, strategy, turns, policy);
 
         return policy.result()
             && ! geometry::detail::touches::rings_containing(geometry1, geometry2, strategy)
@@ -523,8 +521,7 @@ struct self_touches
         detail::self_get_turn_points::get_turns
             <
                 false, policy_type
-            >::apply(geometry, strategy, detail::no_rescale_policy(),
-                     turns, policy, 0, true);
+            >::apply(geometry, strategy, turns, policy, 0, true);
 
         return policy.result();
     }

@@ -1397,7 +1397,6 @@ struct get_turn_info
         typename UniqueSubRange2,
         typename TurnInfo,
         typename UmbrellaStrategy,
-        typename RobustPolicy,
         typename OutputIterator
     >
     static inline OutputIterator apply(
@@ -1405,18 +1404,16 @@ struct get_turn_info
                 UniqueSubRange2 const& range_q,
                 TurnInfo const& tp_model,
                 UmbrellaStrategy const& umbrella_strategy,
-                RobustPolicy const& robust_policy,
                 OutputIterator out)
     {
         using inters_info = intersection_info
             <
                 UniqueSubRange1, UniqueSubRange2,
                 typename TurnInfo::point_type,
-                UmbrellaStrategy,
-                RobustPolicy
+                UmbrellaStrategy
             >;
 
-        inters_info inters(range_p, range_q, umbrella_strategy, robust_policy);
+        inters_info inters(range_p, range_q, umbrella_strategy);
 
         char const method = inters.d_info().how;
 

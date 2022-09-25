@@ -168,15 +168,14 @@ void check_geometry_range(Geometry1 const& g1,
                           Expected const& expected,
                           Strategy const& strategy)
 {
-    typedef bg::detail::no_rescale_policy robust_policy_type;
-    typedef typename bg::point_type<Geometry2>::type point_type;
+    using point_type = typename bg::point_type<Geometry2>::type;
 
-    typedef typename bg::detail::segment_ratio_type
+    using segment_ratio_type = typename bg::segment_ratio
         <
-            point_type, robust_policy_type
-        >::type segment_ratio_type;
+            typename bg::coordinate_type<point_type>::type
+        >;
 
-    typedef bg::detail::overlay::turn_info
+    using turn_info = bg::detail::overlay::turn_info
         <
             typename bg::point_type<Geometry2>::type,
             segment_ratio_type,
@@ -187,26 +186,25 @@ void check_geometry_range(Geometry1 const& g1,
                 point_type,
                 segment_ratio_type
             >::type
-        > turn_info;
-    typedef bg::detail::overlay::assign_null_policy assign_policy_t;
-    typedef bg::detail::get_turns::no_interrupt_policy interrupt_policy_t;
+        >;
+    using assign_policy_t = bg::detail::overlay::assign_null_policy;
+    using interrupt_policy_t = bg::detail::get_turns::no_interrupt_policy;
 
     std::vector<turn_info> detected;
     interrupt_policy_t interrupt_policy;
-    robust_policy_type robust_policy;
     
     // Don't switch the geometries
-    typedef bg::detail::get_turns::get_turn_info_type
+    using turn_policy_t = bg::detail::get_turns::get_turn_info_type
         <
             Geometry1, Geometry2, assign_policy_t
-        > turn_policy_t;
+        >;
 
     bg::dispatch::get_turns
         <
             typename bg::tag<Geometry1>::type, typename bg::tag<Geometry2>::type,
             Geometry1, Geometry2, false, false,
             turn_policy_t
-        >::apply(0, g1, 1, g2, strategy, robust_policy, detected, interrupt_policy);
+        >::apply(0, g1, 1, g2, strategy, detected, interrupt_policy);
 
     bool ok = boost::size(expected) == detected.size();
 

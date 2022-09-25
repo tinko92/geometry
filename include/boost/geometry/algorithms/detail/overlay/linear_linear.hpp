@@ -146,14 +146,12 @@ protected:
         typename Turns,
         typename LinearGeometry1,
         typename LinearGeometry2,
-        typename Strategy,
-        typename RobustPolicy
+        typename Strategy
     >
     static inline void compute_turns(Turns& turns,
                                      LinearGeometry1 const& linear1,
                                      LinearGeometry2 const& linear2,
-                                     Strategy const& strategy,
-                                     RobustPolicy const& robust_policy)
+                                     Strategy const& strategy)
     {
         turns.clear();
 
@@ -169,7 +167,7 @@ protected:
                     LinearGeometry2,
                     assign_policy
                 >
-            >::apply(turns, linear1, linear2, interrupt_policy, strategy, robust_policy);
+            >::apply(turns, linear1, linear2, interrupt_policy, strategy);
     }
 
 
@@ -220,13 +218,9 @@ protected:
     }
 
 public:
-    template
-    <
-        typename RobustPolicy, typename OutputIterator, typename Strategy
-    >
+    template<typename OutputIterator, typename Strategy>
     static inline OutputIterator apply(Linear1 const& linear1,
                                        Linear2 const& linear2,
-                                       RobustPolicy const& robust_policy,
                                        OutputIterator oit,
                                        Strategy const& strategy)
     {
@@ -240,12 +234,12 @@ public:
                         Linear2,
                         assign_policy
                     >
-            >::template turn_info_type<Strategy, RobustPolicy>::type;
+            >::template turn_info_type<Strategy>::type;
 
         using turns_container = std::vector<turn_info>;
 
         turns_container turns;
-        compute_turns(turns, linear1, linear2, strategy, robust_policy);
+        compute_turns(turns, linear1, linear2, strategy);
 
         if ( turns.empty() )
         {
@@ -288,13 +282,9 @@ struct linear_linear_linestring
         EnableDegenerateTurns, EnableFollowIsolatedPoints
     >
 {
-    template
-    <
-        typename RobustPolicy, typename OutputIterator, typename Strategy
-    >
+    template<typename OutputIterator, typename Strategy>
     static inline OutputIterator apply(Linear1 const& linear1,
                                        Linear2 const& linear2,
-                                       RobustPolicy const& robust_policy,
                                        OutputIterator oit,
                                        Strategy const& strategy)
     {
@@ -311,7 +301,7 @@ struct linear_linear_linestring
                 Linear2, Linear1, LinestringOut, overlay_difference,
                 EnableFilterContinueTurns, EnableRemoveDuplicateTurns,
                 EnableDegenerateTurns, EnableFollowIsolatedPoints
-            >::apply(linear2, linear1, robust_policy, oit, strategy);
+            >::apply(linear2, linear1, oit, strategy);
     }
 };
 

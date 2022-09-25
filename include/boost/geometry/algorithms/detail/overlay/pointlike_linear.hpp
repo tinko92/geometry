@@ -63,10 +63,9 @@ template
 >
 struct point_single_point
 {
-    template <typename RobustPolicy, typename OutputIterator, typename Strategy>
+    template <typename OutputIterator, typename Strategy>
     static inline OutputIterator apply(Point const& point,
                                        Geometry const& geometry,
-                                       RobustPolicy const&,
                                        OutputIterator oit,
                                        Strategy const& strategy)
     {
@@ -89,10 +88,9 @@ template
 >
 struct multipoint_single_point
 {
-    template <typename RobustPolicy, typename OutputIterator, typename Strategy>
+    template <typename OutputIterator, typename Strategy>
     static inline OutputIterator apply(MultiPoint const& multipoint,
                                        Geometry const& geometry,
-                                       RobustPolicy const&,
                                        OutputIterator oit,
                                        Strategy const& strategy)
     {
@@ -267,10 +265,9 @@ private:
     }
 
 public:
-    template <typename RobustPolicy, typename OutputIterator, typename Strategy>
+    template <typename OutputIterator, typename Strategy>
     static inline OutputIterator apply(MultiPoint const& multipoint,
                                        Linear const& linear,
-                                       RobustPolicy const& robust_policy,
                                        OutputIterator oit,
                                        Strategy const& strategy)
     {
@@ -289,7 +286,7 @@ public:
         return multipoint_multipoint_point
             <
                 MultiPoint, point_vector_type, PointOut, OverlayType
-            >::apply(multipoint, common_points, robust_policy, oit, strategy);
+            >::apply(multipoint, common_points, oit, strategy);
     }
 };
 

@@ -171,7 +171,7 @@ struct is_valid_ring
             && ! has_duplicates<Ring>::apply(ring, visitor, strategy)
             && ! has_spikes<Ring>::apply(ring, visitor, strategy)
             && (! CheckSelfIntersections
-                || has_valid_self_turns<Ring, typename Strategy::cs_tag>::apply(ring, visitor, strategy))
+                || has_valid_self_turns<Ring>::apply(ring, visitor, strategy))
             && is_properly_oriented<Ring, IsInteriorRing>::apply(ring, visitor, strategy);
     }
 };

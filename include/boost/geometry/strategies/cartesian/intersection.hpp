@@ -51,9 +51,6 @@
 #include <boost/geometry/strategies/side_info.hpp>
 #include <boost/geometry/strategies/within.hpp>
 
-#include <boost/geometry/policies/robustness/rescale_policy_tags.hpp>
-#include <boost/geometry/policies/robustness/robust_point_type.hpp>
-
 
 #if defined(BOOST_GEOMETRY_DEBUG_ROBUSTNESS)
 #  include <boost/geometry/io/wkt/write.hpp>

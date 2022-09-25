@@ -58,6 +58,8 @@
 #include <boost/geometry/algorithms/detail/sections/sectionalize.hpp>
 #include <boost/geometry/algorithms/detail/sections/section_box_policies.hpp>
 
+#include <boost/geometry/policies/robustness/segment_ratio.hpp>
+
 #include <boost/geometry/views/detail/closed_clockwise_view.hpp>
 #include <boost/geometry/util/range.hpp>
 
@@ -118,8 +120,7 @@ template
 <
     typename Ring,
     typename Strategy,
-    typename DistanceStrategy,
-    typename RobustPolicy
+    typename DistanceStrategy
 >
 struct buffered_piece_collection
 {
@@ -134,13 +135,13 @@ struct buffered_piece_collection
     using buffer_turn_info_type = buffer_turn_info
     <
         point_type,
-        typename segment_ratio_type<point_type, RobustPolicy>::type
+        geometry::segment_ratio<coordinate_type>
     >;
 
     using buffer_turn_operation_type = buffer_turn_operation
     <
         point_type,
-        typename segment_ratio_type<point_type, RobustPolicy>::type
+        geometry::segment_ratio<coordinate_type>
     >;
 
     using turn_vector_type = std::vector<buffer_turn_info_type>;
@@ -255,15 +256,8 @@ struct buffered_piece_collection
     buffered_ring_collection<Ring> traversed_rings;
     segment_identifier current_segment_id;
 
-    // Monotonic sections (used for offsetted rings around points)
-    // are still using a robust type, to be comparable with turn calculations,
-    // which is using rescaling.
-    using robust_box_type = geometry::model::box
-    <
-        typename geometry::robust_point_type<point_type, RobustPolicy>::type
-    >;
-    using robust_sections_type = geometry::sections <robust_box_type, 2>;
-    robust_sections_type monotonic_sections;
+    using sections_type = geometry::sections <box_type, 2>;
+    sections_type monotonic_sections;
 
     // Define the clusters, mapping cluster_id -> turns
     using cluster_type = std::map
@@ -276,17 +270,14 @@ struct buffered_piece_collection
 
     Strategy m_strategy;
     DistanceStrategy m_distance_strategy;
-    RobustPolicy const& m_robust_policy;
 
     buffered_piece_collection(Strategy const& strategy,
-                              DistanceStrategy const& distance_strategy,
-                              RobustPolicy const& robust_policy)
+                              DistanceStrategy const& distance_strategy)
         : m_first_piece_index(-1)
         , m_deflate(false)
         , m_has_deflated(false)
         , m_strategy(strategy)
         , m_distance_strategy(distance_strategy)
-        , m_robust_policy(robust_policy)
     {}
 
     inline void check_linear_endpoints(buffer_turn_info_type& turn) const
@@ -457,10 +448,8 @@ struct buffered_piece_collection
                     piece_vector_type,
                     buffered_ring_collection<buffered_ring<Ring> >,
                     turn_vector_type,
-                    Strategy,
-                    RobustPolicy
-                > visitor(m_pieces, offsetted_rings, m_turns,
-                          m_strategy, m_robust_policy);
+                    Strategy
+                > visitor(m_pieces, offsetted_rings, m_turns, m_strategy);
 
             for (auto& section : monotonic_sections)
             {
@@ -469,7 +458,7 @@ struct buffered_piece_collection
 
             geometry::partition
                 <
-                    robust_box_type
+                    box_type
                 >::apply(monotonic_sections, visitor,
                          detail::section::get_section_box<Strategy>(m_strategy),
                          detail::section::overlaps_section_box<Strategy>(m_strategy));
@@ -906,9 +895,7 @@ struct buffered_piece_collection
     inline void enrich()
     {
         enrich_intersection_points<false, false, overlay_buffer>(m_turns,
-            m_clusters, offsetted_rings, offsetted_rings,
-            m_robust_policy,
-            m_strategy);
+            m_clusters, offsetted_rings, offsetted_rings, m_strategy);
     }
 
     // Discards all rings which do have not-OK intersection points only.
@@ -944,7 +931,7 @@ struct buffered_piece_collection
             {
                 continue;
             }
-            if (detail::disjoint::disjoint_point_box(point, original.m_box,m_strategy))
+            if (detail::disjoint::disjoint_point_box(point, original.m_box, m_strategy))
             {
                 continue;
             }
@@ -1023,7 +1010,7 @@ struct buffered_piece_collection
         traversed_rings.clear();
         buffer_overlay_visitor visitor;
         traverser::apply(offsetted_rings, offsetted_rings,
-                        m_strategy, m_robust_policy,
+                        m_strategy,
                         m_turns, traversed_rings,
                         turn_info_per_ring,
                         m_clusters, visitor);

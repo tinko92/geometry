@@ -24,16 +24,15 @@ void test_get_turns_on_const(Ring1 const &ring1, Ring2 const &ring2,
 {
     namespace bg = boost::geometry;
 
-    using rescale_policy_type = bg::detail::no_rescale_policy;
     using strategy_type = typename bg::strategies::relate::services::default_strategy<Ring1, Ring2>::type;
 
     using point_type = typename bg::point_type<Ring1>::type;
     using writable_point_type = typename bg::helper_geometry<point_type>::type;
 
-    using segment_ratio_type = typename bg::detail::segment_ratio_type
+    using segment_ratio_type = bg::segment_ratio
         <
-            writable_point_type, rescale_policy_type
-        >::type;
+            typename bg::coordinate_type<writable_point_type>::type
+        >;
     using turn_info = bg::detail::overlay::turn_info
         <
             writable_point_type, segment_ratio_type
@@ -45,7 +44,7 @@ void test_get_turns_on_const(Ring1 const &ring1, Ring2 const &ring2,
     bg::get_turns
         <
             false, false, bg::detail::overlay::assign_null_policy
-        >(ring1, ring2,  strategy, rescale_policy_type(), turns, policy);
+        >(ring1, ring2,  strategy, turns, policy);
 
     BOOST_CHECK_EQUAL(turns.size(), expectation.size());
 

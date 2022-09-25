@@ -26,8 +26,7 @@
 #include <boost/geometry/core/point_type.hpp>
 
 #include <boost/geometry/policies/predicate_based_interrupt_policy.hpp>
-#include <boost/geometry/policies/robustness/segment_ratio_type.hpp>
-#include <boost/geometry/policies/robustness/get_rescale_policy.hpp>
+#include <boost/geometry/policies/robustness/segment_ratio.hpp>
 
 namespace boost { namespace geometry
 {
@@ -40,29 +39,18 @@ namespace detail { namespace is_valid
 
 template
 <
-    typename Geometry,
-    typename CSTag // TODO: remove
+    typename Geometry
 >
 class has_valid_self_turns
 {
 private:
-    typedef typename point_type<Geometry>::type point_type;
-
-    typedef typename geometry::rescale_policy_type
-        <
-            point_type,
-            CSTag
-        >::type rescale_policy_type;
+    using point_type = typename point_type<Geometry>::type;
 
 public:
     typedef detail::overlay::turn_info
         <
             point_type,
-            typename segment_ratio_type
-                <
-                    point_type,
-                    rescale_policy_type
-                >::type
+            geometry::segment_ratio<typename geometry::coordinate_type<point_type>::type>
         > turn_type;
 
     // returns true if all turns are valid
@@ -74,9 +62,6 @@ public:
     {
         boost::ignore_unused(visitor);
 
-        rescale_policy_type robust_policy
-            = geometry::get_rescale_policy<rescale_policy_type>(geometry, strategy);
-
         detail::overlay::stateless_predicate_based_interrupt_policy
             <
                 is_acceptable_turn<Geometry>
@@ -86,7 +71,7 @@ public:
         detail::self_get_turn_points::self_turns
             <
                 false, detail::overlay::assign_null_policy
-            >(geometry, strategy, robust_policy, turns, interrupt_policy,
+            >(geometry, strategy, turns, interrupt_policy,
               0, true);
 
         if (interrupt_policy.has_intersections)

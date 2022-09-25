@@ -16,8 +16,10 @@
 
 //#include <type_traits>
 
+#include <boost/geometry/core/coordinate_type.hpp>
+
 #include <boost/geometry/policies/relate/intersection_policy.hpp>
-#include <boost/geometry/policies/robustness/segment_ratio_type.hpp>
+#include <boost/geometry/policies/robustness/segment_ratio.hpp>
 
 #include <boost/geometry/strategies/intersection.hpp>
 #include <boost/geometry/strategies/intersection_result.hpp>
@@ -41,7 +43,6 @@ template
     typename Geometry1,
     typename Geometry2,
     typename IntersectionPoint,
-    typename RobustPolicy,
     typename CalculationType = void
 >
 struct intersection_strategies
@@ -49,14 +50,11 @@ struct intersection_strategies
 private :
     // for development BOOST_STATIC_ASSERT((! std::is_same<RobustPolicy, void>::type::value));
 
-    typedef segment_intersection_points
-    <
-        IntersectionPoint,
-        typename detail::segment_ratio_type
+    using ip_type = segment_intersection_points
         <
-            IntersectionPoint, RobustPolicy
-        >::type
-    > ip_type;
+            IntersectionPoint,
+            segment_ratio<typename geometry::coordinate_type<IntersectionPoint>::type>
+        >;
 
 public:
     typedef policies::relate::segments_intersection_policy
@@ -64,19 +62,18 @@ public:
             ip_type
         > intersection_policy_type;
 
-    typedef typename strategy::intersection::services::default_strategy
+    using segment_intersection_strategy_type =
+        typename strategy::intersection::services::default_strategy
             <
                 Tag,
                 CalculationType
-            >::type segment_intersection_strategy_type;
+            >::type;
 
-    typedef typename strategy::side::services::default_strategy
+    using side_strategy_type = typename strategy::side::services::default_strategy
         <
             Tag,
             CalculationType
-        >::type side_strategy_type;
-
-    typedef RobustPolicy rescale_policy_type;
+        >::type;
 };
 
 

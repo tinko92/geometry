@@ -46,15 +46,10 @@ std::string as_string(std::vector<T> const& v)
 
 }
 
-template
-<
-    typename Geometry, typename Point,
-    typename RobustPolicy, typename Strategy
->
+template <typename Geometry, typename Point, typename Strategy>
 std::vector<std::size_t> apply_get_turns(std::string const& case_id,
             Geometry const& geometry1, Geometry const& geometry2,
             Point const& turn_point, Point const& origin_point,
-            RobustPolicy const& robust_policy,
             Strategy const& strategy,
             std::size_t expected_open_count,
             std::size_t expected_max_rank,
@@ -67,10 +62,10 @@ std::vector<std::size_t> apply_get_turns(std::string const& case_id,
 //todo: maybe should be enriched to count left/right - but can also be counted from ranks
     using point_type = typename bg::point_type<Geometry>::type;
     using turn_info = bg::detail::overlay::turn_info
-    <
-        point_type,
-        typename bg::detail::segment_ratio_type<point_type, RobustPolicy>::type
-    >;
+        <
+            point_type,
+            bg::segment_ratio<typename coordinate_type<point_type>::type>
+        >;
     using turn_container_type = std::deque<turn_info>;
 
     turn_container_type turns;
@@ -80,7 +75,7 @@ std::vector<std::size_t> apply_get_turns(std::string const& case_id,
         <
             false, false,
             detail::overlay::assign_null_policy
-        >(geometry1, geometry2, strategy, robust_policy, turns, policy);
+        >(geometry1, geometry2, strategy, turns, policy);
 
 
     // Define sorter, sorting counter-clockwise such that polygons are on the
@@ -156,10 +151,8 @@ std::vector<std::size_t> apply_get_turns(std::string const& case_id,
 
     int previous_rank = -1;
     int previous_to_rank = -1;
-    for (std::size_t i = 0; i < sbs.m_ranked_points.size(); i++)
+    for (auto const& ranked_point : sbs.m_ranked_points)
     {
-        typename sbs_type::rp const& ranked_point = sbs.m_ranked_points[i];
-
         int const rank = static_cast<int>(ranked_point.rank);
         bool const set_right = rank != previous_to_rank;
         if (rank != previous_rank)
@@ -241,15 +234,6 @@ void test_basic(std::string const& case_id,
     bg::correct(g1);
     bg::correct(g2);
 
-    using rescale_policy_type = typename bg::rescale_overlay_policy_type
-    <
-        multi_polygon,
-        multi_polygon
-    >::type;
-
-    rescale_policy_type robust_policy
-        = bg::get_rescale_policy<rescale_policy_type>(g1, g2);
-
     using strategy_type = typename bg::strategies::relate::services::default_strategy
         <
             multi_polygon, multi_polygon
@@ -258,8 +242,8 @@ void test_basic(std::string const& case_id,
     strategy_type strategy;
 
     apply_get_turns(case_id, g1, g2, turn_point, origin_point,
-        robust_policy, strategy,
-        expected_open_count, expected_max_rank, expected_right_count);
+                    strategy,
+                    expected_open_count, expected_max_rank, expected_right_count);
 }
 
 template <typename T>

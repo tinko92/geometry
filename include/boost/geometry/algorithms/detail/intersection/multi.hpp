@@ -44,12 +44,10 @@ struct intersection_multi_linestring_multi_linestring_point
     template
     <
         typename MultiLinestring1, typename MultiLinestring2,
-        typename RobustPolicy,
         typename OutputIterator, typename Strategy
     >
     static inline OutputIterator apply(MultiLinestring1 const& ml1,
             MultiLinestring2 const& ml2,
-            RobustPolicy const& robust_policy,
             OutputIterator out,
             Strategy const& strategy)
     {
@@ -70,7 +68,7 @@ struct intersection_multi_linestring_multi_linestring_point
                 ++it2)
             {
                 out = intersection_linestring_linestring_point<PointOut>
-                      ::apply(*it1, *it2, robust_policy, out, strategy);
+                      ::apply(*it1, *it2, out, strategy);
             }
         }
 
@@ -85,24 +83,17 @@ struct intersection_linestring_multi_linestring_point
     template
     <
         typename Linestring, typename MultiLinestring,
-        typename RobustPolicy,
         typename OutputIterator, typename Strategy
     >
     static inline OutputIterator apply(Linestring const& linestring,
             MultiLinestring const& ml,
-            RobustPolicy const& robust_policy,
             OutputIterator out,
             Strategy const& strategy)
     {
-        for (typename boost::range_iterator
-                <
-                    MultiLinestring const
-                >::type it = boost::begin(ml);
-            it != boost::end(ml);
-            ++it)
+        for (auto it = boost::begin(ml); it != boost::end(ml); ++it)
         {
             out = intersection_linestring_linestring_point<PointOut>
-                  ::apply(linestring, *it, robust_policy, out, strategy);
+                  ::apply(linestring, *it, out, strategy);
         }
 
         return out;
@@ -124,11 +115,9 @@ struct intersection_of_multi_linestring_with_areal
     template
     <
         typename MultiLinestring, typename Areal,
-        typename RobustPolicy,
         typename OutputIterator, typename Strategy
     >
     static inline OutputIterator apply(MultiLinestring const& ml, Areal const& areal,
-            RobustPolicy const& robust_policy,
             OutputIterator out,
             Strategy const& strategy)
     {
@@ -142,7 +131,7 @@ struct intersection_of_multi_linestring_with_areal
             out = intersection_of_linestring_with_areal
                 <
                     ReverseAreal, LineStringOut, OverlayType, FollowIsolatedPoints
-                >::apply(*it, areal, robust_policy, out, strategy);
+                >::apply(*it, areal, out, strategy);
         }
 
         return out;
@@ -163,18 +152,16 @@ struct intersection_of_areal_with_multi_linestring
     template
     <
         typename Areal, typename MultiLinestring,
-        typename RobustPolicy,
         typename OutputIterator, typename Strategy
     >
     static inline OutputIterator apply(Areal const& areal, MultiLinestring const& ml,
-            RobustPolicy const& robust_policy,
             OutputIterator out,
             Strategy const& strategy)
     {
         return intersection_of_multi_linestring_with_areal
             <
                 ReverseAreal, LineStringOut, OverlayType, FollowIsolatedPoints
-            >::apply(ml, areal, robust_policy, out, strategy);
+            >::apply(ml, areal, out, strategy);
     }
 };
 
@@ -186,12 +173,10 @@ struct clip_multi_linestring
     template
     <
         typename MultiLinestring, typename Box,
-        typename RobustPolicy,
         typename OutputIterator, typename Strategy
     >
     static inline OutputIterator apply(MultiLinestring const& multi_linestring,
             Box const& box,
-            RobustPolicy const& robust_policy,
             OutputIterator out, Strategy const& )
     {
         typedef typename point_type<LinestringOut>::type point_type;
@@ -201,7 +186,7 @@ struct clip_multi_linestring
             it != boost::end(multi_linestring); ++it)
         {
             out = detail::intersection::clip_range_with_box
-                <LinestringOut>(box, *it, robust_policy, out, lb_strategy);
+                <LinestringOut>(box, *it, out, lb_strategy);
         }
         return out;
     }

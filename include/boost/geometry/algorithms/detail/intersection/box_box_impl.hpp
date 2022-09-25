@@ -26,13 +26,11 @@ struct intersection_box_box
     <
         typename Box1,
         typename Box2,
-        typename RobustPolicy,
         typename BoxOut,
         typename Strategy
     >
     static inline bool apply(Box1 const& box1,
                              Box2 const& box2,
-                             RobustPolicy const&,
                              BoxOut& box_out,
                              Strategy const&)
     {

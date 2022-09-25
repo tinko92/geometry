@@ -28,7 +28,6 @@
 
 #include <boost/geometry/algorithms/correct.hpp>
 #include <boost/geometry/algorithms/detail/overlay/get_turns.hpp>
-#include <boost/geometry/policies/robustness/get_rescale_policy.hpp>
 
 #include <boost/geometry/algorithms/detail/overlay/debug_turn_info.hpp>
 
@@ -42,8 +41,6 @@
 #endif
 
 #include <algorithms/overlay/overlay_cases.hpp>
-
-
 
 
 // To test that "get_turns" can be called using additional information
@@ -62,26 +59,20 @@ struct test_get_turns
             std::size_t expected_count,
             G1 const& g1, G2 const& g2, double /*precision*/)
     {
-        typedef typename bg::point_type<G2>::type point_type;
+        using point_type = typename bg::point_type<G2>::type;
         
-        typedef typename bg::strategies::relate::services::default_strategy
+        using strategy_type = typename bg::strategies::relate::services::default_strategy
             <
                 G1, G2
-            >::type strategy_type;
+            >::type;
         
-        typedef typename bg::rescale_policy_type<point_type>::type
-            rescale_policy_type;
-
         strategy_type strategy;
 
-        rescale_policy_type rescale_policy
-                = bg::get_rescale_policy<rescale_policy_type>(g1, g2);
-
-        typedef bg::detail::overlay::turn_info
+        using turn_info = bg::detail::overlay::turn_info
             <
                 point_type,
-                typename bg::detail::segment_ratio_type<point_type, rescale_policy_type>::type
-            > turn_info;
+                bg::segment_ratio<typename bg::coordinate_type<point_type>::type>
+            >;
         std::vector<turn_info> turns;
 
 
@@ -89,7 +80,7 @@ struct test_get_turns
         bg::get_turns
             <
                 false, false, bg::detail::overlay::assign_null_policy
-            >(g1, g2, strategy, rescale_policy, turns, policy);
+            >(g1, g2, strategy, turns, policy);
 
         BOOST_CHECK_MESSAGE(
             expected_count == boost::size(turns),
@@ -102,7 +93,7 @@ struct test_get_turns
 
 #if defined(TEST_WITH_SVG)
         {
-            typedef typename bg::coordinate_type<G1>::type coordinate_type;
+            using coordinate_type = typename bg::coordinate_type<G1>::type;
             std::map<std::pair<coordinate_type, coordinate_type>, int> offsets;
             std::ostringstream filename;
             filename << "get_turns_" << id
@@ -122,7 +113,7 @@ struct test_get_turns
                     "stroke:rgb(51,51,153);stroke-width:3");
 
             int index = 0;
-            for (turn_info const& turn : turns)
+            for (auto const& turn : turns)
             {
                 mapper.map(turn.point, "fill:rgb(255,128,0);stroke:rgb(0,0,100);stroke-width:1");
 
@@ -159,8 +150,8 @@ template<typename G1, typename G2>
 struct test_get_turns
 {
     inline static void apply(std::string const& id, std::size_t expected_count,
-                std::string const& wkt1, std::string const& wkt2,
-                double precision = 0.001)
+                             std::string const& wkt1, std::string const& wkt2,
+                             double precision = 0.001)
     {
         if (wkt1.empty() || wkt2.empty())
         {
@@ -205,10 +196,10 @@ struct test_get_turns
 template <typename T>
 void test_all()
 {
-    typedef bg::model::point<T, 2, bg::cs::cartesian> P;
-    typedef bg::model::polygon<P> polygon;
-    typedef bg::model::linestring<P> linestring;
-    typedef bg::model::box<P> box;
+    using P = bg::model::point<T, 2, bg::cs::cartesian>;
+    using polygon = bg::model::polygon<P>;
+    using linestring = bg::model::linestring<P>;
+    using box = bg::model::box<P>;
 
 #ifdef BOOST_GEOMETRY_DEBUG_INTERSECTION
     std::cout << string_from_type<T>::name() << std::endl;
@@ -354,8 +345,8 @@ void test_all()
 template <typename T>
 void test_ccw()
 {
-    typedef bg::model::point<T, 2, bg::cs::cartesian> P;
-    typedef bg::model::polygon<P, false, true> polygon;
+    using P = bg::model::point<T, 2, bg::cs::cartesian>;
+    using polygon = bg::model::polygon<P, false, true>;
 
     test_get_turns<polygon, polygon>::apply("ccw_1",
                 6,
@@ -370,8 +361,8 @@ void test_ccw()
 template <typename T>
 void test_open()
 {
-    typedef bg::model::point<T, 2, bg::cs::cartesian> P;
-    typedef bg::model::polygon<P, true, false> polygon;
+    using P = bg::model::point<T, 2, bg::cs::cartesian>;
+    using polygon = bg::model::polygon<P, true, false>;
 
     test_get_turns<polygon, polygon>::apply("open_1",
                 6,
