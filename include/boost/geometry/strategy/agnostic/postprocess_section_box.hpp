@@ -27,7 +27,7 @@ struct expand_by_neps
     {
         using ct = typename geometry::coordinate_type<Box>::type;
         static ct const eps = math::scaled_epsilon<ct>(N);
-        detail::expand_by_epsilon(b, eps);
+        geometry::detail::expand_by_epsilon(b, eps);
     }
 };
 
