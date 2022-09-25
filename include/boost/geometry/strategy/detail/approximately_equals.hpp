@@ -6,8 +6,8 @@
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_APPROXIMATELY_EQUALS_HPP
-#define BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_APPROXIMATELY_EQUALS_HPP
+#ifndef BOOST_GEOMETRY_STRATEGY_DETAIL_APPROXIMATELY_EQUALS_HPP
+#define BOOST_GEOMETRY_STRATEGY_DETAIL_APPROXIMATELY_EQUALS_HPP
 
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/util/math.hpp>
@@ -18,7 +18,7 @@ namespace boost { namespace geometry
 {
 
 #ifndef DOXYGEN_NO_DETAIL
-namespace detail { namespace overlay
+namespace strategy { namespace detail
 {
 
 template <typename Point1, typename Point2, typename E>
@@ -40,10 +40,10 @@ inline bool approximately_equals(Point1 const& a, Point2 const& b,
         && math::detail::equals_by_policy(a1, b1, policy);
 }
 
-}} // namespace detail::overlay
+}} // namespace strategy::detail
 #endif //DOXYGEN_NO_DETAIL
 
 
 }} // namespace boost::geometry
 
-#endif // BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_APPROXIMATELY_EQUALS_HPP
+#endif // BOOST_GEOMETRY_STRATEGY_DETAIL_APPROXIMATELY_EQUALS_HPP

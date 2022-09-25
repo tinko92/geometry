@@ -177,16 +177,12 @@ struct clip_multi_linestring
     >
     static inline OutputIterator apply(MultiLinestring const& multi_linestring,
             Box const& box,
-            OutputIterator out, Strategy const& )
+            OutputIterator out, Strategy const& strategy)
     {
-        typedef typename point_type<LinestringOut>::type point_type;
-        strategy::intersection::liang_barsky<Box, point_type> lb_strategy;
-        for (typename boost::range_iterator<MultiLinestring const>::type it
-            = boost::begin(multi_linestring);
-            it != boost::end(multi_linestring); ++it)
+        for (auto const& ls : multi_linestring)
         {
             out = detail::intersection::clip_range_with_box
-                <LinestringOut>(box, *it, out, lb_strategy);
+                <LinestringOut>(box, ls, out, strategy);
         }
         return out;
     }

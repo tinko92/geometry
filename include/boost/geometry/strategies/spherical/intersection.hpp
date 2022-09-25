@@ -116,19 +116,19 @@ struct ecef_segments
             }
             else if (ip_flag == ipi_at_a1)
             {
-                detail::assign_point_from_index<0>(a, point);
+                geometry::detail::assign_point_from_index<0>(a, point);
             }
             else if (ip_flag == ipi_at_a2)
             {
-                detail::assign_point_from_index<1>(a, point);
+                geometry::detail::assign_point_from_index<1>(a, point);
             }
             else if (ip_flag == ipi_at_b1)
             {
-                detail::assign_point_from_index<0>(b, point);
+                geometry::detail::assign_point_from_index<0>(b, point);
             }
             else // ip_flag == ipi_at_b2
             {
-                detail::assign_point_from_index<1>(b, point);
+                geometry::detail::assign_point_from_index<1>(b, point);
             }
         }
 
@@ -255,7 +255,7 @@ struct ecef_segments
 
         calc_t len1 = 0;
         // point or opposite sides of a sphere/spheroid, assume point
-        if (! a_is_point && ! detail::vec_normalize(plane1.normal, len1))
+        if (! a_is_point && ! geometry::detail::vec_normalize(plane1.normal, len1))
         {
             a_is_point = true;
             if (sides.get<0, 0>() == 0 || sides.get<0, 1>() == 0)
@@ -265,7 +265,7 @@ struct ecef_segments
         }
 
         calc_t len2 = 0;
-        if (! b_is_point && ! detail::vec_normalize(plane2.normal, len2))
+        if (! b_is_point && ! geometry::detail::vec_normalize(plane2.normal, len2))
         {
             b_is_point = true;
             if (sides.get<1, 0>() == 0 || sides.get<1, 1>() == 0)

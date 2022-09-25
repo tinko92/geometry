@@ -9,7 +9,7 @@
 
 #include <boost/geometry/core/access.hpp>
 
-#include <boost/geometry/algorithms/detail/overlay/approximately_equals.hpp>
+#include <boost/geometry/strategy/detail/approximately_equals.hpp>
 
 #include <boost/geometry/util/math.hpp>
 #include <boost/geometry/util/algorithm.hpp>
@@ -25,7 +25,7 @@ struct exact
     template <typename Point>
     static bool equals(Point const& p1, Point const& p2)
     {
-        return detail::all_dimensions_of<Point>([&](auto index)
+        return geometry::detail::all_dimensions_of<Point>([&](auto index)
         {
             return get<index>(p1) == get<index>(p2);
         });
@@ -43,7 +43,7 @@ struct integral_neighbours
     template <typename Point>
     static bool equals(Point const& p1, Point const& p2)
     {
-        return detail::all_dimensions_of<Point>([&](auto index)
+        return geometry::detail::all_dimensions_of<Point>([&](auto index)
         {
             return math::abs(get<index>(p1) - get<index>(p2)) <= 1;
         });
@@ -62,7 +62,7 @@ struct approx_equal
     static bool equals(Point const& p1, Point const& p2)
     {
         using ct = typename coordinate_type<Point>::type;
-        return detail::overlay::approximately_equals(p1, p2, ct(1000));
+        return detail::approximately_equals(p1, p2, ct(1000));
     }
 
     template <std::size_t Dimension, typename Point>
