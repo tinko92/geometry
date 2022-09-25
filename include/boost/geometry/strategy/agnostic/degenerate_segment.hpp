@@ -23,7 +23,7 @@ struct math_equals
     template <typename Segment>
     static bool apply(Segment const& seg)
     {
-        return detail::all_dimensions_of<Segment>([&](auto index)
+        return geometry::detail::all_dimensions_of<Segment>([&](auto index)
         {
             return geometry::math::equals
                 (
