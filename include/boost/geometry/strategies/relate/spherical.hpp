@@ -219,11 +219,7 @@ public:
     static auto direction(Geometry1 const&, Geometry1 const&, Geometry2 const&,
                           std::enable_if_t
                             <
-                                std::is_same
-                                    <
-                                        typename cs_tag<Geometry1>::type,
-                                        spherical_polar_tag
-                                    >::value
+                                util::is_spherical_polar<Geometry1>::value
                             > * = nullptr)
     {
         return strategy::direction::spherical_polar();
@@ -233,11 +229,7 @@ public:
     static auto direction(Geometry1 const&, Geometry1 const&, Geometry2 const&,
                           std::enable_if_t
                             <
-                                ! std::is_same
-                                    <
-                                        typename cs_tag<Geometry1>::type,
-                                        spherical_polar_tag
-                                    >::value
+                                ! util::is_spherical_polar<Geometry1>::value
                             > * = nullptr)
     {
         return strategy::direction::spherical_equatorial();

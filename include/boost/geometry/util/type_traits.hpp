@@ -11,6 +11,7 @@
 #define BOOST_GEOMETRY_UTIL_TYPE_TRAITS_HPP
 
 
+#include <boost/geometry/core/cs.hpp>
 #include <boost/geometry/core/tag.hpp>
 #include <boost/geometry/core/tags.hpp>
 #include <boost/geometry/util/type_traits_std.hpp>
@@ -147,6 +148,10 @@ struct is_dynamic_geometry
     : std::is_same<dynamic_geometry_tag, typename tag<T>::type>
 {};
 
+template <typename T>
+struct is_spherical_polar
+    : std::is_same<spherical_polar_tag, typename cs_tag<T>::type>
+{};
 
 template <typename Geometry, typename T = void>
 struct enable_if_point
