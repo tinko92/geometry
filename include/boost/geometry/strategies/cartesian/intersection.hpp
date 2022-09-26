@@ -218,11 +218,11 @@ struct cartesian_segments
         {
             if (exceeds_side_of_segment<0>(point, s))
             {
-                detail::assign_point_from_index<0>(s, point);
+                geometry::detail::assign_point_from_index<0>(s, point);
             }
             else if (exceeds_side_of_segment<1>(point, s))
             {
-                detail::assign_point_from_index<1>(s, point);
+                geometry::detail::assign_point_from_index<1>(s, point);
             }
         }
 
