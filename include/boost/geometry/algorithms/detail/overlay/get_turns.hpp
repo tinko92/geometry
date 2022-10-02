@@ -173,8 +173,7 @@ private :
         // So advance to the "non duplicate next"
         // (the check is defensive, to avoid endless loops)
         std::size_t check = 0;
-        while (! detail::disjoint::disjoint_point_point(
-                    current, *circular_iterator, m_strategy)
+        while (! detail::disjoint::disjoint_point_point(current, *circular_iterator, m_strategy)
                && check++ < m_section.range_count)
         {
             circular_iterator++;

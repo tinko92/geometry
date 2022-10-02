@@ -93,7 +93,7 @@ template
     typename UniqueSubRange1, typename UniqueSubRange2,
     typename TurnPoint, typename UmbrellaStrategy
 >
-class intersection_info_base
+class intersection_info
 {
 public:
 
@@ -114,12 +114,16 @@ public:
         <
             UniqueSubRange2, UniqueSubRange1, UmbrellaStrategy
         >;
-    
-    intersection_info_base(UniqueSubRange1 const& range_p,
+
+    using i_info_type = typename result_type::intersection_points_type;
+    using d_info_type = typename result_type::direction_type;
+
+    intersection_info(UniqueSubRange1 const& range_p,
                            UniqueSubRange2 const& range_q,
                            UmbrellaStrategy const& umbrella_strategy)
         : m_range_p(range_p)
         , m_range_q(range_q)
+        , m_umbrella_strategy(umbrella_strategy)
         , m_side_calc(range_p, range_q, umbrella_strategy)
         , m_swapped_side_calc(range_q, range_p, umbrella_strategy)
         , m_result(umbrella_strategy.relate()
@@ -143,60 +147,18 @@ public:
         return m_swapped_side_calc;
     }
 
-private :
-    // Owned by get_turns
-    UniqueSubRange1 const& m_range_p;
-    UniqueSubRange2 const& m_range_q;
-
-    // Owned by this class
-    side_calculator_type m_side_calc;
-    swapped_side_calculator_type m_swapped_side_calc;
-
-protected :
-    result_type m_result;
-};
-
-
-template
-<
-    typename UniqueSubRange1, typename UniqueSubRange2,
-    typename TurnPoint,
-    typename UmbrellaStrategy
->
-class intersection_info
-    : public intersection_info_base<UniqueSubRange1, UniqueSubRange2,
-        TurnPoint, UmbrellaStrategy>
-{
-    using base = intersection_info_base<UniqueSubRange1, UniqueSubRange2,
-        TurnPoint, UmbrellaStrategy>;
-
-public:
-
-    using side_calculator_type = typename base::side_calculator_type;
-    using result_type = typename base::result_type;
-    
-    using i_info_type = typename result_type::intersection_points_type;
-    using d_info_type = typename result_type::direction_type;
-
-    intersection_info(UniqueSubRange1 const& range_p,
-                      UniqueSubRange2 const& range_q,
-                      UmbrellaStrategy const& umbrella_strategy)
-        : base(range_p, range_q, umbrella_strategy)
-        , m_umbrella_strategy(umbrella_strategy)
-    {}
-
-    inline result_type const& result() const { return base::m_result; }
-    inline i_info_type const& i_info() const { return base::m_result.intersection_points; }
-    inline d_info_type const& d_info() const { return base::m_result.direction; }
+    inline result_type const& result() const { return m_result; }
+    inline i_info_type const& i_info() const { return m_result.intersection_points; }
+    inline d_info_type const& d_info() const { return m_result.direction; }
 
     // TODO: it's more like is_spike_ip_p
     inline bool is_spike_p() const
     {
-        if (base::p_is_last_segment())
+        if (p_is_last_segment())
         {
             return false;
         }
-        if (base::sides().pk_wrt_p1() == 0)
+        if (sides().pk_wrt_p1() == 0)
         {
             // p:  pi--------pj--------pk
             // or: pi----pk==pj
@@ -207,9 +169,9 @@ public:
             }
 
             // TODO: why is q used to determine spike property in p?
-            bool const has_qk = ! base::q_is_last_segment();
-            int const qk_p1 = has_qk ? base::sides().qk_wrt_p1() : 0;
-            int const qk_p2 = has_qk ? base::sides().qk_wrt_p2() : 0;
+            bool const has_qk = ! q_is_last_segment();
+            int const qk_p1 = has_qk ? sides().qk_wrt_p1() : 0;
+            int const qk_p2 = has_qk ? sides().qk_wrt_p2() : 0;
 
             if (qk_p1 == -qk_p2)
             {
@@ -217,8 +179,8 @@ public:
                 {
                     // qk is collinear with both p1 and p2,
                     // verify if pk goes backwards w.r.t. pi/pj
-                    return m_umbrella_strategy.direction(base::rpi(), base::rpj(), base::rpk())
-                        .apply(base::rpi(), base::rpj(), base::rpk()) == -1;
+                    return m_umbrella_strategy.direction(rpi(), rpj(), rpk())
+                        .apply(rpi(), rpj(), rpk()) == -1;
                 }
 
                 // qk is at opposite side of p1/p2, therefore
@@ -232,13 +194,13 @@ public:
 
     inline bool is_spike_q() const
     {
-        if (base::q_is_last_segment())
+        if (q_is_last_segment())
         {
             return false;
         }
 
         // See comments at is_spike_p
-        if (base::sides().qk_wrt_q1() == 0)
+        if (sides().qk_wrt_q1() == 0)
         {
             if (! is_ip_j<1>())
             {
@@ -246,16 +208,16 @@ public:
             }
 
             // TODO: why is p used to determine spike property in q?
-            bool const has_pk = ! base::p_is_last_segment();
-            int const pk_q1 = has_pk ? base::sides().pk_wrt_q1() : 0;
-            int const pk_q2 = has_pk ? base::sides().pk_wrt_q2() : 0;
+            bool const has_pk = ! p_is_last_segment();
+            int const pk_q1 = has_pk ? sides().pk_wrt_q1() : 0;
+            int const pk_q2 = has_pk ? sides().pk_wrt_q2() : 0;
                 
             if (pk_q1 == -pk_q2)
             {
                 if (pk_q1 == 0)
                 {
-                    return m_umbrella_strategy.direction(base::rqi(), base::rqj(), base::rqk())
-                        .apply(base::rqi(), base::rqj(), base::rqk()) == -1;
+                    return m_umbrella_strategy.direction(rqi(), rqj(), rqk())
+                        .apply(rqi(), rqj(), rqk()) == -1;
                 }
                         
                 return true;
@@ -269,8 +231,17 @@ public:
     {
         return m_umbrella_strategy;
     }
+private :
+    // Owned by get_turns
+    UniqueSubRange1 const& m_range_p;
+    UniqueSubRange2 const& m_range_q;
+    UmbrellaStrategy const& m_umbrella_strategy;
 
-private:
+    // Owned by this class
+    side_calculator_type m_side_calc;
+    swapped_side_calculator_type m_swapped_side_calc;
+    result_type m_result;
+
     template <std::size_t OpId>
     bool is_ip_j() const
     {
@@ -293,8 +264,6 @@ private:
             return arrival == 1;
         }
     }
-
-    UmbrellaStrategy const& m_umbrella_strategy;
 };
 
 }} // namespace detail::overlay
