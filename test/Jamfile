@@ -44,6 +44,7 @@ build-project algorithms ;
 build-project formulas ;
 build-project iterators ;
 build-project strategies ;
+build-project strategy ;
 build-project policies ;
 build-project io ;
 build-project srs ;
