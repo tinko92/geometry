@@ -98,10 +98,10 @@ static void test_segment_intersection(std::string const& case_id,
         + check(is, 1, expected_x2, expected_y2);
 
     BOOST_CHECK_EQUAL(is.count, expected_count);
-    BOOST_CHECK_EQUAL(dir.how, expected_how);
+    BOOST_CHECK_EQUAL(static_cast<char>(dir.how), expected_how);
     BOOST_CHECK_EQUAL(dir.opposite, expected_opposite);
-    BOOST_CHECK_EQUAL(dir.arrival[0], expected_arrival1);
-    BOOST_CHECK_EQUAL(dir.arrival[1], expected_arrival2);
+    BOOST_CHECK_EQUAL(static_cast<int>(dir.arrival[0]), expected_arrival1);
+    BOOST_CHECK_EQUAL(static_cast<int>(dir.arrival[1]), expected_arrival2);
 }
 
 template <typename P, typename Pair>

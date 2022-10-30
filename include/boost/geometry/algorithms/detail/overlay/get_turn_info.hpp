@@ -80,12 +80,7 @@ struct policy_verify_all
 };
 
 
-#if defined(BOOST_GEOMETRY_USE_RESCALING)
-using verify_policy_aa = policy_verify_nothing;
-#else
 using verify_policy_aa = policy_verify_all;
-#endif
-
 using verify_policy_ll = policy_verify_nothing;
 using verify_policy_la = policy_verify_nothing;
 
@@ -160,13 +155,14 @@ struct base_turn_handler
 
         for (int i = 0; i < 2; i++)
         {
-            if (dir_info.arrival[i] == 1)
+            using arrival_type = policies::relate::direction_type::arrival_type;
+            if (dir_info.arrival[i] == arrival_type::arrival)
             {
                 // The segment arrives at the intersection point, its fraction should be 1
                 // (due to precision it might be nearly so, but not completely, in rare cases)
                 ti.operations[i].fraction = {1, 1};
             }
-            else if (dir_info.arrival[i] == -1)
+            else if (dir_info.arrival[i] == arrival_type::departure)
             {
                 // The segment leaves from the intersection point, likewise its fraction should be 0
                 ti.operations[i].fraction = {0, 1};
@@ -1022,17 +1018,18 @@ struct collinear : public base_turn_handler
             return false;
         }
 
-        int const arrival_p = dir_info.arrival[0];
-        int const arrival_q = dir_info.arrival[1];
-        if (arrival_p * arrival_q != -1 || info.count != 2)
+        auto const arrival_p = dir_info.arrival[0];
+        auto const arrival_q = dir_info.arrival[1];
+        if (static_cast<int>(arrival_p) * static_cast<int>(arrival_q) != -1 || info.count != 2)
         {
             // Code below assumes that either p or q arrives in the other segment
             return false;
         }
 
+        using arrival_type = policies::relate::direction_type::arrival_type;
         auto const dm = strategy.comparable_distance(info.intersections[1],range_q.at(1))
             .apply(info.intersections[1],
-                   arrival_p == 1 ? range_q.at(1) : range_p.at(1));
+                   arrival_p == arrival_type::arrival ? range_q.at(1) : range_p.at(1));
         decltype(dm) const zero = 0;
         return math::equals(dm, zero);
     }
@@ -1105,9 +1102,10 @@ struct collinear : public base_turn_handler
         // Copy the intersection point in TO direction
         assign_point(ti, method_collinear, info, non_opposite_to_index(info));
 
-        int const arrival_p = dir_info.arrival[0];
+        using arrival_type = policies::relate::direction_type::arrival_type;
+        auto const arrival_p = dir_info.arrival[0];
         // Should not be 0, this is checked before
-        BOOST_GEOMETRY_ASSERT(arrival_p != 0);
+        BOOST_GEOMETRY_ASSERT(arrival_p != arrival_type::neutral);
 
         bool const has_pk = ! range_p.is_last_segment();
         bool const has_qk = ! range_q.is_last_segment();
@@ -1115,13 +1113,13 @@ struct collinear : public base_turn_handler
         int const side_q = has_qk ? side.qk_wrt_q1() : 0;
 
         // If p arrives, use p, else use q
-        int const side_p_or_q = arrival_p == 1
+        int const side_p_or_q = arrival_p == arrival_type::arrival
             ? side_p
             : side_q
             ;
 
         // Calculate product according to comments above.
-        int const product = arrival_p * side_p_or_q;
+        int const product = static_cast<int>(arrival_p) * side_p_or_q;
 
         if (product == 0)
         {
@@ -1272,11 +1270,12 @@ public:
     {
         TurnInfo tp = tp_model;
 
-        int const arrival_p = info.d_info().arrival[0];
-        int const arrival_q = info.d_info().arrival[1];
+        using arrival_type = policies::relate::direction_type::arrival_type;
+        auto const arrival_p = info.d_info().arrival[0];
+        auto const arrival_q = info.d_info().arrival[1];
 
         // If P arrives within Q, there is a turn dependent on P
-        if ( arrival_p == 1
+        if ( arrival_p == arrival_type::arrival
           && ! range_p.is_last_segment()
           && set_tp<0>(side.pk_wrt_p1(), tp, info.i_info()) )
         {
@@ -1286,7 +1285,7 @@ public:
         }
 
         // If Q arrives within P, there is a turn dependent on Q
-        if ( arrival_q == 1
+        if ( arrival_q == arrival_type::arrival
           && ! range_q.is_last_segment()
           && set_tp<1>(side.qk_wrt_q1(), tp, info.i_info()) )
         {
@@ -1298,8 +1297,8 @@ public:
         if (BOOST_GEOMETRY_CONDITION(AssignPolicy::include_opposite))
         {
             // Handle cases not yet handled above
-            if ((arrival_q == -1 && arrival_p == 0)
-                || (arrival_p == -1 && arrival_q == 0))
+            if    ((arrival_q == arrival_type::departure && arrival_p == arrival_type::neutral)
+                || (arrival_p == arrival_type::departure && arrival_q == arrival_type::neutral))
             {
                 for (unsigned int i = 0; i < 2; i++)
                 {
@@ -1415,9 +1414,12 @@ struct get_turn_info
 
         inters_info inters(range_p, range_q, umbrella_strategy);
 
-        char const method = inters.d_info().how;
+        auto const method = inters.d_info().how;
 
-        if (method == 'd')
+        using how_type = policies::relate::direction_type::how_type;
+        using arrival_type = policies::relate::direction_type::arrival_type;
+
+        if (method == how_type::disjoint)
         {
             // Disjoint
             return out;
@@ -1426,16 +1428,17 @@ struct get_turn_info
         // Copy, to copy possibly extended fields
         TurnInfo tp = tp_model;
 
-        bool const handle_as_touch_interior = method == 'm';
-        bool const handle_as_cross = method == 'i';
-        bool handle_as_touch = method == 't';
-        bool handle_as_equal = method == 'e';
-        bool const handle_as_collinear = method == 'c';
-        bool const handle_as_degenerate = method == '0';
-        bool const handle_as_start = method == 's';
+        bool const handle_as_touch_interior = method == how_type::middle;
+        bool const handle_as_cross = method == how_type::intersection;
+        bool handle_as_touch = method == how_type::touch;
+        bool handle_as_equal = method == how_type::equal;
+        bool const handle_as_collinear = method == how_type::collinear;
+        bool const handle_as_degenerate = method == how_type::degenerate;
+        bool const handle_as_start = method == how_type::starts;
 
         // (angle, from)
-        bool do_only_convert = method == 'a' || method == 'f';
+        bool do_only_convert =    method == how_type::collinear_at
+                               || method == how_type::collinear_from;
 
         if (handle_as_start)
         {
@@ -1458,7 +1461,7 @@ struct get_turn_info
         {
             using handler = touch_interior<TurnInfo, verify_policy_aa>;
 
-            if ( inters.d_info().arrival[1] == 1 )
+            if ( inters.d_info().arrival[1] == arrival_type::arrival )
             {
                 // Q arrives
                 if (handler::handle_as_touch(inters.i_info(), range_p, umbrella_strategy))
@@ -1509,7 +1512,7 @@ struct get_turn_info
             if ( ! inters.d_info().opposite )
             {
                 using handler = collinear<TurnInfo, verify_policy_aa>;
-                if (inters.d_info().arrival[0] == 0
+                if (inters.d_info().arrival[0] == arrival_type::neutral
                     || handler::handle_as_equal(inters.i_info(), range_p, range_q, inters.d_info(),
                                                 umbrella_strategy))
                 {

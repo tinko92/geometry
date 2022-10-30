@@ -32,41 +32,46 @@ namespace policies { namespace relate
 
 struct direction_type
 {
-    // NOTE: "char" will be replaced by enum in future version
+    enum class how_type : char { intersection   = 'i',
+                                 collinear      = 'c',
+                                 middle         = 'm',
+                                 disjoint       = 'd',
+                                 starts         = 's',
+                                 equal          = 'e',
+                                 collinear_from = 'f',
+                                 touch          = 't',
+                                 collinear_at   = 'a',
+                                 degenerate     = '0',
+                                 error          = 'E' };
+    enum class arrival_type { arrival = 1, departure = -1, neutral = 0 };
 
-    inline direction_type(side_info const& s, char h,
-                int ha, int hb,
-                int da = 0, int db = 0,
-                bool op = false)
+    inline direction_type(side_info const& s, how_type h,
+                          arrival_type ha, arrival_type hb,
+                          int da = 0, int db = 0,
+                          bool op = false)
         : how(h)
         , opposite(op)
-        , how_a(ha)
-        , how_b(hb)
+        , how_a(static_cast<int>(ha))
+        , how_b(static_cast<int>(hb))
         , dir_a(da)
         , dir_b(db)
         , sides(s)
-    {
-        arrival[0] = ha;
-        arrival[1] = hb;
-    }
+        , arrival{ha, hb} {}
 
-    inline direction_type(char h, bool op, int ha = 0, int hb = 0)
+    inline direction_type(how_type h, bool op, arrival_type ha = arrival_type::neutral,
+                          arrival_type hb = arrival_type::neutral)
         : how(h)
         , opposite(op)
-        , how_a(ha)
-        , how_b(hb)
+        , how_a(static_cast<int>(ha))
+        , how_b(static_cast<int>(hb))
         , dir_a(0)
         , dir_b(0)
-    {
-        arrival[0] = ha;
-        arrival[1] = hb;
-    }
+        , arrival{ha, hb} {}
 
 
     // TODO: replace this
-    // NOTE: "char" will be replaced by enum in future version
     // "How" is the intersection formed?
-    char how;
+    how_type how;
 
     // Is it opposite (for collinear/equal cases)
     bool opposite;
@@ -89,7 +94,7 @@ struct direction_type
     // New information
     side_info sides;
     // THIS IS EQUAL TO arrival_a, arrival_b - they probably can go now we have robust fractions
-    int arrival[2]; // 1=arrival, -1=departure, 0=neutral; == how_a//how_b
+    arrival_type arrival[2]; // 1=arrival, -1=departure, 0=neutral; == how_a//how_b
 
 
     // About arrival[0] (== arrival of a2 w.r.t. b) for COLLINEAR cases
@@ -113,7 +118,9 @@ struct direction_type
 
 struct segments_direction
 {
-    typedef direction_type return_type;
+    using return_type = direction_type;
+    using how_type = direction_type::how_type;
+    using arrival_type = direction_type::arrival_type;
 
     template
     <
@@ -122,45 +129,61 @@ struct segments_direction
         typename SegmentIntersectionInfo
     >
     static inline return_type segments_crosses(side_info const& sides,
-                    SegmentIntersectionInfo const& ,
-                    Segment1 const& , Segment2 const& )
+                                               SegmentIntersectionInfo const& ,
+                                               Segment1 const& , Segment2 const& )
     {
         bool const ra0 = sides.get<0,0>() == 0;
         bool const ra1 = sides.get<0,1>() == 0;
         bool const rb0 = sides.get<1,0>() == 0;
         bool const rb1 = sides.get<1,1>() == 0;
 
-        return
-            // opposite and same starting point (FROM)
-            ra0 && rb0 ? calculate_side<1>(sides, 'f', -1, -1)
-
-            // opposite and point to each other (TO)
-            : ra1 && rb1 ? calculate_side<0>(sides, 't', 1, 1)
-
+        if (ra0 && rb0) // opposite and same starting point (FROM)
+        {
+            return calculate_side<1>(sides, how_type::collinear_from,
+                                     arrival_type::departure, arrival_type::departure);
+        }
+        else if ( ra1 && rb1 ) // opposite and point to each other (TO)
+        {
+            return calculate_side<0>(sides, how_type::touch,
+                                     arrival_type::arrival, arrival_type::arrival);
+        }
+        else if ( ra1 && rb0 )
+        {
             // not opposite, forming an angle, first a then b,
             // directed either both left, or both right
             // Check side of B2 from A. This is not calculated before
-            : ra1 && rb0 ? angle<1>(sides, 'a', 1, -1)
-
+            return angle<1>(sides, how_type::collinear_at,
+                            arrival_type::arrival, arrival_type::departure);
+        }
+        else if ( ra0 && rb1 )
+        {
             // not opposite, forming a angle, first b then a,
             // directed either both left, or both right
-            : ra0 && rb1 ? angle<0>(sides, 'a', -1, 1)
-
-            // b starts from interior of a
-            : rb0 ? starts_from_middle(sides, 'B', 0, -1)
-
-            // a starts from interior of b (#39)
-            : ra0 ? starts_from_middle(sides, 'A', -1, 0)
-
-            // b ends at interior of a, calculate direction of A from IP
-            : rb1 ? b_ends_at_middle(sides)
-
-            // a ends at interior of b
-            : ra1 ? a_ends_at_middle(sides)
-
-            // normal intersection
-            : calculate_side<1>(sides, 'i', -1, -1)
-            ;
+            return angle<0>(sides, how_type::collinear_at,
+                            arrival_type::departure, arrival_type::arrival);
+        }
+        else if ( rb0 ) // b starts from interior of a
+        {
+            return starts_from_middle(sides, 'B', arrival_type::neutral, arrival_type::departure);
+        }
+        else if ( ra0 ) // a starts from interior of b (#39)
+        {
+            return starts_from_middle(sides, 'A', arrival_type::departure, arrival_type::neutral);
+        }
+        else if ( rb1 ) // b ends at interior of a, calculate direction of A from IP
+        {
+            return b_ends_at_middle(sides);
+        }
+        else if ( ra1 ) // a ends at interior of b
+        {
+            return a_ends_at_middle(sides);
+        }
+        else // normal intersection
+        {
+            //TODO: maybe this case should be first because it is the most likely branch?
+            return calculate_side<1>(sides, how_type::intersection,
+                                     arrival_type::departure, arrival_type::departure);
+        }
     }
 
     template <typename Ratio>
@@ -188,9 +211,9 @@ struct segments_direction
 
     template <typename Ratio>
     static inline void analyze(Ratio const& r,
-        int& in_segment_count,
-        int& on_end_count,
-        int& outside_segment_count)
+                               int& in_segment_count,
+                               int& on_end_count,
+                               int& outside_segment_count)
     {
         if (r.on_end())
         {
@@ -206,12 +229,12 @@ struct segments_direction
         }
     }
 
-    static inline int arrival_from_position_value(int /*v_from*/, int v_to)
+    static inline arrival_type arrival_from_position_value(int /*v_from*/, int v_to)
     {
-        return v_to == 2 ? 1
-             : v_to == 1 || v_to == 3 ? 0
+        return v_to == 2 ? arrival_type::arrival
+             : v_to == 1 || v_to == 3 ? arrival_type::neutral
              //: v_from >= 1 && v_from <= 3 ? -1
-             : -1;
+             : arrival_type::departure;
 
         // NOTE: this should be an equivalent of the above for the other order
         /* (v_from < 3 && v_to > 3) || (v_from > 3 && v_to < 3) ? 1
@@ -245,7 +268,7 @@ struct segments_direction
         Ratio const& /*ra_from_wrt_b*/, Ratio const& /*ra_to_wrt_b*/,
         Ratio const& /*rb_from_wrt_a*/, Ratio const& /*rb_to_wrt_a*/)
     {
-        return_type r('c', opposite);
+        return_type r(how_type::collinear, opposite);
 
         // IMPORTANT: the order of conditions is different as in intersection_points.hpp
         // We assign A in 0 and B in 1
@@ -260,15 +283,15 @@ struct segments_direction
         int b_on_end_count = 0;
         int b_outside_segment_count = 0;
         analyse_position_value(a1_wrt_b,
-            a_in_segment_count, a_on_end_count, a_outside_segment_count);
+                               a_in_segment_count, a_on_end_count, a_outside_segment_count);
         analyse_position_value(a2_wrt_b,
-            a_in_segment_count, a_on_end_count, a_outside_segment_count);
+                               a_in_segment_count, a_on_end_count, a_outside_segment_count);
         analyse_position_value(b1_wrt_a,
-            b_in_segment_count, b_on_end_count, b_outside_segment_count);
+                               b_in_segment_count, b_on_end_count, b_outside_segment_count);
         analyse_position_value(b2_wrt_a,
-            b_in_segment_count, b_on_end_count, b_outside_segment_count);
+                               b_in_segment_count, b_on_end_count, b_outside_segment_count);
 
-        if (a_on_end_count == 1
+        if (   a_on_end_count == 1
             && b_on_end_count == 1
             && a_outside_segment_count == 1
             && b_outside_segment_count == 1)
@@ -280,17 +303,19 @@ struct segments_direction
             // TODO: how was to be refactored anyway,
             if (! opposite)
             {
-                r.how = 'a';
+                r.how = how_type::collinear_at;
             }
             else
             {
-                r.how = r.arrival[0] == 0 ? 't' : 'f';
+                r.how = r.arrival[0] == arrival_type::neutral ?
+                              how_type::touch
+                            : how_type::collinear_from;
             }
         }
-        else if (a_on_end_count == 2
+        else if (   a_on_end_count == 2
                  && b_on_end_count == 2)
         {
-            r.how = 'e';
+            r.how = how_type::equal;
         }
 
         return r;
@@ -299,7 +324,7 @@ struct segments_direction
     template <typename Segment>
     static inline return_type degenerate(Segment const& , bool)
     {
-        return return_type('0', false);
+        return return_type(how_type::degenerate, false);
     }
 
     template <typename Segment, typename Ratio>
@@ -308,27 +333,25 @@ struct segments_direction
             bool)
     {
         // To be decided
-        return return_type('0', false);
+        return return_type(how_type::degenerate, false);
     }
 
     static inline return_type disjoint()
     {
-        return return_type('d', false);
+        return return_type(how_type::disjoint, false);
     }
 
     static inline return_type error(std::string const&)
     {
-        // Return "E" to denote error
         // This will throw an error in get_turn_info
-        // TODO: change to enum or similar
-        return return_type('E', false);
+        return return_type(how_type::error, false);
     }
 
 private :
 
     template <std::size_t I>
-    static inline return_type calculate_side(side_info const& sides,
-                char how, int how_a, int how_b)
+    static inline return_type calculate_side(side_info const& sides, how_type how,
+                                             arrival_type how_a, arrival_type how_b)
     {
         int const dir = sides.get<1, I>() == 1 ? 1 : -1;
         return return_type(sides, how, how_a, how_b, -dir, dir);
@@ -336,16 +359,15 @@ private :
 
     template <std::size_t I>
     static inline return_type angle(side_info const& sides,
-                char how, int how_a, int how_b)
+                                    how_type how, arrival_type how_a, arrival_type how_b)
     {
         int const dir = sides.get<1, I>() == 1 ? 1 : -1;
         return return_type(sides, how, how_a, how_b, dir, dir);
     }
 
 
-    static inline return_type starts_from_middle(side_info const& sides,
-                char which,
-                int how_a, int how_b)
+    static inline return_type starts_from_middle(side_info const& sides, char which,
+                                                 arrival_type how_a, arrival_type how_b)
     {
         // Calculate ARROW of b segment w.r.t. s1
         int dir = sides.get<1, 1>() == 1 ? 1 : -1;
@@ -357,11 +379,11 @@ private :
             dir = -dir;
         }
 
-        return return_type(sides, 's',
-            how_a,
-            how_b,
-            is_a ? dir : -dir,
-            ! is_a ? dir : -dir);
+        return return_type(sides, how_type::starts,
+                           how_a,
+                           how_b,
+                           is_a ? dir : -dir,
+                           ! is_a ? dir : -dir);
     }
 
 
@@ -372,14 +394,16 @@ private :
         // Ending at the middle, one ARRIVES, the other one is NEUTRAL
         // (because it both "arrives"  and "departs" there)
         int const dir = sides.get<1, 1>() == 1 ? 1 : -1;
-        return return_type(sides, 'm', 1, 0, dir, dir);
+        return return_type(sides, how_type::middle, arrival_type::arrival, arrival_type::neutral,
+                           dir, dir);
     }
 
 
     static inline return_type b_ends_at_middle(side_info const& sides)
     {
         int const dir = sides.get<0, 1>() == 1 ? 1 : -1;
-        return return_type(sides, 'm', 0, 1, dir, dir);
+        return return_type(sides, how_type::middle, arrival_type::neutral, arrival_type::arrival,
+                           dir, dir);
     }
 
 };

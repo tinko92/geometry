@@ -78,7 +78,7 @@ void test_strategy_one(S1 const& s1, S2 const& s2,
     return_type res = strategy.apply(sr1, sr2, policy_t());
 
     size_t const res_count = res.intersection_points.count;
-    char const res_method = res.direction.how;
+    char const res_method = static_cast<char>(res.direction.how);
 
     BOOST_CHECK_MESSAGE(res_method == m,
                         "IP method: " << res_method << " different than expected: " << m

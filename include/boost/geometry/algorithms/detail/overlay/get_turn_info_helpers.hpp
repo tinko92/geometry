@@ -245,23 +245,24 @@ private :
     template <std::size_t OpId>
     bool is_ip_j() const
     {
-        int arrival = d_info().arrival[OpId];
+        using arrival_type = policies::relate::direction_type::arrival_type;
+        auto arrival = d_info().arrival[OpId];
         bool same_dirs = d_info().dir_a == 0 && d_info().dir_b == 0;
 
         if (same_dirs)
         {
             if (i_info().count == 2)
             {
-                return arrival != -1;
+                return arrival != arrival_type::departure;
             }
             else
             {
-                return arrival == 0;
+                return arrival == arrival_type::neutral;
             }
         }
         else
         {
-            return arrival == 1;
+            return arrival == arrival_type::arrival;
         }
     }
 };

@@ -58,7 +58,9 @@ struct get_turn_info_linear_linear
 
         inters_info inters(range_p, range_q, umbrella_strategy);
 
-        char const method = inters.d_info().how;
+        auto const method = inters.d_info().how;
+        using how_type = policies::relate::direction_type::how_type;
+        using arrival_type = policies::relate::direction_type::arrival_type;
 
         // Copy, to copy possibly extended fields
         TurnInfo tp = tp_model;
@@ -66,19 +68,19 @@ struct get_turn_info_linear_linear
         // Select method and apply
         switch(method)
         {
-            case 'a' : // collinear, "at"
-            case 'f' : // collinear, "from"
-            case 's' : // starts from the middle
+            case how_type::collinear_at : // collinear, "at"
+            case how_type::collinear_from : // collinear, "from"
+            case how_type::starts : // starts from the middle
                 get_turn_info_for_endpoint<true, true>
                     ::apply(range_p, range_q,
                             tp_model, inters, method_none, out,
                             umbrella_strategy);
                 break;
 
-            case 'd' : // disjoint: never do anything
+            case how_type::disjoint : // disjoint: never do anything
                 break;
 
-            case 'm' :
+            case how_type::middle :
             {
                 using handler = touch_interior<TurnInfo, verify_policy_ll>;
 
@@ -92,7 +94,7 @@ struct get_turn_info_linear_linear
                 else
                 {
                     // If Q (1) arrives (1)
-                    if ( inters.d_info().arrival[1] == 1)
+                    if ( inters.d_info().arrival[1] == arrival_type::arrival)
                     {
                         handler::template apply<0>(range_p, range_q, tp,
                                                   inters.i_info(), inters.d_info(),
@@ -125,7 +127,7 @@ struct get_turn_info_linear_linear
                 }
             }
             break;
-            case 'i' :
+            case how_type::intersection :
             {
                 crosses<TurnInfo>::apply(tp, inters.i_info(), inters.d_info());
 
@@ -134,7 +136,7 @@ struct get_turn_info_linear_linear
                 *out++ = tp;
             }
             break;
-            case 't' :
+            case how_type::touch :
             {
                 using handler = touch<TurnInfo, verify_policy_ll>;
 
@@ -269,7 +271,7 @@ struct get_turn_info_linear_linear
                 }
             }
             break;
-            case 'e':
+            case how_type::equal:
             {
                 using handler = equal<TurnInfo, verify_policy_ll>;
 
@@ -325,7 +327,7 @@ struct get_turn_info_linear_linear
                 }
             }
             break;
-            case 'c' :
+            case how_type::collinear :
             {
                 // Collinear
                 if ( get_turn_info_for_endpoint<true, true>
@@ -346,7 +348,7 @@ struct get_turn_info_linear_linear
                         method_type method_replace = method_touch_interior;
                         operation_type spike_op = operation_continue;
 
-                        if ( inters.d_info().arrival[0] == 0 )
+                        if ( inters.d_info().arrival[0] == arrival_type::neutral )
                         {
                             // Collinear, but similar thus handled as equal
                             using handler = equal<TurnInfo, verify_policy_ll>;
@@ -413,7 +415,7 @@ struct get_turn_info_linear_linear
                 }
             }
             break;
-            case '0' :
+            case how_type::degenerate :
             {
                 // degenerate points
                 if ( BOOST_GEOMETRY_CONDITION(AssignPolicy::include_degenerate) )
@@ -449,10 +451,10 @@ struct get_turn_info_linear_linear
             default :
             {
 #if defined(BOOST_GEOMETRY_DEBUG_ROBUSTNESS)
-                std::cout << "TURN: Unknown method: " << method << std::endl;
+                std::cout << "TURN: Unknown method: " << static_cast<char>(method) << std::endl;
 #endif
 #if ! defined(BOOST_GEOMETRY_OVERLAY_NO_THROW)
-                BOOST_THROW_EXCEPTION(turn_info_exception(method));
+                BOOST_THROW_EXCEPTION(turn_info_exception(static_cast<char>(method)));
 #endif
             }
             break;
@@ -536,6 +538,7 @@ struct get_turn_info_linear_linear
                                               OutIt out)
     {
         bool constexpr is_version_touches = (Version == append_touches);
+        using arrival_type = policies::relate::direction_type::arrival_type;
 
         bool is_p_spike = ( is_version_touches ?
                             ( tp.operations[0].operation == operation_continue
@@ -552,7 +555,7 @@ struct get_turn_info_linear_linear
 
         if ( is_p_spike
           && ( BOOST_GEOMETRY_CONDITION(is_version_touches)
-            || inters.d_info().arrival[0] == 1 ) )
+            || inters.d_info().arrival[0] == arrival_type::arrival ) )
         {
             if ( BOOST_GEOMETRY_CONDITION(is_version_touches) )
             {
@@ -583,7 +586,7 @@ struct get_turn_info_linear_linear
 
         if ( is_q_spike
           && ( BOOST_GEOMETRY_CONDITION(is_version_touches)
-            || inters.d_info().arrival[1] == 1 ) )
+            || inters.d_info().arrival[1] == arrival_type::arrival ) )
         {
             if ( BOOST_GEOMETRY_CONDITION(is_version_touches) )
             {

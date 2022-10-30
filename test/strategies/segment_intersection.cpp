@@ -99,9 +99,9 @@ static void test_segment_intersection(int caseid,
 
     //BOOST_CHECK_EQUAL(boost::size(out), expected_count);
     BOOST_CHECK_EQUAL(is.count, expected_count);
-    BOOST_CHECK_MESSAGE(dir.how == expected_how,
+    BOOST_CHECK_MESSAGE(static_cast<char>(dir.how) == expected_how,
             caseid
-            << " how: detected: " << dir.how
+            << " how: detected: " << static_cast<char>(dir.how)
             << " expected: "  << expected_how);
 
     if (expected_count == 2

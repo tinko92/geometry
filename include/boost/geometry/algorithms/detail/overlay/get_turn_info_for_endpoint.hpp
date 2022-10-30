@@ -109,6 +109,7 @@ namespace detail { namespace overlay {
 
 class linear_intersections
 {
+    using arrival_type = policies::relate::direction_type::arrival_type;
 public:
     template
     <
@@ -121,8 +122,8 @@ public:
                          bool is_p_last, bool is_q_last,
                          Strategy const& strategy)
     {
-        int arrival_a = result.direction.arrival[0];
-        int arrival_b = result.direction.arrival[1];
+        auto arrival_a = result.direction.arrival[0];
+        auto arrival_b = result.direction.arrival[1];
         bool same_dirs = result.direction.dir_a == 0
                       && result.direction.dir_b == 0;
 
@@ -143,8 +144,8 @@ public:
                     ips[0].is_qi
                         = equals::equals_point_point(
                             qi, result.intersection_points.intersections[0], strategy);
-                    ips[1].is_pj = arrival_a != -1;
-                    ips[1].is_qj = arrival_b != -1;
+                    ips[1].is_pj = arrival_a != arrival_type::departure;
+                    ips[1].is_qj = arrival_b != arrival_type::departure;
                 }
                 else
                 {
@@ -153,10 +154,10 @@ public:
                     ips[1].p_operation = union_or_blocked_same_dirs(arrival_a, is_p_last);
                     ips[1].q_operation = operation_intersection;
 
-                    ips[0].is_pi = arrival_b != 1;
-                    ips[0].is_qj = arrival_b != -1;
-                    ips[1].is_pj = arrival_a != -1;
-                    ips[1].is_qi = arrival_a != 1;
+                    ips[0].is_pi = arrival_b != arrival_type::arrival;
+                    ips[0].is_qj = arrival_b != arrival_type::departure;
+                    ips[1].is_pj = arrival_a != arrival_type::departure;
+                    ips[1].is_qi = arrival_a != arrival_type::arrival;
                 }
             }
             else
@@ -165,10 +166,10 @@ public:
                 ips[0].p_operation = union_or_blocked_same_dirs(arrival_a, is_p_last);
                 ips[0].q_operation = union_or_blocked_same_dirs(arrival_b, is_q_last);
 
-                ips[0].is_pi = arrival_a == -1;
-                ips[0].is_qi = arrival_b == -1;
-                ips[0].is_pj = arrival_a == 0;
-                ips[0].is_qj = arrival_b == 0;
+                ips[0].is_pi = arrival_a == arrival_type::departure;
+                ips[0].is_qi = arrival_b == arrival_type::departure;
+                ips[0].is_pj = arrival_a == arrival_type::neutral;
+                ips[0].is_qj = arrival_b == arrival_type::neutral;
             }
         }
         else
@@ -176,10 +177,10 @@ public:
             ips[0].p_operation = union_or_blocked_different_dirs(arrival_a, is_p_last);
             ips[0].q_operation = union_or_blocked_different_dirs(arrival_b, is_q_last);
 
-            ips[0].is_pi = arrival_a == -1;
-            ips[0].is_qi = arrival_b == -1;
-            ips[0].is_pj = arrival_a == 1;
-            ips[0].is_qj = arrival_b == 1;
+            ips[0].is_pi = arrival_a == arrival_type::departure;
+            ips[0].is_qi = arrival_b == arrival_type::departure;
+            ips[0].is_pj = arrival_a == arrival_type::arrival;
+            ips[0].is_qj = arrival_b == arrival_type::arrival;
         }
     }
 
@@ -204,11 +205,11 @@ public:
 private:
 
     // only if collinear (same_dirs)
-    static inline operation_type union_or_blocked_same_dirs(int arrival, bool is_last)
+    static inline operation_type union_or_blocked_same_dirs(arrival_type arrival, bool is_last)
     {
-        if ( arrival == 1 )
+        if ( arrival == arrival_type::arrival )
             return operation_blocked;
-        else if ( arrival == -1 )
+        else if ( arrival == arrival_type::departure )
             return operation_union;
         else
             return is_last ? operation_blocked : operation_union;
@@ -216,9 +217,9 @@ private:
     }
 
     // only if not collinear (!same_dirs)
-    static inline operation_type union_or_blocked_different_dirs(int arrival, bool is_last)
+    static inline operation_type union_or_blocked_different_dirs(arrival_type arrival, bool is_last)
     {
-        if ( arrival == 1 )
+        if ( arrival == arrival_type::arrival )
             //return operation_blocked;
             return is_last ? operation_blocked : operation_union;
         else

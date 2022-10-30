@@ -45,7 +45,7 @@ namespace detail { namespace overlay
             << " seg " << info.seg_id.segment_index
             << " (// " << info.other_id.source_index
                 << "." << info.other_id.segment_index << ")"
-            << " how " << info.how
+            << " how " << static_cast<char>(info.how)
                 << "[" << how_str(info.arrival)
                 << " " << dir(info.direction)
                 << (info.opposite ? " o" : "")
