@@ -46,9 +46,9 @@ namespace detail
 
 struct decide_within
 {
-    static inline bool apply(int side, bool& result)
+    static inline bool apply(side_type side, bool& result)
     {
-        if (side != 1)
+        if (side != side_type::left)
         {
             result = false;
             return false;
@@ -59,11 +59,11 @@ struct decide_within
 
 struct decide_covered_by
 {
-    static inline bool apply(int side, bool& result)
+    static inline bool apply(side_type side, bool& result)
     {
-        if (side != 1)
+        if (side != side_type::left)
         {
-            result = side >= 0;
+            result = side != side_type::right;
             return false;
         }
         return true; // continue
@@ -93,7 +93,7 @@ inline bool point_in_box_by_side(Point const& point, Box const& box,
     bool result = true;
     for (int i = 1; i < 5; i++)
     {
-        int const side = strategy.apply(point, bp[i - 1], bp[i]);
+        auto const side = strategy.apply(point, bp[i - 1], bp[i]);
         if (! Decide::apply(side, result))
         {
             return result;

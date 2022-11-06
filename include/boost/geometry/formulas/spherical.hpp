@@ -22,6 +22,8 @@
 #include <boost/geometry/arithmetic/cross_product.hpp>
 #include <boost/geometry/arithmetic/dot_product.hpp>
 
+#include <boost/geometry/strategies/side.hpp>
+
 #include <boost/geometry/util/math.hpp>
 #include <boost/geometry/util/normalize_spheroidal_coordinates.hpp>
 #include <boost/geometry/util/select_coordinate_type.hpp>
@@ -109,18 +111,15 @@ static inline PointSph cart3d_to_sph(Point3d const& point_3d)
     return res;
 }
 
-// -1 right
-// 1 left
-// 0 on
 template <typename Point3d1, typename Point3d2>
-static inline int sph_side_value(Point3d1 const& norm, Point3d2 const& pt)
+static inline side_type sph_side_value(Point3d1 const& norm, Point3d2 const& pt)
 {
-    typedef typename select_coordinate_type<Point3d1, Point3d2>::type calc_t;
+    using calc_t = typename select_coordinate_type<Point3d1, Point3d2>::type;
     calc_t c0 = 0;
     calc_t d = dot_product(norm, pt);
-    return math::equals(d, c0) ? 0
-        : d > c0 ? 1
-        : -1; // d < 0
+    return math::equals(d, c0) ? side_type::collinear
+        : d > c0 ? side_type::left
+        : side_type::right; // d < 0
 }
 
 template <typename CT, bool ReverseAzimuth, typename T1, typename T2>
@@ -182,7 +181,7 @@ inline T spherical_azimuth(T const& lon1, T const& lat1, T const& lon2, T const&
 }
 
 template <typename T>
-inline int azimuth_side_value(T const& azi_a1_p, T const& azi_a1_a2)
+inline side_type azimuth_side_value(T const& azi_a1_p, T const& azi_a1_a2)
 {
     T const c0 = 0;
     T const pi = math::pi<T>();
@@ -213,9 +212,9 @@ inline int azimuth_side_value(T const& azi_a1_p, T const& azi_a1_a2)
     // positive azimuth is on the right side
     return math::equals(a_diff, c0)
         || math::equals(a_diff, pi)
-        || math::equals(a_diff, -pi) ? 0
-        : a_diff > 0 ? -1 // right
-        : 1; // left
+        || math::equals(a_diff, -pi) ? side_type::collinear
+        : a_diff > 0 ? side_type::right
+        : side_type::left;
 }
 
 template

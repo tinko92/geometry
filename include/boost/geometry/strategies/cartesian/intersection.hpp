@@ -491,8 +491,8 @@ struct cartesian_segments
             {
                 // If this is the case, no rescaling is done for FP precision.
                 // We set it to collinear, but it indicates a robustness issue.
-                sides.set<0>(0, 0);
-                sides.set<1>(0, 0);
+                sides.set<0>(side_type::collinear, side_type::collinear);
+                sides.set<1>(side_type::collinear, side_type::collinear);
                 collinear = true;
             }
             else

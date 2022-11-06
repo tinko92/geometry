@@ -21,11 +21,11 @@ template <typename Point>
 void test_side_both_ways(std::string const& /*case_id*/, Point const& p1, Point const& p2, Point const& p3,
                    int expected, int expected_rounded_input)
 {
-    int const side_cart = bg::strategy::side::services::default_strategy<bg::cartesian_tag>::type::apply(p1, p2, p3);
-    int const side_ri = bg::strategy::side::side_rounded_input<>::apply(p1, p2, p3);
+    auto const side_cart = bg::strategy::side::services::default_strategy<bg::cartesian_tag>::type::apply(p1, p2, p3);
+    auto const side_ri = bg::strategy::side::side_rounded_input<>::apply(p1, p2, p3);
 
-    BOOST_CHECK_EQUAL(side_cart, expected);
-    BOOST_CHECK_EQUAL(side_ri, expected_rounded_input);
+    BOOST_CHECK_EQUAL(static_cast<int>(side_cart), expected);
+    BOOST_CHECK_EQUAL(static_cast<int>(side_ri), expected_rounded_input);
 }
 
 template <typename Point>

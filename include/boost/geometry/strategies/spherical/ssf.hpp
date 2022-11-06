@@ -42,9 +42,9 @@ namespace detail
 {
 
 template <typename T>
-int spherical_side_formula(T const& lambda1, T const& delta1,
-                           T const& lambda2, T const& delta2,
-                           T const& lambda, T const& delta)
+side_type spherical_side_formula(T const& lambda1, T const& delta1,
+                                 T const& lambda2, T const& delta2,
+                                 T const& lambda, T const& delta)
 {
     // Create temporary points (vectors) on unit a sphere
     T const cos_delta1 = cos(delta1);
@@ -67,9 +67,9 @@ int spherical_side_formula(T const& lambda1, T const& delta1,
         + (c1x * c2y - c1y * c2x) * sin(delta);
 
     T zero = T();
-    return math::equals(dist, zero) ? 0
-        : dist > zero ? 1
-        : -1; // dist < zero
+    return math::equals(dist, zero) ? side_type::collinear
+        : dist > zero ? side_type::left
+        : side_type::right; // dist < zero
 }
 
 }
@@ -86,10 +86,10 @@ class spherical_side_formula
 {
 
 public :
-    typedef spherical_tag cs_tag;
+    using cs_tag = spherical_tag;
 
     template <typename P1, typename P2, typename P>
-    static inline int apply(P1 const& p1, P2 const& p2, P const& p)
+    static inline side_type apply(P1 const& p1, P2 const& p2, P const& p)
     {
         typedef typename promote_floating_point
             <

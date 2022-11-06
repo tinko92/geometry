@@ -239,17 +239,17 @@ inline bool calculate_from_inside_sides(Pi const& pi, Pj const& pj, Pk const& pk
 {
     auto const side_strategy = strategy.side();
 
-    int const side_pk_p = side_strategy.apply(pi, pj, pk);
-    int const side_qk_p = side_strategy.apply(pi, pj, qk);
+    auto const side_pk_p = side_strategy.apply(pi, pj, pk);
+    auto const side_qk_p = side_strategy.apply(pi, pj, qk);
     // If they turn to same side (not opposite sides)
     if (! overlay::base_turn_handler::opposite(side_pk_p, side_qk_p))
     {
-        int const side_pk_q2 = side_strategy.apply(qj, qk, pk);
-        return side_pk_q2 == -1;
+        auto const side_pk_q2 = side_strategy.apply(qj, qk, pk);
+        return side_pk_q2 == side_type::right;
     }
     else
     {
-        return side_pk_p == -1;
+        return side_pk_p == side_type::right;
     }
 }
 

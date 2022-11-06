@@ -243,11 +243,11 @@ struct extreme_points_on_ring
             if (coordinate > min_value && other_coordinate > other_min && other_coordinate < other_max)
             {
                 int const factor = geometry::point_order<Ring>::value == geometry::clockwise ? 1 : -1;
-                int const first_side = strategy.apply(*right, extremes.front(), *(extremes.begin() + 1)) * factor;
-                int const last_side = strategy.apply(*right, *(extremes.rbegin() + 1), extremes.back()) * factor;
+                auto const first_side = strategy.apply(*right, extremes.front(), *(extremes.begin() + 1)) * factor;
+                auto const last_side = strategy.apply(*right, *(extremes.rbegin() + 1), extremes.back()) * factor;
 
                 // If not lying left from any of the extemes side
-                if (first_side != 1 && last_side != 1)
+                if (first_side != side_type::left && last_side != side_type::left)
                 {
                     //std::cout << "first " << first_side << " last " << last_side << std::endl;
 
@@ -301,13 +301,13 @@ struct extreme_points_on_ring
         }
 
         int const factor = geometry::point_order<Ring>::value == geometry::clockwise ? 1 : -1;
-        int const first_side = strategy.apply(*(right - 1), *right, *left) * factor;
-        int const last_side = strategy.apply(*left, *(left + 1), *right) * factor;
+        auto const first_side = strategy.apply(*(right - 1), *right, *left) * factor;
+        auto const last_side = strategy.apply(*left, *(left + 1), *right) * factor;
 
 //std::cout << "Candidate at " << geometry::wkt(*it) << " first=" << first_side << " last=" << last_side << std::endl;
 
         // Turn should not be left (actually, it should be right because extent removes horizontal/collinear cases)
-        return first_side != 1 && last_side != 1;
+        return first_side != side_type::left && last_side != side_type::left;
     }
 
 

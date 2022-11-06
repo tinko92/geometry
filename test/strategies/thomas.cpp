@@ -96,11 +96,11 @@ void test_side(double lon1, double lat1,
     bg::assign_values(p2, lon2, lat2);
     bg::assign_values(p, lon, lat);
 
-    int side = strategy.apply(p1, p2, p);
-    int side2 = strategy2.apply(p1, p2, p);
+    auto side = strategy.apply(p1, p2, p);
+    auto side2 = strategy2.apply(p1, p2, p);
 
-    BOOST_CHECK_EQUAL(side, expected_side);
-    BOOST_CHECK_EQUAL(side2, expected_side);
+    BOOST_CHECK_EQUAL(static_cast<int>(side), expected_side);
+    BOOST_CHECK_EQUAL(static_cast<int>(side2), expected_side);
 }
 
 template <typename P1, typename P2>

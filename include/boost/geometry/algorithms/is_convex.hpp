@@ -99,8 +99,8 @@ struct ring_is_convex
         // iterator
         for (std::size_t i = 0; i < n; i++)
         {
-            int const side = side_strategy.apply(*previous, *current, *next);
-            if (side == 1)
+            auto const side = side_strategy.apply(*previous, *current, *next);
+            if (side == side_type::left)
             {
                 // Next is on the left side of clockwise ring:
                 // the piece is not convex

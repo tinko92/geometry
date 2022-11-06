@@ -17,6 +17,8 @@
 #include <cmath>
 #include <utility>
 
+#include <boost/geometry/strategies/side.hpp>
+
 #if defined(BOOST_GEOMETRY_DEBUG_INTERSECTION) || defined(BOOST_GEOMETRY_DEBUG_ROBUSTNESS)
 #  include <iostream>
 #endif
@@ -36,17 +38,12 @@ namespace boost { namespace geometry
 class side_info
 {
 public :
-    inline side_info(int side_a1 = 0, int side_a2 = 0,
-            int side_b1 = 0, int side_b2 = 0)
-    {
-        sides[0].first = side_a1;
-        sides[0].second = side_a2;
-        sides[1].first = side_b1;
-        sides[1].second = side_b2;
-    }
+    inline side_info(side_type side_a1 = side_type::collinear, side_type side_a2 = side_type::collinear,
+                     side_type side_b1 = side_type::collinear, side_type side_b2 = side_type::collinear)
+        : sides{{side_a1, side_a2}, {side_b1, side_b2}} {}
 
     template <int Which>
-    inline void set(int first, int second)
+    inline void set(side_type first, side_type second)
     {
         sides[Which].first = first;
         sides[Which].second = second;
@@ -57,16 +54,16 @@ public :
     {
         if (Index == 0)
         {
-            sides[Which].first = 0;
+            sides[Which].first = side_type::collinear;
         }
         else
         {
-            sides[Which].second = 0;
+            sides[Which].second = side_type::collinear;
         }
     }
 
     template <int Which, int Index>
-    inline int get() const
+    inline side_type get() const
     {
         return Index == 0 ? sides[Which].first : sides[Which].second;
     }
@@ -77,29 +74,29 @@ public :
     template <int Which>
     inline bool same() const
     {
-        return sides[Which].first * sides[Which].second == 1;
+        return static_cast<int>(sides[Which].first) * static_cast<int>(sides[Which].second) == 1;
     }
 
     inline bool collinear() const
     {
-        return sides[0].first == 0
-            && sides[0].second == 0
-            && sides[1].first == 0
-            && sides[1].second == 0;
+        return sides[0].first  == side_type::collinear
+            && sides[0].second == side_type::collinear
+            && sides[1].first  == side_type::collinear
+            && sides[1].second == side_type::collinear;
     }
 
     inline bool crossing() const
     {
-        return sides[0].first * sides[0].second == -1
-            && sides[1].first * sides[1].second == -1;
+        return static_cast<int>(sides[0].first) * static_cast<int>(sides[0].second) == -1
+            && static_cast<int>(sides[1].first) * static_cast<int>(sides[1].second) == -1;
     }
 
     inline bool touching() const
     {
-        return (sides[0].first * sides[1].first == -1
-            && sides[0].second == 0 && sides[1].second == 0)
-            || (sides[1].first * sides[0].first == -1
-            && sides[1].second == 0 && sides[0].second == 0);
+        return   (static_cast<int>(sides[0].first) * static_cast<int>(sides[1].first) == -1
+               && sides[0].second == side_type::collinear && sides[1].second == side_type::collinear)
+            ||   (static_cast<int>(sides[1].first) * static_cast<int>(sides[0].first) == -1
+               && sides[1].second == side_type::collinear && sides[0].second == side_type::collinear);
     }
 
     template <int Which>
@@ -108,7 +105,7 @@ public :
         // This is normally a situation which can't occur:
         // If one is completely left or right, the other cannot touch
         return one_zero<Which>()
-            && sides[1 - Which].first * sides[1 - Which].second == 1;
+            && static_cast<int>(sides[1 - Which].first) * static_cast<int>(sides[1 - Which].second) == 1;
     }
 
     inline bool meeting() const
@@ -120,40 +117,34 @@ public :
     template <int Which>
     inline bool zero() const
     {
-        return sides[Which].first == 0 && sides[Which].second == 0;
+        return sides[Which].first  == side_type::collinear
+            && sides[Which].second == side_type::collinear;
     }
 
     template <int Which>
     inline bool one_zero() const
     {
-        return (sides[Which].first == 0 && sides[Which].second != 0)
-            || (sides[Which].first != 0 && sides[Which].second == 0);
+        return (sides[Which].first == side_type::collinear && sides[Which].second != side_type::collinear)
+            || (sides[Which].first != side_type::collinear && sides[Which].second == side_type::collinear);
     }
 
     inline bool one_of_all_zero() const
     {
-        int const sum = std::abs(sides[0].first)
-                + std::abs(sides[0].second)
-                + std::abs(sides[1].first)
-                + std::abs(sides[1].second);
+        int const sum = std::abs(static_cast<int>(sides[0].first))
+                      + std::abs(static_cast<int>(sides[0].second))
+                      + std::abs(static_cast<int>(sides[1].first))
+                      + std::abs(static_cast<int>(sides[1].second));
         return sum == 3;
-    }
-
-
-    template <int Which>
-    inline int zero_index() const
-    {
-        return sides[Which].first == 0 ? 0 : 1;
     }
 
 #if defined(BOOST_GEOMETRY_DEBUG_INTERSECTION) || defined(BOOST_GEOMETRY_DEBUG_ROBUSTNESS)
     inline void debug() const
     {
-        std::cout << sides[0].first << " "
-            << sides[0].second << " "
-            << sides[1].first << " "
-            << sides[1].second
-            << std::endl;
+        std::cout << static_cast<int>(sides[0].first) << " "
+                  << static_cast<int>(sides[0].second) << " "
+                  << static_cast<int>(sides[1].first) << " "
+                  << static_cast<int>(sides[1].second)
+                  << std::endl;
     }
 #endif
 
@@ -163,7 +154,7 @@ public :
     }
 
 //private :
-    std::pair<int, int> sides[2];
+    std::pair<side_type, side_type> sides[2];
 
 };
 

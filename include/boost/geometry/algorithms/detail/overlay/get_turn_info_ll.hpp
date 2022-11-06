@@ -181,7 +181,7 @@ struct get_turn_info_linear_linear
                         // a spike on P on the same line with Q1
                         if ( inters.is_spike_p() )
                         {
-                            if ( inters.sides().qk_wrt_p1() == 0 )
+                            if ( inters.sides().qk_wrt_p1() == side_type::collinear )
                             {
                                 tp.operations[0].is_collinear = true;
                             }
@@ -200,7 +200,7 @@ struct get_turn_info_linear_linear
                         // a spike on Q on the same line with P1
                         if ( inters.is_spike_q() )
                         {
-                            if ( inters.sides().pk_wrt_q1() == 0 )
+                            if ( inters.sides().pk_wrt_q1() == side_type::collinear )
                             {
                                 tp.operations[1].is_collinear = true;
                             }
@@ -237,7 +237,7 @@ struct get_turn_info_linear_linear
                             tp.operations[0].operation = operation_union;
                             tp.operations[1].operation = operation_union;
 
-                            if ( inters.sides().pk_wrt_q2() == 0 )
+                            if ( inters.sides().pk_wrt_q2() == side_type::collinear )
                             {
                                 tp.operations[0].operation = operation_continue; // will be converted to i
                                 if ( is_p )
@@ -246,7 +246,7 @@ struct get_turn_info_linear_linear
                                 }
                             }
 
-                            if ( inters.sides().qk_wrt_p2() == 0 )
+                            if ( inters.sides().qk_wrt_p2() == side_type::collinear )
                             {
                                 tp.operations[1].operation = operation_continue; // will be converted to i
                                 if ( is_q )

@@ -180,20 +180,23 @@ struct disjoint_segment_box_sphere_or_spheroid
         azimuth_strategy.apply(lon1, lat1, b_lon_min, b_lat_max, a_b2);
         azimuth_strategy.apply(lon1, lat1, b_lon_max, b_lat_max, a_b3);
 
-        int s0 = formula::azimuth_side_value(alp1, a_b0);
-        int s1 = formula::azimuth_side_value(alp1, a_b1);
-        int s2 = formula::azimuth_side_value(alp1, a_b2);
-        int s3 = formula::azimuth_side_value(alp1, a_b3);
+        side_type s0 = formula::azimuth_side_value(alp1, a_b0);
+        side_type s1 = formula::azimuth_side_value(alp1, a_b1);
+        side_type s2 = formula::azimuth_side_value(alp1, a_b2);
+        side_type s3 = formula::azimuth_side_value(alp1, a_b3);
 
-        if (s0 == 0 || s1 == 0 || s2 == 0 || s3 == 0)
+        if (    s0 == side_type::collinear
+             || s1 == side_type::collinear
+             || s2 == side_type::collinear
+             || s3 == side_type::collinear )
         {
             return disjoint_info::intersect;
         }
 
-        bool s0_positive = s0 > 0;
-        bool s1_positive = s1 > 0;
-        bool s2_positive = s2 > 0;
-        bool s3_positive = s3 > 0;
+        bool s0_positive = s0 == side_type::left;
+        bool s1_positive = s1 == side_type::left;
+        bool s2_positive = s2 == side_type::left;
+        bool s3_positive = s3 == side_type::left;
 
         bool all_positive = s0_positive && s1_positive && s2_positive && s3_positive;
         bool all_non_positive = !(s0_positive || s1_positive || s2_positive || s3_positive);

@@ -425,9 +425,9 @@ struct get_turn_info_for_endpoint
                 else if ( ip_j2 )
                 {
                     auto const sides = strategy.side();
-                    int const side_pj_q2 = sides.apply(range2.at(1), range2.at(2), range1.at(1));
-                    int const side_pj_q1 = sides.apply(range2.at(0), range2.at(1), range1.at(1));
-                    int const side_qk_q1 = sides.apply(range2.at(0), range2.at(1), range2.at(2));
+                    auto const side_pj_q2 = sides.apply(range2.at(1), range2.at(2), range1.at(1));
+                    auto const side_pj_q1 = sides.apply(range2.at(0), range2.at(1), range1.at(1));
+                    auto const side_qk_q1 = sides.apply(range2.at(0), range2.at(1), range2.at(2));
 
                     operations_pair operations = operations_of_equal(side_pj_q2, side_pj_q1, side_qk_q1);
 
@@ -477,9 +477,9 @@ struct get_turn_info_for_endpoint
                 else if ( ip_j2 )
                 {
                     auto const sides = strategy.side();
-                    int const side_pi_q2 = sides.apply(range2.at(1), range2.at(2), range1.at(0));
-                    int const side_pi_q1 = sides.apply(range2.at(0), range2.at(1), range1.at(0));
-                    int const side_qk_q1 = sides.apply(range2.at(0), range2.at(1), range2.at(2));
+                    auto const side_pi_q2 = sides.apply(range2.at(1), range2.at(2), range1.at(0));
+                    auto const side_pi_q1 = sides.apply(range2.at(0), range2.at(1), range1.at(0));
+                    auto const side_qk_q1 = sides.apply(range2.at(0), range2.at(1), range2.at(2));
 
                     operations_pair operations = operations_of_equal(side_pi_q2, side_pi_q1, side_qk_q1);
 
@@ -587,15 +587,15 @@ struct get_turn_info_for_endpoint
         *out++ = tp;
     }
 
-    static inline operations_pair operations_of_equal(int side_px_q2,
-                                                      int side_px_q1,
-                                                      int side_qk_q1)
+    static inline operations_pair operations_of_equal(side_type side_px_q2,
+                                                      side_type side_px_q1,
+                                                      side_type side_qk_q1)
     {
         // If px (pi or pj) is collinear with qj-qk (q2), they continue collinearly.
         // This can be on either side of q1, or collinear
         // The second condition checks if they do not continue
         // oppositely
-        if (side_px_q2 == 0 && side_px_q1 == side_qk_q1)
+        if (side_px_q2 == side_type::collinear && side_px_q1 == side_qk_q1)
         {
             return std::make_pair(operation_continue, operation_continue);
         }
@@ -604,7 +604,7 @@ struct get_turn_info_for_endpoint
         if ( ! base_turn_handler::opposite(side_px_q1, side_qk_q1) )
         {
             // If px is left of q2 or collinear: p: union, q: intersection
-            if (side_px_q2 != -1 )
+            if (side_px_q2 != side_type::right )
             {
                 return std::make_pair(operation_union, operation_intersection);
             }
@@ -617,7 +617,7 @@ struct get_turn_info_for_endpoint
         {
             // They turn opposite sides. If p turns left (or collinear),
            // p: union, q: intersection
-            if (side_px_q1 != -1 )
+            if (side_px_q1 != side_type::right )
             {
                 return std::make_pair(operation_union, operation_intersection);
             }

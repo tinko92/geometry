@@ -66,33 +66,33 @@ void test_side1(std::string const& /*case_id*/, Point const& p1, Point const& p2
 
     // std::cout << case_id << ": ";
     //int s = bgss::side_via_plane<>::apply(p1, p2, p3);
-    int side_ssf = bgss::spherical_side_formula<>::apply(p1, p2, p3);
+    auto side_ssf = bgss::spherical_side_formula<>::apply(p1, p2, p3);
     //int side2 = bgss::side_via_plane<>::apply(p1, p2, p3);
-    int side_ct = bgss::side_by_cross_track<>::apply(p1, p2, p3);
+    auto side_ct = bgss::side_by_cross_track<>::apply(p1, p2, p3);
 
     // non-official
-    typedef bg::srs::spheroid<double> spheroid;
+    using spheroid = bg::srs::spheroid<double>;
     spheroid const sph(1.0, 1.0);
-    int side_mssf1 = bgss::mapping_spherical_side_formula<spheroid>(sph).apply(p1, p2, p3);
-    int side_mssf2 = bgss::mapping_spherical_side_formula<spheroid, bgss::mapping_reduced>(sph).apply(p1, p2, p3);
-    int side_mssf3 = bgss::mapping_spherical_side_formula<spheroid, bgss::mapping_geocentric>(sph).apply(p1, p2, p3);
-    int side_andoyer = bgss::andoyer<spheroid>(sph).apply(p1, p2, p3);
-    int side_thomas = bgss::thomas<spheroid>(sph).apply(p1, p2, p3);
-    int side_vincenty = bgss::vincenty<spheroid>(sph).apply(p1, p2, p3);
+    auto side_mssf1 = bgss::mapping_spherical_side_formula<spheroid>(sph).apply(p1, p2, p3);
+    auto side_mssf2 = bgss::mapping_spherical_side_formula<spheroid, bgss::mapping_reduced>(sph).apply(p1, p2, p3);
+    auto side_mssf3 = bgss::mapping_spherical_side_formula<spheroid, bgss::mapping_geocentric>(sph).apply(p1, p2, p3);
+    auto side_andoyer = bgss::andoyer<spheroid>(sph).apply(p1, p2, p3);
+    auto side_thomas = bgss::thomas<spheroid>(sph).apply(p1, p2, p3);
+    auto side_vincenty = bgss::vincenty<spheroid>(sph).apply(p1, p2, p3);
 
     // cartesian
-    typedef bg::strategy::side::services::default_strategy<bg::cartesian_tag>::type cartesian_strategy;
-    int side_cart = cartesian_strategy::apply(p1, p2, p3);
+    using cartesian_strategy = bg::strategy::side::services::default_strategy<bg::cartesian_tag>::type;
+    auto side_cart = cartesian_strategy::apply(p1, p2, p3);
 
-    BOOST_CHECK_EQUAL(side_ssf, expected);
-    BOOST_CHECK_EQUAL(side_ct, expected);
-    BOOST_CHECK_EQUAL(side_mssf1, expected);
-    BOOST_CHECK_EQUAL(side_mssf2, expected);
-    BOOST_CHECK_EQUAL(side_mssf3, expected);
-    BOOST_CHECK_EQUAL(side_andoyer, expected);
-    BOOST_CHECK_EQUAL(side_thomas, expected);
-    BOOST_CHECK_EQUAL(side_vincenty, expected);
-    BOOST_CHECK_EQUAL(side_cart, expected_cartesian);
+    BOOST_CHECK_EQUAL(static_cast<int>(side_ssf), expected);
+    BOOST_CHECK_EQUAL(static_cast<int>(side_ct), expected);
+    BOOST_CHECK_EQUAL(static_cast<int>(side_mssf1), expected);
+    BOOST_CHECK_EQUAL(static_cast<int>(side_mssf2), expected);
+    BOOST_CHECK_EQUAL(static_cast<int>(side_mssf3), expected);
+    BOOST_CHECK_EQUAL(static_cast<int>(side_andoyer), expected);
+    BOOST_CHECK_EQUAL(static_cast<int>(side_thomas), expected);
+    BOOST_CHECK_EQUAL(static_cast<int>(side_vincenty), expected);
+    BOOST_CHECK_EQUAL(static_cast<int>(side_cart), expected_cartesian);
 
     /*
     std::cout

@@ -10,6 +10,8 @@
 #ifndef BOOST_GEOMETRY_STRATEGY_CARTESIAN_SIDE_NON_ROBUST_HPP
 #define BOOST_GEOMETRY_STRATEGY_CARTESIAN_SIDE_NON_ROBUST_HPP
 
+#include <boost/geometry/strategies/side.hpp>
+
 #include <boost/geometry/util/select_most_precise.hpp>
 #include <boost/geometry/util/select_calculation_type.hpp>
 #include <boost/geometry/util/precise_math.hpp>
@@ -43,7 +45,7 @@ public:
         typename P2,
         typename P
     >
-    static inline int apply(P1 const& p1, P2 const& p2, P const& p)
+    static inline side_type apply(P1 const& p1, P2 const& p2, P const& p)
     {
         typedef typename select_calculation_type_alt
             <
@@ -87,7 +89,7 @@ public:
                 );
         PromotedType const zero = PromotedType();
 
-        return sv == zero ? 0 : sv > zero ? 1 : -1;
+        return sv == zero ? side_type::collinear : sv > zero ? side_type::left : side_type::right;
     }
 
 };

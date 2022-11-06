@@ -49,14 +49,14 @@ struct great_elliptic_segments_calc_policy
     template <typename Point3d>
     struct plane
     {
-        typedef typename coordinate_type<Point3d>::type coord_t;
+        using coord_t = typename coordinate_type<Point3d>::type;
 
         // not normalized
         plane(Point3d const& p1, Point3d const& p2)
             : normal(cross_product(p1, p2))
         {}
 
-        int side_value(Point3d const& pt) const
+        side_type side_value(Point3d const& pt) const
         {
             return formula::sph_side_value(normal, pt);
         }
@@ -149,7 +149,7 @@ struct experimental_elliptic_segments_calc_policy
             formula::experimental_elliptic_plane(p1, p2, origin, normal, m_spheroid);
         }
 
-        int side_value(Point3d const& pt) const
+        side_type side_value(Point3d const& pt) const
         {
             return formula::elliptic_side_value(origin, normal, pt);
         }

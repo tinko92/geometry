@@ -94,7 +94,7 @@ template
 >
 struct ecef_segments
 {
-    typedef spherical_tag cs_tag;
+    using cs_tag = spherical_tag;
 
     enum intersection_point_flag { ipi_inters = 0, ipi_at_a1, ipi_at_a2, ipi_at_b1, ipi_at_b2 };
 
@@ -157,8 +157,8 @@ struct ecef_segments
         // Initialize explicitly to prevent compiler errors in case of PoD type
         CalcPolicy const calc_policy = CalcPolicy();
 
-        typedef typename UniqueSubRange1::point_type point1_type;
-        typedef typename UniqueSubRange2::point_type point2_type;
+        using point1_type = typename UniqueSubRange1::point_type;
+        using point2_type = typename UniqueSubRange2::point_type;
 
         BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<point1_type>) );
         BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<point2_type>) );
@@ -191,7 +191,7 @@ struct ecef_segments
         calc_t const c0 = 0;
         calc_t const c1 = 1;
 
-        typedef model::point<calc_t, 3, cs::cartesian> vec3d_t;
+        using vec3d_t = model::point<calc_t, 3, cs::cartesian>;
 
         vec3d_t const a1v = calc_policy.template to_cart3d<vec3d_t>(a1);
         vec3d_t const a2v = calc_policy.template to_cart3d<vec3d_t>(a2);
@@ -258,9 +258,9 @@ struct ecef_segments
         if (! a_is_point && ! geometry::detail::vec_normalize(plane1.normal, len1))
         {
             a_is_point = true;
-            if (sides.get<0, 0>() == 0 || sides.get<0, 1>() == 0)
+            if ( sides.get<0, 0>() == side_type::collinear || sides.get<0, 1>() == side_type::collinear )
             {
-                sides.set<0>(0, 0);
+                sides.set<0>(side_type::collinear, side_type::collinear);
             }
         }
 
@@ -268,9 +268,9 @@ struct ecef_segments
         if (! b_is_point && ! geometry::detail::vec_normalize(plane2.normal, len2))
         {
             b_is_point = true;
-            if (sides.get<1, 0>() == 0 || sides.get<1, 1>() == 0)
+            if (sides.get<1, 0>() == side_type::collinear || sides.get<1, 1>() == side_type::collinear)
             {
-                sides.set<1>(0, 0);
+                sides.set<1>(side_type::collinear, side_type::collinear);
             }
         }
 
@@ -300,15 +300,17 @@ struct ecef_segments
             // segment so it may return results inconsistent with this intersection
             // strategy, as it checks both segments for consistency
 
-            if (sides.get<0, 0>() == 0 && sides.get<0, 1>() == 0)
+            if (    sides.get<0, 0>() == side_type::collinear
+                 && sides.get<0, 1>() == side_type::collinear )
             {
                 collinear = true;
-                sides.set<1>(0, 0);
+                sides.set<1>(side_type::collinear, side_type::collinear);
             }
-            else if (sides.get<1, 0>() == 0 && sides.get<1, 1>() == 0)
+            else if (    sides.get<1, 0>() == side_type::collinear
+                      && sides.get<1, 1>() == side_type::collinear )
             {
                 collinear = true;
-                sides.set<0>(0, 0);
+                sides.set<0>(side_type::collinear, side_type::collinear);
             }
         }
 
@@ -321,8 +323,8 @@ struct ecef_segments
         if (! collinear && math::equals(math::abs(dot_n1n2), c1))
         {
             collinear = true;
-            sides.set<0>(0, 0);
-            sides.set<1>(0, 0);
+            sides.set<0>(side_type::collinear, side_type::collinear);
+            sides.set<1>(side_type::collinear, side_type::collinear);
         }
         
         if (collinear)
@@ -609,7 +611,7 @@ private:
         //   the endpoints of the other segment lies on the former segment
         if (is_on_a)
         {
-            if (is_near_b1 && sides.template get<1, 0>() == 0) // b1 wrt a
+            if (is_near_b1 && sides.template get<1, 0>() == side_type::collinear) // b1 wrt a
             {
                 calculate_dist(a1v, a2v, plane1, b1v, dist_a1_ip); // for consistency
                 dist_b1_ip = 0;
@@ -618,7 +620,7 @@ private:
                 return true;
             }
 
-            if (is_near_b2 && sides.template get<1, 1>() == 0) // b2 wrt a
+            if (is_near_b2 && sides.template get<1, 1>() == side_type::collinear) // b2 wrt a
             {
                 calculate_dist(a1v, a2v, plane1, b2v, dist_a1_ip); // for consistency
                 dist_b1_ip = dist_b1_b2;
@@ -630,7 +632,7 @@ private:
 
         if (is_on_b)
         {
-            if (is_near_a1 && sides.template get<0, 0>() == 0) // a1 wrt b
+            if (is_near_a1 && sides.template get<0, 0>() == side_type::collinear) // a1 wrt b
             {
                 dist_a1_ip = 0;
                 calculate_dist(b1v, b2v, plane2, a1v, dist_b1_ip); // for consistency
@@ -639,7 +641,7 @@ private:
                 return true;
             }
 
-            if (is_near_a2 && sides.template get<0, 1>() == 0) // a2 wrt b
+            if (is_near_a2 && sides.template get<0, 1>() == side_type::collinear) // a2 wrt b
             {
                 dist_a1_ip = dist_a1_a2;
                 calculate_dist(b1v, b2v, plane2, a2v, dist_b1_ip); // for consistency
@@ -794,14 +796,14 @@ struct spherical_segments_calc_policy
     template <typename Point3d>
     struct plane
     {
-        typedef typename coordinate_type<Point3d>::type coord_t;
+        using coord_t = typename coordinate_type<Point3d>::type;
 
         // not normalized
         plane(Point3d const& p1, Point3d const& p2)
             : normal(cross_product(p1, p2))
         {}
 
-        int side_value(Point3d const& pt) const
+        side_type side_value(Point3d const& pt) const
         {
             return formula::sph_side_value(normal, pt);
         }

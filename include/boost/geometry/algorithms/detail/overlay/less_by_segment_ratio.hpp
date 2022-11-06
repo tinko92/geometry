@@ -111,23 +111,23 @@ private :
             *right.other_seg_id,
             si, sj);
 
-        int const side_rj_p = m_strategy.apply(pi, pj, rj);
-        int const side_sj_p = m_strategy.apply(pi, pj, sj);
+        auto const side_rj_p = m_strategy.apply(pi, pj, rj);
+        auto const side_sj_p = m_strategy.apply(pi, pj, sj);
 
         // Put the one turning left (1; right == -1) as last
         if (side_rj_p != side_sj_p)
         {
-            return side_rj_p < side_sj_p;
+            return static_cast<int>(side_rj_p) < static_cast<int>(side_sj_p);
         }
 
-        int const side_sj_r = m_strategy.apply(ri, rj, sj);
-        int const side_rj_s = m_strategy.apply(si, sj, rj);
+        auto const side_sj_r = m_strategy.apply(ri, rj, sj);
+        auto const side_rj_s = m_strategy.apply(si, sj, rj);
 
-        // If they both turn left: the most left as last
-        // If they both turn right: this is not relevant, but take also here most left
+        // If they both turn left (1): the most left as last
+        // If they both turn right (-1): this is not relevant, but take also here most left
         if (side_rj_s != side_sj_r)
         {
-            return side_rj_s < side_sj_r;
+            return static_cast<int>(side_rj_s) < static_cast<int>(side_sj_r);
         }
 
         return default_order(left, right);

@@ -136,16 +136,16 @@ public :
     {}
 
     template <typename P1, typename P2, typename P>
-    inline int apply(P1 const& p1, P2 const& p2, P const& p) const
+    inline side_type apply(P1 const& p1, P2 const& p2, P const& p) const
     {
-        typedef typename promote_floating_point
+        using calculation_type = typename promote_floating_point
             <
                 typename select_calculation_type_alt
                     <
                         CalculationType,
                         P1, P2, P
                     >::type
-            >::type calculation_type;
+            >::type;
 
         calculation_type lon1 = get_as_radian<0>(p1);
         calculation_type lat1 = m_mapper.template apply<calculation_type>(get_as_radian<1>(p1));
@@ -172,7 +172,7 @@ public :
     explicit inline mapping_spherical_side_formula(Spheroid const& /*spheroid*/) {}
 
     template <typename P1, typename P2, typename P>
-    static inline int apply(P1 const& p1, P2 const& p2, P const& p)
+    static inline side_type apply(P1 const& p1, P2 const& p2, P const& p)
     {
         return spherical_side_formula<CalculationType>::apply(p1, p2, p);
     }

@@ -203,7 +203,7 @@ public :
 
 
     template <typename P1, typename P2, typename P>
-    static inline int apply(P1 const& p1, P2 const& p2, P const& p)
+    static inline side_type apply(P1 const& p1, P2 const& p2, P const& p)
     {
         using coor_t = typename select_calculation_type_alt<CalculationType, P1, P2, P>::type;
 
@@ -222,9 +222,9 @@ public :
             >::apply(p1, p2, p, epsp);
 
         promoted_t const zero = promoted_t();
-        return math::detail::equals_by_policy(s, zero, epsp.policy) ? 0
-            : s > zero ? 1
-            : -1;
+        return math::detail::equals_by_policy(s, zero, epsp.policy) ? side_type::collinear
+            : s > zero ? side_type::left
+            : side_type::right;
     }
 
 private:

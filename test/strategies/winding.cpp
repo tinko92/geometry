@@ -97,7 +97,7 @@ void test_spherical()
         bg::strategy::side::spherical_side_formula<>::apply(
             point(-10, 10),
             point(10, 10),
-            point(0, (T)10.001)) == -1 // right side
+            point(0, (T)10.001)) == bg::side_type::right
         /*true*/);
     test_geometry<point, polygon>(
         "sph1S",
@@ -107,7 +107,7 @@ void test_spherical()
         bg::strategy::side::spherical_side_formula<>::apply(
               point(10, -10),
               point(-10, -10),
-              point(0, (T)-10.001)) == -1 // right side
+              point(0, (T)-10.001)) == bg::side_type::right
       /*true*/);
 
     test_geometry<point, polygon>(
@@ -118,7 +118,7 @@ void test_spherical()
         bg::strategy::side::spherical_side_formula<>::apply(
               point(10, 10),
               point(-10, 10),
-              point(0, (T)10.001)) == -1 // right side
+              point(0, (T)10.001)) == bg::side_type::right
         /*false*/);
 
     test_geometry<point, polygon>(
@@ -129,7 +129,7 @@ void test_spherical()
         bg::strategy::side::spherical_side_formula<>::apply(
             point(-10, 10),
             point(10, 10),
-            point(0, (T)10.001)) == -1 // right side
+            point(0, (T)10.001)) == bg::side_type::right
         /*true*/);
     test_geometry<point, polygon>(
         "sph3S",
@@ -139,7 +139,7 @@ void test_spherical()
         bg::strategy::side::spherical_side_formula<>::apply(
               point(10, -10),
               point(-10, -10),
-              point(0, (T)-10.001)) == -1 // right side
+              point(0, (T)-10.001)) == bg::side_type::right
       /*true*/);
 
     test_geometry<point, polygon>(

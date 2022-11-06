@@ -48,25 +48,24 @@ class side_by_cross_track
 
 public :
     template <typename P1, typename P2, typename P>
-    static inline int apply(P1 const& p1, P2 const& p2, P const& p)
+    static inline side_type apply(P1 const& p1, P2 const& p2, P const& p)
     {
-        typedef strategy::within::spherical_point_point
-            equals_point_point_strategy_type;
+        using equals_point_point_strategy_type = strategy::within::spherical_point_point;
         if (equals_point_point_strategy_type::apply(p, p1)
             || equals_point_point_strategy_type::apply(p, p2)
             || equals_point_point_strategy_type::apply(p1, p2))
         {
-            return 0;
+            return side_type::collinear;
         }
 
-        typedef typename promote_floating_point
+        using calc_t = typename promote_floating_point
             <
                 typename select_calculation_type_alt
                     <
                         CalculationType,
                         P1, P2, P
                     >::type
-            >::type calc_t;
+            >::type;
 
         calc_t d1 = 0.001; // m_strategy.apply(sp1, p);
 
@@ -85,7 +84,7 @@ public :
 
         calc_t XTD = asin(sin(d1) * sin(crs_AD - crs_AB));
 
-        return math::equals(XTD, 0) ? 0 : XTD < 0 ? 1 : -1;
+        return math::equals(XTD, 0) ? side_type::collinear : XTD < 0 ? side_type::left : side_type::right;
     }
 };
 

@@ -12,10 +12,15 @@
 
 #include <boost/geometry/algorithms/assign.hpp>
 #include <boost/geometry/algorithms/detail/envelope/initialize.hpp>
+
 #include <boost/geometry/geometries/segment.hpp>
+
+#include <boost/geometry/strategies/side.hpp>
+
 #include <boost/geometry/strategy/spherical/envelope_point.hpp>
 #include <boost/geometry/strategy/spherical/envelope_segment.hpp>
 #include <boost/geometry/strategy/spherical/expand_segment.hpp>
+
 #include <boost/geometry/views/closeable_view.hpp>
 
 // Get rid of this dependency?
@@ -78,10 +83,10 @@ inline void spheroidal_linestring(Range const& range, Box& mbr,
 template <typename CalculationType = void>
 struct side_of_pole
 {
-    typedef spherical_tag cs_tag;
+    using cs_tag = spherical_tag;
 
     template <typename P>
-    static inline int apply(P const& p1, P const& p2, P const& pole)
+    static inline side_type apply(P const& p1, P const& p2, P const& pole)
     {
         using calc_t = typename promote_floating_point
             <
@@ -109,25 +114,25 @@ struct side_of_pole
         // Side of vertical segment is 0 for both poles.
         if (s_vertical)
         {
-            return 0;
+            return side_type::collinear;
         }
 
         // This strategy shouldn't be called in this case but just in case
         // check if segment starts at a pole
         if (math::equals(lat_pole, lat1) || math::equals(lat_pole, lat2))
         {
-            return 0;
+            return side_type::collinear;
         }
 
         // -1 is rhs
         //  1 is lhs
         if (lat_pole >= c0) // north pole
         {
-            return s_lon_diff < c0 ? -1 : 1;
+            return s_lon_diff < c0 ? side_type::right : side_type::left;
         }
         else // south pole
         {
-            return s_lon_diff > c0 ? -1 : 1;
+            return s_lon_diff > c0 ? side_type::right : side_type::left;
         }
     }
 };

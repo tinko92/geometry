@@ -121,16 +121,17 @@ inline void assign_ranges(InputProxy const& in_proxy,
         {
             // check if it is lying most_left or most_right from the line
 
-            int dir = side.apply(most_left, most_right, *it);
+            auto dir = side.apply(most_left, most_right, *it);
             switch(dir)
             {
-                case 1 : // left side
+                case side_type::left :
                     upper_points.push_back(*it);
                     break;
-                case -1 : // right side
+                case side_type::right :
                     lower_points.push_back(*it);
                     break;
-
+                default :
+                    break;
                 // 0: on line most_left-most_right,
                 //    or most_left, or most_right,
                 //    -> all never part of hull
@@ -246,7 +247,8 @@ private:
             point_type const last = *rit++;
             point_type const& last2 = *rit++;
 
-            if (Factor * side.apply(*rit, last, last2) <= 0)
+            //collinear or opposite of Factor
+            if (Factor * static_cast<int>(side.apply(*rit, last, last2)) <= 0)
             {
                 // Remove last two points from stack, and add last again
                 // This is much faster then erasing the one but last.

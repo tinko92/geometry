@@ -171,7 +171,7 @@ struct get_turn_info_linear_areal
                         // a spike on P on the same line with Q1
                         if ( inters.is_spike_p() )
                         {
-                            if ( inters.sides().qk_wrt_p1() == 0 )
+                            if ( inters.sides().qk_wrt_p1() == side_type::collinear )
                             {
                                 tp.operations[0].is_collinear = true;
                             }
@@ -201,7 +201,7 @@ struct get_turn_info_linear_areal
                             tp.operations[0].operation = operation_intersection;
                             tp.operations[1].operation = operation_union;
 
-                            if ( inters.sides().pk_wrt_q2() == 0 )
+                            if ( inters.sides().pk_wrt_q2() == side_type::collinear )
                             {
                                 tp.operations[0].operation = operation_continue; // will be converted to i
                                 tp.operations[0].is_collinear = true;
@@ -405,36 +405,36 @@ struct get_turn_info_linear_areal
 
         if ( is_p_spike )
         {
-            int const pk_q1 = inters.sides().pk_wrt_q1();
+            auto const pk_q1 = inters.sides().pk_wrt_q1();
             
-            bool going_in = pk_q1 < 0; // Pk on the right
-            bool going_out = pk_q1 > 0; // Pk on the left
+            bool going_in  = pk_q1 == side_type::right; // Pk on the right
+            bool going_out = pk_q1 == side_type::left;  // Pk on the left
 
-            int const qk_q1 = inters.sides().qk_wrt_q1();
+            auto const qk_q1 = inters.sides().qk_wrt_q1();
 
             // special cases
-            if ( qk_q1 < 0 ) // Q turning R
+            if ( qk_q1 == side_type::right ) // Q turning R
             { 
                 // spike on the edge point
                 // if it's already known that the spike is going out this musn't be checked
                 if ( ! going_out
                   && equals::equals_point_point(inters.rpj(), inters.rqj(), strategy) )
                 {
-                    int const pk_q2 = inters.sides().pk_wrt_q2();
-                    going_in = pk_q1 < 0 && pk_q2 < 0; // Pk on the right of both
-                    going_out = pk_q1 > 0 || pk_q2 > 0; // Pk on the left of one of them
+                    auto const pk_q2 = inters.sides().pk_wrt_q2();
+                    going_in  = pk_q1 == side_type::right && pk_q2 == side_type::right; // Pk on the right of both
+                    going_out = pk_q1 == side_type::left  || pk_q2 == side_type::left;  // Pk on the left of one of them
                 }
             }
-            else if ( qk_q1 > 0 ) // Q turning L
+            else if ( qk_q1 == side_type::left ) // Q turning L
             {
                 // spike on the edge point
                 // if it's already known that the spike is going in this musn't be checked
                 if ( ! going_in
                   && equals::equals_point_point(inters.rpj(), inters.rqj(), strategy) )
                 {
-                    int const pk_q2 = inters.sides().pk_wrt_q2();
-                    going_in = pk_q1 < 0 || pk_q2 < 0; // Pk on the right of one of them
-                    going_out = pk_q1 > 0 && pk_q2 > 0; // Pk on the left of both
+                    auto const pk_q2 = inters.sides().pk_wrt_q2();
+                    going_in  = pk_q1 == side_type::right || pk_q2 == side_type::right; // Pk on the right of one of them
+                    going_out = pk_q1 == side_type::left  && pk_q2 == side_type::left;  // Pk on the left of both
                 }
             }
 
@@ -751,7 +751,9 @@ struct get_turn_info_linear_areal
                 //    pi-qj, side the same as WRT q1
                 //    qj WRT q1 is 0
                 method_type replaced_method = method_none;
-                int side_pj_y = 0, side_pj_x = 0, side_qz_x = 0;
+                side_type side_pj_y = side_type::collinear;
+                side_type side_pj_x = side_type::collinear;
+                side_type side_qz_x = side_type::collinear;
                 // 1. ip0 or pi at qj
                 if ( ip0.is_qj )
                 {
@@ -766,7 +768,7 @@ struct get_turn_info_linear_areal
                     replaced_method = method_touch_interior;
                     side_pj_y = sides.apply(range_q.at(0), range_q.at(1), range_p.at(1)); // pj wrt q1
                     side_pj_x = side_pj_y; // pj wrt q1
-                    side_qz_x = 0; // qj wrt q1
+                    side_qz_x = side_type::collinear; // qj wrt q1
                 }
 
                 std::pair<operation_type, operation_type> operations
@@ -821,7 +823,9 @@ struct get_turn_info_linear_areal
                 //    qi-pj, the side is the same as WRT q1
                 //    pj-qj, the side is the same as WRT q1
                 //    side of qj WRT q1 is 0
-                int side_pi_y = 0, side_pi_x = 0, side_qz_x = 0;
+                side_type side_pi_y = side_type::collinear;
+                side_type side_pi_x = side_type::collinear;
+                side_type side_qz_x = side_type::collinear;
                 // 1. ip0 or pj at qj
                 if ( ip0.is_qj )
                 {
@@ -834,7 +838,7 @@ struct get_turn_info_linear_areal
                 {
                     side_pi_y = sides.apply(range_q.at(0), range_q.at(1), range_p.at(0)); // pi wrt q1
                     side_pi_x = side_pi_y; // pi wrt q1
-                    side_qz_x = 0; // qj wrt q1
+                    side_qz_x = side_type::collinear; // qj wrt q1
                 }
 
                 std::pair<operation_type, operation_type> operations

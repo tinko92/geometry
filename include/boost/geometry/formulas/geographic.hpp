@@ -24,6 +24,8 @@
 #include <boost/geometry/formulas/flattening.hpp>
 #include <boost/geometry/formulas/unit_spheroid.hpp>
 
+#include <boost/geometry/strategies/side.hpp>
+
 #include <boost/geometry/util/math.hpp>
 #include <boost/geometry/util/normalize_spheroidal_coordinates.hpp>
 #include <boost/geometry/util/select_coordinate_type.hpp>
@@ -306,7 +308,7 @@ inline bool great_elliptic_intersection(Point3d const& a1, Point3d const& a2,
 }
 
 template <typename Point3d1, typename Point3d2>
-static inline int elliptic_side_value(Point3d1 const& origin, Point3d1 const& norm, Point3d2 const& pt)
+static inline side_type elliptic_side_value(Point3d1 const& origin, Point3d1 const& norm, Point3d2 const& pt)
 {
     typedef typename coordinate_type<Point3d1>::type calc_t;
     calc_t c0 = 0;
@@ -319,9 +321,9 @@ static inline int elliptic_side_value(Point3d1 const& origin, Point3d1 const& no
     calc_t d = dot_product(norm, vec);
 
     // since the vector is opposite the signs are opposite
-    return math::equals(d, c0) ? 0
-        : d < c0 ? 1
-        : -1; // d > 0
+    return math::equals(d, c0) ? side_type::collinear
+        : d < c0 ? side_type::left
+        : side_type::right; // d > 0
 }
 
 template <typename Point3d, typename Spheroid>

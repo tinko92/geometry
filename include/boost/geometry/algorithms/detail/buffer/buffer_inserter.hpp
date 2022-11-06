@@ -187,9 +187,9 @@ struct buffer_range
             output_point_type const& p2,
             Strategies const& strategies)
     {
-        int const side = strategies.side().apply(p0, p1, p2);
-        return side == -1 ? geometry::strategy::buffer::join_convex
-            :  side == 1  ? geometry::strategy::buffer::join_concave
+        auto const side = strategies.side().apply(p0, p1, p2);
+        return side == side_type::right ? geometry::strategy::buffer::join_convex
+            :  side == side_type::left  ? geometry::strategy::buffer::join_concave
             :  same_direction(p0, p1, p2, strategies) ? geometry::strategy::buffer::join_continue
             : geometry::strategy::buffer::join_spike;
     }

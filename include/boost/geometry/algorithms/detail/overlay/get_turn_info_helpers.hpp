@@ -18,6 +18,7 @@
 #include <boost/geometry/core/assert.hpp>
 #include <boost/geometry/policies/relate/intersection_policy.hpp>
 #include <boost/geometry/strategies/intersection_result.hpp>
+#include <boost/geometry/strategies/side.hpp>
 
 namespace boost { namespace geometry {
 
@@ -57,19 +58,19 @@ struct side_calculator
         , m_range_q(range_q)
     {}
 
-    inline int pk_wrt_p1() const { return m_side_strategy.apply(get_pi(), get_pj(), get_pk()); }
-    inline int pk_wrt_q1() const { return m_side_strategy.apply(get_qi(), get_qj(), get_pk()); }
-    inline int qk_wrt_p1() const { return m_side_strategy.apply(get_pi(), get_pj(), get_qk()); }
-    inline int qk_wrt_q1() const { return m_side_strategy.apply(get_qi(), get_qj(), get_qk()); }
+    inline side_type pk_wrt_p1() const { return m_side_strategy.apply(get_pi(), get_pj(), get_pk()); }
+    inline side_type pk_wrt_q1() const { return m_side_strategy.apply(get_qi(), get_qj(), get_pk()); }
+    inline side_type qk_wrt_p1() const { return m_side_strategy.apply(get_pi(), get_pj(), get_qk()); }
+    inline side_type qk_wrt_q1() const { return m_side_strategy.apply(get_qi(), get_qj(), get_qk()); }
 
-    inline int pk_wrt_q2() const { return m_side_strategy.apply(get_qj(), get_qk(), get_pk()); }
-    inline int qk_wrt_p2() const { return m_side_strategy.apply(get_pj(), get_pk(), get_qk()); }
+    inline side_type pk_wrt_q2() const { return m_side_strategy.apply(get_qj(), get_qk(), get_pk()); }
+    inline side_type qk_wrt_p2() const { return m_side_strategy.apply(get_pj(), get_pk(), get_qk()); }
 
     // Necessary when rescaling turns off:
-    inline int qj_wrt_p1() const { return m_side_strategy.apply(get_pi(), get_pj(), get_qj()); }
-    inline int qj_wrt_p2() const { return m_side_strategy.apply(get_pj(), get_pk(), get_qj()); }
-    inline int pj_wrt_q1() const { return m_side_strategy.apply(get_qi(), get_qj(), get_pj()); }
-    inline int pj_wrt_q2() const { return m_side_strategy.apply(get_qj(), get_qk(), get_pj()); }
+    inline side_type qj_wrt_p1() const { return m_side_strategy.apply(get_pi(), get_pj(), get_qj()); }
+    inline side_type qj_wrt_p2() const { return m_side_strategy.apply(get_pj(), get_pk(), get_qj()); }
+    inline side_type pj_wrt_q1() const { return m_side_strategy.apply(get_qi(), get_qj(), get_pj()); }
+    inline side_type pj_wrt_q2() const { return m_side_strategy.apply(get_qj(), get_qk(), get_pj()); }
 
     inline auto const& get_pi() const { return m_range_p.at(0); }
     inline auto const& get_pj() const { return m_range_p.at(1); }
@@ -158,7 +159,7 @@ public:
         {
             return false;
         }
-        if (sides().pk_wrt_p1() == 0)
+        if (sides().pk_wrt_p1() == side_type::collinear)
         {
             // p:  pi--------pj--------pk
             // or: pi----pk==pj
@@ -170,12 +171,13 @@ public:
 
             // TODO: why is q used to determine spike property in p?
             bool const has_qk = ! q_is_last_segment();
-            int const qk_p1 = has_qk ? sides().qk_wrt_p1() : 0;
-            int const qk_p2 = has_qk ? sides().qk_wrt_p2() : 0;
+            auto const qk_p1 = has_qk ? sides().qk_wrt_p1() : side_type::collinear;
+            auto const qk_p2 = has_qk ? sides().qk_wrt_p2() : side_type::collinear;
 
+            //both collinear or opposite side
             if (qk_p1 == -qk_p2)
             {
-                if (qk_p1 == 0)
+                if (qk_p1 == side_type::collinear)
                 {
                     // qk is collinear with both p1 and p2,
                     // verify if pk goes backwards w.r.t. pi/pj
@@ -200,7 +202,7 @@ public:
         }
 
         // See comments at is_spike_p
-        if (sides().qk_wrt_q1() == 0)
+        if (sides().qk_wrt_q1() == side_type::collinear)
         {
             if (! is_ip_j<1>())
             {
@@ -209,12 +211,13 @@ public:
 
             // TODO: why is p used to determine spike property in q?
             bool const has_pk = ! p_is_last_segment();
-            int const pk_q1 = has_pk ? sides().pk_wrt_q1() : 0;
-            int const pk_q2 = has_pk ? sides().pk_wrt_q2() : 0;
-                
+            auto const pk_q1 = has_pk ? sides().pk_wrt_q1() : side_type::collinear;
+            auto const pk_q2 = has_pk ? sides().pk_wrt_q2() : side_type::collinear;
+
+            //both collinear or opposite side
             if (pk_q1 == -pk_q2)
             {
-                if (pk_q1 == 0)
+                if (pk_q1 == side_type::collinear)
                 {
                     return m_umbrella_strategy.direction(rqi(), rqj(), rqk())
                         .apply(rqi(), rqj(), rqk()) == -1;

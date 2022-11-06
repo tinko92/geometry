@@ -215,8 +215,8 @@ void test_spherical_geographic()
         bg::read_wkt("POLYGON((10 50,30 50,30 40,10 40, 10 50))", poly_n);
         Point pt_n1(20, 50.00001);
         Point pt_n2(20, 40.00001);
-        BOOST_CHECK_EQUAL(ss.apply(poly_n.outer()[0], poly_n.outer()[1], pt_n1), -1); // right of segment
-        BOOST_CHECK_EQUAL(ss.apply(poly_n.outer()[2], poly_n.outer()[3], pt_n2), 1); // left of segment
+        BOOST_CHECK_EQUAL(static_cast<int>(ss.apply(poly_n.outer()[0], poly_n.outer()[1], pt_n1)), -1); // right of segment
+        BOOST_CHECK_EQUAL(static_cast<int>(ss.apply(poly_n.outer()[2], poly_n.outer()[3], pt_n2)), 1); // left of segment
         BOOST_CHECK_EQUAL(bg::within(pt_n1, poly_n, ws), true);
         BOOST_CHECK_EQUAL(bg::within(pt_n2, poly_n, ws), false);
     }
@@ -226,8 +226,8 @@ void test_spherical_geographic()
         bg::read_wkt("POLYGON((10 -40,30 -40,30 -50,10 -50, 10 -40))", poly_s);
         Point pt_s1(20, -40.00001);
         Point pt_s2(20, -50.00001);
-        BOOST_CHECK_EQUAL(ss.apply(poly_s.outer()[0], poly_s.outer()[1], pt_s1), 1); // left of segment
-        BOOST_CHECK_EQUAL(ss.apply(poly_s.outer()[2], poly_s.outer()[3], pt_s2), -1); // right of segment
+        BOOST_CHECK_EQUAL(static_cast<int>(ss.apply(poly_s.outer()[0], poly_s.outer()[1], pt_s1)), 1); // left of segment
+        BOOST_CHECK_EQUAL(static_cast<int>(ss.apply(poly_s.outer()[2], poly_s.outer()[3], pt_s2)), -1); // right of segment
         BOOST_CHECK_EQUAL(bg::within(pt_s1, poly_s, ws), false);
         BOOST_CHECK_EQUAL(bg::within(pt_s2, poly_s, ws), true);
     }

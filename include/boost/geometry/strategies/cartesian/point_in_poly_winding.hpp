@@ -99,20 +99,18 @@ public:
         int count = check_segment(point, s1, s2, state, eq1, eq2);
         if (count != 0)
         {
-            int side = 0;
+            side_type side = side_type::collinear;
             if (count == 1 || count == -1)
             {
-                side = side_equal(point, eq1 ? s1 : s2, count);
+                side = static_cast<side_type>(side_equal(point, eq1 ? s1 : s2, count));
             }
             else // count == 2 || count == -2
             {
-                // 1 left, -1 right
                 side = SideStrategy::apply(s1, s2, point);
             }
 
-            if (side == 0)
+            if (side == side_type::collinear)
             {
-                // Point is lying on segment
                 state.m_touches = true;
                 state.m_count = 0;
                 return false;
@@ -122,7 +120,7 @@ public:
             // The count is -2 for left, 2 for right (or -1/1)
             // Side positive thus means RIGHT and LEFTSIDE or LEFT and RIGHTSIDE
             // See accompagnying figure (TODO)
-            if (side * count > 0)
+            if (static_cast<int>(side) * count > 0)
             {
                 state.m_count += count;
             }

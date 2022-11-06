@@ -132,10 +132,10 @@ struct segments_direction
                                                SegmentIntersectionInfo const& ,
                                                Segment1 const& , Segment2 const& )
     {
-        bool const ra0 = sides.get<0,0>() == 0;
-        bool const ra1 = sides.get<0,1>() == 0;
-        bool const rb0 = sides.get<1,0>() == 0;
-        bool const rb1 = sides.get<1,1>() == 0;
+        bool const ra0 = sides.get<0,0>() == side_type::collinear;
+        bool const ra1 = sides.get<0,1>() == side_type::collinear;
+        bool const rb0 = sides.get<1,0>() == side_type::collinear;
+        bool const rb1 = sides.get<1,1>() == side_type::collinear;
 
         if (ra0 && rb0) // opposite and same starting point (FROM)
         {
@@ -353,7 +353,7 @@ private :
     static inline return_type calculate_side(side_info const& sides, how_type how,
                                              arrival_type how_a, arrival_type how_b)
     {
-        int const dir = sides.get<1, I>() == 1 ? 1 : -1;
+        int const dir = sides.get<1, I>() == side_type::left ? 1 : -1;
         return return_type(sides, how, how_a, how_b, -dir, dir);
     }
 
@@ -361,7 +361,7 @@ private :
     static inline return_type angle(side_info const& sides,
                                     how_type how, arrival_type how_a, arrival_type how_b)
     {
-        int const dir = sides.get<1, I>() == 1 ? 1 : -1;
+        int const dir = sides.get<1, I>() == side_type::left ? 1 : -1;
         return return_type(sides, how, how_a, how_b, dir, dir);
     }
 
@@ -370,7 +370,7 @@ private :
                                                  arrival_type how_a, arrival_type how_b)
     {
         // Calculate ARROW of b segment w.r.t. s1
-        int dir = sides.get<1, 1>() == 1 ? 1 : -1;
+        int dir = sides.get<1, 1>() == side_type::left ? 1 : -1;
 
         // From other perspective, then reverse
         bool const is_a = which == 'A';
@@ -393,7 +393,7 @@ private :
     {
         // Ending at the middle, one ARRIVES, the other one is NEUTRAL
         // (because it both "arrives"  and "departs" there)
-        int const dir = sides.get<1, 1>() == 1 ? 1 : -1;
+        int const dir = sides.get<1, 1>() == side_type::left ? 1 : -1;
         return return_type(sides, how_type::middle, arrival_type::arrival, arrival_type::neutral,
                            dir, dir);
     }
@@ -401,7 +401,7 @@ private :
 
     static inline return_type b_ends_at_middle(side_info const& sides)
     {
-        int const dir = sides.get<0, 1>() == 1 ? 1 : -1;
+        int const dir = sides.get<0, 1>() == side_type::left ? 1 : -1;
         return return_type(sides, how_type::middle, arrival_type::neutral, arrival_type::arrival,
                            dir, dir);
     }

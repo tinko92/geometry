@@ -424,8 +424,8 @@ private :
     template <typename Strategy>
     bool is_convex(Point& previous, Point& current, Point const& next, Strategy const& strategy) const
     {
-        int const side = strategy.side().apply(previous, current, next);
-        if (side == 1)
+        auto const side = strategy.side().apply(previous, current, next);
+        if (side == side_type::left)
         {
             // Next is on the left side of clockwise ring: piece is not convex
             return false;

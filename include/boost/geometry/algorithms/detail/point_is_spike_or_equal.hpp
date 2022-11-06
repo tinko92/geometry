@@ -18,6 +18,7 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_POINT_IS_EQUAL_OR_SPIKE_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_POINT_IS_EQUAL_OR_SPIKE_HPP
 
+#include <boost/geometry/strategies/side.hpp>
 
 namespace boost { namespace geometry
 {
@@ -47,10 +48,9 @@ inline bool point_is_spike_or_equal(Point1 const& last_point, // prev | back
                                     Point3 const& segment_b,  // curr | back - 1 | spike's vertex
                                     Strategy const& strategy)
 {
-    int const side = strategy.side().apply(segment_a, segment_b, last_point);
-    if (side == 0)
+    auto const side = strategy.side().apply(segment_a, segment_b, last_point);
+    if (side == side_type::collinear)
     {
-        // Last point is collinear w.r.t previous segment.
         return strategy.direction(segment_a, segment_b, last_point)
             .apply(segment_a, segment_b, last_point) < 1;
     }
@@ -69,7 +69,7 @@ inline bool point_is_collinear(Point1 const& last_point,
             Point3 const& segment_b,
             Strategy const& strategy)
 {
-    return strategy.side().apply(segment_a, segment_b, last_point) == 0;
+    return strategy.side().apply(segment_a, segment_b, last_point) == side_type::collinear;
 }
 
 

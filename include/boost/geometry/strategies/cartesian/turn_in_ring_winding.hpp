@@ -157,9 +157,9 @@ public:
                              bool is_convex,
                              counter& the_state, Ring const& full_ring)
     {
-        int const side = strategy::side::side_rounded_input<CalculationType>::apply(s1, s2, point);
+        auto const side = strategy::side::side_rounded_input<CalculationType>::apply(s1, s2, point);
 
-        if (is_convex && side > 0)
+        if (is_convex && side == side_type::left)
         {
             // If the point is left of this segment of a convex piece, it can never be inside.
             // Stop further processing
@@ -177,12 +177,12 @@ public:
 
         if (in_horizontal_range || (vertical && is_in_vertical_range(point, s1, s2)))
         {
-            if (side == 0)
+            if (side == side_type::collinear)
             {
                 apply_on_boundary(point, s1, s2, place_on_ring, the_state, full_ring);
             }
 #if defined(BOOST_GEOMETRY_USE_RESCALING)
-            else if (side == -1)
+            else if (side == side_type::right)
             {
                 auto const line = geometry::detail::make::make_infinite_line<CalculationType>(s1, s2);
                 auto const value = -arithmetic::side_value(line, point);
@@ -207,7 +207,7 @@ public:
                 //     and for -1 or -2 for right side (inside)
                 int const multiplier = eq1 || eq2 ? 1 : 2;
 
-                the_state.count += side * multiplier;
+                the_state.count += static_cast<int>(side * multiplier);
             }
         }
 

@@ -88,17 +88,17 @@ using verify_policy_la = policy_verify_nothing;
 struct base_turn_handler
 {
     // Returns true if both sides are opposite
-    static inline bool opposite(int side1, int side2)
+    static inline bool opposite(side_type side1, side_type side2)
     {
         // We cannot state side1 == -side2, because 0 == -0
         // So either side1*side2==-1 or side1==-side2 && side1 != 0
-        return side1 * side2 == -1;
+        return static_cast<int>(side1) * static_cast<int>(side2) == -1;
     }
 
     // Same side of a segment (not being 0)
-    static inline bool same(int side1, int side2)
+    static inline bool same(side_type side1, side_type side2)
     {
-        return side1 * side2 == 1;
+        return static_cast<int>(side1) * static_cast<int>(side2) == 1;
     }
 
     // Both get the same operation
@@ -288,22 +288,22 @@ struct turn_info_verification_functions
         typename UniqueSubRange2,
         typename UmbrellaStrategy
     >
-    static inline int verified_side(int side,
-                                    UniqueSubRange1 const& range_p,
-                                    UniqueSubRange2 const& range_q,
-                                    UmbrellaStrategy const& umbrella_strategy,
-                                    int index_p, int index_q)
+    static inline side_type verified_side(side_type side,
+                                          UniqueSubRange1 const& range_p,
+                                          UniqueSubRange2 const& range_q,
+                                          UmbrellaStrategy const& umbrella_strategy,
+                                          int index_p, int index_q)
     {
-        if (side == 0
+        if (side == side_type::collinear
             && BOOST_GEOMETRY_CONDITION(VerifyPolicy::use_side_verification))
         {
             if (index_p >= 1 && range_p.is_last_segment())
             {
-                return 0;
+                return side_type::collinear;
             }
             if (index_q >= 2 && range_q.is_last_segment())
             {
-                return 0;
+                return side_type::collinear;
             }
 
             auto const dm = get_distance_measure(range_p.at(index_p),
@@ -311,7 +311,8 @@ struct turn_info_verification_functions
                                                  range_q.at(index_q),
                                                  umbrella_strategy);
             static decltype(dm.measure) const zero = 0;
-            return dm.measure == zero ? 0 : dm.measure > zero ? 1 : -1;
+            return dm.measure == zero ? side_type::collinear 
+                                        : dm.measure > zero ? side_type::left : side_type::right;
         }
         else
         {
@@ -416,35 +417,35 @@ struct touch_interior : public base_turn_handler
 
         bool const has_pk = ! range_p.is_last_segment();
         bool const has_qk = ! range_q.is_last_segment();
-        int const side_qi_p = dir_info.sides.template get<index_q, 0>();
-        int const side_qk_p = has_qk ? side.qk_wrt_p1() : 0;
+        auto const side_qi_p = dir_info.sides.template get<index_q, 0>();
+        auto const side_qk_p = has_qk ? side.qk_wrt_p1() : side_type::collinear;
 
         if (side_qi_p == -side_qk_p)
         {
             // Q crosses P from left->right or from right->left (test "ML1")
             // Union: folow P (left->right) or Q (right->left)
             // Intersection: other turn
-            unsigned int index = side_qk_p == -1 ? index_p : index_q;
+            unsigned int index = side_qk_p == side_type::right ? index_p : index_q;
             ti.operations[index].operation = operation_union;
             ti.operations[1 - index].operation = operation_intersection;
             return;
         }
 
-        int const side_qk_q = has_qk ? side.qk_wrt_q1() : 0;
+        auto const side_qk_q = has_qk ? side.qk_wrt_q1() : side_type::collinear;
 
         // Only necessary if rescaling is turned off:
-        int const side_pj_q2 = has_qk ? side.pj_wrt_q2() : 0;
+        auto const side_pj_q2 = has_qk ? side.pj_wrt_q2() : side_type::collinear;
 
-        if (side_qi_p == -1 && side_qk_p == -1 && side_qk_q == 1)
+        if (side_qi_p == side_type::right && side_qk_p == side_type::right && side_qk_q == side_type::left)
         {
             // Q turns left on the right side of P (test "MR3")
             // Both directions for "intersection"
             both(ti, operation_intersection);
             ti.touch_only = true;
         }
-        else if (side_qi_p == 1 && side_qk_p == 1 && side_qk_q == -1)
+        else if (side_qi_p == side_type::left && side_qk_p == side_type::left && side_qk_q == side_type::right)
         {
-            if (has_qk && side_pj_q2 == -1)
+            if (has_qk && side_pj_q2 == side_type::right)
             {
                 // Q turns right on the left side of P (test "ML3")
                 // Union: take both operations
@@ -467,8 +468,8 @@ struct touch_interior : public base_turn_handler
             // or Q turns right on the right side of P (test "MR2")
             // Union: take left turn (Q if Q turns left, P if Q turns right)
             // Intersection: other turn
-            unsigned int index = side_qk_q == 1 ? index_q : index_p;
-            if (has_qk && side_pj_q2 == 0)
+            unsigned int index = side_qk_q == side_type::left ? index_q : index_p;
+            if (has_qk && side_pj_q2 == side_type::collinear)
             {
                 // Even though sides xk w.r.t. 1 are distinct, pj is collinear
                 // with q. Therefore swap the path
@@ -478,12 +479,12 @@ struct touch_interior : public base_turn_handler
             if (has_pk && has_qk && opposite(side_pj_q2, side_qi_p))
             {
                 // Without rescaling, floating point requires extra measures
-                int const side_qj_p1 = side.qj_wrt_p1();
-                int const side_qj_p2 = side.qj_wrt_p2();
+                auto const side_qj_p1 = side.qj_wrt_p1();
+                auto const side_qj_p2 = side.qj_wrt_p2();
 
                 if (same(side_qj_p1, side_qj_p2))
                 {
-                    int const side_pj_q1 = side.pj_wrt_q1();
+                    auto const side_pj_q1 = side.pj_wrt_q1();
                     if (opposite(side_pj_q1, side_pj_q2))
                     {
                         index = 1 - index;
@@ -495,7 +496,7 @@ struct touch_interior : public base_turn_handler
             ti.operations[1 - index].operation = operation_intersection;
             ti.touch_only = true;
         }
-        else if (side_qk_p == 0)
+        else if (side_qk_p == side_type::collinear)
         {
             // Q intersects on interior of P and continues collinearly
             if (side_qk_q == side_qi_p)
@@ -508,7 +509,7 @@ struct touch_interior : public base_turn_handler
                 // Opposite direction, which is never travelled.
                 // If Q turns left, P continues for intersection
                 // If Q turns right, P continues for union
-                ti.operations[index_p].operation = side_qk_q == 1
+                ti.operations[index_p].operation = side_qk_q == side_type::left
                     ? operation_intersection
                     : operation_union;
                 ti.operations[index_q].operation = operation_blocked;
@@ -532,7 +533,7 @@ struct touch : public base_turn_handler
 {
     using fun = turn_info_verification_functions<VerifyPolicy>;
 
-    static inline bool between(int side1, int side2, int turn)
+    static inline bool between(side_type side1, side_type side2, side_type turn)
     {
         return side1 == side2 && ! opposite(side1, turn);
     }
@@ -636,26 +637,26 @@ struct touch : public base_turn_handler
         bool const has_pk = ! range_p.is_last_segment();
         bool const has_qk = ! range_q.is_last_segment();
 
-        int const side_pk_q1 = has_pk ? side.pk_wrt_q1() : 0;
+        auto const side_pk_q1 = has_pk ? side.pk_wrt_q1() : side_type::collinear;
 
-        int const side_qi_p1 = fun::verified_side(dir_info.sides.template get<1, 0>(),
+        auto const side_qi_p1 = fun::verified_side(dir_info.sides.template get<1, 0>(),
                                                   range_p, range_q, umbrella_strategy, 0, 0);
-        int const side_qk_p1 = has_qk
-                             ? fun::verified_side(side.qk_wrt_p1(), range_p, range_q,
-                                                  umbrella_strategy, 0, 2)
-                             : 0;
+        auto const side_qk_p1 = has_qk
+                              ? fun::verified_side(side.qk_wrt_p1(), range_p, range_q,
+                                                   umbrella_strategy, 0, 2)
+                              : side_type::collinear;
 
         // If Qi and Qk are both at same side of Pi-Pj,
         // or collinear (so: not opposite sides)
         if (! opposite(side_qi_p1, side_qk_p1))
         {
-            int const side_pk_q2 = has_pk && has_qk ? side.pk_wrt_q2() : 0;
-            int const side_pk_p  = has_pk ? side.pk_wrt_p1() : 0;
-            int const side_qk_q  = has_qk ? side.qk_wrt_q1() : 0;
+            auto const side_pk_q2 = has_pk && has_qk ? side.pk_wrt_q2() : side_type::collinear;
+            auto const side_pk_p  = has_pk ? side.pk_wrt_p1() : side_type::collinear;
+            auto const side_qk_q  = has_qk ? side.qk_wrt_q1() : side_type::collinear;
 
-            bool const q_turns_left = side_qk_q == 1;
+            bool const q_turns_left = side_qk_q == side_type::left;
 
-            bool const block_q = side_qk_p1 == 0
+            bool const block_q = side_qk_p1 == side_type::collinear
                         && ! same(side_qi_p1, side_qk_q)
                         ;
 
@@ -664,9 +665,11 @@ struct touch : public base_turn_handler
             // or Q is fully collinear && P turns not to left
             if (side_pk_p == side_qi_p1
                 || side_pk_p == side_qk_p1
-                || (side_qi_p1 == 0 && side_qk_p1 == 0 && side_pk_p != -1))
+                || (   side_qi_p1 == side_type::collinear
+                    && side_qk_p1 == side_type::collinear
+                    && side_pk_p  != side_type::right))
             {
-                if (side_qk_p1 == 0 && side_pk_q1 == 0
+                if (side_qk_p1 == side_type::collinear && side_pk_q1 == side_type::collinear
                     && has_qk && has_qk
                     && handle_imperfect_touch(range_p, range_q, umbrella_strategy, ti))
                 {
@@ -676,7 +679,7 @@ struct touch : public base_turn_handler
                 }
                 // Collinear -> lines join, continue
                 // (#BRL2)
-                if (side_pk_q2 == 0 && ! block_q)
+                if (side_pk_q2 == side_type::collinear && ! block_q)
                 {
                     fun::template both_collinear<0, 1>(range_p, range_q, umbrella_strategy,
                                                        2, 2, ti);
@@ -685,7 +688,7 @@ struct touch : public base_turn_handler
 
                 // Collinear opposite case -> block P
                 // (#BRL4, #BLR8)
-                if (side_pk_q1 == 0)
+                if (side_pk_q1 == side_type::collinear)
                 {
                     ti.operations[0].operation = operation_blocked;
                     // Q turns right -> union (both independent),
@@ -741,7 +744,7 @@ struct touch : public base_turn_handler
                             : operation_union;
                 ti.operations[1].operation = block_q
                             ? operation_blocked
-                            : side_qi_p1 == 1 || side_qk_p1 == 1
+                            : side_qi_p1 == side_type::left || side_qk_p1 == side_type::left
                             ? operation_union
                             : operation_intersection;
                 if (! block_q)
@@ -756,17 +759,17 @@ struct touch : public base_turn_handler
         {
             // The qi/qk are opposite to each other, w.r.t. p1
             // From left to right or from right to left
-            int const side_pk_p = has_pk
-                                ? fun::verified_side(side.pk_wrt_p1(), range_p, range_p,
-                                                     umbrella_strategy, 0, 2)
-                                : 0;
-            bool const right_to_left = side_qk_p1 == 1;
+            auto const side_pk_p = has_pk
+                                 ? fun::verified_side(side.pk_wrt_p1(), range_p, range_p,
+                                                      umbrella_strategy, 0, 2)
+                                 : side_type::collinear;
+            bool const right_to_left = side_qk_p1 == side_type::left;
 
             // If p turns into direction of qi (1,2)
             if (side_pk_p == side_qi_p1)
             {
                 // Collinear opposite case -> block P
-                if (side_pk_q1 == 0)
+                if (side_pk_q1 == side_type::collinear)
                 {
                     ti.operations[0].operation = operation_blocked;
                     ti.operations[1].operation = right_to_left
@@ -785,10 +788,10 @@ struct touch : public base_turn_handler
             // If p turns into direction of qk (4,5)
             if (side_pk_p == side_qk_p1)
             {
-                int const side_pk_q2 = has_pk ? side.pk_wrt_q2() : 0;
+                auto const side_pk_q2 = has_pk ? side.pk_wrt_q2() : side_type::collinear;
 
                 // Collinear case -> lines join, continue
-                if (side_pk_q2 == 0)
+                if (side_pk_q2 == side_type::collinear)
                 {
                     both(ti, operation_continue);
                     return;
@@ -840,9 +843,9 @@ struct equal : public base_turn_handler
         bool const has_pk = ! range_p.is_last_segment();
         bool const has_qk = ! range_q.is_last_segment();
 
-        int const side_pk_q2 = has_pk && has_qk ? side.pk_wrt_q2() : 0;
-        int const side_pk_p = has_pk ? side.pk_wrt_p1() : 0;
-        int const side_qk_p = has_qk ? side.qk_wrt_p1() : 0;
+        auto const side_pk_q2 = has_pk && has_qk ? side.pk_wrt_q2() : side_type::collinear;
+        auto const side_pk_p = has_pk ? side.pk_wrt_p1() : side_type::collinear;
+        auto const side_qk_p = has_qk ? side.qk_wrt_p1() : side_type::collinear;
 
         if (BOOST_GEOMETRY_CONDITION(VerifyPolicy::use_side_verification)
             && has_pk && has_qk && side_pk_p == side_qk_p)
@@ -870,7 +873,7 @@ struct equal : public base_turn_handler
         // This can be on either side of p1 (== q1), or collinear
         // The second condition checks if they do not continue
         // oppositely
-        if (side_pk_q2 == 0 && side_pk_p == side_qk_p)
+        if (side_pk_q2 == side_type::collinear && side_pk_p == side_qk_p)
         {
             fun::template both_collinear<0, 1>(range_p, range_q, umbrella_strategy, 2, 2, ti);
             return;
@@ -881,13 +884,13 @@ struct equal : public base_turn_handler
         if (! opposite(side_pk_p, side_qk_p))
         {
             // If pk is left of q2 or collinear: p: union, q: intersection
-            ui_else_iu(side_pk_q2 != -1, ti);
+            ui_else_iu(side_pk_q2 != side_type::right, ti);
         }
         else
         {
             // They turn opposite sides. If p turns left (or collinear),
             // p: union, q: intersection
-            ui_else_iu(side_pk_p != -1, ti);
+            ui_else_iu(side_pk_p != side_type::right, ti);
         }
     }
 };
@@ -934,14 +937,14 @@ struct start : public base_turn_handler
             //             v
             //
 
-            int const side_qj_p1 = side.qj_wrt_p1();
-            ui_else_iu(side_qj_p1 == -1, ti);
+            auto const side_qj_p1 = side.qj_wrt_p1();
+            ui_else_iu(side_qj_p1 == side_type::right, ti);
         }
         else if (dir_info.how_a == -1)
         {
             // p leaves
-            int const side_pj_q1 = side.pj_wrt_q1();
-            ui_else_iu(side_pj_q1 == 1, ti);
+            auto const side_pj_q1 = side.pj_wrt_q1();
+            ui_else_iu(side_pj_q1 == side_type::left, ti);
         }
 
         // Copy intersection point
@@ -1109,17 +1112,17 @@ struct collinear : public base_turn_handler
 
         bool const has_pk = ! range_p.is_last_segment();
         bool const has_qk = ! range_q.is_last_segment();
-        int const side_p = has_pk ? side.pk_wrt_p1() : 0;
-        int const side_q = has_qk ? side.qk_wrt_q1() : 0;
+        auto const side_p = has_pk ? side.pk_wrt_p1() : side_type::collinear;
+        auto const side_q = has_qk ? side.qk_wrt_q1() : side_type::collinear;
 
         // If p arrives, use p, else use q
-        int const side_p_or_q = arrival_p == arrival_type::arrival
+        auto const side_p_or_q = arrival_p == arrival_type::arrival
             ? side_p
             : side_q
             ;
 
         // Calculate product according to comments above.
-        int const product = static_cast<int>(arrival_p) * side_p_or_q;
+        int const product = static_cast<int>(arrival_p) * static_cast<int>(side_p_or_q);
 
         if (product == 0)
         {
@@ -1134,11 +1137,11 @@ struct collinear : public base_turn_handler
         // measured until the end of the next segment
         auto const& distance_measure = strategy.comparable_distance(ti.point, range_p.at(1));
         ti.operations[0].remaining_distance
-                = side_p == 0 && has_pk
+                = side_p == side_type::collinear && has_pk
                 ? distance_measure.apply(ti.point, range_p.at(2))
                 : distance_measure.apply(ti.point, range_p.at(1));
         ti.operations[1].remaining_distance
-                = side_q == 0 && has_qk
+                = side_q == side_type::collinear && has_qk
                 ? distance_measure.apply(ti.point, range_q.at(2))
                 : distance_measure.apply(ti.point, range_q.at(1));
     }
@@ -1177,7 +1180,7 @@ private :
     */
 
     template <unsigned int Index, typename IntersectionInfo>
-    static inline bool set_tp(int side_rk_r, TurnInfo& tp,
+    static inline bool set_tp(side_type side_rk_r, TurnInfo& tp,
                               IntersectionInfo const& intersection_info)
     {
         BOOST_STATIC_ASSERT(Index <= 1);
@@ -1185,15 +1188,15 @@ private :
         operation_type blocked = operation_blocked;
         switch(side_rk_r)
         {
-            case 1 :
+            case side_type::left :
                 // Turning left on opposite collinear: intersection
                 tp.operations[Index].operation = operation_intersection;
                 break;
-            case -1 :
+            case side_type::right :
                 // Turning right on opposite collinear: union
                 tp.operations[Index].operation = operation_union;
                 break;
-            case 0 :
+            case side_type::collinear :
                 // No turn on opposite collinear: block, do not traverse
                 // But this "xx" is usually ignored, it is useless to include
                 // two operations blocked, so the whole point does not need
@@ -1334,8 +1337,8 @@ struct crosses : public base_turn_handler
         // Union: take P
         // Intersection: take Q
         // Otherwise: vice versa
-        int const side_qi_p1 = dir_info.sides.template get<1, 0>();
-        unsigned int const index = side_qi_p1 == 1 ? 0 : 1;
+        auto const side_qi_p1 = dir_info.sides.template get<1, 0>();
+        unsigned int const index = side_qi_p1 == side_type::left ? 0 : 1;
         ti.operations[index].operation = operation_union;
         ti.operations[1 - index].operation = operation_intersection;
     }

@@ -22,6 +22,8 @@
 #include <boost/geometry/algorithms/detail/overlay/get_ring.hpp>
 #include <boost/geometry/algorithms/detail/overlay/turn_info.hpp>
 
+#include <boost/geometry/strategies/side.hpp>
+
 #include <boost/geometry/util/condition.hpp>
 
 namespace boost { namespace geometry
@@ -136,10 +138,10 @@ struct less_by_side
         LessOnSame on_same;
         Compare compare;
 
-        int const side_first = m_strategy.side().apply(m_origin, m_turn_point, first.point);
-        int const side_second = m_strategy.side().apply(m_origin, m_turn_point, second.point);
+        auto const side_first = m_strategy.side().apply(m_origin, m_turn_point, first.point);
+        auto const side_second = m_strategy.side().apply(m_origin, m_turn_point, second.point);
 
-        if (side_first == 0 && side_second == 0)
+        if (side_first == side_type::collinear && side_second == side_type::collinear)
         {
             // Both collinear. They might point into different directions: <------*------>
             // If so, order the one going backwards as the very first.
@@ -155,7 +157,7 @@ struct less_by_side
                 : on_same(first, second)
                 ;
         }
-        else if (side_first == 0
+        else if (side_first == side_type::collinear
                 && m_strategy.direction(m_origin, m_turn_point, first.point)
                     .apply(m_origin, m_turn_point, first.point) == -1)
         {
@@ -163,7 +165,7 @@ struct less_by_side
             // Order as the very first, so return always true
             return true;
         }
-        else if (side_second == 0
+        else if (side_second == side_type::collinear
             && m_strategy.direction(m_origin, m_turn_point, second.point)
                 .apply(m_origin, m_turn_point, second.point) == -1)
         {
@@ -176,21 +178,21 @@ struct less_by_side
 
         if (side_first != side_second)
         {
-            return compare(side_first, side_second);
+            return compare(static_cast<int>(side_first), static_cast<int>(side_second));
         }
 
         // They are both left, both right, and/or both collinear (with each other and/or with p1,p2)
         // Check mutual side
-        int const side_second_wrt_first = m_strategy.side().apply(m_turn_point, first.point,
-                                                                  second.point);
+        auto const side_second_wrt_first = m_strategy.side().apply(m_turn_point, first.point,
+                                                                   second.point);
 
-        if (side_second_wrt_first == 0)
+        if (side_second_wrt_first == side_type::collinear)
         {
             return on_same(first, second);
         }
 
-        int const side_first_wrt_second = m_strategy.side().apply(m_turn_point, second.point,
-                                                                  first.point);
+        auto const side_first_wrt_second = m_strategy.side().apply(m_turn_point, second.point,
+                                                                   first.point);
         if (side_second_wrt_first != -side_first_wrt_second)
         {
             // (FP) accuracy error in side calculation, the sides are not opposite.
@@ -204,7 +206,7 @@ struct less_by_side
         // Union: return true if second is right w.r.t. first, so -1,
         // so other is 1. union has greater as compare functor
         // Intersection: v.v.
-        return compare(side_first_wrt_second, side_second_wrt_first);
+        return compare(static_cast<int>(side_first_wrt_second), static_cast<int>(side_second_wrt_first));
     }
 
 private :

@@ -74,14 +74,14 @@ public:
     {}
 
     template <typename P1, typename P2, typename P>
-    inline int apply(P1 const& p1, P2 const& p2, P const& p) const
+    inline side_type apply(P1 const& p1, P2 const& p2, P const& p) const
     {
         typedef strategy::within::spherical_point_point equals_point_point_strategy_type;
         if (equals_point_point_strategy_type::apply(p, p1)
             || equals_point_point_strategy_type::apply(p, p2)
             || equals_point_point_strategy_type::apply(p1, p2))
         {
-            return 0;
+            return side_type::collinear;
         }
 
         typedef typename promote_floating_point
@@ -99,7 +99,7 @@ public:
         calc_t a1p = azimuth<calc_t, inverse_formula>(p1, p, m_model);
         calc_t a12 = azimuth<calc_t, inverse_formula>(p1, p2, m_model);
 
-        return formula::azimuth_side_value(a1p, a12);
+        return static_cast<side_type>(formula::azimuth_side_value(a1p, a12));
     }
 
     Spheroid const& model() const

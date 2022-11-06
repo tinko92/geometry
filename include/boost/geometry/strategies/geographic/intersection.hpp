@@ -261,8 +261,12 @@ private:
                 {
                     is_equal_a2_b1 = true;
                 }
-                sides.set<0>(is_equal_a1_b1 ? 0 : formula::azimuth_side_value(res_b1_a1.azimuth, res_b1_b2.azimuth),
-                             is_equal_a2_b1 ? 0 : formula::azimuth_side_value(res_b1_a2.azimuth, res_b1_b2.azimuth));
+                sides.set<0>(is_equal_a1_b1 ? 
+                                  side_type::collinear
+                                : formula::azimuth_side_value(res_b1_a1.azimuth, res_b1_b2.azimuth),
+                             is_equal_a2_b1 ?
+                                  side_type::collinear
+                                : formula::azimuth_side_value(res_b1_a2.azimuth, res_b1_b2.azimuth));
                 if (sides.same<0>())
                 {
                     // Both points are at the same side of other segment, we can leave
@@ -294,8 +298,8 @@ private:
                 {
                     is_equal_a1_b2 = true;
                 }
-                sides.set<1>(is_equal_a1_b1 ? 0 : formula::azimuth_side_value(res_a1_b1.azimuth, res_a1_a2.azimuth),
-                             is_equal_a1_b2 ? 0 : formula::azimuth_side_value(res_a1_b2.azimuth, res_a1_a2.azimuth));
+                sides.set<1>(is_equal_a1_b1 ? side_type::collinear : formula::azimuth_side_value(res_a1_b1.azimuth, res_a1_a2.azimuth),
+                             is_equal_a1_b2 ? side_type::collinear : formula::azimuth_side_value(res_a1_b2.azimuth, res_a1_a2.azimuth));
                 if (sides.same<1>())
                 {
                     // Both points are at the same side of other segment, we can leave
@@ -323,15 +327,15 @@ private:
             // segment so it may return results inconsistent with this intersection
             // strategy, as it checks both segments for consistency
 
-            if (sides.get<0, 0>() == 0 && sides.get<0, 1>() == 0)
+            if (sides.get<0, 0>() == side_type::collinear && sides.get<0, 1>() == side_type::collinear)
             {
                 collinear = true;
-                sides.set<1>(0, 0);
+                sides.set<1>(side_type::collinear, side_type::collinear);
             }
-            else if (sides.get<1, 0>() == 0 && sides.get<1, 1>() == 0)
+            else if (sides.get<1, 0>() == side_type::collinear && sides.get<1, 1>() == side_type::collinear)
             {
                 collinear = true;
-                sides.set<0>(0, 0);
+                sides.set<0>(side_type::collinear, side_type::collinear);
             }
         }
 
@@ -645,7 +649,7 @@ private:
 
         // at this point we know that the endpoints doesn't overlap
         // check cases when an endpoint lies on the other geodesic
-        if (sides.template get<0, 0>() == 0) // a1 wrt b
+        if (sides.template get<0, 0>() == side_type::collinear) // a1 wrt b
         {
             if (res_b1_a1.distance <= res_b1_b2.distance
                 && same_direction(res_b1_a1.azimuth, res_b1_b2.azimuth))
@@ -662,7 +666,7 @@ private:
                 return false;
             }
         }
-        else if (sides.template get<0, 1>() == 0) // a2 wrt b
+        else if (sides.template get<0, 1>() == side_type::collinear) // a2 wrt b
         {
             if (res_b1_a2.distance <= res_b1_b2.distance
                 && same_direction(res_b1_a2.azimuth, res_b1_b2.azimuth))
@@ -679,7 +683,7 @@ private:
                 return false;
             }
         }
-        else if (sides.template get<1, 0>() == 0) // b1 wrt a
+        else if (sides.template get<1, 0>() == side_type::collinear) // b1 wrt a
         {
             if (res_a1_b1.distance <= res_a1_a2.distance
                 && same_direction(res_a1_b1.azimuth, res_a1_a2.azimuth))
@@ -696,7 +700,7 @@ private:
                 return false;
             }
         }
-        else if (sides.template get<1, 1>() == 0) // b2 wrt a
+        else if (sides.template get<1, 1>() == side_type::collinear) // b2 wrt a
         {
             if (res_a1_b2.distance <= res_a1_a2.distance
                 && same_direction(res_a1_b2.azimuth, res_a1_a2.azimuth))
@@ -852,13 +856,15 @@ private:
     static inline void sides_reverse_segment(side_info & sides)
     {
         // names assuming segment A is reversed (Which == 0)
-        int a1_wrt_b = sides.template get<Which, 0>();
-        int a2_wrt_b = sides.template get<Which, 1>();
+        auto a1_wrt_b = sides.template get<Which, 0>();
+        auto a2_wrt_b = sides.template get<Which, 1>();
         std::swap(a1_wrt_b, a2_wrt_b);
         sides.template set<Which>(a1_wrt_b, a2_wrt_b);
-        int b1_wrt_a = sides.template get<1 - Which, 0>();
-        int b2_wrt_a = sides.template get<1 - Which, 1>();
-        sides.template set<1 - Which>(-b1_wrt_a, -b2_wrt_a);
+        auto b1_wrt_a = sides.template get<1 - Which, 0>();
+        auto b2_wrt_a = sides.template get<1 - Which, 1>();
+        sides.template set<1 - Which>(
+                static_cast<side_type>(-static_cast<int>(b1_wrt_a)),
+                static_cast<side_type>(-static_cast<int>(b2_wrt_a)));
     }
 
     static inline void ip_flag_reverse_segment(intersection_point_flag & ip_flag,

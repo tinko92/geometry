@@ -531,12 +531,12 @@ private:
                                - cast::apply(geometry::get<1>(p0));
 
             int sign = diff1 < 0 ? -1 : 1;
-            if (side_strategy.apply(p0, p1, corner1) * sign < 0)
+            if (static_cast<int>(side_strategy.apply(p0, p1, corner1)) * sign < 0)
             {
                 result = cast::apply(ps_strategy.apply(corner1, p0, p1));
                 return true;
             }
-            if (side_strategy.apply(p0, p1, corner2) * sign > 0)
+            if (static_cast<int>(side_strategy.apply(p0, p1, corner2)) * sign > 0)
             {
                 result = cast::apply(ps_strategy.apply(corner2, p0, p1));
                 return true;

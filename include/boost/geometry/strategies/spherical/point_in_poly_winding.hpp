@@ -138,9 +138,9 @@ public:
                       PointOfSegment const& s1, PointOfSegment const& s2,
                       counter& state) const
     {
-        typedef typename calculation_type<Point, PointOfSegment>::type calc_t;
-        typedef typename geometry::detail::cs_angular_units<Point>::type units_t;
-        typedef math::detail::constants_on_spheroid<calc_t, units_t> constants;
+        using calc_t = typename calculation_type<Point, PointOfSegment>::type;
+        using units_t = typename geometry::detail::cs_angular_units<Point>::type;
+        using constants = math::detail::constants_on_spheroid<calc_t, units_t>;
 
         bool eq1 = false;
         bool eq2 = false;
@@ -151,7 +151,7 @@ public:
         {
             if (! ci.is_anti)
             {
-                int side = 0;
+                side_type side = side_type::collinear;
                 if (ci.count == 1 || ci.count == -1)
                 {
                     side = side_equal(point, eq1 ? s1 : s2, ci);
@@ -169,14 +169,15 @@ public:
                         calc_t const s1_lat = get<1>(s1);
                         calc_t const s2_lat = get<1>(s2);
 
-                        side = math::sign(ci.count)
-                             * (pi - s1_lat - s2_lat <= pi // segment goes through north pole
-                                ? -1 // going right all points will be on right side
-                                : 1); // going right all points will be on left side
+                        side = static_cast<side_type>(
+                                  math::sign(ci.count)
+                                * (pi - s1_lat - s2_lat <= pi // segment goes through north pole
+                                  ? -1 // going right all points will be on right side
+                                  : 1)); // going right all points will be on left side
                     }
                 }
             
-                if (side == 0)
+                if (side == side_type::collinear)
                 {
                     // Point is lying on segment
                     state.m_touches = true;
@@ -188,7 +189,7 @@ public:
                 // The count is -2 for left, 2 for right (or -1/1)
                 // Side positive thus means RIGHT and LEFTSIDE or LEFT and RIGHTSIDE
                 // See accompagnying figure (TODO)
-                if (side * ci.count > 0)
+                if (static_cast<int>(side) * ci.count > 0)
                 {
                     state.m_count += ci.count;
                 }
@@ -425,16 +426,16 @@ protected:
     // Called when the point is on the same level as one of the segment's points
     // but the point is not aligned with a vertical segment
     template <typename Point, typename PointOfSegment>
-    inline int side_equal(Point const& point,
-                          PointOfSegment const& se,
-                          count_info const& ci) const
+    inline side_type side_equal(Point const& point,
+                                PointOfSegment const& se,
+                                count_info const& ci) const
     {
-        typedef typename coordinate_type<PointOfSegment>::type scoord_t;
-        typedef typename geometry::detail::cs_angular_units<Point>::type units_t;
+        using scoord_t = typename coordinate_type<PointOfSegment>::type;
+        using units_t = typename geometry::detail::cs_angular_units<Point>::type;
 
         if (math::equals(get<1>(point), get<1>(se)))
         {
-            return 0;
+            return side_type::collinear;
         }
 
         // Create a horizontal segment intersecting the original segment's endpoint
@@ -463,7 +464,7 @@ protected:
     template <typename CalcT, typename Units>
     static inline CalcT small_angle()
     {
-        typedef math::detail::constants_on_spheroid<CalcT, Units> constants;
+        using constants = math::detail::constants_on_spheroid<CalcT, Units>;
 
         return constants::half_period() / CalcT(180);
     }

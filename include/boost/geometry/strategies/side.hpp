@@ -28,6 +28,23 @@
 namespace boost { namespace geometry
 {
 
+enum class side_type : int { left = 1, collinear = 0, right = -1 };
+
+constexpr side_type operator-(side_type s)
+{
+    return static_cast<side_type>(-static_cast<int>(s));
+}
+
+constexpr side_type operator*(side_type s, int i)
+{
+    return static_cast<side_type>(static_cast<int>(s) * i);
+}
+
+constexpr side_type operator*(side_type s1, side_type s2)
+{
+    return static_cast<side_type>(static_cast<int>(s1) * static_cast<int>(s2));
+}
+
 namespace strategy { namespace side
 {
 

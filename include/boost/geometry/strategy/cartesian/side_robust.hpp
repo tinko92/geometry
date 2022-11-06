@@ -149,7 +149,7 @@ public:
         typename P2,
         typename P
     >
-    static inline int apply(P1 const& p1, P2 const& p2, P const& p)
+    static inline side_type apply(P1 const& p1, P2 const& p2, P const& p)
     {
         using coordinate_type = typename select_calculation_type_alt
             <
@@ -169,9 +169,9 @@ public:
         promoted_type sv = side_value<promoted_type>(p1, p2, p, epsp);
         promoted_type const zero = promoted_type();
 
-        return epsp.apply(sv, zero) ? 0
-            : sv > zero ? 1
-            : -1;
+        return epsp.apply(sv, zero) ? side_type::collinear
+            : sv > zero ? side_type::left
+            : side_type::right;
     }
 
 #endif

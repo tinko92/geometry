@@ -203,7 +203,7 @@ struct collected_vector_spherical
     // and next vector should be passed as parameter
     bool next_is_collinear(collected_vector_spherical const& other) const
     {
-        return formula::sph_side_value(cross, other.next) == 0;
+        return formula::sph_side_value(cross, other.next) == side_type::collinear;
     }
 
     // For std::equals
@@ -220,8 +220,8 @@ private:
     //       or to check if dot product of directions is equal to 1.
     bool is_collinear(collected_vector_spherical const& other) const
     {
-        return formula::sph_side_value(cross, other.prev) == 0
-            && formula::sph_side_value(cross, other.next) == 0;
+        return formula::sph_side_value(cross, other.prev) == side_type::collinear
+            && formula::sph_side_value(cross, other.next) == side_type::collinear;
     }
 
     Point origin; // used for sorting and equality check

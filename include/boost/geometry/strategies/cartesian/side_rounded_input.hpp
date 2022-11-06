@@ -28,7 +28,7 @@ struct side_rounded_input
     using cs_tag = cartesian_tag;
 
     template <typename P1, typename P2, typename P>
-    static inline int apply(P1 const& p1, P2 const& p2, P const& p)
+    static inline side_type apply(P1 const& p1, P2 const& p2, P const& p)
     {
         using coor_t = typename select_calculation_type_alt<CalculationType, P1, P2, P>::type;
 
@@ -46,7 +46,7 @@ struct side_rounded_input
              * (geometry::math::abs(p2_y) + geometry::math::abs(p_y))
              + (geometry::math::abs(p2_x) + geometry::math::abs(p_x))
              * (geometry::math::abs(p1_y) + geometry::math::abs(p_y)));
-        return (det > err_bound) - (det < -err_bound);
+        return static_cast<side_type>((det > err_bound) - (det < -err_bound));
     }
 };
 
