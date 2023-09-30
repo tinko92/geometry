@@ -84,7 +84,7 @@ public:
             {
                 result.reverse_azimuth =  pi;
             }
-            else if (result.lat2 < -half_pi &&
+            else if ((result.lat2 < -half_pi) &&
                      result.lat2 >  -one_and_a_half_pi)
             {
                 result.reverse_azimuth =  c0;
