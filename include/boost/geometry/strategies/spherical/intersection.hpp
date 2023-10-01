@@ -56,7 +56,9 @@
 #include <boost/geometry/strategies/within.hpp>
 
 #include <boost/geometry/util/math.hpp>
+#include <boost/geometry/util/segment_as_subrange.hpp>
 #include <boost/geometry/util/select_calculation_type.hpp>
+#include <boost/geometry/util/type_traits.hpp>
 
 
 namespace boost { namespace geometry
@@ -143,13 +145,39 @@ struct ecef_segments
     // Relate segments a and b
     template
     <
+        typename Segment1,
+        typename Segment2,
+        typename Policy
+    >
+    static inline typename Policy::return_type
+        apply(Segment1 const& segment1, Segment2 const& segment2,
+              Policy const& policy,
+              std::enable_if_t
+                <
+                       util::is_segment<Segment1>::value
+                    && util::is_segment<Segment2>::value
+                > * = nullptr)
+    {
+        detail::segment_as_subrange<Segment1> sub_range1(segment1);
+        detail::segment_as_subrange<Segment2> sub_range2(segment2);
+        return apply(sub_range1, sub_range2, policy);
+    }
+
+    template
+    <
         typename UniqueSubRange1,
         typename UniqueSubRange2,
         typename Policy
     >
     static inline typename Policy::return_type
         apply(UniqueSubRange1 const& range_p, UniqueSubRange2 const& range_q,
-              Policy const&)
+              Policy const&,
+              std::enable_if_t
+                <
+                       ! util::is_segment<UniqueSubRange1>::value
+                    || ! util::is_segment<UniqueSubRange2>::value
+                > * = nullptr
+              )
     {
         // For now create it using default constructor. In the future it could
         //  be stored in strategy. However then apply() wouldn't be static and

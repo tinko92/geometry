@@ -62,9 +62,7 @@ public:
                 intersection_return_type
             >;
 
-        detail::segment_as_subrange<Segment1> sub_range1(segment1);
-        detail::segment_as_subrange<Segment2> sub_range2(segment2);
-        auto is = strategies.relate().apply(sub_range1, sub_range2,
+        auto is = strategies.relate().apply(segment1, segment2,
                                             intersection_policy());
         if (is.count > 0)
         {

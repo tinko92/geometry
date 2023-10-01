@@ -32,7 +32,9 @@
 
 #include <boost/geometry/util/math.hpp>
 #include <boost/geometry/util/promote_integral.hpp>
+#include <boost/geometry/util/segment_as_subrange.hpp>
 #include <boost/geometry/util/select_calculation_type.hpp>
+#include <boost/geometry/util/type_traits.hpp>
 
 #include <boost/geometry/strategy/cartesian/area.hpp>
 #include <boost/geometry/strategy/cartesian/envelope.hpp>
@@ -287,6 +289,27 @@ struct cartesian_segments
         // IntersectionPoint = (x1 + r * dx_a, y1 + r * dy_a)
     }
 
+    template
+    <
+        typename Segment1,
+        typename Segment2,
+        typename Policy
+    >
+    static inline typename Policy::return_type
+        apply(Segment1 const& segment1,
+              Segment2 const& segment2,
+              Policy const& policy,
+              std::enable_if_t
+                <
+                       util::is_segment<Segment1>::value
+                    && util::is_segment<Segment2>::value
+                > * = nullptr)
+    {
+        detail::segment_as_subrange<Segment1> sub_range1(segment1);
+        detail::segment_as_subrange<Segment2> sub_range2(segment2);
+        return apply(sub_range1, sub_range2, policy);
+    }
+
     // Version for non-rescaled policies
     template
     <
@@ -297,7 +320,12 @@ struct cartesian_segments
     static inline typename Policy::return_type
         apply(UniqueSubRange1 const& range_p,
               UniqueSubRange2 const& range_q,
-              Policy const& policy)
+              Policy const& policy,
+              std::enable_if_t
+                <
+                       ! util::is_segment<UniqueSubRange1>::value
+                    || ! util::is_segment<UniqueSubRange2>::value
+                > * = nullptr)
     {
         // Pass the same ranges both as normal ranges and as modelled ranges
         return apply(range_p, range_q, policy, range_p, range_q);

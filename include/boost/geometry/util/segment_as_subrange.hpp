@@ -6,14 +6,14 @@
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_SEGMENT_AS_SUBRANGE_HPP
-#define BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_SEGMENT_AS_SUBRANGE_HPP
+#ifndef BOOST_GEOMETRY_UTIL_SEGMENT_AS_SUBRANGE_HPP
+#define BOOST_GEOMETRY_UTIL_SEGMENT_AS_SUBRANGE_HPP
 
 
 #include <cstddef>
-#include <map>
 
 #include <boost/geometry/core/access.hpp>
+#include <boost/geometry/core/point_type.hpp>
 
 namespace boost { namespace geometry
 {
@@ -34,7 +34,7 @@ struct segment_as_subrange
         geometry::set<1>(m_p2, geometry::get<1, 1>(m_segment));
     }
 
-    typedef typename geometry::point_type<Segment>::type point_type;
+    using point_type = typename geometry::point_type<Segment>::type;
 
     point_type const& at(std::size_t index) const
     {
@@ -56,4 +56,4 @@ struct segment_as_subrange
 
 }} // namespace boost::geometry
 
-#endif // BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_SEGMENT_AS_SUBRANGE_HPP
+#endif // BOOST_GEOMETRY_UTIL_SEGMENT_AS_SUBRANGE_HPP

@@ -27,7 +27,6 @@
 #include <boost/geometry/policies/relate/intersection_policy.hpp>
 
 #include <boost/geometry/algorithms/intersection.hpp>
-#include <boost/geometry/algorithms/detail/overlay/segment_as_subrange.hpp>
 
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/segment.hpp>
@@ -73,9 +72,6 @@ static void test_segment_intersection(std::string const& case_id,
     segment_type s12(p1, p2);
     segment_type s34(p3, p4);
 
-    bg::detail::segment_as_subrange<segment_type> sr12(s12);
-    bg::detail::segment_as_subrange<segment_type> sr34(s34);
-
     typedef bg::segment_intersection_points<P> result_type;
 
     typedef bg::policies::relate::segments_intersection_points
@@ -86,12 +82,12 @@ static void test_segment_intersection(std::string const& case_id,
     // Get the intersection point (or two points)
     result_type is
         = bg::strategy::intersection::cartesian_segments<>
-            ::apply(sr12, sr34, points_policy_type());
+            ::apply(s12, s34, points_policy_type());
 
     // Get just a character for Left/Right/intersects/etc, purpose is more for debugging
     bg::policies::relate::direction_type dir
         = bg::strategy::intersection::cartesian_segments<>
-            ::apply(sr12, sr34, bg::policies::relate::segments_direction());
+            ::apply(s12, s34, bg::policies::relate::segments_direction());
 
     std::size_t expected_count =
         check(is, 0, expected_x1, expected_y1)
@@ -127,9 +123,6 @@ static void test_segment_ratio(std::string const& case_id,
     segment_type s12(p1, p2);
     segment_type s34(p3, p4);
 
-    bg::detail::segment_as_subrange<segment_type> sr12(s12);
-    bg::detail::segment_as_subrange<segment_type> sr34(s34);
-
     typedef bg::segment_intersection_points<P> result_type;
 
     typedef bg::policies::relate::segments_intersection_points
@@ -140,7 +133,7 @@ static void test_segment_ratio(std::string const& case_id,
     // Get the intersection point (or two points)
     result_type is
         = bg::strategy::intersection::cartesian_segments<>
-            ::apply(sr12, sr34, points_policy_type());
+            ::apply(s12, s34, points_policy_type());
 
     typedef bg::segment_ratio<typename bg::coordinate_type<P>::type> ratio_type;
 

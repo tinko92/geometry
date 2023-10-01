@@ -37,7 +37,6 @@
 #include <boost/geometry/algorithms/detail/overlay/pointlike_linear.hpp>
 #include <boost/geometry/algorithms/detail/overlay/pointlike_pointlike.hpp>
 #include <boost/geometry/algorithms/detail/overlay/range_in_geometry.hpp>
-#include <boost/geometry/algorithms/detail/overlay/segment_as_subrange.hpp>
 
 #include <boost/geometry/core/point_order.hpp>
 #include <boost/geometry/core/reverse_dispatch.hpp>
@@ -91,21 +90,17 @@ struct intersection_segment_segment_point
                typename rescale_policy_type<RobustPolicy>::type
            >::value));
 
-        typedef typename point_type<PointOut>::type point_type;
+        using point_type = typename point_type<PointOut>::type;
 
         // Get the intersection point (or two points)
-        typedef segment_intersection_points<point_type> intersection_return_type;
+        using intersection_return_type = segment_intersection_points<point_type>;
 
-        typedef policies::relate::segments_intersection_points
+        using policy_type = policies::relate::segments_intersection_points
             <
                 intersection_return_type
-            > policy_type;
+            >;
 
-        detail::segment_as_subrange<Segment1> sub_range1(segment1);
-        detail::segment_as_subrange<Segment2> sub_range2(segment2);
-
-        intersection_return_type
-            is = strategy.relate().apply(sub_range1, sub_range2, policy_type());
+        intersection_return_type is = strategy.relate().apply(segment1, segment2, policy_type());
 
         for (std::size_t i = 0; i < is.count; i++)
         {

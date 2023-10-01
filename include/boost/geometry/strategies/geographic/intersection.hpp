@@ -56,6 +56,8 @@
 
 #include <boost/geometry/util/math.hpp>
 #include <boost/geometry/util/select_calculation_type.hpp>
+#include <boost/geometry/util/segment_as_subrange.hpp>
+#include <boost/geometry/util/type_traits.hpp>
 
 
 namespace boost { namespace geometry
@@ -131,13 +133,39 @@ struct geographic_segments
     // Relate segments a and b
     template
     <
+        typename Segment1,
+        typename Segment2,
+        typename Policy
+    >
+    inline typename Policy::return_type apply(Segment1 const& segment1,
+                                              Segment2 const& segment2,
+                                              Policy const& policy,
+                                              std::enable_if_t
+                                                <
+                                                       util::is_segment<Segment1>::value
+                                                    && util::is_segment<Segment2>::value
+                                                > * = nullptr) const
+    {
+        detail::segment_as_subrange<Segment1> sub_range1(segment1);
+        detail::segment_as_subrange<Segment2> sub_range2(segment2);
+        return apply(sub_range1, sub_range2, policy);
+    }
+
+    template
+    <
         typename UniqueSubRange1,
         typename UniqueSubRange2,
         typename Policy
     >
     inline typename Policy::return_type apply(UniqueSubRange1 const& range_p,
                                               UniqueSubRange2 const& range_q,
-                                              Policy const&) const
+                                              Policy const&,
+                                              std::enable_if_t
+                                                <
+                                                       ! util::is_segment<UniqueSubRange1>::value
+                                                    || ! util::is_segment<UniqueSubRange2>::value
+                                                > * = nullptr
+                                              ) const
     {
         typedef typename UniqueSubRange1::point_type point1_type;
         typedef typename UniqueSubRange2::point_type point2_type;

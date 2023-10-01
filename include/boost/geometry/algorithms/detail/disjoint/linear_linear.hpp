@@ -31,7 +31,6 @@
 #include <boost/geometry/algorithms/detail/overlay/turn_info.hpp>
 #include <boost/geometry/algorithms/detail/overlay/get_turns.hpp>
 #include <boost/geometry/algorithms/detail/overlay/do_reverse.hpp>
-#include <boost/geometry/algorithms/detail/overlay/segment_as_subrange.hpp>
 
 #include <boost/geometry/geometries/helper_geometry.hpp>
 
@@ -56,18 +55,16 @@ struct disjoint_segment
     static inline bool apply(Segment1 const& segment1, Segment2 const& segment2,
                              Strategy const& strategy)
     {
-        typedef typename point_type<Segment1>::type point_type;
+        using point_type = typename point_type<Segment1>::type;
 
-        typedef segment_intersection_points<point_type> intersection_return_type;
+        using intersection_return_type = segment_intersection_points<point_type>;
 
-        typedef policies::relate::segments_intersection_points
+        using intersection_policy = policies::relate::segments_intersection_points
             <
                 intersection_return_type
-            > intersection_policy;
+            >;
 
-        detail::segment_as_subrange<Segment1> sub_range1(segment1);
-        detail::segment_as_subrange<Segment2> sub_range2(segment2);
-        intersection_return_type is = strategy.relate().apply(sub_range1, sub_range2,
+        intersection_return_type is = strategy.relate().apply(segment1, segment2,
                                                               intersection_policy());
 
         return is.count == 0;

@@ -25,8 +25,6 @@
 
 #include <boost/geometry/policies/relate/intersection_policy.hpp>
 
-#include <boost/geometry/algorithms/detail/overlay/segment_as_subrange.hpp>
-
 template <typename T>
 bool equals_relaxed_val(T const& v1, T const& v2, T const& eps_scale)
 {
@@ -70,12 +68,7 @@ void test_strategy_one(S1 const& s1, S2 const& s2,
             bg::segment_intersection_points<P, bg::segment_ratio<coord_t> >
         > policy_t;
 
-    typedef typename policy_t::return_type return_type;
-
-    bg::detail::segment_as_subrange<S1> sr1(s1);
-    bg::detail::segment_as_subrange<S2> sr2(s2);
-
-    return_type res = strategy.apply(sr1, sr2, policy_t());
+    auto res = strategy.apply(s1, s2, policy_t());
 
     size_t const res_count = res.intersection_points.count;
     char const res_method = res.direction.how;

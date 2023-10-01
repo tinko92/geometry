@@ -218,10 +218,8 @@ public :
                 bg::segment_intersection_points<point_t>
             > policy;
 
-        bg::detail::segment_as_subrange<segment_t> subrange1(seg1);
-        bg::detail::segment_as_subrange<segment_t> subrange2(seg2);
         bg::segment_intersection_points<point_t> is 
-            = strategy.apply(subrange1, subrange2, policy_t());
+            = strategy.apply(seg1, seg2, policy_t());
 
         if (is.count == 2)
         {

@@ -25,7 +25,6 @@
 
 #include <boost/geometry/algorithms/assign.hpp>
 #include <boost/geometry/algorithms/intersection.hpp>
-#include <boost/geometry/algorithms/detail/overlay/segment_as_subrange.hpp>
 
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/segment.hpp>
@@ -61,9 +60,6 @@ static void test_segment_intersection(int caseid,
     segment_type s12(p1,p2);
     segment_type s34(p3,p4);
 
-    bg::detail::segment_as_subrange<segment_type> sr12(s12);
-    bg::detail::segment_as_subrange<segment_type> sr34(s34);
-
     std::size_t expected_count = 0;
 
     if (expected_x1 != -99 && expected_y1 != -99)
@@ -91,11 +87,11 @@ static void test_segment_intersection(int caseid,
 
     result_type is
         = bg::strategy::intersection::cartesian_segments<>
-            ::apply(sr12, sr34, points_policy_type());
+            ::apply(s12, s34, points_policy_type());
 
     bg::policies::relate::direction_type dir
         = bg::strategy::intersection::cartesian_segments<>
-            ::apply(sr12, sr34, bg::policies::relate::segments_direction());
+            ::apply(s12, s34, bg::policies::relate::segments_direction());
 
     //BOOST_CHECK_EQUAL(boost::size(out), expected_count);
     BOOST_CHECK_EQUAL(is.count, expected_count);
