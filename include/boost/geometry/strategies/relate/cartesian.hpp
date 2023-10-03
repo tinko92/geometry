@@ -18,6 +18,7 @@
 #include <boost/geometry/strategies/cartesian/intersection.hpp>
 #include <boost/geometry/strategies/cartesian/box_in_box.hpp>
 #include <boost/geometry/strategies/cartesian/cluster_colocate_centroid.hpp>
+#include <boost/geometry/strategies/cartesian/distance_pythagoras.hpp>
 #include <boost/geometry/strategies/cartesian/point_in_point.hpp>
 #include <boost/geometry/strategies/cartesian/point_in_poly_crossings_multiply.hpp>
 #include <boost/geometry/strategies/cartesian/point_in_poly_franklin.hpp>
@@ -226,6 +227,20 @@ public:
     {
         return strategy::cluster_colocate::centroid();
     }
+
+    // comparable_distance
+
+    template <typename Geometry1, typename Geometry2>
+    static auto comparable_distance(Geometry1 const&, Geometry2 const&,
+                                    std::enable_if_t
+                                        <
+                                               util::is_point<Geometry1>::value
+                                            && util::is_point<Geometry2>::value
+                                        > * = nullptr)
+    {
+        return strategy::distance::comparable::pythagoras<CalculationType>();
+    }
+
 };
 
 
@@ -433,6 +448,7 @@ struct strategy_converter<strategy::side::side_robust<CalculationType>>
         return strategies::relate::cartesian<CalculationType>();
     }
 };
+
 
 
 } // namespace services

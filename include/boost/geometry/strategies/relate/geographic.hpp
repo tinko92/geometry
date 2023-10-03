@@ -16,6 +16,7 @@
 #include <boost/geometry/strategies/agnostic/cluster_colocate_first.hpp>
 #include <boost/geometry/strategies/agnostic/point_in_box_by_side.hpp>
 #include <boost/geometry/strategies/cartesian/box_in_box.hpp>
+#include <boost/geometry/strategies/geographic/distance.hpp>
 #include <boost/geometry/strategies/geographic/intersection.hpp>
 #include <boost/geometry/strategies/geographic/point_in_poly_winding.hpp>
 #include <boost/geometry/strategies/spherical/point_in_point.hpp>
@@ -226,6 +227,22 @@ public:
     static auto cluster_colocate(PointIt, PointIt)
     {
         return strategy::cluster_colocate::first();
+    }
+
+    // comparable_distance
+
+    template <typename Geometry1, typename Geometry2>
+    auto comparable_distance(Geometry1 const&, Geometry2 const&,
+                             std::enable_if_t
+                                <
+                                       util::is_point<Geometry1>::value
+                                    && util::is_point<Geometry2>::value
+                                > * = nullptr) const
+    {
+        return strategy::distance::geographic
+                <
+                    FormulaPolicy, Spheroid, CalculationType
+                >(base_t::m_spheroid);
     }
 };
 
