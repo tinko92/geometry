@@ -13,6 +13,7 @@
 
 
 // TEMP - move to strategy
+#include <boost/geometry/strategies/agnostic/cluster_colocate_first.hpp>
 #include <boost/geometry/strategies/agnostic/point_in_box_by_side.hpp>
 #include <boost/geometry/strategies/cartesian/box_in_box.hpp>
 #include <boost/geometry/strategies/spherical/intersection.hpp>
@@ -202,6 +203,14 @@ public:
             EqualsPolicy,
             -1
         >;
+
+    // cluster_colocate
+
+    template <typename PointIt>
+    static auto cluster_colocate(PointIt, PointIt)
+    {
+        return strategy::cluster_colocate::first();
+    }
 };
 
 

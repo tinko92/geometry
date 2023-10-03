@@ -75,8 +75,8 @@ inline void remove_clusters(Turns& turns, Clusters& clusters)
     }
 }
 
-template <typename Turns, typename Clusters>
-inline void cleanup_clusters(Turns& turns, Clusters& clusters)
+template <typename Turns, typename Clusters, typename Strategy>
+inline void cleanup_clusters(Turns& turns, Clusters& clusters, Strategy const& strategy)
 {
     // Removes discarded turns from clusters
     for (auto& pair : clusters)
@@ -97,7 +97,7 @@ inline void cleanup_clusters(Turns& turns, Clusters& clusters)
     }
 
     remove_clusters(turns, clusters);
-    colocate_clusters(clusters, turns);
+    colocate_clusters(clusters, turns, strategy);
 }
 
 template <typename Turn, typename IndexSet>

@@ -9,10 +9,8 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_COLOCATE_CLUSTERS_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_OVERLAY_COLOCATE_CLUSTERS_HPP
 
-#include <boost/geometry/core/access.hpp>
-#include <boost/geometry/core/cs.hpp>
-#include <boost/geometry/core/coordinate_type.hpp>
-#include <boost/geometry/core/tags.hpp>
+#include <boost/iterator/iterator_facade.hpp>
+#include <boost/iterator/iterator_categories.hpp>
 
 namespace boost { namespace geometry
 {
@@ -21,68 +19,44 @@ namespace boost { namespace geometry
 namespace detail { namespace overlay
 {
 
-// Default implementation, using the first point for all turns in the cluster.
-template
-<  
-    typename Point,
-    typename CoordinateType = typename geometry::coordinate_type<Point>::type,
-    typename CsTag = typename geometry::cs_tag<Point>::type,
-    bool IsIntegral = std::is_integral<CoordinateType>::value
->            
-struct cluster_colocator 
+template <typename IndexSetIt, typename Turns>
+struct cluster_points_iterator
+    : public boost::iterator_facade
+        <
+            cluster_points_iterator<IndexSetIt, Turns>,
+            typename Turns::value_type::point_type,
+            boost::forward_traversal_tag
+        >
 {
-    template <typename TurnIndices, typename Turns>
-    static inline void apply(TurnIndices const& indices, Turns& turns)
-    {
-        // This approach works for all but one testcase (rt_p13)
-        // The problem is fill_sbs, which uses sides and these sides might change slightly
-        // depending on the exact location of the cluster.
-        // Using the centroid is, on the average, a safer choice for sides.
-        // Alternatively fill_sbs could be revised, but that requires a lot of work
-        // and is outside current scope.
-        // Integer coordinates are always colocated already and do not need centroid calculation.
-        // Geographic/spherical coordinates might (in extremely rare cases) cross the date line
-        // and therefore the first point is taken for them as well.
-        auto it = indices.begin();
-        auto const& first_point = turns[*it].point;
-        for (++it; it != indices.end(); ++it)
-        {
-            turns[*it].point = first_point;
-        }
-    }
-};
+    cluster_points_iterator(IndexSetIt const& it, Turns& turns) : it(it), turns(turns) {}
 
-// Specialization for non-integral cartesian coordinates, calculating
-// the centroid of the points of the turns in the cluster.
-template <typename Point, typename CoordinateType>
-struct cluster_colocator<Point, CoordinateType, geometry::cartesian_tag, false>
-{
-    template <typename TurnIndices, typename Turns>
-    static inline void apply(TurnIndices const& indices, Turns& turns)
+private:
+    inline auto& dereference() const
     {
-        CoordinateType centroid_0 = 0;
-        CoordinateType centroid_1 = 0;
-        for (auto const& index : indices)
-        {
-            centroid_0 += geometry::get<0>(turns[index].point);
-            centroid_1 += geometry::get<1>(turns[index].point);
-        }
-        centroid_0 /= indices.size();
-        centroid_1 /= indices.size();
-        for (auto const& index : indices)
-        {
-            geometry::set<0>(turns[index].point, centroid_0);
-            geometry::set<1>(turns[index].point, centroid_1);
-        }
+        return turns[*it].point;
     }
+
+    inline bool equal(cluster_points_iterator<IndexSetIt, Turns> const& other) const
+    {
+        return it == other.it;
+    }
+
+    inline void increment()
+    {
+        ++it;
+    }
+
+    friend class boost::iterator_core_access;
+    IndexSetIt it;
+    Turns& turns;
 };
 
 // Moves intersection points per cluster such that they are identical.
 // Because clusters are intersection close together, and
 // handled as one location. Then they should also have one location.
 // It is necessary to avoid artefacts and invalidities.
-template <typename Clusters, typename Turns>
-inline void colocate_clusters(Clusters const& clusters, Turns& turns)
+template <typename Clusters, typename Turns, typename Strategy>
+inline void colocate_clusters(Clusters const& clusters, Turns& turns, Strategy const& strategy)
 {
     for (auto const& pair : clusters)
     {
@@ -92,8 +66,9 @@ inline void colocate_clusters(Clusters const& clusters, Turns& turns)
             // Defensive check
             continue;
         }
-        using point_t = decltype(turns[*turn_indices.begin()].point);
-        cluster_colocator<point_t>::apply(turn_indices, turns);
+        cluster_points_iterator<decltype(turn_indices.cbegin()), Turns>
+            begin(turn_indices.cbegin(), turns), end(turn_indices.cend(), turns);
+        strategy.cluster_colocate(begin, end).apply(begin, end);
     }
 }
 

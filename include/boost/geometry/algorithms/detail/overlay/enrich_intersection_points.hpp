@@ -489,7 +489,7 @@ inline void enrich_intersection_points(Turns& turns,
             >(clusters, turns, target_operation,
               geometry1, geometry2, strategy.side()); // TODO: pass strategy
 
-        detail::overlay::cleanup_clusters(turns, clusters);
+        detail::overlay::cleanup_clusters(turns, clusters, strategy);
     }
 
     // After cleaning up clusters assign the next turns

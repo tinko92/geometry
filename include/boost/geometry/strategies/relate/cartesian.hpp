@@ -13,9 +13,11 @@
 
 
 // TEMP - move to strategy
+#include <boost/geometry/strategies/agnostic/cluster_colocate_first.hpp>
 #include <boost/geometry/strategies/agnostic/point_in_box_by_side.hpp>
 #include <boost/geometry/strategies/cartesian/intersection.hpp>
 #include <boost/geometry/strategies/cartesian/box_in_box.hpp>
+#include <boost/geometry/strategies/cartesian/cluster_colocate_centroid.hpp>
 #include <boost/geometry/strategies/cartesian/point_in_point.hpp>
 #include <boost/geometry/strategies/cartesian/point_in_poly_crossings_multiply.hpp>
 #include <boost/geometry/strategies/cartesian/point_in_poly_franklin.hpp>
@@ -196,6 +198,34 @@ public:
             EqualsPolicy,
             -1
         >;
+
+    // cluster_colocate
+
+    template <typename PointIt>
+    static auto cluster_colocate(PointIt, PointIt,
+                                 std::enable_if_t
+                                    <
+                                        std::is_integral
+                                            <
+                                                typename geometry::coordinate_type<typename PointIt::value_type>::type
+                                            >::value
+                                    > * = nullptr)
+    {
+        return strategy::cluster_colocate::first();
+    }
+
+    template <typename PointIt>
+    static auto cluster_colocate(PointIt, PointIt,
+                                 std::enable_if_t
+                                    <
+                                        ! std::is_integral
+                                            <
+                                                typename geometry::coordinate_type<typename PointIt::value_type>::type
+                                            >::value
+                                    > * = nullptr)
+    {
+        return strategy::cluster_colocate::centroid();
+    }
 };
 
 
