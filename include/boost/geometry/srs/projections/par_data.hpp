@@ -172,6 +172,23 @@ struct towgs84
     const_iterator begin() const { return m_data; }
     const_iterator end() const { return m_data + m_size; }
 
+    constexpr bool operator==(const towgs84& other) const {
+        if(m_size == 3)
+            return other.m_size == 3
+                && m_data[0] == other.m_data[0]
+                && m_data[1] == other.m_data[1]
+                && m_data[2] == other.m_data[2];
+        else 
+            return other.m_size == 7
+                && m_data[0] == other.m_data[0]
+                && m_data[1] == other.m_data[1]
+                && m_data[2] == other.m_data[2]
+                && m_data[3] == other.m_data[3]
+                && m_data[4] == other.m_data[4]
+                && m_data[5] == other.m_data[5]
+                && m_data[6] == other.m_data[6];
+    }
+
 private:
     size_type m_size;
     T m_data[7];

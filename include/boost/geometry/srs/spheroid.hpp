@@ -103,6 +103,10 @@ public:
         (I < 2 ? m_a : m_b) = radius;
     }
 
+    constexpr bool operator==(const spheroid& other) const {
+        return other.m_a == m_a && other.m_b == m_b;
+    }
+
 private:
     RadiusType m_a, m_b; // equatorial radius, polar radius
 

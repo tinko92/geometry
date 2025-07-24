@@ -683,7 +683,7 @@ struct parameter
         : m_id(units), m_value(int(v))
     {}
 
-private:
+public:
     typedef boost::variant
         <
             bool,
@@ -723,7 +723,7 @@ public:
         return m_value.which() == srs::detail::find_type_index<variant_type, V>::value;
     }
 
-private:
+public:
     int m_id;
     variant_type m_value;
 };
