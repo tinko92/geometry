@@ -16,6 +16,8 @@
 #define BOOST_GEOMETRY_PROJECTIONS_EPGS_HPP
 
 
+#include <algorithm>
+
 #include <boost/geometry/srs/projections/code.hpp>
 
 
@@ -4403,11 +4405,8 @@ namespace detail
             ce(69036405, ps{p(proj_longlat), p(a,6378298.3), p(b,6356657.142669561), p(pm_madrid), p(no_defs)})
         };
 
-        const code_element * first = arr.begin();
-        const code_element * last = arr.end();
-        const code_element * el = binary_find_code_element(first, last, code);
-
-        return el != last ? el->to_parameters() : srs::dpar::parameters<>();
+        const auto it = std::lower_bound(arr.begin(), arr.end(), code, code_element_less{});
+        return it != arr.end() && it->code == code ? it->to_parameters() : srs::dpar::parameters<>();
     }
 
 }

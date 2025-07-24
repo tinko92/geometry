@@ -12,6 +12,8 @@
 #define BOOST_GEOMETRY_PROJECTIONS_IAU2000_HPP
 
 
+#include <algorithm>
+
 #include <boost/geometry/srs/projections/code.hpp>
 
 
@@ -2415,11 +2417,8 @@ namespace detail
 
         };
 
-        const code_element * first = arr.cbegin();
-        const code_element * last = arr.cend();
-        const code_element * el = binary_find_code_element(first, last, code);
-
-        return el != last ? el->to_parameters() : srs::dpar::parameters<>();
+        const auto it = std::lower_bound(arr.begin(), arr.end(), code, code_element_less{});
+        return it != arr.end() && it->code == code ? it->to_parameters() : srs::dpar::parameters<>();
     }
 
 }

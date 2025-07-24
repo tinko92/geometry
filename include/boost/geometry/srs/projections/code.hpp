@@ -79,7 +79,7 @@ namespace detail
     struct code_element
     {
         constexpr code_element(int code,
-                               const std::array<code_parameter, 13>& parameters,
+                               std::array<code_parameter, 13> const& parameters,
                                std::array<double, 7> towgs84 =
                                 {INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY})
             : code{code}, parameters{parameters}, towgs84{towgs84} {}
@@ -92,13 +92,13 @@ namespace detail
             bool towgs84_to_be_inserted = towgs84[0] != INFINITY;
             for (const auto& p : parameters)
             {
-                if(towgs84_to_be_inserted && (p.id == srs::dpar::units || p.id == srs::dpar::no_defs))
+                if (towgs84_to_be_inserted && (p.id == srs::dpar::units || p.id == srs::dpar::no_defs))
                 {
                     towgs84_to_be_inserted = false;
                     out(srs::dpar::towgs84, towgs84);
                 }
                 out.add(p);
-                if(p.id == srs::dpar::no_defs) break;
+                if (p.id == srs::dpar::no_defs) break;
             }
             return out;
         }
@@ -106,21 +106,11 @@ namespace detail
 
     struct code_element_less
     {
-        inline bool operator()(code_element const& l, code_element const& r) const
+        inline bool operator()(code_element const& l, int code) const
         {
-            return l.code < r.code;
+            return l.code < code;
         }
     };
-
-    template<typename RandIt>
-    inline RandIt binary_find_code_element(RandIt first, RandIt last, int code)
-    {
-        code_element_less comp;
-        code_element value;
-        value.code = code;
-        first = std::lower_bound(first, last, value, comp);
-        return first != last && !comp(value, *first) ? first : last;
-    }
 
 }
 #endif // DOXYGEN_NO_DETAIL

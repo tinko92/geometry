@@ -12,6 +12,8 @@
 #define BOOST_GEOMETRY_PROJECTIONS_ESRI_HPP
 
 
+#include <algorithm>
+
 #include <boost/geometry/srs/projections/code.hpp>
 
 
@@ -481,11 +483,8 @@ namespace detail
             ce(104305, ps{p(proj_longlat), p(ellps_clrk80), p(no_defs)})
         };
 
-        const code_element * first = arr.begin();
-        const code_element * last = arr.end();
-        const code_element * el = binary_find_code_element(first, last, code);
-
-        return el != last ? el->to_parameters() : srs::dpar::parameters<>();
+        const auto it = std::lower_bound(arr.begin(), arr.end(), code, code_element_less{});
+        return it != arr.end() && it->code == code ? it->to_parameters() : srs::dpar::parameters<>();
     }
 
 }
