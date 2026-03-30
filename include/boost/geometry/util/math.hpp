@@ -140,7 +140,7 @@ struct equals_factor_policy
     }
 
     template <typename E>
-    void multiply_epsilon(E const& multiplier)
+    void NOINLINE28 multiply_epsilon(E const& multiplier)
     {
         factor *= multiplier;
     }
@@ -178,7 +178,7 @@ template <typename Type>
 struct equals<Type, true>
 {
     template <typename Policy>
-    static inline bool apply(Type const& a, Type const& b, Policy const& policy)
+    static inline bool NOINLINE29 apply(Type const& a, Type const& b, Policy const& policy)
     {
         boost::ignore_unused(policy);
 

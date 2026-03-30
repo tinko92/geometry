@@ -57,7 +57,7 @@ public:
     typedef result_inverse<CT> result_type;
 
     template <typename T1, typename T2, typename Spheroid>
-    static inline result_type apply(T1 const& lon1,
+    static inline result_type NOINLINE23 apply(T1 const& lon1,
                                     T1 const& lat1,
                                     T2 const& lon2,
                                     T2 const& lat2,

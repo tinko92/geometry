@@ -24,7 +24,6 @@
 #include <boost/geometry/core/static_assert.hpp>
 
 #include <boost/geometry/index/detail/algorithms/bounds.hpp>
-#include <boost/geometry/index/detail/algorithms/content.hpp>
 #include <boost/geometry/index/detail/rtree/node/node.hpp>
 #include <boost/geometry/index/detail/rtree/node/node_elements.hpp>
 #include <boost/geometry/index/detail/rtree/node/subtree_destroyer.hpp>
@@ -32,6 +31,7 @@
 
 #include <boost/geometry/util/constexpr.hpp>
 
+#include <boost/geometry/index/detail/algorithms/content.hpp>
 namespace boost { namespace geometry { namespace index {
 
 namespace detail { namespace rtree {
@@ -631,5 +631,4 @@ public:
 }}} // namespace detail::rtree::visitors
 
 }}} // namespace boost::geometry::index
-
 #endif // BOOST_GEOMETRY_INDEX_DETAIL_RTREE_VISITORS_INSERT_HPP

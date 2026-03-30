@@ -59,7 +59,7 @@ public:
     typedef result_direct<CT> result_type;
 
     template <typename T, typename Dist, typename Azi, typename Spheroid>
-    static inline result_type apply(T const& lo1,
+    static inline result_type NOINLINE19 apply(T const& lo1,
                                     T const& la1,
                                     Dist const& distance,
                                     Azi const& azimuth12,
@@ -219,7 +219,7 @@ public:
     }
 
 private:
-    static inline bool vflip_if_south(CT const& lat1, CT const& azi12, CT & lat1_alt, CT & azi12_alt)
+    static inline bool NOINLINE20 vflip_if_south(CT const& lat1, CT const& azi12, CT & lat1_alt, CT & azi12_alt)
     {
         CT const c2 = 2;
         CT const pi = math::pi<CT>();
@@ -241,7 +241,7 @@ private:
         return false;
     }
 
-    static inline void vflip_rev_azi(CT & rev_azi, CT const& azimuth12)
+    static inline void NOINLINE21 vflip_rev_azi(CT & rev_azi, CT const& azimuth12)
     {
         CT const c0 = 0;
         CT const pi = math::pi<CT>();
@@ -260,7 +260,7 @@ private:
         }
     }
 
-    static inline CT normalized1_1(CT const& value)
+    static inline CT NOINLINE22 normalized1_1(CT const& value)
     {
         CT const c1 = 1;
         return value > c1 ? c1 :

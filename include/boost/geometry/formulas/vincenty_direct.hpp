@@ -64,7 +64,7 @@ public:
     typedef result_direct<CT> result_type;
 
     template <typename T, typename Dist, typename Azi, typename Spheroid>
-    static inline result_type apply(T const& lo1,
+    static inline result_type NOINLINE6 apply(T const& lo1,
                                     T const& la1,
                                     Dist const& distance,
                                     Azi const& azimuth12,

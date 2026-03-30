@@ -39,7 +39,7 @@ template
 >
 struct corner_by_epsilon
 {
-    static inline void apply(Point & point)
+    static inline void NOINLINE31 apply(Point & point)
     {
         using coord_type = coordinate_type_t<Point>;
         coord_type const coord = get<I>(point);
@@ -50,7 +50,7 @@ struct corner_by_epsilon
         corner_by_epsilon<Point, PlusOrMinus, I+1>::apply(point);
     }
 
-    static inline void apply(Point & point,
+    static inline void NOINLINE31 apply(Point & point,
                              coordinate_type_t<Point> const& eps)
     {
         using coord_type = coordinate_type_t<Point>;

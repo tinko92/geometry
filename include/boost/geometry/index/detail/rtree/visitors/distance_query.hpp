@@ -424,6 +424,7 @@ public:
         {
             if (m_branches.empty())
             {
+		++branches_empty;
                 // there exists a next closest neighbor so we can increment
                 if (! m_neighbors.empty())
                 {
@@ -445,8 +446,9 @@ public:
                 branch_data const& closest_branch = m_branches.top();
 
                 // if next neighbor is closer or as close as the closest branch, set next neighbor
-                if (! m_neighbors.empty() && m_neighbors.top().first <= closest_branch.distance )
+                if (! m_neighbors.empty() && m_neighbors.top().first <= closest_branch.distance)
                 {
+                    ++next_neighbour_closer;
                     m_neighbor_ptr = m_neighbors.top().second;
                     ++m_neighbors_count;
                     m_neighbors.pop_top();
@@ -458,11 +460,13 @@ public:
                 // if there is enough neighbors and there is no closer branch
                 if (ignore_branch_or_value(closest_branch.distance))
                 {
+		    ++ignore_branch;
                     m_branches.clear();
                     continue;
                 }
                 else
                 {
+		    ++apply_branch;
                     node_pointer ptr = closest_branch.ptr;
                     size_type reverse_level = closest_branch.reverse_level;
                     m_branches.pop();
@@ -497,7 +501,7 @@ private:
             for (auto const& p : rtree::elements(n))
             {
                 node_distance_type node_distance; // for distance predicate
-
+		branch_explored++;
                 // if current node meets predicates (0 is dummy value)
                 if (id::predicates_check<id::bounds_tag>(m_pred, 0, p.first, m_strategy)
                     // and if distance is ok
@@ -505,6 +509,7 @@ private:
                     // and if current node is closer than the furthest neighbor
                     && ! ignore_branch_or_value(node_distance))
                 {
+		    ++branches_push;
                     // add current node into the queue
                     m_branches.push(branch_data(node_distance, reverse_level - 1, p.second));
                 }
@@ -520,7 +525,7 @@ private:
             for (auto const& v : rtree::elements(n))
             {
                 value_distance_type value_distance; // for distance predicate
-
+		++leaf_explored;
                 // if value meets predicates
                 if (id::predicates_check<id::value_tag>(m_pred, v, (*m_tr)(v), m_strategy)
                     // and if distance is ok
@@ -528,6 +533,7 @@ private:
                     // and if current value is closer than the furthest neighbor
                     && ! ignore_branch_or_value(value_distance))
                 {
+		    neighbours_push++;
                     // add current value into the queue
                     m_neighbors.push(std::make_pair(value_distance, boost::addressof(v)));
 
@@ -544,8 +550,14 @@ private:
     template <typename Distance>
     bool ignore_branch_or_value(Distance const& distance)
     {
-        return m_neighbors_count + m_neighbors.size() == max_count()
+        bool reject = m_neighbors_count + m_neighbors.size() == max_count()
             && (m_neighbors.empty() || m_neighbors.bottom().first <= distance);
+
+	++branch_or_value_checked;
+	if(reject) ++branch_or_value_rejected;
+	else ++branch_or_value_accepted;
+
+	return reject;
     }
 
     std::size_t max_count() const

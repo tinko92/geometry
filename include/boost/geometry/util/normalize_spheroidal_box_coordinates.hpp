@@ -42,7 +42,7 @@ private:
     }
 
 public:
-    static inline void apply(CoordinateType& longitude1,
+    static inline void NOINLINE30 apply(CoordinateType& longitude1,
                              CoordinateType& latitude1,
                              CoordinateType& longitude2,
                              CoordinateType& latitude2,

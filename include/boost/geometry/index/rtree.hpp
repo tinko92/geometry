@@ -64,7 +64,6 @@
 #include <boost/geometry/index/detail/rtree/node/node.hpp>
 
 #include <boost/geometry/index/detail/algorithms/is_valid.hpp>
-
 #include <boost/geometry/index/detail/rtree/visitors/insert.hpp>
 #include <boost/geometry/index/detail/rtree/visitors/iterator.hpp>
 #include <boost/geometry/index/detail/rtree/visitors/remove.hpp>

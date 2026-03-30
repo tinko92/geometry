@@ -48,27 +48,27 @@ public :
     };
 
     template <typename T>
-    static bool meridian_not_crossing_pole(T lat1, T lat2, CT diff)
+    static bool NOINLINE10 meridian_not_crossing_pole(T lat1, T lat2, CT diff)
     {
         CT half_pi = math::pi<CT>()/CT(2);
         return math::equals(diff, CT(0)) ||
                     (math::equals(lat2, half_pi) && math::equals(lat1, -half_pi));
     }
 
-    static bool meridian_crossing_pole(CT diff)
+    static bool NOINLINE11 meridian_crossing_pole(CT diff)
     {
         return math::equals(math::abs(diff), math::pi<CT>());
     }
 
 
     template <typename T, typename Spheroid>
-    static CT meridian_not_crossing_pole_dist(T lat1, T lat2, Spheroid const& spheroid)
+    static CT NOINLINE12 meridian_not_crossing_pole_dist(T lat1, T lat2, Spheroid const& spheroid)
     {
         return math::abs(apply(lat2, spheroid) - apply(lat1, spheroid));
     }
 
     template <typename T, typename Spheroid>
-    static CT meridian_crossing_pole_dist(T lat1, T lat2, Spheroid const& spheroid)
+    static CT NOINLINE13 meridian_crossing_pole_dist(T lat1, T lat2, Spheroid const& spheroid)
     {
         CT c0 = 0;
         CT half_pi = math::pi<CT>()/CT(2);
@@ -82,7 +82,7 @@ public :
     }
 
     template <typename T, typename Spheroid>
-    static result apply(T lon1, T lat1, T lon2, T lat2, Spheroid const& spheroid)
+    static result NOINLINE14 apply(T lon1, T lat1, T lon2, T lat2, Spheroid const& spheroid)
     {
         result res;
 
@@ -111,7 +111,7 @@ public :
     // https://en.wikipedia.org/wiki/Meridian_arc
     // latitudes are assumed to be in radians and in [-pi/2,pi/2]
     template <typename T, typename Spheroid>
-    static CT apply(T lat, Spheroid const& spheroid)
+    static CT NOINLINE15 apply(T lat, Spheroid const& spheroid)
     {
         CT const a = geometry::get_radius<0>(spheroid);
         CT const f = flattening<CT>(spheroid);

@@ -148,10 +148,15 @@ public:
                PointOfSegment const& sp1,
                PointOfSegment const& sp2) const
     {
-        return apply(get_as_radian<0>(sp1), get_as_radian<1>(sp1),
+        auto d =  apply(get_as_radian<0>(sp1), get_as_radian<1>(sp1),
                      get_as_radian<0>(sp2), get_as_radian<1>(sp2),
                      get_as_radian<0>(p), get_as_radian<1>(p),
                      m_spheroid).distance;
+
+#ifdef BOOST_GEOMETRY_DEBUG_GEOGRAPHIC_CROSS_TRACK
+	std::cout << "final distanct: " << d << "\n";
+#endif
+	return d;
     }
 
     // points on a meridian not crossing poles
@@ -184,7 +189,7 @@ private:
     };
 
     template <typename CT>
-    static inline CT normalize(CT const& g4, CT& der)
+    static inline CT NOINLINE0 normalize(CT const& g4, CT& der)
     {
         CT const pi = math::pi<CT>();
         CT const c_1_5 = 1.5;
@@ -217,7 +222,7 @@ private:
 
 
     template <typename CT>
-    static void bisection(CT const& lon1, CT const& lat1, //p1
+    static void NOINLINE1 bisection(CT const& lon1, CT const& lat1, //p1
                           CT const& lon2, CT const& lat2, //p2
                           CT const& lon3, CT const& lat3, //query point p3
                           Spheroid const& spheroid,
@@ -308,13 +313,14 @@ private:
     }
 
     template <typename CT>
-    static void newton(CT const& lon1, CT const& lat1, //p1
+    static void NOINLINE2 newton(CT const& lon1, CT const& lat1, //p1
                        CT const& lon2, CT const& lat2, //p2
                        CT const& lon3, CT const& lat3, //query point p3
                        Spheroid const& spheroid,
                        CT const& s14_start, CT const& a12,
                        result_type<CT>& result)
     {
+        newton_calls++;
         using inverse_distance_azimuth_quantities_type =
             typename FormulaPolicy::template inverse<CT, true, true, false, true, true>;
 
@@ -338,6 +344,8 @@ private:
         do {
             auto prev_distance = res34.distance;
             auto prev_res = res14;
+
+		newton_iters++;
 
             // Solve the direct problem to find p4 (GEO)
             res14 = direct_distance_type::apply(lon1, lat1, s14, a12, spheroid);
@@ -463,7 +471,6 @@ private:
 #endif
     }
 
-
     template <typename CT>
     static inline auto non_iterative_case(CT const&     , CT const&     , //p1
                                           CT const& lon2, CT const& lat2, //p2
@@ -492,13 +499,13 @@ private:
     }
 
 protected:
-
     template <typename CT>
-    static inline auto apply(CT const& lo1, CT const& la1, //p1
+    static inline auto NOINLINE3 apply(CT const& lo1, CT const& la1, //p1
                              CT const& lo2, CT const& la2, //p2
                              CT const& lo3, CT const& la3, //query point p3
                              Spheroid const& spheroid)
     {
+        ++cross_track_calls;
         using inverse_dist_azimuth_type =
             typename FormulaPolicy::template inverse<CT, true, true, false, false, false>;
 
@@ -512,6 +519,7 @@ protected:
         // if the query points coincide with one of segments' endpoints
         if ((lo1 == lo3 && la1 == la3) || (lo2 == lo3 && la2 == la3))
         {
+            ++non_iterative_case_segment_coincident;
             result.lon = lo3;
             result.lat = la3;
             return result;
@@ -562,6 +570,7 @@ protected:
         if (math::equals(lat1, c0) && math::equals(lat2, c0)
             && !meridian_crossing_pole)
         {
+            ++non_iterative_case_equatorial_segment;
 #ifdef BOOST_GEOMETRY_DEBUG_GEOGRAPHIC_CROSS_TRACK
             std::cout << "Equatorial segment" << std::endl;
             std::cout << "segment=(" << lon1 * math::r2d<CT>();
@@ -593,6 +602,7 @@ protected:
 
         if (meridian_crossing_pole)
         {
+            ++non_iterative_case_meridian_crossing_pole;
 #ifdef BOOST_GEOMETRY_DEBUG_GEOGRAPHIC_CROSS_TRACK
             std::cout << "Meridian segment crossing pole" << std::endl;
 #endif
@@ -611,6 +621,7 @@ protected:
 
         if (geometry::math::equals(res12.distance, c0))
         {
+            ++non_iterative_case_degenerate_segment;
 #ifdef BOOST_GEOMETRY_DEBUG_GEOGRAPHIC_CROSS_TRACK
             std::cout << "Degenerate segment" << std::endl;
             std::cout << "distance between points="
@@ -628,6 +639,7 @@ protected:
         // TODO: meridian case optimization
         if (geometry::math::equals(a312, c0) && meridian_not_crossing_pole)
         {
+            ++non_iterative_case_point_on_meridian;
             auto const minmax_elem = std::minmax(lat1, lat2);
 
             if (lat3 >= std::get<0>(minmax_elem) &&
@@ -652,6 +664,7 @@ protected:
 
         if (projection1 < c0)
         {
+            ++non_iterative_calls_closer_to_p1;
 #ifdef BOOST_GEOMETRY_DEBUG_GEOGRAPHIC_CROSS_TRACK
             std::cout << "projection closer to p1" << std::endl;
 #endif
@@ -677,6 +690,7 @@ protected:
 
         if (projection2 < c0)
         {
+            ++non_iterative_calls_closer_to_p2;
 #ifdef BOOST_GEOMETRY_DEBUG_GEOGRAPHIC_CROSS_TRACK
             std::cout << "projection closer to p2" << std::endl;
 #endif
@@ -732,6 +746,7 @@ protected:
 
         if (Bisection)
         {
+	    ++bisection_calls;
             bisection(lon1, lat1, lon2, lat2, lon3, lat3, spheroid,
                 res12.distance/2, res12.azimuth, result);
         }
@@ -749,7 +764,6 @@ protected:
 
         return result;
     }
-
     Spheroid m_spheroid;
 };
 

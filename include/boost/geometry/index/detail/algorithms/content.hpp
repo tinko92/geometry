@@ -24,6 +24,8 @@
 #include <boost/geometry/core/tags.hpp>
 #include <boost/geometry/util/select_most_precise.hpp>
 
+//#pragma GCC push_options
+//#pragma GCC optimize ("fp-contract=off")
 namespace boost { namespace geometry { namespace index { namespace detail {
 
 template <typename Indexable>
@@ -44,7 +46,7 @@ struct content_box
 {
     BOOST_STATIC_ASSERT(0 < CurrentDimension);
 
-    static inline typename detail::default_content_result<Box>::type apply(Box const& b)
+    static inline typename detail::default_content_result<Box>::type  NOINLINE33 apply(Box const& b)
     {
         return content_box<Box, CurrentDimension - 1>::apply(b) *
             ( get<max_corner, CurrentDimension - 1>(b) - get<min_corner, CurrentDimension - 1>(b) );
@@ -82,7 +84,9 @@ struct content<Indexable, box_tag>
 {
     static typename default_content_result<Indexable>::type apply(Indexable const& b)
     {
-        return dispatch::content_box<Indexable>::apply(b);
+        auto result = dispatch::content_box<Indexable>::apply(b);
+//	std::cout << result << "\n";
+	return result;
     }
 };
 
@@ -99,5 +103,5 @@ typename default_content_result<Indexable>::type content(Indexable const& b)
 }
 
 }}}} // namespace boost::geometry::index::detail
-
+//#pragma GCC pop_options
 #endif // BOOST_GEOMETRY_INDEX_DETAIL_ALGORITHMS_CONTENT_HPP

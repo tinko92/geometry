@@ -42,7 +42,7 @@ namespace detail
 struct box_box_on_spheroid
 {
     template <typename Box1, typename Box2>
-    static inline bool apply(Box1 const& box1, Box2 const& box2)
+    static inline bool NOINLINE27 apply(Box1 const& box1, Box2 const& box2)
     {
         typedef typename geometry::select_most_precise
             <

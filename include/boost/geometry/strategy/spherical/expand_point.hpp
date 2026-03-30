@@ -59,7 +59,7 @@ template <std::size_t DimensionCount, bool IsEquatorial>
 struct point_loop_on_spheroid
 {
     template <typename Box, typename Point>
-    static inline void apply(Box& box, Point const& point)
+    static inline void NOINLINE24 apply(Box& box, Point const& point)
     {
         using box_point_type = point_type_t<Box>;
         using box_coordinate_type = coordinate_type_t<Box>;

@@ -35,7 +35,7 @@ public :
     enum SegmentType {NonMeridian, MeridianCrossingPole, MeridianNotCrossingPole};
 
     template <typename T>
-    static inline SegmentType is_meridian(T lon1, T lat1, T lon2, T lat2)
+    static inline SegmentType NOINLINE16 is_meridian(T lon1, T lat1, T lon2, T lat2)
     {
         SegmentType res = NonMeridian;
         T diff = geometry::math::longitude_distance_signed<geometry::radian>(lon1, lon2);
@@ -52,7 +52,7 @@ public :
     }
 
     template <typename T>
-    static bool meridian_not_crossing_pole(T lat1, T lat2, T diff)
+    static bool NOINLINE17 meridian_not_crossing_pole(T lat1, T lat2, T diff)
     {
         T half_pi = math::half_pi<T>();
         return math::equals(diff, T(0)) ||
@@ -60,7 +60,7 @@ public :
     }
 
     template <typename T>
-    static bool meridian_crossing_pole(T diff)
+    static bool NOINLINE18 meridian_crossing_pole(T diff)
     {
         return math::equals(math::abs(diff), math::pi<T>());
     }

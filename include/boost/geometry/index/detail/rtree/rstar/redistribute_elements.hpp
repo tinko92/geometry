@@ -106,6 +106,7 @@ private:
     Translator const& m_tr;
 };
 
+
 template <typename Box, size_t Corner, size_t AxisIndex>
 struct choose_split_axis_and_index_for_corner
 {
@@ -172,7 +173,6 @@ struct choose_split_axis_and_index_for_corner
 
             content_type ovl = index::detail::intersection_content(box1, box2, strategy);
             content_type con = index::detail::content(box1) + index::detail::content(box2);
-
             // TODO - shouldn't here be < instead of <= ?
             if ( ovl < smallest_overlap || (ovl == smallest_overlap && con <= smallest_content) )
             {

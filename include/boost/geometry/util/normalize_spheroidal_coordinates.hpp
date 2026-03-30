@@ -223,7 +223,7 @@ protected:
     }
 
 public:
-    static inline void apply(CoordinateType& longitude, bool exact = true)
+    static inline void NOINLINE25 apply(CoordinateType& longitude, bool exact = true)
     {
         // normalize longitude
         CoordinateType const epsilon = std::numeric_limits<float>::epsilon();
@@ -249,7 +249,7 @@ public:
         }
     }
 
-    static inline void apply(CoordinateType& longitude,
+    static inline void NOINLINE26 apply(CoordinateType& longitude,
                              CoordinateType& latitude,
                              bool normalize_poles = true,
                              bool exact = true)

@@ -51,7 +51,7 @@ public:
     typedef result_direct<CT> result_type;
 
     template <typename T, typename Dist, typename Spheroid>
-    static inline result_type apply(T const& lo1,
+    static inline result_type NOINLINE8 apply(T const& lo1,
                                     T const& la1,
                                     Dist const& distance,
                                     bool north,
@@ -121,7 +121,7 @@ public:
     // https://en.wikipedia.org/wiki/Meridian_arc#The_inverse_meridian_problem_for_the_ellipsoid
     // latitudes are assumed to be in radians and in [-pi/2,pi/2]
     template <typename T, typename Spheroid>
-    static CT apply(T m, Spheroid const& spheroid)
+    static CT NOINLINE9 apply(T m, Spheroid const& spheroid)
     {
         CT const f = formula::flattening<CT>(spheroid);
         CT n = f / (CT(2) - f);
