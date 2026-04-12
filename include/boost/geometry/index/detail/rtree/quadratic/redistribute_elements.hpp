@@ -74,9 +74,8 @@ inline void pick_seeds(Elements const& elements,
 
             bounded_indexable_view bounded_ind1(ind1, strategy);
             bounded_indexable_view bounded_ind2(ind2, strategy);
-            content_type free_content = ( index::detail::content(enlarged_box)
-                                            - index::detail::content(bounded_ind1) )
-                                                - index::detail::content(bounded_ind2);
+            content_type free_content =
+                index::detail::content_diff(enlarged_box, bounded_ind1, bounded_ind2);
 
             if ( greatest_free_content < free_content )
             {
@@ -273,7 +272,7 @@ struct redistribute_elements<MembersHolder, quadratic_tag>
         typedef typename boost::iterator_value<It>::type element_type;
         typedef typename rtree::element_indexable_type<element_type, translator_type>::type indexable_type;
 
-        content_type greatest_content_incrase_diff = 0;
+        content_type greatest_content_increase_diff = 0;
         It out_it = first;
         out_content_increase1 = 0;
         out_content_increase2 = 0;
@@ -288,21 +287,19 @@ struct redistribute_elements<MembersHolder, quadratic_tag>
             box_type enlarged_box2(box2);
             index::detail::expand(enlarged_box1, indexable, strategy);
             index::detail::expand(enlarged_box2, indexable, strategy);
-            content_type enlarged_content1 = index::detail::content(enlarged_box1);
-            content_type enlarged_content2 = index::detail::content(enlarged_box2);
 
-            content_type content_incrase1 = (enlarged_content1 - content1);
-            content_type content_incrase2 = (enlarged_content2 - content2);
+            content_type content_increase1 = index::detail::content_diff(enlarged_box1, box1);
+            content_type content_increase2 = index::detail::content_diff(enlarged_box2, box2);
 
-            content_type content_incrase_diff = content_incrase1 < content_incrase2 ?
-                content_incrase2 - content_incrase1 : content_incrase1 - content_incrase2;
+            content_type content_increase_diff = content_increase1 < content_increase2 ?
+                content_increase2 - content_increase1 : content_increase1 - content_increase2;
 
-            if ( greatest_content_incrase_diff < content_incrase_diff )
+            if ( greatest_content_increase_diff < content_increase_diff )
             {
-                greatest_content_incrase_diff = content_incrase_diff;
+                greatest_content_increase_diff = content_increase_diff;
                 out_it = el_it;
-                out_content_increase1 = content_incrase1;
-                out_content_increase2 = content_incrase2;
+                out_content_increase1 = content_increase1;
+                out_content_increase2 = content_increase2;
             }
         }
 
