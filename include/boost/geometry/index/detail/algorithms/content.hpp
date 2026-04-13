@@ -114,6 +114,35 @@ struct content_diff<Box1, Box2, true>
 {
     using return_type = typename default_content_result<Box1>::type;
 
+    static auto precise(Box1 const& b1, Box2 const& b2)
+    {
+        std::array<return_type, 16> components{
+            std::fma(get<max_corner, 0>(b1), get<max_corner, 1>(b1), -get<max_corner, 0>(b1) * get<max_corner, 1>(b1)),
+            get<max_corner, 0>(b1) * get<max_corner, 1>(b1),
+            std::fma(-get<min_corner, 0>(b1), get<max_corner, 1>(b1), get<min_corner, 0>(b1) * get<max_corner, 1>(b1)),
+            -get<min_corner, 0>(b1) * get<max_corner, 1>(b1),
+            std::fma(-get<max_corner, 0>(b1), get<min_corner, 1>(b1), get<max_corner, 0>(b1) * get<min_corner, 1>(b1)),
+            -get<max_corner, 0>(b1) * get<min_corner, 1>(b1),
+            std::fma(get<min_corner, 0>(b1), get<min_corner, 1>(b1), -get<min_corner, 0>(b1) * get<min_corner, 1>(b1)),
+            get<min_corner, 0>(b1) * get<min_corner, 1>(b1),
+            std::fma(-get<max_corner, 0>(b2), get<max_corner, 1>(b2), get<max_corner, 0>(b2) * get<max_corner, 1>(b2)),
+            -get<max_corner, 0>(b2) * get<max_corner, 1>(b2),
+            std::fma(get<min_corner, 0>(b2), get<max_corner, 1>(b2), -get<min_corner, 0>(b2) * get<max_corner, 1>(b2)),
+            get<min_corner, 0>(b2) * get<max_corner, 1>(b2),
+            std::fma(get<max_corner, 0>(b2), get<min_corner, 1>(b2), -get<max_corner, 0>(b2) * get<min_corner, 1>(b2)),
+            get<max_corner, 0>(b2) * get<min_corner, 1>(b2),
+            std::fma(-get<min_corner, 0>(b2), get<min_corner, 1>(b2), get<min_corner, 0>(b2) * get<min_corner, 1>(b2)),
+            -get<min_corner, 0>(b2) * get<min_corner, 1>(b2),
+        };
+        auto abs_comp = [](return_type const& a, return_type const& b) { return std::abs(a) < std::abs(b); };
+        for(int i = 0; i < 4; ++i)
+            std::inplace_merge(components.begin() + 4 * i, components.begin() + 4 * i + 2, components.begin() + 4 * (i + 1), abs_comp);
+        for(int i = 0; i < 2; ++i)
+            std::inplace_merge(components.begin() + 8 * i, components.begin() + 8 * i + 4, components.begin() + 8 * (i + 1), abs_comp);
+        std::inplace_merge(components.begin(), components.begin() + 8, components.end(), abs_comp);
+        return std::accumulate(components.cbegin(), components.cend(), return_type{0});
+    }
+
     static auto apply(Box1 const& b1, Box2 const& b2)
     {
         auto const content1 = content_box<Box1>::apply(b1);
@@ -123,7 +152,8 @@ struct content_diff<Box1, Box2, true>
         auto constexpr box_dim = dimension<Box1>::value;
         auto constexpr static_coeff =
               (box_dim * 2 - 1) * (std::numeric_limits<return_type>::epsilon() / 2.);
-        return diff < static_coeff * (content1 + content2) ? return_type{0.} : diff;
+        auto const result = diff < static_coeff * (content1 + content2) * return_type{32.} ? precise(b1, b2) : diff;
+        return result;
     }
 
     static auto apply(Box1 const& b1, Box2 const& b2, Box2 const& b3)
