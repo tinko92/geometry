@@ -49,7 +49,6 @@ The __boost_geometry__ makes use of the following __boost_cpp_lib__:
     * __boost_stringalgo__
 * Testing
     * __boost_test__
-    * __boost_timer__
 * Examples
     * __boost_graph__
 

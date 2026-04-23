@@ -16,13 +16,13 @@
 #define CHECK_SELF_INTERSECTIONS
 #define LIST_WKT
 
+#include <chrono>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <vector>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/timer.hpp>
 
 #include <boost/geometry/algorithms/correct.hpp>
 #include <boost/geometry/algorithms/detail/has_self_intersections.hpp>
@@ -109,7 +109,7 @@ int main()
     {
 
 
-    boost::timer t;
+    auto const start = std::chrono::steady_clock::now();
     std::vector<multi_polygon> poly_list;
 
     for (int i = 0 ; i < num_orig ; i++)
@@ -240,7 +240,8 @@ int main()
         }
     }
 
-    std::cout << "FINISHED " << t.elapsed() << std::endl;
+    auto const elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start);
+    std::cout << "FINISHED " << elapsed.count() << std::endl;
 
     }
     catch(std::exception const& e)

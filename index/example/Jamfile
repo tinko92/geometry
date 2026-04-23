@@ -44,7 +44,6 @@ if $(GLUT_ROOT)
 }
 
 exe random_test : random_test.cpp ;
-link serialize.cpp /boost/serialization//boost_serialization /boost/timer//boost_timer : ;
 link benchmark.cpp /boost/chrono//boost_chrono : <threading>multi ;
 link benchmark2.cpp /boost/chrono//boost_chrono : <threading>multi ;
 link benchmark3.cpp /boost/chrono//boost_chrono : <threading>multi ;

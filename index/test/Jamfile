@@ -20,7 +20,6 @@ project boost-geometry-index-test
         <toolset>msvc:<asynch-exceptions>on
         <toolset>msvc:<cxxflags>/bigobj
         <host-os>windows,<toolset>intel:<cxxflags>/bigobj
-        <library>/boost/timer//boost_timer
         <library>/boost/test//included
     ;
 

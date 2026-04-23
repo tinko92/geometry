@@ -12,6 +12,7 @@
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
+//#include <chrono>
 
 #include <geometry_test_common.hpp>
 
@@ -161,7 +162,7 @@ void test_services()
 template <typename P, typename Strategy>
 void time_compare_s(int const n)
 {
-    boost::timer t;
+    auto const start = std::chrono::steady_clock::now();
     P p1, p2;
     bg::assign_values(p1, 1, 1);
     bg::assign_values(p2, 2, 2);
@@ -174,7 +175,8 @@ void time_compare_s(int const n)
             s += strategy.apply(p1, p2);
         }
     }
-    std::cout << "s: " << s << " t: " << t.elapsed() << std::endl;
+    auto const elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start);
+    std::cout << "s: " << s << " t: " << elapsed.count() << std::endl;
 }
 
 template <typename P>

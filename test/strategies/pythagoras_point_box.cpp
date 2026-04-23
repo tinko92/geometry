@@ -30,7 +30,7 @@
 #include <boost/core/ignore_unused.hpp>
 
 // TODO move this to another non-unit test
-//#include <boost/timer.hpp>
+//#include <chrono>
 
 #include <boost/concept/requires.hpp>
 #include <boost/concept_check.hpp>
@@ -402,7 +402,7 @@ void test_all_3d()
 //{
 //    typedef bg::model::box<P> box_type;
 //
-//    boost::timer t;
+//    auto const start = std::chrono::steady_clock::now();
 //    P p;
 //    box_type b;
 //    bg::assign_values(b, 0, 0, 1, 1);
@@ -420,7 +420,8 @@ void test_all_3d()
 //            s += strategy.apply(p, b);
 //        }
 //    }
-//    std::cout << "s: " << s << " t: " << t.elapsed() << std::endl;
+//    auto const elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start);
+//    std::cout << "s: " << s << " t: " << elapsed.count() << std::endl;
 //}
 //
 //template <typename P>

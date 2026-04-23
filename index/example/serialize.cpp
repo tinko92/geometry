@@ -7,6 +7,7 @@
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
+#include <chrono>
 #include <iostream>
 #include <fstream>
 
@@ -23,7 +24,6 @@
 #include <boost/serialization/vector.hpp>
 
 #include <boost/foreach.hpp>
-#include <boost/timer.hpp>
 
 template <typename T, size_t I = 0, size_t S = std::tuple_size<T>::value>
 struct print_tuple
@@ -65,7 +65,9 @@ int main()
     RT tree(bgi::dynamic_linear(16));
     std::vector<V> vect;
 
-    boost::timer t;
+    auto start = std::chrono::steady_clock::now();
+    const auto elapsed_s = [](auto const& start) {
+        return std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count(); };
 
     //insert values
     {
@@ -78,7 +80,7 @@ int main()
     B q(P(5, 5), P(6, 6));
     S s;
 
-    std::cout << "vector and tree created in: " << t.elapsed() << std::endl;
+    std::cout << "vector and tree created in: " << elapsed_s(start) << std::endl;
 
     print_tuple<S>::apply(std::cout, bgi::detail::rtree::utilities::statistics(tree)) << std::endl;
     std::cout << std::get<0>(s) << std::endl;
@@ -89,57 +91,57 @@ int main()
     {
         std::ofstream ofs("serialized_vector.bin", std::ios::binary | std::ios::trunc);
         boost::archive::binary_oarchive oa(ofs);
-        t.restart();
+        start = std::chrono::steady_clock::now();
         oa << vect;
-        std::cout << "vector saved to bin in: " << t.elapsed() << std::endl;
+        std::cout << "vector saved to bin in: " << elapsed_s(start) << std::endl;
     }
     {
         std::ofstream ofs("serialized_tree.bin", std::ios::binary | std::ios::trunc);
         boost::archive::binary_oarchive oa(ofs);
-        t.restart();
+        start = std::chrono::steady_clock::now();
         oa << tree;
-        std::cout << "tree saved to bin in: " << t.elapsed() << std::endl;
+        std::cout << "tree saved to bin in: " << elapsed_s(start) << std::endl;
     }
     {
         std::ofstream ofs("serialized_tree.xml", std::ios::trunc);
         boost::archive::xml_oarchive oa(ofs);
-        t.restart();
+        start = std::chrono::steady_clock::now();
         oa << boost::serialization::make_nvp("rtree", tree);
-        std::cout << "tree saved to xml in: " << t.elapsed() << std::endl;
+        std::cout << "tree saved to xml in: " << elapsed_s(start) << std::endl;
     }
 
-    t.restart();
+    start = std::chrono::steady_clock::now();
     vect.clear();
-    std::cout << "vector cleared in: " << t.elapsed() << std::endl;
+    std::cout << "vector cleared in: " << elapsed_s(start) << std::endl;
 
-    t.restart();
+    start = std::chrono::steady_clock::now();
     tree.clear();
-    std::cout << "tree cleared in: " << t.elapsed() << std::endl;
+    std::cout << "tree cleared in: " << elapsed_s(start) << std::endl;
 
     // load
 
     {
         std::ifstream ifs("serialized_vector.bin", std::ios::binary);
         boost::archive::binary_iarchive ia(ifs);
-        t.restart();
+        start = std::chrono::steady_clock::now();
         ia >> vect;
-        std::cout << "vector loaded from bin in: " << t.elapsed() << std::endl;
-        t.restart();
+        std::cout << "vector loaded from bin in: " << elapsed_s(start) << std::endl;
+        start = std::chrono::steady_clock::now();
         RT tmp(vect, tree.parameters());
         tree = boost::move(tmp);
-        std::cout << "tree rebuilt from vector in: " << t.elapsed() << std::endl;
+        std::cout << "tree rebuilt from vector in: " << elapsed_s(start) << std::endl;
     }
 
-    t.restart();
+    start = std::chrono::steady_clock::now();
     tree.clear();
-    std::cout << "tree cleared in: " << t.elapsed() << std::endl;
+    std::cout << "tree cleared in: " << elapsed_s(start) << std::endl;
 
     {
         std::ifstream ifs("serialized_tree.bin", std::ios::binary);
         boost::archive::binary_iarchive ia(ifs);
-        t.restart();
+        start = std::chrono::steady_clock::now();
         ia >> tree;
-        std::cout << "tree loaded from bin in: " << t.elapsed() << std::endl;
+        std::cout << "tree loaded from bin in: " << elapsed_s(start) << std::endl;
     }
 
     std::cout << "loaded from bin" << std::endl;
@@ -147,16 +149,16 @@ int main()
     BOOST_FOREACH(V const& v, tree | bgi::adaptors::queried(bgi::intersects(q)))
         std::cout << bg::wkt<V>(v) << std::endl;
 
-    t.restart();
+    start = std::chrono::steady_clock::now();
     tree.clear();
-    std::cout << "tree cleared in: " << t.elapsed() << std::endl;
+    std::cout << "tree cleared in: " << elapsed_s(start) << std::endl;
 
     {
         std::ifstream ifs("serialized_tree.xml");
         boost::archive::xml_iarchive ia(ifs);
-        t.restart();
+        start = std::chrono::steady_clock::now();
         ia >> boost::serialization::make_nvp("rtree", tree);
-        std::cout << "tree loaded from xml in: " << t.elapsed() << std::endl;
+        std::cout << "tree loaded from xml in: " << elapsed_s(start) << std::endl;
     }
 
     std::cout << "loaded from xml" << std::endl;
