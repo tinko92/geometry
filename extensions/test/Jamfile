@@ -19,7 +19,6 @@ project boost-geometry-extensions-test
         <toolset>msvc:<cxxflags>/bigobj
         <host-os>windows,<toolset>intel:<cxxflags>/bigobj
         <define>BOOST_NO_AUTO_PTR # disable the deprecated std::auto_ptr support in SmartPtr and Core
-        <library>/boost/timer//boost_timer
     ;
 
 build-project algorithms ;
