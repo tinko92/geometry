@@ -181,6 +181,7 @@ struct traverse_graph
             signed_size_type target_node_id)
     {
         signed_size_type current_node_id = target_node_id;
+        std::set<signed_size_type> visited_node_ids {start_node_id, target_node_id};
 
         std::size_t iteration_count = 0;
 
@@ -253,7 +254,16 @@ struct traverse_graph
 #endif
                 return true;
             }
+            if (visited_node_ids.count(next_target_node_id) > 0)
+            {
+#if defined(BOOST_GEOMETRY_DEBUG_TRAVERSE_GRAPH)
+                std::cout << "ALREADY reached node " << next_target_node_id
+                    << " while traversing from " << start_node_id << std::endl;
+#endif
+                return false;
+            }
 
+            visited_node_ids.insert(next_target_node_id);
             current_node_id = next_target_node_id;
             ++iteration_count;
         }
