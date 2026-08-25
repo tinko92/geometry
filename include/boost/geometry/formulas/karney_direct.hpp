@@ -38,7 +38,6 @@
 #include <boost/geometry/formulas/flattening.hpp>
 #include <boost/geometry/formulas/result_direct.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/math.hpp>
 #include <boost/geometry/util/normalize_spheroidal_coordinates.hpp>
 #include <boost/geometry/util/series_expansion.hpp>
@@ -162,7 +161,7 @@ public:
         CT const sin_sigma2 = sin_sigma1 * cos_sigma12 + cos_sigma1 * sin_sigma12;
         CT const cos_sigma2 = cos_sigma1 * cos_sigma12 - sin_sigma1 * sin_sigma12;
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcRevAzimuth)
+        if constexpr (CalcRevAzimuth)
         {
             CT const sin_alpha2 = sin_alpha0;
             CT const cos_alpha2 = cos_alpha0 * cos_sigma2;
@@ -170,7 +169,7 @@ public:
             result.reverse_azimuth = atan2(sin_alpha2, cos_alpha2);
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcCoordinates)
+        if constexpr (CalcCoordinates)
         {
             // Find the latitude at the second point.
             CT const sin_beta2 = cos_alpha0 * sin_sigma2;
@@ -217,7 +216,7 @@ public:
             result.lon2 *= math::d2r<CT>();
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcQuantities)
+        if constexpr (CalcQuantities)
         {
             // Evaluate the coefficients for C2.
             // Index zero element of coeffs_C2 is unused.

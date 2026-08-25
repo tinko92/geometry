@@ -17,7 +17,6 @@
 
 #include <boost/geometry/core/radius.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/math.hpp>
 
 #include <boost/geometry/formulas/differential_quantities.hpp>
@@ -108,7 +107,7 @@ public:
         CT const d = c2 * d_half; // [0, pi]
         CT const sin_d = sin(d);  // [-1, 1]
 
-        if BOOST_GEOMETRY_CONSTEXPR (EnableDistance)
+        if constexpr (EnableDistance)
         {
             CT const K = math::sqr(sin_lat1-sin_lat2);
             CT const L = math::sqr(sin_lat1+sin_lat2);
@@ -135,7 +134,7 @@ public:
             result.distance = a * (d + dd);
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcAzimuths)
+        if constexpr (CalcAzimuths)
         {
             // sin_d = 0 <=> antipodal points (incl. poles) or very close
             if (math::equals(sin_d, c0))
@@ -219,14 +218,14 @@ public:
                 // therefore dA and dB may be great and the resulting azimuths
                 // may be some more or less arbitrary angles
 
-                if BOOST_GEOMETRY_CONSTEXPR (CalcFwdAzimuth)
+                if constexpr (CalcFwdAzimuth)
                 {
                     CT const dA = V*T - U;
                     result.azimuth = A - dA;
                     normalize_azimuth(result.azimuth, A, dA);
                 }
 
-                if BOOST_GEOMETRY_CONSTEXPR (CalcRevAzimuth)
+                if constexpr (CalcRevAzimuth)
                 {
                     CT const dB = -U*T + V;
                     if (B >= 0)
@@ -238,7 +237,7 @@ public:
             }
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcQuantities)
+        if constexpr (CalcQuantities)
         {
             CT const b = CT(get_radius<2>(spheroid));
 

@@ -890,7 +890,7 @@ public:
             "The argument has to be convertible to Value type or be a Range.",
             ConvertibleOrRange);
 
-        this->insert_dispatch(conv_or_rng, is_conv_t());
+        this->insert_dispatch(conv_or_rng);
     }
 
     /*!
@@ -990,7 +990,7 @@ public:
             "The argument has to be convertible to Value type or be a Range.",
             ConvertibleOrRange);
 
-        return this->remove_dispatch(conv_or_rng, is_conv_t());
+        return this->remove_dispatch(conv_or_rng);
     }
 
     /*!
@@ -1792,28 +1792,20 @@ private:
     \par Exception-safety
     basic
     */
-    template <typename ValueConvertible>
-    inline void insert_dispatch(ValueConvertible const& val_conv,
-                                std::true_type /*is_convertible*/)
+    template <typename ConvertibleOrRange>
+    inline void insert_dispatch(ConvertibleOrRange const& value)
     {
-        this->raw_insert(val_conv);
-    }
-
-    /*!
-    \brief Insert a range of values into the index.
-
-    \param rng    The range of values.
-
-    \par Exception-safety
-    basic
-    */
-    template <typename Range>
-    inline void insert_dispatch(Range const& rng,
-                                std::false_type /*is_convertible*/)
-    {
-        typedef typename boost::range_const_iterator<Range>::type It;
-        for ( It it = boost::const_begin(rng); it != boost::const_end(rng) ; ++it )
-            this->raw_insert(*it);
+        if constexpr (std::is_convertible_v<ConvertibleOrRange, value_type>)
+        {
+            this->raw_insert(value);
+        }
+        else
+        {
+            for (auto it = boost::const_begin(value); it != boost::const_end(value); ++it)
+            {
+                this->raw_insert(*it);
+            }
+        }
     }
 
     /*!
@@ -1824,30 +1816,22 @@ private:
     \par Exception-safety
     basic
     */
-    template <typename ValueConvertible>
-    inline size_type remove_dispatch(ValueConvertible const& val_conv,
-                                     std::true_type /*is_convertible*/)
+    template <typename ConvertibleOrRange>
+    inline size_type remove_dispatch(ConvertibleOrRange const& value)
     {
-        return this->raw_remove(val_conv);
-    }
-
-    /*!
-    \brief Remove a range of values from the index.
-
-    \param rng    The range of values which will be removed from the container.
-
-    \par Exception-safety
-    basic
-    */
-    template <typename Range>
-    inline size_type remove_dispatch(Range const& rng,
-                                     std::false_type /*is_convertible*/)
-    {
-        size_type result = 0;
-        typedef typename boost::range_const_iterator<Range>::type It;
-        for ( It it = boost::const_begin(rng); it != boost::const_end(rng) ; ++it )
-            result += this->raw_remove(*it);
-        return result;
+        if constexpr (std::is_convertible_v<ConvertibleOrRange, value_type>)
+        {
+            return this->raw_remove(value);
+        }
+        else
+        {
+            size_type result = 0;
+            for (auto it = boost::const_begin(value); it != boost::const_end(value); ++it)
+            {
+                result += this->raw_remove(*it);
+            }
+            return result;
+        }
     }
 
     /*!
@@ -1856,39 +1840,23 @@ private:
     \par Exception-safety
     strong
     */
-    template
-    <
-        typename Predicates, typename OutIter,
-        std::enable_if_t<(detail::predicates_count_distance<Predicates>::value == 0), int> = 0
-    >
+    template <typename Predicates, typename OutIter>
     size_type query_dispatch(Predicates const& predicates, OutIter out_it) const
     {
-        detail::rtree::visitors::spatial_query<members_holder, Predicates, OutIter>
-            query(m_members, predicates, out_it);
-        return query.apply(m_members);
-    }
-
-    /*!
-    \brief Perform nearest neighbour search.
-
-    \par Exception-safety
-    strong
-    */
-    template
-    <
-        typename Predicates, typename OutIter,
-        std::enable_if_t<(detail::predicates_count_distance<Predicates>::value > 0), int> = 0
-    >
-    size_type query_dispatch(Predicates const& predicates, OutIter out_it) const
-    {
-        BOOST_GEOMETRY_STATIC_ASSERT((detail::predicates_count_distance<Predicates>::value == 1),
-                                     "Only one distance predicate can be passed.",
-                                     Predicates);
-
-        detail::rtree::visitors::distance_query<members_holder, Predicates>
-            distance_v(m_members, predicates);
-
-        return distance_v.apply(m_members, out_it);
+        constexpr auto distance_count = detail::predicates_count_distance<Predicates>::value;
+        if constexpr (distance_count == 0)
+        {
+            detail::rtree::visitors::spatial_query<members_holder, Predicates, OutIter>
+                query(m_members, predicates, out_it);
+            return query.apply(m_members);
+        }
+        else
+        {
+            static_assert(distance_count == 1, "Only one distance predicate can be passed.");
+            detail::rtree::visitors::distance_query<members_holder, Predicates>
+                distance_v(m_members, predicates);
+            return distance_v.apply(m_members, out_it);
+        }
     }
 
     /*!

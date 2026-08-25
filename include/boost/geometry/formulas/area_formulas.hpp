@@ -17,7 +17,6 @@
 #include <boost/geometry/formulas/flattening.hpp>
 #include <boost/geometry/formulas/mean_radius.hpp>
 #include <boost/geometry/formulas/karney_inverse.hpp>
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/math.hpp>
 #include <boost/math/special_functions/hypot.hpp>
 
@@ -382,7 +381,7 @@ public:
             return pi;
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (LongSegment)
+        if constexpr (LongSegment)
         {
             if (lat1r != lat2r) // not for segments parallel to equator
             {

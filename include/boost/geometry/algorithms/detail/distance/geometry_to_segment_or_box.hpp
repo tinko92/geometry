@@ -36,7 +36,6 @@
 #include <boost/geometry/strategies/distance.hpp>
 #include <boost/geometry/strategies/tags.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 
 
 namespace boost { namespace geometry
@@ -244,7 +243,7 @@ public:
             }
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (is_comparable<strategy_type>::value)
+        if constexpr (is_comparable<strategy_type>::value)
         {
             return (std::min)(cd_min1, cd_min2);
         }

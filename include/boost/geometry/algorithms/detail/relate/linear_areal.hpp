@@ -864,7 +864,7 @@ struct linear_areal
                 m_exit_watcher.reset_detected_exit();
             }
 
-            if BOOST_GEOMETRY_CONSTEXPR (util::is_multi<OtherGeometry>::value)
+            if constexpr (util::is_multi<OtherGeometry>::value)
             {
                 if (m_first_from_unknown)
                 {
@@ -1047,7 +1047,7 @@ struct linear_areal
                     }
                 }
 
-                if BOOST_GEOMETRY_CONSTEXPR (util::is_multi<OtherGeometry>::value)
+                if constexpr (util::is_multi<OtherGeometry>::value)
                 {
                     m_first_from_unknown = false;
                     m_first_from_unknown_boundary_detected = false;
@@ -1133,7 +1133,7 @@ struct linear_areal
                         }
                         else
                         {
-                            if BOOST_GEOMETRY_CONSTEXPR (util::is_multi<OtherGeometry>::value)
+                            if constexpr (util::is_multi<OtherGeometry>::value)
                               /*&& ( op == overlay::operation_blocked
                                 || op == overlay::operation_union )*/ // if we're here it's u or x
                             {
@@ -1160,7 +1160,7 @@ struct linear_areal
                                 }
                                 else
                                 {
-                                    if BOOST_GEOMETRY_CONSTEXPR (util::is_multi<OtherGeometry>::value)
+                                    if constexpr (util::is_multi<OtherGeometry>::value)
                                       /*&& ( op == overlay::operation_blocked
                                         || op == overlay::operation_union )*/ // if we're here it's u or x
                                     {
@@ -1210,7 +1210,7 @@ struct linear_areal
             // For MultiPolygon many x/u operations may be generated as a first IP
             // if for all turns x/u was generated and any of the Polygons doesn't contain the LineString
             // then we know that the LineString is outside
-            if BOOST_GEOMETRY_CONSTEXPR (util::is_multi<OtherGeometry>::value)
+            if constexpr (util::is_multi<OtherGeometry>::value)
             {
                 if (m_first_from_unknown)
                 {

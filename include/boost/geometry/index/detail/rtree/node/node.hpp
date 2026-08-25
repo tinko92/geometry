@@ -40,7 +40,6 @@
 #include <boost/geometry/index/detail/algorithms/bounds.hpp>
 #include <boost/geometry/index/detail/is_bounding_geometry.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 
 namespace boost { namespace geometry { namespace index {
 
@@ -90,7 +89,7 @@ inline Box values_box(FwdIter first, FwdIter last, Translator const& tr,
     Box result = elements_box<Box>(first, last, tr, strategy);
 
 #ifdef BOOST_GEOMETRY_INDEX_EXPERIMENTAL_ENLARGE_BY_EPSILON
-    if BOOST_GEOMETRY_CONSTEXPR (! index::detail::is_bounding_geometry
+    if constexpr (! index::detail::is_bounding_geometry
                                     <
                                         typename indexable_type<Translator>::type
                                     >::value)
@@ -141,31 +140,17 @@ struct destroy_elements
     template <typename It>
     inline static void apply(It first, It last, allocators_type & allocators)
     {
-        typedef std::is_same
-            <
-                value_type, typename std::iterator_traits<It>::value_type
-            > is_range_of_values;
-
-        apply_dispatch(first, last, allocators, is_range_of_values());
-    }
-
-private:
-    template <typename It>
-    inline static void apply_dispatch(It first, It last, allocators_type & allocators,
-                                      std::false_type /*is_range_of_values*/)
-    {
-        for ( ; first != last ; ++first )
+        using element_type = typename std::iterator_traits<It>::value_type;
+        if constexpr (! std::is_same_v<value_type, element_type>)
         {
-            detail::rtree::visitors::destroy<MembersHolder>::apply(first->second, allocators);
+            for ( ; first != last ; ++first )
+            {
+                detail::rtree::visitors::destroy<MembersHolder>::apply(first->second, allocators);
 
-            first->second = 0;
+                first->second = 0;
+            }
         }
     }
-
-    template <typename It>
-    inline static void apply_dispatch(It /*first*/, It /*last*/, allocators_type & /*allocators*/,
-                                      std::true_type /*is_range_of_values*/)
-    {}
 };
 
 // clears node, deletes all subtrees stored in node

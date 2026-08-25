@@ -37,7 +37,6 @@
 #include <boost/geometry/strategies/line_interpolate/geographic.hpp>
 #include <boost/geometry/strategies/line_interpolate/spherical.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/range.hpp>
 #include <boost/geometry/util/type_traits.hpp>
 
@@ -135,7 +134,7 @@ struct interpolate_range
                                p,
                                diff_distance);
                 Policy::apply(p, pointlike);
-                if BOOST_GEOMETRY_CONSTEXPR (util::is_point<PointLike>::value)
+                if constexpr (util::is_point<PointLike>::value)
                 {
                     return;
                 }

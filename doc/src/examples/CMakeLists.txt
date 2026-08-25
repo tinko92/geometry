@@ -21,8 +21,8 @@ function(boost_geometry_add_example prefix item)
     PRIVATE
       .)
 
-  # To compile with C++14
-  target_compile_features(${example_name} PRIVATE cxx_std_14)
+  # To compile with C++17
+  target_compile_features(${example_name} PRIVATE cxx_std_17)
 
 endfunction()
 

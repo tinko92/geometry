@@ -15,7 +15,6 @@
 #include <sstream>
 
 #include <boost/geometry/io/dsv/write.hpp>
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/range.hpp>
 #include <boost/geometry/algorithms/validity_failure_type.hpp>
 #include <boost/geometry/algorithms/detail/overlay/debug_turn_info.hpp>
@@ -70,7 +69,7 @@ private:
     static inline
     validity_failure_type transform_failure_type(validity_failure_type failure)
     {
-        if BOOST_GEOMETRY_CONSTEXPR (AllowDuplicates)
+        if constexpr (AllowDuplicates)
         {
             if (failure == failure_duplicate_points)
             {
@@ -84,7 +83,7 @@ private:
     validity_failure_type transform_failure_type(validity_failure_type failure,
                                                  bool is_linear)
     {
-        if BOOST_GEOMETRY_CONSTEXPR (AllowSpikes)
+        if constexpr (AllowSpikes)
         {
             if (is_linear && failure == failure_spikes)
             {
@@ -128,7 +127,7 @@ private:
                                  bool is_linear,
                                  SpikePoint const& spike_point)
         {
-            if BOOST_GEOMETRY_CONSTEXPR (AllowSpikes)
+            if constexpr (AllowSpikes)
             {
                 if (is_linear)
                 {
@@ -181,7 +180,7 @@ private:
         static inline void apply(std::ostringstream& oss,
                                  Point const& point)
         {
-            if BOOST_GEOMETRY_CONSTEXPR (! AllowDuplicates)
+            if constexpr (! AllowDuplicates)
             {
                 oss << ". Duplicate points were found near point "
                     << geometry::dsv(point);

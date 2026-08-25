@@ -15,6 +15,7 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_UNION_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_UNION_HPP
 
+#include <tuple>
 
 #include <boost/geometry/algorithms/detail/gc_group_elements.hpp>
 #include <boost/geometry/algorithms/detail/intersection/gc.hpp>
@@ -414,7 +415,7 @@ struct union_
             typename traits::geometry_types<GeometryOut>::type,
             util::is_multi_polygon
         >::type;
-    using tuple_out_t = boost::tuple<multi_point_t, multi_linestring_t, multi_polygon_t>;
+    using tuple_out_t = std::tuple<multi_point_t, multi_linestring_t, multi_polygon_t>;
 
     template <typename Strategy>
     static inline void apply(Geometry1 const& geometry1,
@@ -430,9 +431,9 @@ struct union_
             {
                 tuple_out_t out;
                 merge_group(gc1_view, gc2_view, strategy, inters_group, out);
-                detail::intersection::gc_move_multi_back(geometry_out, boost::get<0>(out));
-                detail::intersection::gc_move_multi_back(geometry_out, boost::get<1>(out));
-                detail::intersection::gc_move_multi_back(geometry_out, boost::get<2>(out));
+                detail::intersection::gc_move_multi_back(geometry_out, std::get<0>(out));
+                detail::intersection::gc_move_multi_back(geometry_out, std::get<1>(out));
+                detail::intersection::gc_move_multi_back(geometry_out, std::get<2>(out));
                 return true;
             },
             [&](auto const& disjoint_group)
@@ -468,46 +469,46 @@ private:
         // L = L \ A
         {
             multi_linestring_t l;
-            subtract_greater_topodim(boost::get<1>(out), boost::get<2>(out), l, strategy);
-            boost::get<1>(out) = std::move(l);
+            subtract_greater_topodim(std::get<1>(out), std::get<2>(out), l, strategy);
+            std::get<1>(out) = std::move(l);
         }
         // P = P \ A
         {
             multi_point_t p;
-            subtract_greater_topodim(boost::get<0>(out), boost::get<2>(out), p, strategy);
-            boost::get<0>(out) = std::move(p);
+            subtract_greater_topodim(std::get<0>(out), std::get<2>(out), p, strategy);
+            std::get<0>(out) = std::move(p);
         }
         // P = P \ L
         {
             multi_point_t p;
-            subtract_greater_topodim(boost::get<0>(out), boost::get<1>(out), p, strategy);
-            boost::get<0>(out) = std::move(p);
+            subtract_greater_topodim(std::get<0>(out), std::get<1>(out), p, strategy);
+            std::get<0>(out) = std::move(p);
         }
         */
     }
 
-    template <typename G, typename Strategy, std::enable_if_t<util::is_pointlike<G>::value, int> = 0>
+    template <typename G, typename Strategy>
     static inline void merge_one(tuple_out_t& out, G const& g, Strategy const& strategy)
     {
-        multi_point_t p;
-        union_<multi_point_t, G, multi_point_t>::apply(boost::get<0>(out), g, p, strategy);
-        boost::get<0>(out) = std::move(p);
-    }
-
-    template <typename G, typename Strategy, std::enable_if_t<util::is_linear<G>::value, int> = 0>
-    static inline void merge_one(tuple_out_t& out, G const& g, Strategy const& strategy)
-    {
-        multi_linestring_t l;
-        union_<multi_linestring_t, G, multi_linestring_t>::apply(boost::get<1>(out), g, l, strategy);
-        boost::get<1>(out) = std::move(l);
-    }
-
-    template <typename G, typename Strategy, std::enable_if_t<util::is_areal<G>::value, int> = 0>
-    static inline void merge_one(tuple_out_t& out, G const& g, Strategy const& strategy)
-    {
-        multi_polygon_t a;
-        union_<multi_polygon_t, G, multi_polygon_t>::apply(boost::get<2>(out), g, a, strategy);
-        boost::get<2>(out) = std::move(a);
+        if constexpr (util::is_pointlike<G>::value)
+        {
+            multi_point_t result;
+            union_<multi_point_t, G, multi_point_t>::apply(std::get<0>(out), g, result, strategy);
+            std::get<0>(out) = std::move(result);
+        }
+        else if constexpr (util::is_linear<G>::value)
+        {
+            multi_linestring_t result;
+            union_<multi_linestring_t, G, multi_linestring_t>::apply(std::get<1>(out), g, result, strategy);
+            std::get<1>(out) = std::move(result);
+        }
+        else
+        {
+            static_assert(util::is_areal<G>::value);
+            multi_polygon_t result;
+            union_<multi_polygon_t, G, multi_polygon_t>::apply(std::get<2>(out), g, result, strategy);
+            std::get<2>(out) = std::move(result);
+        }
     }
 
     template <typename GC1View, typename GC2View, typename Group>
@@ -533,28 +534,28 @@ private:
         }
     }
 
-    template <typename G, std::enable_if_t<util::is_pointlike<G>::value, int> = 0>
+    template <typename G>
     static inline void copy_one(G const& g, GeometryOut& geometry_out)
     {
-        multi_point_t p;
-        geometry::convert(g, p);
-        detail::intersection::gc_move_multi_back(geometry_out, p);
-    }
-
-    template <typename G, std::enable_if_t<util::is_linear<G>::value, int> = 0>
-    static inline void copy_one(G const& g, GeometryOut& geometry_out)
-    {
-        multi_linestring_t l;
-        geometry::convert(g, l);
-        detail::intersection::gc_move_multi_back(geometry_out, l);
-    }
-
-    template <typename G, std::enable_if_t<util::is_areal<G>::value, int> = 0>
-    static inline void copy_one(G const& g, GeometryOut& geometry_out)
-    {
-        multi_polygon_t a;
-        geometry::convert(g, a);
-        detail::intersection::gc_move_multi_back(geometry_out, a);
+        if constexpr (util::is_pointlike<G>::value)
+        {
+            multi_point_t result;
+            geometry::convert(g, result);
+            detail::intersection::gc_move_multi_back(geometry_out, result);
+        }
+        else if constexpr (util::is_linear<G>::value)
+        {
+            multi_linestring_t result;
+            geometry::convert(g, result);
+            detail::intersection::gc_move_multi_back(geometry_out, result);
+        }
+        else
+        {
+            static_assert(util::is_areal<G>::value);
+            multi_polygon_t result;
+            geometry::convert(g, result);
+            detail::intersection::gc_move_multi_back(geometry_out, result);
+        }
     }
     /*
     template <typename Multi1, typename Multi2, typename Strategy>

@@ -13,7 +13,7 @@ add_library(boost_geometry INTERFACE)
 add_library(Boost::geometry ALIAS boost_geometry)
 
 target_include_directories(boost_geometry INTERFACE include)
-target_compile_features(boost_geometry INTERFACE cxx_std_14)
+target_compile_features(boost_geometry INTERFACE cxx_std_17)
 
 target_link_libraries(boost_geometry
   INTERFACE
@@ -75,6 +75,7 @@ if(BOOST_GEOMETRY_BUILD_OPTIONAL)
 
 endif()
 
+
 if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt")
 
   if (${PROJECT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
@@ -134,4 +135,3 @@ if(BUILD_DOCUMENTATION)
   add_subdirectory(doc/src/examples)
   add_subdirectory(doc/src/docutils/tools/support_status)
 endif()
-

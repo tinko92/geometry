@@ -27,7 +27,7 @@ Since Qt 6.3 there is `qt_standard_project_setup()` used in the `CMakeLists.txt`
 If you have an older Qt version (on Ubuntu 22 you might have `QT6.2.4`), replace `qt_standard_project_setup` with:
 
 ```
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)

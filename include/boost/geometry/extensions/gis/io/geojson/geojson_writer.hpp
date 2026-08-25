@@ -12,7 +12,6 @@
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/io/dsv/write.hpp>
 #include <boost/geometry/core/static_assert.hpp>
-#include <boost/geometry/util/constexpr.hpp>
 
 #include <iomanip>
 #include <ostream>
@@ -137,7 +136,7 @@ struct geojson_writer
         start_property();
         stream_quoted(name);
         m_out << ": ";
-        if BOOST_GEOMETRY_CONSTEXPR(needs_quotes)
+        if constexpr (needs_quotes)
         {
             stream_quoted(value);
         }

@@ -12,6 +12,7 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_RELATE_IMPLEMENTATION_GC_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_RELATE_IMPLEMENTATION_GC_HPP
 
+#include <tuple>
 
 #include <boost/geometry/algorithms/detail/relate/boundary_checker.hpp>
 #include <boost/geometry/algorithms/detail/relate/interface.hpp>
@@ -141,7 +142,7 @@ struct gc_gc
             geometry::model::multi_polygon<geometry::model::polygon<pt1_t>>,
             mpo1_found_t
         >;
-    using tuple1_t = boost::tuple<mpt1_t, mls1_t, mpo1_t>;
+    using tuple1_t = std::tuple<mpt1_t, mls1_t, mpo1_t>;
 
     using mpt2_found_t = typename util::sequence_find_if
         <
@@ -177,7 +178,7 @@ struct gc_gc
             geometry::model::multi_polygon<geometry::model::polygon<pt2_t>>,
             mpo2_found_t
         >;
-    using tuple2_t = boost::tuple<mpt2_t, mls2_t, mpo2_t>;
+    using tuple2_t = std::tuple<mpt2_t, mls2_t, mpo2_t>;
 
     template <typename Geometry>
     using kind_id = util::index_constant
@@ -235,12 +236,12 @@ struct gc_gc
                 subtract_elements(tuple2, strategy);
 
                 // Helpers
-                auto const& mpt1 = boost::get<0>(tuple1);
-                auto const& mls1 = boost::get<1>(tuple1);
-                auto const& mpo1 = boost::get<2>(tuple1);
-                auto const& mpt2 = boost::get<0>(tuple2);
-                auto const& mls2 = boost::get<1>(tuple2);
-                auto const& mpo2 = boost::get<2>(tuple2);
+                auto const& mpt1 = std::get<0>(tuple1);
+                auto const& mls1 = std::get<1>(tuple1);
+                auto const& mpo1 = std::get<2>(tuple1);
+                auto const& mpt2 = std::get<0>(tuple2);
+                auto const& mls2 = std::get<1>(tuple2);
+                auto const& mpo2 = std::get<2>(tuple2);
 
                 // A/A
                 if (! geometry::is_empty(mpo1) && ! geometry::is_empty(mpo2))
@@ -548,36 +549,36 @@ private:
     static inline void merge_geometry(Tuple& tuple, Geometry const& geometry, Strategy const& strategy)
     {
         static const std::size_t index = kind_id<Geometry>::value;
-        typename boost::tuples::element<index, Tuple>::type temp_out;
-        geometry::union_(boost::get<index>(tuple), geometry, temp_out, strategy);
-        boost::get<index>(tuple) = std::move(temp_out);
+        typename std::tuple_element<index, Tuple>::type temp_out;
+        geometry::union_(std::get<index>(tuple), geometry, temp_out, strategy);
+        std::get<index>(tuple) = std::move(temp_out);
     }
 
     template <typename Tuple, typename Strategy>
     static inline void subtract_elements(Tuple& tuple, Strategy const& strategy)
     {
-        if (! geometry::is_empty(boost::get<1>(tuple)))
+        if (! geometry::is_empty(std::get<1>(tuple)))
         {
-            if (! geometry::is_empty(boost::get<2>(tuple)))
+            if (! geometry::is_empty(std::get<2>(tuple)))
             {
-                typename boost::tuples::element<1, Tuple>::type mls;
-                geometry::difference(boost::get<1>(tuple), boost::get<2>(tuple), mls, strategy);
-                boost::get<1>(tuple) = std::move(mls);
+                typename std::tuple_element<1, Tuple>::type mls;
+                geometry::difference(std::get<1>(tuple), std::get<2>(tuple), mls, strategy);
+                std::get<1>(tuple) = std::move(mls);
             }
         }
-        if (! geometry::is_empty(boost::get<0>(tuple)))
+        if (! geometry::is_empty(std::get<0>(tuple)))
         {
-            if (! geometry::is_empty(boost::get<2>(tuple)))
+            if (! geometry::is_empty(std::get<2>(tuple)))
             {
-                typename boost::tuples::element<0, Tuple>::type mpt;
-                geometry::difference(boost::get<0>(tuple), boost::get<2>(tuple), mpt, strategy);
-                boost::get<0>(tuple) = std::move(mpt);
+                typename std::tuple_element<0, Tuple>::type mpt;
+                geometry::difference(std::get<0>(tuple), std::get<2>(tuple), mpt, strategy);
+                std::get<0>(tuple) = std::move(mpt);
             }
-            if (! geometry::is_empty(boost::get<1>(tuple)))
+            if (! geometry::is_empty(std::get<1>(tuple)))
             {
-                typename boost::tuples::element<0, Tuple>::type mpt;
-                geometry::difference(boost::get<0>(tuple), boost::get<1>(tuple), mpt, strategy);
-                boost::get<0>(tuple) = std::move(mpt);
+                typename std::tuple_element<0, Tuple>::type mpt;
+                geometry::difference(std::get<0>(tuple), std::get<1>(tuple), mpt, strategy);
+                std::get<0>(tuple) = std::move(mpt);
             }
         }
     }

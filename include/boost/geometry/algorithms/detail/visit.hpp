@@ -241,52 +241,33 @@ struct visit_breadth_first_impl
     }
 
 private:
-    template
-    <
-        bool PassIter, typename F, typename Geom, typename Iterator,
-        std::enable_if_t<util::is_geometry_collection<Geom>::value, int> = 0
-    >
-    static bool visit_or_enqueue(F &, Geom &&, std::deque<Iterator> & queue, Iterator iter)
+    template <bool PassIter, typename F, typename Geom, typename Iterator>
+    static bool visit_or_enqueue(F & f, Geom && g, std::deque<Iterator> & queue, Iterator iter)
     {
-        queue.push_back(iter);
-        return true;
-    }
-    template
-    <
-        bool PassIter, typename F, typename Geom, typename Iterator,
-        std::enable_if_t<! util::is_geometry_collection<Geom>::value && ! PassIter, int> = 0
-    >
-    static bool visit_or_enqueue(F & f, Geom && g, std::deque<Iterator> & , Iterator)
-    {
-        return f(std::forward<Geom>(g));
-    }
-    template
-    <
-        bool PassIter, typename F, typename Geom, typename Iterator,
-        std::enable_if_t<! util::is_geometry_collection<Geom>::value && PassIter, int> = 0
-    >
-    static bool visit_or_enqueue(F & f, Geom && g, std::deque<Iterator> & , Iterator iter)
-    {
-        return f(std::forward<Geom>(g), iter);
+        if constexpr (util::is_geometry_collection<Geom>::value)
+        {
+            queue.push_back(iter);
+            return true;
+        }
+        else if constexpr (PassIter)
+        {
+            return f(std::forward<Geom>(g), iter);
+        }
+        else
+        {
+            return f(std::forward<Geom>(g));
+        }
     }
 
-    template
-    <
-        typename Geom, typename Iterator,
-        std::enable_if_t<util::is_geometry_collection<Geom>::value, int> = 0
-    >
+    template <typename Geom, typename Iterator>
     static void set_iterators(Geom && g, Iterator & first, Iterator & last)
     {
-        first = Iterator{ boost::begin(g) };
-        last = Iterator{ boost::end(g) };
+        if constexpr (util::is_geometry_collection<Geom>::value)
+        {
+            first = Iterator{ boost::begin(g) };
+            last = Iterator{ boost::end(g) };
+        }
     }
-    template
-    <
-        typename Geom, typename Iterator,
-        std::enable_if_t<! util::is_geometry_collection<Geom>::value, int> = 0
-    >
-    static void set_iterators(Geom &&, Iterator &, Iterator &)
-    {}
 };
 
 } // namespace detail

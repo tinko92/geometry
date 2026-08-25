@@ -37,7 +37,6 @@
 
 #include <boost/geometry/strategies/default_strategy.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/range.hpp>
 
 
@@ -102,7 +101,7 @@ struct range_remove_spikes
         std::size_t cleaned_count = cleaned.size();
 
         // For a closed-polygon, remove closing point, this makes checking first point(s) easier and consistent
-        if BOOST_GEOMETRY_CONSTEXPR (geometry::closure<Range>::value == geometry::closed)
+        if constexpr (geometry::closure<Range>::value == geometry::closed)
         {
             --cleaned_e;
             --cleaned_count;
@@ -146,7 +145,7 @@ struct range_remove_spikes
         }
 
         // Close if necessary
-        if BOOST_GEOMETRY_CONSTEXPR (geometry::closure<Range>::value == geometry::closed)
+        if constexpr (geometry::closure<Range>::value == geometry::closed)
         {
             BOOST_GEOMETRY_ASSERT(cleaned_e != cleaned.end());
             *cleaned_e = *cleaned_b;

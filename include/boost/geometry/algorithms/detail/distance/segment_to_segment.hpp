@@ -28,7 +28,6 @@
 #include <boost/geometry/strategies/distance.hpp>
 #include <boost/geometry/strategies/tags.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 
 
 namespace boost { namespace geometry
@@ -82,7 +81,7 @@ public:
         std::size_t imin = std::distance(std::addressof(d[0]),
                                          std::min_element(d, d + 4));
 
-        if BOOST_GEOMETRY_CONSTEXPR (is_comparable<strategy_type>::value)
+        if constexpr (is_comparable<strategy_type>::value)
         {
             return d[imin];
         }

@@ -1,6 +1,6 @@
 // Boost.Geometry Index
 //
-// R-tree nodes based on Boost.Variant, storing static-size containers
+// R-tree nodes based on std::variant, storing static-size containers
 //
 // Copyright (c) 2011-2023 Adam Wulkiewicz, Lodz, Poland.
 //
@@ -15,12 +15,11 @@
 #ifndef BOOST_GEOMETRY_INDEX_DETAIL_RTREE_NODE_VARIANT_STATIC_HPP
 #define BOOST_GEOMETRY_INDEX_DETAIL_RTREE_NODE_VARIANT_STATIC_HPP
 
+#include <variant>
 #include <utility>
 #include <boost/container/allocator_traits.hpp>
 #include <boost/container/static_vector.hpp>
 #include <boost/core/invoke_swap.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/variant.hpp>
 
 #include <boost/geometry/index/detail/rtree/node/variant_dynamic.hpp>
 
@@ -63,10 +62,10 @@ struct variant_leaf<Value, Parameters, Box, Allocators, node_variant_static_tag>
 template <typename Value, typename Parameters, typename Box, typename Allocators>
 struct node<Value, Parameters, Box, Allocators, node_variant_static_tag>
 {
-    typedef boost::variant<
+    using type = std::variant<
         variant_leaf<Value, Parameters, Box, Allocators, node_variant_static_tag>,
         variant_internal_node<Value, Parameters, Box, Allocators, node_variant_static_tag>
-    > type;
+    >;
 };
 
 template <typename Value, typename Parameters, typename Box, typename Allocators>
@@ -86,7 +85,7 @@ struct leaf<Value, Parameters, Box, Allocators, node_variant_static_tag>
 template <typename Value, typename Parameters, typename Box, typename Allocators, bool IsVisitableConst>
 struct visitor<Value, Parameters, Box, Allocators, node_variant_static_tag, IsVisitableConst>
 {
-    typedef static_visitor<> type;
+    struct type {};
 };
 
 // allocators

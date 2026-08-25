@@ -23,6 +23,6 @@
     "category": [
       "Algorithms", "Data", "Math"
     ],
-    "cxxstd": "14"
+    "cxxstd": "17"
   }
 ]

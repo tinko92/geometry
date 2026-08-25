@@ -42,7 +42,6 @@
 #include <boost/geometry/policies/compare.hpp>
 
 #include <boost/geometry/util/calculation_type.hpp>
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/has_nan_coordinate.hpp>
 #include <boost/geometry/util/math.hpp>
 #include <boost/geometry/util/numeric_cast.hpp>
@@ -155,7 +154,7 @@ public:
             }
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (is_comparable<ps_strategy_type>::value)
+        if constexpr (is_comparable<ps_strategy_type>::value)
         {
             return cd[imin];
         }

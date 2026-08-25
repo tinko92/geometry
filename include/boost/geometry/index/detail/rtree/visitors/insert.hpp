@@ -32,7 +32,6 @@
 #include <boost/geometry/index/detail/rtree/node/subtree_destroyer.hpp>
 #include <boost/geometry/index/detail/rtree/options.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 
 namespace boost { namespace geometry { namespace index {
 
@@ -330,7 +329,7 @@ protected:
         // Enlarge it in case if it's not bounding geometry type.
         // It's because Points and Segments are compared WRT machine epsilon
         // This ensures that leafs bounds correspond to the stored elements
-        if BOOST_GEOMETRY_CONSTEXPR ((std::is_same<Element, value_type>::value)
+        if constexpr ((std::is_same<Element, value_type>::value)
                                     && ! index::detail::is_bounding_geometry
                                             <
                                                 typename indexable_type<translator_type>::type
@@ -426,7 +425,7 @@ protected:
         // Enlarge bounds of a leaf node.
         // It's because Points and Segments are compared WRT machine epsilon
         // This ensures that leafs' bounds correspond to the stored elements.
-        if BOOST_GEOMETRY_CONSTEXPR ((std::is_same<Node, leaf>::value)
+        if constexpr ((std::is_same<Node, leaf>::value)
                                      && ! index::detail::is_bounding_geometry
                                             <
                                                 typename indexable_type<translator_type>::type

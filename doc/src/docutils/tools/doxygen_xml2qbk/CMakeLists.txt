@@ -18,7 +18,7 @@ add_executable(${PROJECT_NAME}
 
 target_compile_features(${PROJECT_NAME}
   PUBLIC 
-    cxx_std_14)
+    cxx_std_17)
 
 # From Boost it uses program_options
 target_link_libraries(${PROJECT_NAME}

@@ -34,7 +34,6 @@
 #include <boost/geometry/core/ring_type.hpp>
 #include <boost/geometry/core/tags.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/range.hpp>
 #include <boost/geometry/util/sequence.hpp>
 
@@ -445,7 +444,7 @@ public:
             return false;
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (CheckRingValidityOnly)
+        if constexpr (CheckRingValidityOnly)
         {
             return true;
         }

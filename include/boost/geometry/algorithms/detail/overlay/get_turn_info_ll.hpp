@@ -22,7 +22,6 @@
 #include <boost/geometry/algorithms/detail/overlay/get_turn_info.hpp>
 #include <boost/geometry/algorithms/detail/overlay/get_turn_info_for_endpoint.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 
 namespace boost { namespace geometry {
 
@@ -261,7 +260,7 @@ struct get_turn_info_linear_linear
                                                      tp.operations[0].operation,
                                                      tp.operations[1].operation);
 
-                    if BOOST_GEOMETRY_CONSTEXPR (! handle_spikes)
+                    if constexpr (! handle_spikes)
                     {
                         *out++ = tp;
                     }
@@ -307,7 +306,7 @@ struct get_turn_info_linear_linear
                         transformer(tp);
 
                         // conditionally handle spikes
-                        if BOOST_GEOMETRY_CONSTEXPR (! handle_spikes)
+                        if constexpr (! handle_spikes)
                         {
                             *out++ = tp;
                         }
@@ -383,7 +382,7 @@ struct get_turn_info_linear_linear
                         transformer(tp);
 
                         // conditionally handle spikes
-                        if BOOST_GEOMETRY_CONSTEXPR (! handle_spikes)
+                        if constexpr (! handle_spikes)
                         {
                             *out++ = tp;
                         }
@@ -400,7 +399,7 @@ struct get_turn_info_linear_linear
                         turn_transformer_ec transformer(method_touch_interior);
 
                         // conditionally handle spikes
-                        if BOOST_GEOMETRY_CONSTEXPR (handle_spikes)
+                        if constexpr (handle_spikes)
                         {
                             append_opposite_spikes<append_collinear_opposite>(tp, inters, out);
                         }
@@ -423,7 +422,7 @@ struct get_turn_info_linear_linear
             case '0' :
             {
                 // degenerate points
-                if BOOST_GEOMETRY_CONSTEXPR (AssignPolicy::include_degenerate)
+                if constexpr (AssignPolicy::include_degenerate)
                 {
                     only_convert::apply(tp, inters.i_info());
 
@@ -557,7 +556,7 @@ struct get_turn_info_linear_linear
         if (is_p_spike)
         {
             bool output_spike = false;
-            if BOOST_GEOMETRY_CONSTEXPR (is_version_touches)
+            if constexpr (is_version_touches)
             {
                 tp.operations[0].is_collinear = true;
                 tp.operations[1].is_collinear = false;
@@ -593,7 +592,7 @@ struct get_turn_info_linear_linear
         if (is_q_spike)
         {
             bool output_spike = false;
-            if BOOST_GEOMETRY_CONSTEXPR (is_version_touches)
+            if constexpr (is_version_touches)
             {
                 tp.operations[0].is_collinear = false;
                 tp.operations[1].is_collinear = true;

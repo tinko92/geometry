@@ -11,6 +11,8 @@
 #ifndef BOOST_GEOMETRY_INDEX_DETAIL_RTREE_NODE_VARIANT_VISITOR_HPP
 #define BOOST_GEOMETRY_INDEX_DETAIL_RTREE_NODE_VARIANT_VISITOR_HPP
 
+#include <variant>
+
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/variant/get.hpp>
 #include <boost/variant/variant.hpp>
@@ -31,6 +33,16 @@ struct variant_leaf;
 
 template <typename V, typename Value, typename Parameters, typename Box, typename Allocators, typename Tag>
 inline V & get(
+    std::variant<
+        variant_leaf<Value, Parameters, Box, Allocators, Tag>,
+        variant_internal_node<Value, Parameters, Box, Allocators, Tag>
+    > & v)
+{
+    return std::get<V>(v);
+}
+
+template <typename V, typename Value, typename Parameters, typename Box, typename Allocators, typename Tag>
+inline V & get(
     boost::variant<
         variant_leaf<Value, Parameters, Box, Allocators, Tag>,
         variant_internal_node<Value, Parameters, Box, Allocators, Tag>
@@ -43,12 +55,32 @@ inline V & get(
 
 template <typename Visitor, typename Value, typename Parameters, typename Box, typename Allocators, typename Tag>
 inline void apply_visitor(Visitor & v,
+                          std::variant<
+                              variant_leaf<Value, Parameters, Box, Allocators, Tag>,
+                              variant_internal_node<Value, Parameters, Box, Allocators, Tag>
+                          > & n)
+{
+    std::visit(v, n);
+}
+
+template <typename Visitor, typename Value, typename Parameters, typename Box, typename Allocators, typename Tag>
+inline void apply_visitor(Visitor & v,
                           boost::variant<
                               variant_leaf<Value, Parameters, Box, Allocators, Tag>,
                               variant_internal_node<Value, Parameters, Box, Allocators, Tag>
                           > & n)
 {
     boost::apply_visitor(v, n);
+}
+
+template <typename Visitor, typename Value, typename Parameters, typename Box, typename Allocators, typename Tag>
+inline void apply_visitor(Visitor & v,
+                          std::variant<
+                              variant_leaf<Value, Parameters, Box, Allocators, Tag>,
+                              variant_internal_node<Value, Parameters, Box, Allocators, Tag>
+                          > const& n)
+{
+    std::visit(v, n);
 }
 
 template <typename Visitor, typename Value, typename Parameters, typename Box, typename Allocators, typename Tag>

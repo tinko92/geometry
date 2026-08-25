@@ -98,7 +98,7 @@ namespace strategy { namespace point_order
 //        static const bool is_polar =
 //            std::is_same<geometry::cs_tag_t<Point>, spherical_polar_tag>::value;
 //
-//        if BOOST_GEOMETRY_CONSTEXPR (is_polar)
+//        if constexpr (is_polar)
 //        {
 //            CalcT pi_half = math::half_pi<CalcT>();
 //            lat1 = pi_half - lat1;

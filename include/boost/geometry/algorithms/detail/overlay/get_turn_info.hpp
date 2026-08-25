@@ -285,7 +285,7 @@ struct turn_info_verification_functions
             std::size_t index_p, std::size_t index_q,
             TurnInfo& ti)
     {
-        if BOOST_GEOMETRY_CONSTEXPR (VerifyPolicy::use_side_verification)
+        if constexpr (VerifyPolicy::use_side_verification)
         {
             set_both_verified<IndexP, IndexQ>(range_p, range_q, umbrella_strategy,
                                               index_p, index_q, ti);
@@ -308,7 +308,7 @@ struct turn_info_verification_functions
                                     UmbrellaStrategy const& umbrella_strategy,
                                     int index_p, int index_q)
     {
-        if BOOST_GEOMETRY_CONSTEXPR (VerifyPolicy::use_side_verification)
+        if constexpr (VerifyPolicy::use_side_verification)
         {
             if (side == 0)
             {
@@ -357,7 +357,7 @@ struct touch_interior : public base_turn_handler
                                 UniqueSubRange1 const& non_touching_range,
                                 UniqueSubRange2 const& other_range)
     {
-        if BOOST_GEOMETRY_CONSTEXPR (! VerifyPolicy::use_handle_as_touch)
+        if constexpr (! VerifyPolicy::use_handle_as_touch)
         {
             return false;
         }
@@ -580,7 +580,7 @@ struct touch : public base_turn_handler
                                               UmbrellaStrategy const& umbrella_strategy,
                                               TurnInfo& ti)
     {
-        if BOOST_GEOMETRY_CONSTEXPR (! VerifyPolicy::use_handle_imperfect_touch)
+        if constexpr (! VerifyPolicy::use_handle_imperfect_touch)
         {
             return false;
         }
@@ -956,7 +956,7 @@ struct start : public base_turn_handler
                 SideCalculator const& side,
                 UmbrellaStrategy const& )
     {
-        if BOOST_GEOMETRY_CONSTEXPR (! VerifyPolicy::use_start_turn)
+        if constexpr (! VerifyPolicy::use_start_turn)
         {
             return false;
         }
@@ -1015,7 +1015,7 @@ struct equal_opposite : public base_turn_handler
                 IntersectionInfo const& intersection_info)
     {
         // For equal-opposite segments, normally don't do anything.
-        if BOOST_GEOMETRY_CONSTEXPR (AssignPolicy::include_opposite)
+        if constexpr (AssignPolicy::include_opposite)
         {
             tp.method = method_equal;
             for (unsigned int i = 0; i < 2; i++)
@@ -1052,7 +1052,7 @@ struct collinear : public base_turn_handler
                                 UniqueSubRange2 const& range_q,
                                 DirInfo const& dir_info)
     {
-        if BOOST_GEOMETRY_CONSTEXPR (! VerifyPolicy::use_handle_as_equal)
+        if constexpr (! VerifyPolicy::use_handle_as_equal)
         {
             return false;
         }
@@ -1225,7 +1225,7 @@ private :
                 // two operations blocked, so the whole point does not need
                 // to be generated.
                 // So return false to indicate nothing is to be done.
-                if BOOST_GEOMETRY_CONSTEXPR (AssignPolicy::include_opposite)
+                if constexpr (AssignPolicy::include_opposite)
                 {
                     tp.operations[Index].operation = operation_opposite;
                     blocked = operation_opposite;
@@ -1319,7 +1319,7 @@ public:
             *out++ = tp;
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (AssignPolicy::include_opposite)
+        if constexpr (AssignPolicy::include_opposite)
         {
             // Handle cases not yet handled above
             if ((arrival_q == -1 && arrival_p == 0)

@@ -16,17 +16,11 @@
 #include <type_traits>
 
 
-namespace boost { namespace geometry
+namespace boost::geometry::util
 {
 
 
-namespace util
-{
-
-
-// C++17
-template <bool B>
-using bool_constant = std::integral_constant<bool, B>;
+using std::bool_constant;
 
 // non-standard
 template <int I>
@@ -41,41 +35,9 @@ template <std::size_t S>
 using size_constant = std::integral_constant<std::size_t, S>;
 
 
-// C++17
-template <typename ...>
-struct conjunction
-    : std::true_type
-{};
-template<typename Trait>
-struct conjunction<Trait>
-    : Trait
-{};
-template <typename Trait, typename ...Traits>
-struct conjunction<Trait, Traits...>
-    : std::conditional_t<Trait::value, conjunction<Traits...>, Trait>
-{};
-
-
-// C++17
-template <typename ...>
-struct disjunction
-    : std::false_type
-{};
-template <typename Trait>
-struct disjunction<Trait>
-    : Trait
-{};
-template <typename Trait, typename ...Traits>
-struct disjunction<Trait, Traits...>
-    : std::conditional_t<Trait::value, Trait, disjunction<Traits...>>
-{};
-
-
-// C++17
-template <typename Trait>
-struct negation
-    : bool_constant<!Trait::value>
-{};
+using std::conjunction;
+using std::disjunction;
+using std::negation;
 
 
 // non-standard
@@ -175,7 +137,11 @@ template <typename From, typename To>
 using transcribe_cref_t = typename transcribe_cref<From, To>::type;
 
 
-} // namespace util
+} // namespace boost::geometry::util
+
+
+namespace boost::geometry
+{
 
 
 // Deprecated utilities, defined for backward compatibility but might be
@@ -217,6 +183,6 @@ using bare_type [[deprecated("Use util::remove_cptrref<> instead.")]] = remove_c
 } // namespace util
 
 
-}} // namespace boost::geometry
+} // namespace boost::geometry
 
 #endif // BOOST_GEOMETRY_UTIL_TYPE_TRAITS_STD_HPP

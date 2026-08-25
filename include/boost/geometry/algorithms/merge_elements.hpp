@@ -43,112 +43,62 @@ namespace detail { namespace merge_elements
 
 template <typename T>
 using is_pla = util::bool_constant<util::is_pointlike<T>::value || util::is_linear<T>::value || util::is_areal<T>::value>;
-template <typename T, typename ...Ts>
-struct are_areal : util::bool_constant<util::is_areal<T>::value && are_areal<Ts...>::value> {};
-template <typename T>
-struct are_areal<T> : util::is_areal<T> {};
-template <typename T, typename ...Ts>
-struct are_linear : util::bool_constant<util::is_linear<T>::value && are_linear<Ts...>::value> {};
-template <typename T>
-struct are_linear<T> : util::is_linear<T> {};
-template <typename T, typename ...Ts>
-struct are_pointlike : util::bool_constant<util::is_pointlike<T>::value && are_pointlike<Ts...>::value> {};
-template <typename T>
-struct are_pointlike<T> : util::is_pointlike<T> {};
+template <typename ...Ts>
+using are_areal = util::bool_constant<(util::is_areal<Ts>::value && ...)>;
+template <typename ...Ts>
+using are_linear = util::bool_constant<(util::is_linear<Ts>::value && ...)>;
+template <typename ...Ts>
+using are_pointlike = util::bool_constant<(util::is_pointlike<Ts>::value && ...)>;
 template <typename ...Ts>
 using are_same_kind = util::bool_constant<are_areal<Ts...>::value || are_linear<Ts...>::value || are_pointlike<Ts...>::value>;
 
 
-template
-<
-    typename Geometry, typename It, typename PointLike, typename Linear, typename Areal,
-    std::enable_if_t<util::is_areal<Geometry>::value, int> = 0
->
-inline void distribute_element(Geometry const& geometry, It it, PointLike& , Linear&, Areal& areal)
+template <typename Geometry, typename It, typename PointLike, typename Linear, typename Areal>
+inline void distribute_element(Geometry const& geometry, It it,
+                               PointLike& pointlike, Linear& linear, Areal& areal)
 {
-    geometry::point_type_t<Geometry> point;
-    if (geometry::point_on_border(point, geometry))
+    if constexpr (is_pla<Geometry>::value)
     {
-        using point_t = typename Areal::value_type::first_type;
-        areal.emplace_back(point_t(geometry::get<0>(point), geometry::get<1>(point)), it);
+        geometry::point_type_t<Geometry> point;
+        if (geometry::point_on_border(point, geometry))
+        {
+            if constexpr (util::is_areal<Geometry>::value)
+            {
+                using point_t = typename Areal::value_type::first_type;
+                areal.emplace_back(point_t(geometry::get<0>(point), geometry::get<1>(point)), it);
+            }
+            else if constexpr (util::is_linear<Geometry>::value)
+            {
+                using point_t = typename Linear::value_type::first_type;
+                linear.emplace_back(point_t(geometry::get<0>(point), geometry::get<1>(point)), it);
+            }
+            else
+            {
+                using point_t = typename PointLike::value_type::first_type;
+                pointlike.emplace_back(point_t(geometry::get<0>(point), geometry::get<1>(point)), it);
+            }
+        }
     }
 }
 
-template
-<
-    typename Geometry, typename It, typename PointLike, typename Linear, typename Areal,
-    std::enable_if_t<util::is_linear<Geometry>::value, int> = 0
->
-inline void distribute_element(Geometry const& geometry, It it, PointLike& , Linear& linear, Areal& )
-{
-    geometry::point_type_t<Geometry> point;
-    if (geometry::point_on_border(point, geometry))
-    {
-        using point_t = typename Linear::value_type::first_type;
-        linear.emplace_back(point_t(geometry::get<0>(point), geometry::get<1>(point)), it);
-    }
-}
-
-template
-<
-    typename Geometry, typename It, typename PointLike, typename Linear, typename Areal,
-    std::enable_if_t<util::is_pointlike<Geometry>::value, int> = 0
->
-inline void distribute_element(Geometry const& geometry, It it, PointLike& pointlike, Linear& , Areal& )
-{
-    geometry::point_type_t<Geometry> point;
-    if (geometry::point_on_border(point, geometry))
-    {
-        using point_t = typename Linear::value_type::first_type;
-        pointlike.emplace_back(point_t(geometry::get<0>(point), geometry::get<1>(point)), it);
-    }
-}
-
-template
-<
-    typename Geometry, typename It, typename PointLike, typename Linear, typename Areal,
-    std::enable_if_t<! is_pla<Geometry>::value, int> = 0
->
-inline void distribute_element(Geometry const& , It const&, PointLike const& , Linear const&, Areal const&)
-{}
-
-
-template
-<
-    typename Geometry, typename MultiGeometry,
-    std::enable_if_t<are_same_kind<Geometry, MultiGeometry>::value, int> = 0
->
+template <typename Geometry, typename MultiGeometry>
 inline void convert(Geometry const& geometry, MultiGeometry& result)
 {
-    geometry::convert(geometry, result);
+    if constexpr (are_same_kind<Geometry, MultiGeometry>::value)
+    {
+        geometry::convert(geometry, result);
+    }
 }
 
-template
-<
-    typename Geometry, typename MultiGeometry,
-    std::enable_if_t<! are_same_kind<Geometry, MultiGeometry>::value, int> = 0
->
-inline void convert(Geometry const& , MultiGeometry const& )
-{}
 
-
-template
-<
-    typename Geometry1, typename Geometry2, typename MultiGeometry, typename Strategy,
-    std::enable_if_t<are_same_kind<Geometry1, Geometry2, MultiGeometry>::value, int> = 0
->
+template <typename Geometry1, typename Geometry2, typename MultiGeometry, typename Strategy>
 inline void union_(Geometry1 const& geometry1, Geometry2 const& geometry2, MultiGeometry& result, Strategy const& strategy)
 {
-    geometry::union_(geometry1, geometry2, result, strategy);
+    if constexpr (are_same_kind<Geometry1, Geometry2, MultiGeometry>::value)
+    {
+        geometry::union_(geometry1, geometry2, result, strategy);
+    }
 }
-
-template
-<
-    typename Geometry1, typename Geometry2, typename MultiGeometry, typename Strategy,
-    std::enable_if_t<! are_same_kind<Geometry1, Geometry2, MultiGeometry>::value, int> = 0
->
-inline void union_(Geometry1 const& , Geometry2 const& , MultiGeometry const& , Strategy const&)
-{}
 
 
 template <typename It>

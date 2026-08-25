@@ -17,10 +17,11 @@ project boost-geometry-extensions
         <toolset>msvc:<asynch-exceptions>on
         <library>/boost/geometry//boost_geometry
         <library>/boost/test//included
-        <cxxstd>14
+        <cxxstd>17
         [ requires
-            cxx14_constexpr
-            cxx14_return_type_deduction
+            cxx17_fold_expressions
+            cxx17_hdr_variant
+            cxx17_if_constexpr
         ]
     ;
 

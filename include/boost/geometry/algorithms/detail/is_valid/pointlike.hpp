@@ -21,7 +21,6 @@
 #include <boost/geometry/algorithms/detail/is_valid/has_invalid_coordinate.hpp>
 #include <boost/geometry/algorithms/dispatch/is_valid.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 
 
 namespace boost { namespace geometry
@@ -64,7 +63,7 @@ struct is_valid<MultiPoint, multi_point_tag, AllowEmptyMultiGeometries>
     {
         boost::ignore_unused(multipoint, visitor);
 
-        if BOOST_GEOMETRY_CONSTEXPR (! AllowEmptyMultiGeometries)
+        if constexpr (! AllowEmptyMultiGeometries)
         {
             if (boost::empty(multipoint))
             {

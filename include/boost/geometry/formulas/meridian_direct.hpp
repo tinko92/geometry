@@ -66,7 +66,7 @@ public:
 
         CT azimuth = north ? c0 : pi;
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcCoordinates)
+        if constexpr (CalcCoordinates)
         {
             CT s0 = meridian_inverse<CT, Order>::apply(la1, spheroid);
             int signed_distance = north ? distance : -distance;
@@ -74,7 +74,7 @@ public:
             result.lat2 = apply(s0 + signed_distance, spheroid);
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcRevAzimuth)
+        if constexpr (CalcRevAzimuth)
         {
             result.reverse_azimuth = azimuth;
 
@@ -92,7 +92,7 @@ public:
 
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcQuantities)
+        if constexpr (CalcQuantities)
         {
             CT const b = CT(get_radius<2>(spheroid));
             CT const f = formula::flattening<CT>(spheroid);

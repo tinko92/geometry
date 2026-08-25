@@ -14,4 +14,4 @@ project(support_status LANGUAGES CXX)
 add_executable(${PROJECT_NAME} support_status.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Boost::geometry)
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_14)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)

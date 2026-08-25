@@ -32,7 +32,6 @@
 #include <boost/geometry/core/point_type.hpp>
 #include <boost/geometry/core/tags.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 
 
 namespace boost { namespace geometry
@@ -159,7 +158,7 @@ public:
                              VisitPolicy& visitor,
                              Strategy const& strategy)
     {
-        if BOOST_GEOMETRY_CONSTEXPR (AllowEmptyMultiGeometries)
+        if constexpr (AllowEmptyMultiGeometries)
         {
             if (boost::empty(multilinestring))
             {

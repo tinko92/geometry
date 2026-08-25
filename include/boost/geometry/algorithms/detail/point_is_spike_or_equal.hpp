@@ -21,7 +21,6 @@
 #include <boost/geometry/algorithms/detail/direction_code.hpp>
 #include <boost/geometry/core/cs.hpp>
 #include <boost/geometry/strategies/side.hpp>
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/math.hpp>
 
 

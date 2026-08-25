@@ -19,7 +19,6 @@
 
 #include <boost/geometry/core/radius.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/math.hpp>
 
 #include <boost/geometry/formulas/differential_quantities.hpp>
@@ -159,7 +158,7 @@ public:
                && geometry::math::abs(lambda) < pi
                && counter < BOOST_GEOMETRY_DETAIL_VINCENTY_MAX_STEPS ); // robustness
 
-        if BOOST_GEOMETRY_CONSTEXPR (EnableDistance)
+        if constexpr (EnableDistance)
         {
             // Some types cannot divide by doubles
             CT const c6 = 6;
@@ -187,20 +186,20 @@ public:
             result.distance = radius_b * A * (sigma - delta_sigma); // (19)
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcAzimuths)
+        if constexpr (CalcAzimuths)
         {
-            if BOOST_GEOMETRY_CONSTEXPR (CalcFwdAzimuth)
+            if constexpr (CalcFwdAzimuth)
             {
                 result.azimuth = atan2(cos_U2 * sin_lambda, cos_U1 * sin_U2 - sin_U1 * cos_U2 * cos_lambda); // (20)
             }
 
-            if BOOST_GEOMETRY_CONSTEXPR (CalcRevAzimuth)
+            if constexpr (CalcRevAzimuth)
             {
                 result.reverse_azimuth = atan2(cos_U1 * sin_lambda, -sin_U1 * cos_U2 + cos_U1 * sin_U2 * cos_lambda); // (21)
             }
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcQuantities)
+        if constexpr (CalcQuantities)
         {
             typedef differential_quantities<CT, EnableReducedLength, EnableGeodesicScale, 2> quantities;
             quantities::apply(lon1, lat1, lon2, lat2,

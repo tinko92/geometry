@@ -33,7 +33,6 @@
 #include <boost/geometry/strategies/densify/geographic.hpp>
 #include <boost/geometry/strategies/densify/spherical.hpp>
 #include <boost/geometry/strategies/detail.hpp>
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/range.hpp>
 
 
@@ -102,7 +101,7 @@ struct densify_range
             strategy.apply(p0, p1, policy, len);
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (AppendLastPoint)
+        if constexpr (AppendLastPoint)
         {
             convert_and_push_back(rng_out, *prev); // back(rng)
         }
@@ -130,7 +129,7 @@ struct densify_ring
 
         strategy.apply(p0, p1, policy, len);
 
-        if BOOST_GEOMETRY_CONSTEXPR (IsClosed2)
+        if constexpr (IsClosed2)
         {
             convert_and_push_back(ring_out, p1);
         }

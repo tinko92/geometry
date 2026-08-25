@@ -61,7 +61,6 @@
 #include <boost/geometry/strategies/simplify/geographic.hpp>
 #include <boost/geometry/strategies/simplify/spherical.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/type_traits_std.hpp>
 
 #ifdef BOOST_GEOMETRY_DEBUG_DOUGLAS_PEUCKER
@@ -483,7 +482,7 @@ public :
             // Do not duplicate the closing point
             auto rot_end = boost::end(ring);
             std::size_t rot_index = index;
-            if BOOST_GEOMETRY_CONSTEXPR (is_closed_in)
+            if constexpr (is_closed_in)
             {
                 if (size > 1)
                 {
@@ -501,7 +500,7 @@ public :
             simplify_range<0>::apply(rotated, out, max_distance, impl, strategies);
 
             // Open output if needed
-            if BOOST_GEOMETRY_CONSTEXPR (! is_closed_out)
+            if constexpr (! is_closed_out)
             {
                 if (boost::size(out) > 1)
                 {
@@ -539,7 +538,7 @@ public :
             rotated.clear();
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (is_clockwise_in != is_clockwise_out)
+        if constexpr (is_clockwise_in != is_clockwise_out)
         {
             std::reverse(boost::begin(out), boost::end(out));
         }

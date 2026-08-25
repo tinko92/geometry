@@ -45,7 +45,6 @@
 #include <boost/geometry/strategies/buffer.hpp>
 #include <boost/geometry/strategies/side.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/math.hpp>
 #include <boost/geometry/util/type_traits.hpp>
 
@@ -939,7 +938,7 @@ inline void buffer_inserter(GeometryInput const& geometry_input, OutputIterator 
                  strategies);
 
     collection.get_turns();
-    if BOOST_GEOMETRY_CONSTEXPR (areal)
+    if constexpr (areal)
     {
         collection.check_turn_in_original();
     }
@@ -961,7 +960,7 @@ inline void buffer_inserter(GeometryInput const& geometry_input, OutputIterator 
     // phase 1: turns (after enrichment/clustering)
     visit_pieces_policy.apply(const_collection, 1);
 
-    if BOOST_GEOMETRY_CONSTEXPR (areal)
+    if constexpr (areal)
     {
         collection.deflate_check_turns();
     }
@@ -973,7 +972,7 @@ inline void buffer_inserter(GeometryInput const& geometry_input, OutputIterator 
     // - the output is counter clockwise
     // and avoid reversing twice
     bool reverse = distance_strategy.negative() && areal;
-    if BOOST_GEOMETRY_CONSTEXPR (geometry::point_order<GeometryOutput>::value == counterclockwise)
+    if constexpr (geometry::point_order<GeometryOutput>::value == counterclockwise)
     {
         reverse = ! reverse;
     }
@@ -982,7 +981,7 @@ inline void buffer_inserter(GeometryInput const& geometry_input, OutputIterator 
         collection.reverse();
     }
 
-    if BOOST_GEOMETRY_CONSTEXPR (areal)
+    if constexpr (areal)
     {
         if (distance_strategy.negative())
         {

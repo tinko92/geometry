@@ -27,7 +27,6 @@
 #include <boost/geometry/core/ring_type.hpp>
 #include <boost/geometry/core/tags.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/range.hpp>
 
 #include <boost/geometry/geometries/box.hpp>
@@ -282,7 +281,7 @@ public:
     {
         using debug_phase = debug_validity_phase<MultiPolygon>;
 
-        if BOOST_GEOMETRY_CONSTEXPR (AllowEmptyMultiGeometries)
+        if constexpr (AllowEmptyMultiGeometries)
         {
             if (boost::empty(multipolygon))
             {

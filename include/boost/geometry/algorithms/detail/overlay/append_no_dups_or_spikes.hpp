@@ -29,7 +29,6 @@
 
 #include <boost/geometry/core/closure.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/range.hpp>
 
 
@@ -184,7 +183,7 @@ inline void remove_spikes_at_closure(Ring& ring, Strategy const& strategy)
 template <typename Ring, typename Strategy>
 inline void fix_closure(Ring& ring, Strategy const& strategy)
 {
-    if BOOST_GEOMETRY_CONSTEXPR (geometry::closure<Ring>::value == geometry::open)
+    if constexpr (geometry::closure<Ring>::value == geometry::open)
     {
         if (! boost::empty(ring)
             && detail::equals::equals_point_point(range::front(ring), range::back(ring), strategy))

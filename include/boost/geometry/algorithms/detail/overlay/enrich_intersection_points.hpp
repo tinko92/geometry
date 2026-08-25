@@ -42,7 +42,6 @@
 #include <boost/geometry/algorithms/detail/overlay/is_self_turn.hpp>
 #include <boost/geometry/algorithms/detail/overlay/less_by_segment_ratio.hpp>
 #include <boost/geometry/algorithms/detail/overlay/overlay_type.hpp>
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/views/enumerate_view.hpp>
 
 
@@ -420,7 +419,7 @@ inline void enrich_turns(Turns& turns,
 #ifdef BOOST_GEOMETRY_DEBUG_ENRICH
     std::cout << "ENRICH-assign Ring " << pair.first << std::endl;
 #endif
-        if BOOST_GEOMETRY_CONSTEXPR (OverlayType == overlay_dissolve)
+        if constexpr (OverlayType == overlay_dissolve)
         {
             enrich_adapt(pair.second, turns);
         }
@@ -436,7 +435,7 @@ inline void enrich_turns(Turns& turns,
     constexpr bool do_check_graph = false;
 #endif
 
-    if BOOST_GEOMETRY_CONSTEXPR (do_check_graph)
+    if constexpr (do_check_graph)
     {
         check_graph(turns, target_operation);
     }

@@ -52,36 +52,23 @@ struct gc_can_convert_element
     static const bool value = ! std::is_void<found_type>::value;
 };
 
-template
-<
-    typename GC, typename Multi,
-    std::enable_if_t<gc_can_move_element<GC, Multi>::value, int> = 0
->
+template <typename GC, typename Multi>
 inline void gc_move_one_elem_multi_back(GC& gc, Multi&& multi)
 {
-    range::emplace_back(gc, std::move(*boost::begin(multi)));
-}
-
-template
-<
-    typename GC, typename Multi,
-    std::enable_if_t<! gc_can_move_element<GC, Multi>::value && gc_can_convert_element<GC, Multi>::value, int> = 0
->
-inline void gc_move_one_elem_multi_back(GC& gc, Multi&& multi)
-{
-    typename gc_can_convert_element<GC, Multi>::found_type single_out;
-    geometry::convert(*boost::begin(multi), single_out);
-    range::emplace_back(gc, std::move(single_out));
-}
-
-template
-<
-    typename GC, typename Multi,
-    std::enable_if_t<! gc_can_move_element<GC, Multi>::value && ! gc_can_convert_element<GC, Multi>::value, int> = 0
->
-inline void gc_move_one_elem_multi_back(GC& gc, Multi&& multi)
-{
-    range::emplace_back(gc, std::move(multi));
+    if constexpr (gc_can_move_element<GC, Multi>::value)
+    {
+        range::emplace_back(gc, std::move(*boost::begin(multi)));
+    }
+    else if constexpr (gc_can_convert_element<GC, Multi>::value)
+    {
+        typename gc_can_convert_element<GC, Multi>::found_type single_out;
+        geometry::convert(*boost::begin(multi), single_out);
+        range::emplace_back(gc, std::move(single_out));
+    }
+    else
+    {
+        range::emplace_back(gc, std::move(multi));
+    }
 }
 
 template <typename GC, typename Multi>
@@ -136,7 +123,7 @@ struct intersection
             typename traits::geometry_types<GeometryOut>::type,
             util::is_multi_polygon
         >::type;
-    using tuple_out_t = boost::tuple<multi_point_t, multi_linestring_t, multi_polygon_t>;
+    using tuple_out_t = std::tuple<multi_point_t, multi_linestring_t, multi_polygon_t>;
 
     template <typename Strategy>
     static inline bool apply(Geometry1 const& geometry1,
@@ -155,9 +142,9 @@ struct intersection
             return true;
         }, geometry1);
 
-        detail::intersection::gc_move_multi_back(geometry_out, boost::get<0>(out));
-        detail::intersection::gc_move_multi_back(geometry_out, boost::get<1>(out));
-        detail::intersection::gc_move_multi_back(geometry_out, boost::get<2>(out));
+        detail::intersection::gc_move_multi_back(geometry_out, std::get<0>(out));
+        detail::intersection::gc_move_multi_back(geometry_out, std::get<1>(out));
+        detail::intersection::gc_move_multi_back(geometry_out, std::get<2>(out));
 
         return result;
     }
@@ -202,8 +189,8 @@ private:
     template <std::size_t Index, typename Out, typename Strategy>
     static bool merge_result(Out const& inters_result, Out& out, Strategy const& strategy)
     {
-        auto const& multi_result = boost::get<Index>(inters_result);
-        auto& multi_out = boost::get<Index>(out);
+        auto const& multi_result = std::get<Index>(inters_result);
+        auto& multi_out = std::get<Index>(out);
         if (! boost::empty(multi_result))
         {
             std::remove_reference_t<decltype(multi_out)> temp_result;

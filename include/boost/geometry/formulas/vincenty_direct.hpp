@@ -19,7 +19,6 @@
 
 #include <boost/geometry/core/radius.hpp>
 
-#include <boost/geometry/util/constexpr.hpp>
 #include <boost/geometry/util/math.hpp>
 #include <boost/geometry/util/normalize_spheroidal_coordinates.hpp>
 
@@ -136,7 +135,7 @@ public:
                //&& geometry::math::abs(sigma) < pi
                && counter < BOOST_GEOMETRY_DETAIL_VINCENTY_MAX_STEPS ); // robustness
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcCoordinates)
+        if constexpr (CalcCoordinates)
         {
             result.lat2
                 = atan2( sin_U1 * cos_sigma + cos_U1 * sin_sigma * cos_azimuth12,
@@ -151,13 +150,13 @@ public:
             result.lon2 = lon1 + L;
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcRevAzimuth)
+        if constexpr (CalcRevAzimuth)
         {
             result.reverse_azimuth
                 = atan2(sin_alpha, -sin_U1 * sin_sigma + cos_U1 * cos_sigma * cos_azimuth12); // (12)
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcQuantities)
+        if constexpr (CalcQuantities)
         {
             typedef differential_quantities<CT, EnableReducedLength, EnableGeodesicScale, 2> quantities;
             quantities::apply(lon1, lat1, result.lon2, result.lat2,
@@ -166,7 +165,7 @@ public:
                               result.reduced_length, result.geodesic_scale);
         }
 
-        if BOOST_GEOMETRY_CONSTEXPR (CalcCoordinates)
+        if constexpr (CalcCoordinates)
         {
             // For longitudes close to the antimeridian the result can be out
             // of range. Therefore normalize.

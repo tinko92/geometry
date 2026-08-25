@@ -20,7 +20,6 @@
 #include <boost/geometry/algorithms/detail/overlay/graph/detect_biconnected_components.hpp>
 #include <boost/geometry/algorithms/detail/overlay/graph/fill_ring_turn_info_map.hpp>
 #include <boost/geometry/algorithms/detail/overlay/graph/traverse_graph.hpp>
-#include <boost/geometry/util/constexpr.hpp>
 
 
 namespace boost { namespace geometry
