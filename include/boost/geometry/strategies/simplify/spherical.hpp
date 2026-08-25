@@ -58,27 +58,21 @@ public:
             >(base_t::radius());
     }
 
-    // For perimeter()
     template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  distance::detail::enable_if_pp_t<Geometry1, Geometry2> * = nullptr) const
+    auto distance(Geometry1 const&, Geometry2 const&) const
     {
-        return strategy::distance::haversine
+        using point_strategy = strategy::distance::haversine
                 <
                     typename base_t::radius_type, CalculationType
-                >(base_t::radius());
-    }
-
-    // For douglas_peucker
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  distance::detail::enable_if_ps_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::cross_track
-            <
-                CalculationType,
-                strategy::distance::haversine<typename base_t::radius_type, CalculationType>
-            >(base_t::radius());
+                >;
+        if constexpr (distance::detail::is_pp_v<Geometry1, Geometry2>)
+            return point_strategy(base_t::radius());
+        else
+        {
+            static_assert(distance::detail::is_ps_v<Geometry1, Geometry2>);
+            return strategy::distance::cross_track<CalculationType, point_strategy>
+                (base_t::radius());
+        }
     }
 
     // For equals()

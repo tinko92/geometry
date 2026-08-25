@@ -36,55 +36,27 @@ struct cartesian
     : strategies::expand::cartesian<CalculationType>
 {
     template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         util::enable_if_point_t<Geometry> * = nullptr)
+    static auto envelope(Geometry const&, Box const&)
     {
-        return strategy::envelope::cartesian_point();
-    }
-
-    template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         util::enable_if_multi_point_t<Geometry> * = nullptr)
-    {
-        return strategy::envelope::cartesian_multipoint();
-    }
-
-    template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         util::enable_if_box_t<Geometry> * = nullptr)
-    {
-        return strategy::envelope::cartesian_box();
-    }
-
-    template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         util::enable_if_segment_t<Geometry> * = nullptr)
-    {
-        return strategy::envelope::cartesian_segment<CalculationType>();
-    }
-
-    template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         std::enable_if_t
-                            <
-                                util::is_linestring<Geometry>::value
-                             || util::is_ring<Geometry>::value
-                             || util::is_polygon<Geometry>::value
-                            > * = nullptr)
-    {
-        return strategy::envelope::cartesian_range();
-    }
-
-    template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         std::enable_if_t
-                            <
-                                util::is_multi_linestring<Geometry>::value
-                             || util::is_multi_polygon<Geometry>::value
-                             || util::is_geometry_collection<Geometry>::value
-                            > * = nullptr)
-    {
-        return strategy::envelope::cartesian_boxes();
+        if constexpr (util::is_point<Geometry>::value)
+            return strategy::envelope::cartesian_point();
+        else if constexpr (util::is_multi_point<Geometry>::value)
+            return strategy::envelope::cartesian_multipoint();
+        else if constexpr (util::is_box<Geometry>::value)
+            return strategy::envelope::cartesian_box();
+        else if constexpr (util::is_segment<Geometry>::value)
+            return strategy::envelope::cartesian_segment<CalculationType>();
+        else if constexpr (util::is_linestring<Geometry>::value
+                        || util::is_ring<Geometry>::value
+                        || util::is_polygon<Geometry>::value)
+            return strategy::envelope::cartesian_range();
+        else
+        {
+            static_assert(util::is_multi_linestring<Geometry>::value
+                       || util::is_multi_polygon<Geometry>::value
+                       || util::is_geometry_collection<Geometry>::value);
+            return strategy::envelope::cartesian_boxes();
+        }
     }
 };
 

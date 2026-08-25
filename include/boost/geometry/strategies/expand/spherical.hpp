@@ -46,24 +46,22 @@ struct spherical
     {}
 
     template <typename Box, typename Geometry>
-    static auto expand(Box const&, Geometry const&,
-                       typename util::enable_if_point_t<Geometry> * = nullptr)
+    static auto expand(Box const&, Geometry const&)
     {
-        return strategy::expand::spherical_point();
-    }
-
-    template <typename Box, typename Geometry>
-    static auto expand(Box const&, Geometry const&,
-                       typename util::enable_if_box_t<Geometry> * = nullptr)
-    {
-        return strategy::expand::spherical_box();
-    }
-
-    template <typename Box, typename Geometry>
-    static auto expand(Box const&, Geometry const&,
-                       typename util::enable_if_segment_t<Geometry> * = nullptr)
-    {
-        return strategy::expand::spherical_segment<CalculationType>();
+        if constexpr (util::is_point<Geometry>::value)
+        {
+            return strategy::expand::spherical_point();
+        }
+        else if constexpr (util::is_box<Geometry>::value)
+        {
+            return strategy::expand::spherical_box();
+        }
+        else
+        {
+            static_assert(util::is_segment<Geometry>::value,
+                          "Expand strategy not implemented for this geometry.");
+            return strategy::expand::spherical_segment<CalculationType>();
+        }
     }
 };
 

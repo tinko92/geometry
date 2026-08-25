@@ -41,46 +41,24 @@ struct cartesian
     : public strategies::relate::cartesian<CalculationType>
 {
     template <typename Geometry1, typename Geometry2>
-    static auto distance(Geometry1 const&, Geometry2 const&,
-                         detail::enable_if_pp_t<Geometry1, Geometry2> * = nullptr)
+    static auto distance(Geometry1 const&, Geometry2 const&)
     {
-        return strategy::distance::pythagoras<CalculationType>();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    static auto distance(Geometry1 const&, Geometry2 const&,
-                         detail::enable_if_ps_t<Geometry1, Geometry2> * = nullptr)
-    {
-        return strategy::distance::projected_point
-            <
-                CalculationType,
-                strategy::distance::pythagoras<CalculationType>
-            >();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    static auto distance(Geometry1 const&, Geometry2 const&,
-                         detail::enable_if_pb_t<Geometry1, Geometry2> * = nullptr)
-    {
-        return strategy::distance::pythagoras_point_box<CalculationType>();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    static auto distance(Geometry1 const&, Geometry2 const&,
-                         detail::enable_if_sb_t<Geometry1, Geometry2> * = nullptr)
-    {
-        return strategy::distance::cartesian_segment_box
-            <
-                CalculationType,
-                strategy::distance::pythagoras<CalculationType>
-            >();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    static auto distance(Geometry1 const&, Geometry2 const&,
-                         detail::enable_if_bb_t<Geometry1, Geometry2> * = nullptr)
-    {
-        return strategy::distance::pythagoras_box_box<CalculationType>();
+        if constexpr (detail::is_pp_v<Geometry1, Geometry2>)
+            return strategy::distance::pythagoras<CalculationType>();
+        else if constexpr (detail::is_ps_v<Geometry1, Geometry2>)
+            return strategy::distance::projected_point
+                <CalculationType, strategy::distance::pythagoras<CalculationType>>();
+        else if constexpr (detail::is_pb_v<Geometry1, Geometry2>)
+            return strategy::distance::pythagoras_point_box<CalculationType>();
+        else if constexpr (detail::is_sb_v<Geometry1, Geometry2>)
+            return strategy::distance::cartesian_segment_box
+                <CalculationType, strategy::distance::pythagoras<CalculationType>>();
+        else
+        {
+            static_assert(detail::is_bb_v<Geometry1, Geometry2>,
+                          "Distance strategy not implemented for these geometries.");
+            return strategy::distance::pythagoras_box_box<CalculationType>();
+        }
     }
 };
 

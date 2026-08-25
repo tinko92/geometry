@@ -37,35 +37,18 @@ template <typename CalculationType = void>
 struct cartesian
 {
     template <typename Geometry>
-    static auto centroid(Geometry const&,
-                         std::enable_if_t
-                            <
-                                util::is_pointlike<Geometry>::value
-                            > * = nullptr)
+    static auto centroid(Geometry const&)
     {
-        return strategy::centroid::average<>();
-    }
-
-    template <typename Geometry>
-    static auto centroid(Geometry const&,
-                         std::enable_if_t
-                            <
-                                util::is_polylinear<Geometry>::value
-                            > * = nullptr)
-    {
-        return strategy::centroid::weighted_length<void, void, CalculationType>();
-    }
-
-    template <typename Geometry>
-    static auto centroid(Geometry const&,
-                         std::enable_if_t
-                            <
-                                util::is_polygonal<Geometry>::value
-                             // TODO: This condition was used for the legacy default strategy
-                             // && geometry::dimension<Geometry>::value == 2
-                            > * = nullptr)
-    {
-        return strategy::centroid::bashein_detmer<void, void, CalculationType>();
+        if constexpr (util::is_pointlike<Geometry>::value)
+            return strategy::centroid::average<>();
+        else if constexpr (util::is_polylinear<Geometry>::value)
+            return strategy::centroid::weighted_length<void, void, CalculationType>();
+        else
+        {
+            static_assert(util::is_polygonal<Geometry>::value,
+                          "Centroid strategy not implemented for this geometry.");
+            return strategy::centroid::bashein_detmer<void, void, CalculationType>();
+        }
     }
 
     // TODO: Box and Segment should have proper strategies.

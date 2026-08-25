@@ -65,57 +65,31 @@ public:
     // distance
 
     template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  detail::enable_if_pp_t<Geometry1, Geometry2> * = nullptr) const
+    auto distance(Geometry1 const&, Geometry2 const&) const
     {
-        return strategy::distance::haversine
+        using point_strategy = strategy::distance::haversine
                 <
                     typename base_t::radius_type, CalculationType
-                >(base_t::radius());
-    }
+                >;
 
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  detail::enable_if_ps_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::cross_track
-            <
-                CalculationType,
-                strategy::distance::haversine<typename base_t::radius_type, CalculationType>
-            >(base_t::radius());
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  detail::enable_if_pb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::cross_track_point_box
-            <
-                CalculationType,
-                strategy::distance::haversine<typename base_t::radius_type, CalculationType>
-            >(base_t::radius());
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  detail::enable_if_sb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::spherical_segment_box
-            <
-                CalculationType,
-                strategy::distance::haversine<typename base_t::radius_type, CalculationType>
-            >(base_t::radius());
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  detail::enable_if_bb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::cross_track_box_box
-            <
-                CalculationType,
-                strategy::distance::haversine<typename base_t::radius_type, CalculationType>
-            >(base_t::radius());
+        if constexpr (detail::is_pp_v<Geometry1, Geometry2>)
+            return point_strategy(base_t::radius());
+        else if constexpr (detail::is_ps_v<Geometry1, Geometry2>)
+            return strategy::distance::cross_track<CalculationType, point_strategy>
+                (base_t::radius());
+        else if constexpr (detail::is_pb_v<Geometry1, Geometry2>)
+            return strategy::distance::cross_track_point_box<CalculationType, point_strategy>
+                (base_t::radius());
+        else if constexpr (detail::is_sb_v<Geometry1, Geometry2>)
+            return strategy::distance::spherical_segment_box<CalculationType, point_strategy>
+                (base_t::radius());
+        else
+        {
+            static_assert(detail::is_bb_v<Geometry1, Geometry2>,
+                          "Distance strategy not implemented for these geometries.");
+            return strategy::distance::cross_track_box_box<CalculationType, point_strategy>
+                (base_t::radius());
+        }
     }
 
     // normalize

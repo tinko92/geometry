@@ -17,7 +17,6 @@
 
 
 #include <cstddef>
-#include <type_traits>
 
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/make.hpp>
@@ -106,48 +105,24 @@ struct cross_product<3>
 
 */
 
-template
-<
-    typename ResultP, typename P1, typename P2,
-    std::enable_if_t
-        <
-            dimension<ResultP>::value != 3
-         || ! traits::make<ResultP>::is_specialized,
-            int
-        > = 0
->
-inline ResultP cross_product(P1 const& p1, P2 const& p2)
+template <typename ResultP, typename P1, typename P2>
+constexpr inline ResultP cross_product(P1 const& p1, P2 const& p2)
 {
     BOOST_CONCEPT_ASSERT( (concepts::Point<ResultP>) );
     BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<P1>) );
     BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<P2>) );
 
-    ResultP result;
-    detail::cross_product<dimension<ResultP>::value>::apply(p1, p2, result);
-    return result;
-}
-
-template
-<
-    typename ResultP, typename P1, typename P2,
-    std::enable_if_t
-        <
-            dimension<ResultP>::value == 3
-         && traits::make<ResultP>::is_specialized,
-            int
-        > = 0
->
-// workaround for VS2015
-#if !defined(_MSC_VER) || (_MSC_VER >= 1910)
-constexpr
-#endif
-inline ResultP cross_product(P1 const& p1, P2 const& p2)
-{
-    BOOST_CONCEPT_ASSERT((concepts::Point<ResultP>));
-    BOOST_CONCEPT_ASSERT((concepts::ConstPoint<P1>));
-    BOOST_CONCEPT_ASSERT((concepts::ConstPoint<P2>));
-
-    return detail::cross_product<3>::apply<ResultP>(p1, p2);
+    if constexpr (dimension<ResultP>::value == 3
+               && traits::make<ResultP>::is_specialized)
+    {
+        return detail::cross_product<3>::apply<ResultP>(p1, p2);
+    }
+    else
+    {
+        ResultP result;
+        detail::cross_product<dimension<ResultP>::value>::apply(p1, p2, result);
+        return result;
+    }
 }
 
 /*!
@@ -161,47 +136,23 @@ inline ResultP cross_product(P1 const& p1, P2 const& p2)
 \qbk{[heading Examples]}
 \qbk{[cross_product] [cross_product_output]}
 */
-template
-<
-    typename P,
-    std::enable_if_t
-        <
-            dimension<P>::value != 3
-         || ! traits::make<P>::is_specialized,
-            int
-        > = 0
->
-inline P cross_product(P const& p1, P const& p2)
+template <typename P>
+constexpr inline P cross_product(P const& p1, P const& p2)
 {
     BOOST_CONCEPT_ASSERT((concepts::Point<P>));
     BOOST_CONCEPT_ASSERT((concepts::ConstPoint<P>));
 
-    P result;
-    detail::cross_product<dimension<P>::value>::apply(p1, p2, result);
-    return result;
-}
-
-
-template
-<
-    typename P,
-    std::enable_if_t
-        <
-            dimension<P>::value == 3
-         && traits::make<P>::is_specialized,
-            int
-        > = 0
->
-// workaround for VS2015
-#if !defined(_MSC_VER) || (_MSC_VER >= 1910)
-constexpr
-#endif
-inline P cross_product(P const& p1, P const& p2)
-{
-    BOOST_CONCEPT_ASSERT((concepts::Point<P>));
-    BOOST_CONCEPT_ASSERT((concepts::ConstPoint<P>));
-
-    return detail::cross_product<3>::apply<P>(p1, p2);
+    if constexpr (dimension<P>::value == 3
+               && traits::make<P>::is_specialized)
+    {
+        return detail::cross_product<3>::apply<P>(p1, p2);
+    }
+    else
+    {
+        P result;
+        detail::cross_product<dimension<P>::value>::apply(p1, p2, result);
+        return result;
+    }
 }
 
 

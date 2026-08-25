@@ -59,26 +59,18 @@ public:
             >(base_t::m_spheroid);
     }
 
-    // For perimeter()
     template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  distance::detail::enable_if_pp_t<Geometry1, Geometry2> * = nullptr) const
+    auto distance(Geometry1 const&, Geometry2 const&) const
     {
-        return strategy::distance::geographic
-                <
-                    FormulaPolicy, Spheroid, CalculationType
-                >(base_t::m_spheroid);
-    }
-
-    // For douglas_peucker
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  distance::detail::enable_if_ps_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::geographic_cross_track
-            <
-                FormulaPolicy, Spheroid, CalculationType
-            >(base_t::m_spheroid);
+        if constexpr (distance::detail::is_pp_v<Geometry1, Geometry2>)
+            return strategy::distance::geographic
+                <FormulaPolicy, Spheroid, CalculationType>(base_t::m_spheroid);
+        else
+        {
+            static_assert(distance::detail::is_ps_v<Geometry1, Geometry2>);
+            return strategy::distance::geographic_cross_track
+                <FormulaPolicy, Spheroid, CalculationType>(base_t::m_spheroid);
+        }
     }
 
     // For equals()

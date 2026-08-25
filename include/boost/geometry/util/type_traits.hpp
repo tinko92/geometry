@@ -35,12 +35,10 @@ struct is_not_geometry
     : std::is_void<tag_t<T>>
 {};
 
-#ifndef BOOST_NO_CXX17_INLINE_VARIABLES
 template <typename T>
 inline constexpr bool is_geometry_v = is_geometry<T>::value;
 template <typename T>
 inline constexpr bool is_not_geometry_v = is_not_geometry<T>::value;
-#endif
 
 template <typename T>
 struct is_point
@@ -57,14 +55,12 @@ struct is_pointlike
     : std::is_base_of<pointlike_tag, tag_t<T>>
 {};
 
-#ifndef BOOST_NO_CXX17_INLINE_VARIABLES
 template <typename T>
 inline constexpr bool is_point_v = is_point<T>::value;
 template <typename T>
 inline constexpr bool is_multi_point_v = is_multi_point<T>::value;
 template <typename T>
 inline constexpr bool is_pointlike_v = is_pointlike<T>::value;
-#endif
 
 
 template <typename T>
@@ -92,7 +88,6 @@ struct is_linear
     : std::is_base_of<linear_tag, tag_t<T>>
 {};
 
-#ifndef BOOST_NO_CXX17_INLINE_VARIABLES
 template <typename T>
 inline constexpr bool is_segment_v = is_segment<T>::value;
 template <typename T>
@@ -103,7 +98,6 @@ template <typename T>
 inline constexpr bool is_polylinear_v = is_polylinear<T>::value;
 template <typename T>
 inline constexpr bool is_linear_v = is_linear<T>::value;
-#endif
 
 
 template <typename T>
@@ -136,7 +130,6 @@ struct is_areal
     : std::is_base_of<areal_tag, tag_t<T>>
 {};
 
-#ifndef BOOST_NO_CXX17_INLINE_VARIABLES
 template <typename T>
 inline constexpr bool is_box_v = is_box<T>::value;
 template <typename T>
@@ -149,7 +142,6 @@ template <typename T>
 inline constexpr bool is_polygonal_v = is_polygonal<T>::value;
 template <typename T>
 inline constexpr bool is_areal_v = is_areal<T>::value;
-#endif
 
 
 template <typename T>
@@ -187,7 +179,6 @@ struct is_dynamic_geometry
     : std::is_same<dynamic_geometry_tag, tag_t<T>>
 {};
 
-#ifndef BOOST_NO_CXX17_INLINE_VARIABLES
 template <typename T>
 inline constexpr bool is_segmental_v = is_segmental<T>::value;
 template <typename T>
@@ -202,7 +193,6 @@ template <typename T>
 inline constexpr bool is_geometry_collection_v = is_geometry_collection<T>::value;
 template <typename T>
 inline constexpr bool is_dynamic_geometry_v = is_dynamic_geometry<T>::value;
-#endif
 
 
 template <typename Geometry, typename T = void>

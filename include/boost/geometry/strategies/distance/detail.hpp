@@ -25,36 +25,41 @@ namespace detail
 {
 
 template <typename Geometry1, typename Geometry2>
-using enable_if_pp_t = std::enable_if_t
-    <
-        util::is_pointlike<Geometry1>::value && util::is_pointlike<Geometry2>::value
-    >;
+inline constexpr bool is_pp_v =
+    util::is_pointlike<Geometry1>::value && util::is_pointlike<Geometry2>::value;
 
 template <typename Geometry1, typename Geometry2>
-using enable_if_ps_t = std::enable_if_t
-    <
-        (util::is_pointlike<Geometry1>::value && util::is_segmental<Geometry2>::value)
-     || (util::is_segmental<Geometry1>::value && util::is_pointlike<Geometry2>::value)
-     || (util::is_segmental<Geometry1>::value && util::is_segmental<Geometry2>::value)
-    >;
+inline constexpr bool is_ps_v =
+    (util::is_pointlike<Geometry1>::value && util::is_segmental<Geometry2>::value)
+ || (util::is_segmental<Geometry1>::value && util::is_pointlike<Geometry2>::value)
+ || (util::is_segmental<Geometry1>::value && util::is_segmental<Geometry2>::value);
 
 template <typename Geometry1, typename Geometry2>
-using enable_if_pb_t = std::enable_if_t
-    <
-        util::is_pointlike<Geometry1>::value && util::is_box<Geometry2>::value
-    >;
+inline constexpr bool is_pb_v =
+    util::is_pointlike<Geometry1>::value && util::is_box<Geometry2>::value;
 
 template <typename Geometry1, typename Geometry2>
-using enable_if_sb_t = std::enable_if_t
-    <
-        util::is_segmental<Geometry1>::value && util::is_box<Geometry2>::value
-    >;
+inline constexpr bool is_sb_v =
+    util::is_segmental<Geometry1>::value && util::is_box<Geometry2>::value;
 
 template <typename Geometry1, typename Geometry2>
-using enable_if_bb_t = std::enable_if_t
-    <
-        util::is_box<Geometry1>::value && util::is_box<Geometry2>::value
-    >;
+inline constexpr bool is_bb_v =
+    util::is_box<Geometry1>::value && util::is_box<Geometry2>::value;
+
+template <typename Geometry1, typename Geometry2>
+using enable_if_pp_t = std::enable_if_t<is_pp_v<Geometry1, Geometry2>>;
+
+template <typename Geometry1, typename Geometry2>
+using enable_if_ps_t = std::enable_if_t<is_ps_v<Geometry1, Geometry2>>;
+
+template <typename Geometry1, typename Geometry2>
+using enable_if_pb_t = std::enable_if_t<is_pb_v<Geometry1, Geometry2>>;
+
+template <typename Geometry1, typename Geometry2>
+using enable_if_sb_t = std::enable_if_t<is_sb_v<Geometry1, Geometry2>>;
+
+template <typename Geometry1, typename Geometry2>
+using enable_if_bb_t = std::enable_if_t<is_bb_v<Geometry1, Geometry2>>;
 
 } // namespace detail
 #endif // DOXYGEN_NO_DETAIL

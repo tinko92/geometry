@@ -199,10 +199,8 @@ struct closure
         >
 {};
 
-#ifndef BOOST_NO_CXX17_INLINE_VARIABLES
 template <typename Geometry>
 inline constexpr closure_selector closure_v = closure<Geometry>::value;
-#endif
 
 
 #ifndef DOXYGEN_NO_DETAIL

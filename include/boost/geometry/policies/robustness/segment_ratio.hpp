@@ -32,98 +32,66 @@ namespace boost { namespace geometry
 namespace detail { namespace segment_ratio
 {
 
-template
-<
-    typename Type,
-    bool IsIntegral = std::is_integral<Type>::type::value
->
-struct less {};
-
 template <typename Type>
-struct less<Type, true>
+struct less
 {
     template <typename Ratio>
     static inline bool apply(Ratio const& lhs, Ratio const& rhs)
     {
-        return boost::rational<Type>(lhs.numerator(), lhs.denominator())
-             < boost::rational<Type>(rhs.numerator(), rhs.denominator());
+        if constexpr (std::is_integral_v<Type>)
+        {
+            return boost::rational<Type>(lhs.numerator(), lhs.denominator())
+                 < boost::rational<Type>(rhs.numerator(), rhs.denominator());
+        }
+        else
+        {
+            BOOST_GEOMETRY_ASSERT(lhs.denominator() != Type(0));
+            BOOST_GEOMETRY_ASSERT(rhs.denominator() != Type(0));
+            Type const a = lhs.numerator() / lhs.denominator();
+            Type const b = rhs.numerator() / rhs.denominator();
+            return ! geometry::math::equals(a, b) && a < b;
+        }
     }
 };
 
 template <typename Type>
-struct less<Type, false>
+struct equal
 {
     template <typename Ratio>
     static inline bool apply(Ratio const& lhs, Ratio const& rhs)
     {
-        BOOST_GEOMETRY_ASSERT(lhs.denominator() != Type(0));
-        BOOST_GEOMETRY_ASSERT(rhs.denominator() != Type(0));
-        Type const a = lhs.numerator() / lhs.denominator();
-        Type const b = rhs.numerator() / rhs.denominator();
-        return ! geometry::math::equals(a, b)
-            && a < b;
-    }
-};
-
-template
-<
-    typename Type,
-    bool IsIntegral = std::is_integral<Type>::type::value
->
-struct equal {};
-
-template <typename Type>
-struct equal<Type, true>
-{
-    template <typename Ratio>
-    static inline bool apply(Ratio const& lhs, Ratio const& rhs)
-    {
-        return boost::rational<Type>(lhs.numerator(), lhs.denominator())
-            == boost::rational<Type>(rhs.numerator(), rhs.denominator());
+        if constexpr (std::is_integral_v<Type>)
+        {
+            return boost::rational<Type>(lhs.numerator(), lhs.denominator())
+                == boost::rational<Type>(rhs.numerator(), rhs.denominator());
+        }
+        else
+        {
+            BOOST_GEOMETRY_ASSERT(lhs.denominator() != Type(0));
+            BOOST_GEOMETRY_ASSERT(rhs.denominator() != Type(0));
+            Type const a = lhs.numerator() / lhs.denominator();
+            Type const b = rhs.numerator() / rhs.denominator();
+            return geometry::math::equals(a, b);
+        }
     }
 };
 
 template <typename Type>
-struct equal<Type, false>
-{
-    template <typename Ratio>
-    static inline bool apply(Ratio const& lhs, Ratio const& rhs)
-    {
-        BOOST_GEOMETRY_ASSERT(lhs.denominator() != Type(0));
-        BOOST_GEOMETRY_ASSERT(rhs.denominator() != Type(0));
-        Type const a = lhs.numerator() / lhs.denominator();
-        Type const b = rhs.numerator() / rhs.denominator();
-        return geometry::math::equals(a, b);
-    }
-};
-
-template
-<
-    typename Type,
-    bool IsFloatingPoint = std::is_floating_point<Type>::type::value
->
-struct possibly_collinear {};
-
-template <typename Type>
-struct possibly_collinear<Type, true>
+struct possibly_collinear
 {
     template <typename Ratio, typename Threshold>
     static inline bool apply(Ratio const& ratio, Threshold threshold)
     {
-        return std::abs(ratio.denominator()) < threshold;
-    }
-};
-
-// Any ratio based on non-floating point (or user defined floating point)
-// is collinear if the denominator is exactly zero
-template <typename Type>
-struct possibly_collinear<Type, false>
-{
-    template <typename Ratio, typename Threshold>
-    static inline bool apply(Ratio const& ratio, Threshold)
-    {
-        static Type const zero = 0;
-        return ratio.denominator() == zero;
+        if constexpr (std::is_floating_point_v<Type>)
+        {
+            return std::abs(ratio.denominator()) < threshold;
+        }
+        else
+        {
+            // User-defined floating-point types use exact zero as well.
+            static Type const zero = 0;
+            return ratio.denominator() == zero;
+        }
     }
 };
 

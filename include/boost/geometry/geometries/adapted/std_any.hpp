@@ -11,11 +11,6 @@
 #define BOOST_GEOMETRY_GEOMETRIES_ADAPTED_STD_ANY_HPP
 
 
-#include <boost/config.hpp>
-
-#ifndef BOOST_NO_CXX17_HDR_ANY
-
-
 #include <any>
 #include <utility>
 
@@ -74,9 +69,6 @@ struct visit<std::any>
 
 
 }} // namespace boost::geometry
-
-
-#endif // BOOST_NO_CXX17_HDR_ANY
 
 
 #endif // BOOST_GEOMETRY_GEOMETRIES_ADAPTED_STD_ANY_HPP

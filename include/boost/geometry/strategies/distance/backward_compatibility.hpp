@@ -63,38 +63,21 @@ struct custom_strategy<Strategy, cartesian_tag, strategy_tag_distance_point_poin
     {}
 
     template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_pp_t<Geometry1, Geometry2> * = nullptr) const
+    auto distance(Geometry1 const&, Geometry2 const&) const
     {
-        return m_strategy;
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_ps_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::projected_point<void, Strategy>();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_pb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::pythagoras_point_box<>();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_sb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::cartesian_segment_box<void, Strategy>();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_bb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::pythagoras_box_box<>();
+        if constexpr (is_pp_v<Geometry1, Geometry2>)
+            return m_strategy;
+        else if constexpr (is_ps_v<Geometry1, Geometry2>)
+            return strategy::distance::projected_point<void, Strategy>();
+        else if constexpr (is_pb_v<Geometry1, Geometry2>)
+            return strategy::distance::pythagoras_point_box<>();
+        else if constexpr (is_sb_v<Geometry1, Geometry2>)
+            return strategy::distance::cartesian_segment_box<void, Strategy>();
+        else
+        {
+            static_assert(is_bb_v<Geometry1, Geometry2>);
+            return strategy::distance::pythagoras_box_box<>();
+        }
     }
 
 private:
@@ -110,38 +93,21 @@ struct custom_strategy<Strategy, spherical_tag, strategy_tag_distance_point_poin
     {}
 
     template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_pp_t<Geometry1, Geometry2> * = nullptr) const
+    auto distance(Geometry1 const&, Geometry2 const&) const
     {
-        return m_strategy;
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_ps_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::cross_track<void, Strategy>(m_strategy);
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_pb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::cross_track_point_box<void, Strategy>(m_strategy);
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_sb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::spherical_segment_box<void, Strategy>(m_strategy);
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_bb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::cross_track_box_box<void, Strategy>(m_strategy);
+        if constexpr (is_pp_v<Geometry1, Geometry2>)
+            return m_strategy;
+        else if constexpr (is_ps_v<Geometry1, Geometry2>)
+            return strategy::distance::cross_track<void, Strategy>(m_strategy);
+        else if constexpr (is_pb_v<Geometry1, Geometry2>)
+            return strategy::distance::cross_track_point_box<void, Strategy>(m_strategy);
+        else if constexpr (is_sb_v<Geometry1, Geometry2>)
+            return strategy::distance::spherical_segment_box<void, Strategy>(m_strategy);
+        else
+        {
+            static_assert(is_bb_v<Geometry1, Geometry2>);
+            return strategy::distance::cross_track_box_box<void, Strategy>(m_strategy);
+        }
     }
 
 private:
@@ -157,38 +123,21 @@ struct custom_strategy<Strategy, geographic_tag, strategy_tag_distance_point_poi
     {}
 
     template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_pp_t<Geometry1, Geometry2> * = nullptr) const
+    auto distance(Geometry1 const&, Geometry2 const&) const
     {
-        return m_strategy;
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_ps_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::geographic_cross_track<>();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_pb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::geographic_cross_track_point_box<>();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_sb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::geographic_segment_box<>();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  enable_if_bb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::geographic_cross_track_box_box<>();
+        if constexpr (is_pp_v<Geometry1, Geometry2>)
+            return m_strategy;
+        else if constexpr (is_ps_v<Geometry1, Geometry2>)
+            return strategy::distance::geographic_cross_track<>();
+        else if constexpr (is_pb_v<Geometry1, Geometry2>)
+            return strategy::distance::geographic_cross_track_point_box<>();
+        else if constexpr (is_sb_v<Geometry1, Geometry2>)
+            return strategy::distance::geographic_segment_box<>();
+        else
+        {
+            static_assert(is_bb_v<Geometry1, Geometry2>);
+            return strategy::distance::geographic_cross_track_box_box<>();
+        }
     }
 
 private:

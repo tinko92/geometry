@@ -45,23 +45,22 @@ public:
     {}
 
     template <typename Geometry>
-    auto area(Geometry const&,
-              std::enable_if_t<! util::is_box<Geometry>::value> * = nullptr) const
+    auto area(Geometry const&) const
     {
-        return strategy::area::spherical
-            <
-                typename base_t::radius_type, CalculationType
-            >(base_t::m_radius);
-    }
-
-    template <typename Geometry>
-    auto area(Geometry const&,
-              std::enable_if_t<util::is_box<Geometry>::value> * = nullptr) const
-    {
-        return strategy::area::spherical_box
-            <
-                typename base_t::radius_type, CalculationType
-            >(base_t::m_radius);
+        if constexpr (util::is_box<Geometry>::value)
+        {
+            return strategy::area::spherical_box
+                <
+                    typename base_t::radius_type, CalculationType
+                >(base_t::m_radius);
+        }
+        else
+        {
+            return strategy::area::spherical
+                <
+                    typename base_t::radius_type, CalculationType
+                >(base_t::m_radius);
+        }
     }
 };
 

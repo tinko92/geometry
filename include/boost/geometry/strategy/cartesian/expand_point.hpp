@@ -24,6 +24,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <utility>
 
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/coordinate_dimension.hpp>
@@ -48,39 +49,45 @@ namespace detail
 template <std::size_t Dimension, std::size_t DimensionCount>
 struct point_loop
 {
-    template <typename Box, typename Point>
-    static inline void apply(Box& box, Point const& source)
+private:
+    template <std::size_t I, typename Box, typename Point>
+    static inline void apply_dimension(Box& box, Point const& source)
     {
-        typedef typename select_coordinate_type
+        using coordinate_type = typename select_coordinate_type
             <
                 Point, Box
-            >::type coordinate_type;
+            >::type;
 
         std::less<coordinate_type> less;
         std::greater<coordinate_type> greater;
 
-        coordinate_type const coord = get<Dimension>(source);
+        coordinate_type const coord = get<I>(source);
 
-        if (less(coord, get<min_corner, Dimension>(box)))
+        if (less(coord, get<min_corner, I>(box)))
         {
-            set<min_corner, Dimension>(box, coord);
+            set<min_corner, I>(box, coord);
         }
 
-        if (greater(coord, get<max_corner, Dimension>(box)))
+        if (greater(coord, get<max_corner, I>(box)))
         {
-            set<max_corner, Dimension>(box, coord);
+            set<max_corner, I>(box, coord);
         }
-
-        point_loop<Dimension + 1, DimensionCount>::apply(box, source);
     }
-};
 
+    template <typename Box, typename Point, std::size_t ...Is>
+    static inline void apply(Box& box, Point const& source,
+                             std::index_sequence<Is...>)
+    {
+        (apply_dimension<Dimension + Is>(box, source), ...);
+    }
 
-template <std::size_t DimensionCount>
-struct point_loop<DimensionCount, DimensionCount>
-{
+public:
     template <typename Box, typename Point>
-    static inline void apply(Box&, Point const&) {}
+    static inline void apply(Box& box, Point const& source)
+    {
+        apply(box, source,
+              std::make_index_sequence<DimensionCount - Dimension>{});
+    }
 };
 
 

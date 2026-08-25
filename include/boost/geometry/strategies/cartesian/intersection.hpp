@@ -78,38 +78,34 @@ struct use_a
   template <typename Ct, typename Ev>
   static bool apply(Ct const& cla, Ct const& clb, Ev const& eva, Ev const& evb)
   {
-      auto const clm = (std::max)(cla, clb);
-      if (clm <= 0)
+      if constexpr (IsArithmetic)
+      {
+          auto const clm = (std::max)(cla, clb);
+          if (clm <= 0)
+          {
+              return true;
+          }
+
+          // Relative comparible length
+          auto const rcla = Ct(1.0) - cla / clm;
+          auto const rclb = Ct(1.0) - clb / clm;
+
+          // Multipliers for edgevalue (ev) and relative comparible length (rcl)
+          // They determine the balance between edge value (should be larger)
+          // and segment length. In 99.9xx% of the cases there is no difference
+          // at all (if either a or b is used). Therefore the values of the
+          // constants are not sensitive for the majority of the situations.
+          // One known case is #mysql_23023665_6 (difference) which needs mev >= 2
+          Ev const mev = 5;
+          Ev const mrcl = 1;
+
+          return mev * eva + mrcl * rcla > mev * evb + mrcl * rclb;
+      }
+      else
       {
           return true;
       }
-
-      // Relative comparible length
-      auto const rcla = Ct(1.0) - cla / clm;
-      auto const rclb = Ct(1.0) - clb / clm;
-
-      // Multipliers for edgevalue (ev) and relative comparible length (rcl)
-      // They determine the balance between edge value (should be larger)
-      // and segment length. In 99.9xx% of the cases there is no difference
-      // at all (if either a or b is used). Therefore the values of the
-      // constants are not sensitive for the majority of the situations.
-      // One known case is #mysql_23023665_6 (difference) which needs mev >= 2
-      Ev const mev = 5;
-      Ev const mrcl = 1;
-
-      return mev * eva + mrcl * rcla > mev * evb + mrcl * rclb;
   }
-};
-
-// Specialization for non arithmetic types. They will always use "a"
-template <>
-struct use_a<false>
-{
-    template <typename Ct, typename Ev>
-    static bool apply(Ct const& , Ct const& , Ev const& , Ev const& )
-    {
-        return true;
-    }
 };
 
 }

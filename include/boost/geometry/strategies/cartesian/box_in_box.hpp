@@ -20,6 +20,8 @@
 #ifndef BOOST_GEOMETRY_STRATEGIES_CARTESIAN_BOX_IN_BOX_HPP
 #define BOOST_GEOMETRY_STRATEGIES_CARTESIAN_BOX_IN_BOX_HPP
 
+#include <utility>
+
 
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/coordinate_dimension.hpp>
@@ -146,42 +148,25 @@ template
 >
 struct relate_box_box_loop
 {
+private:
+    template <typename Box1, typename Box2, std::size_t ...Is>
+    static inline bool apply(Box1 const& b_contained, Box2 const& b_containing,
+                             std::index_sequence<Is...>)
+    {
+        return (... && SubStrategy<Box1, Dimension + Is, CSTag>::apply(
+            get<min_corner, Dimension + Is>(b_contained),
+            get<max_corner, Dimension + Is>(b_contained),
+            get<min_corner, Dimension + Is>(b_containing),
+            get<max_corner, Dimension + Is>(b_containing)));
+    }
+
+public:
     template <typename Box1, typename Box2>
     static inline bool apply(Box1 const& b_contained, Box2 const& b_containing)
     {
         assert_dimension_equal<Box1, Box2>();
-
-        if (! SubStrategy<Box1, Dimension, CSTag>::apply(
-                    get<min_corner, Dimension>(b_contained),
-                    get<max_corner, Dimension>(b_contained),
-                    get<min_corner, Dimension>(b_containing),
-                    get<max_corner, Dimension>(b_containing)
-                )
-            )
-        {
-            return false;
-        }
-
-        return within::detail::relate_box_box_loop
-            <
-                SubStrategy, CSTag,
-                Dimension + 1, DimensionCount
-            >::apply(b_contained, b_containing);
-    }
-};
-
-template
-<
-    template <typename, std::size_t, typename> class SubStrategy,
-    typename CSTag,
-    std::size_t DimensionCount
->
-struct relate_box_box_loop<SubStrategy, CSTag, DimensionCount, DimensionCount>
-{
-    template <typename Box1, typename Box2>
-    static inline bool apply(Box1 const& , Box2 const& )
-    {
-        return true;
+        return apply(b_contained, b_containing,
+                     std::make_index_sequence<DimensionCount - Dimension>{});
     }
 };
 

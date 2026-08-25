@@ -184,10 +184,8 @@ struct point_order
 {};
 
 
-#ifndef BOOST_NO_CXX17_INLINE_VARIABLES
 template <typename Geometry>
 inline constexpr order_selector point_order_v = point_order<Geometry>::value;
-#endif
 
 
 }} // namespace boost::geometry

@@ -13,15 +13,7 @@
 #include <boost/geometry/util/condition.hpp>
 
 
-#ifndef BOOST_NO_CXX17_IF_CONSTEXPR
-
 #define BOOST_GEOMETRY_CONSTEXPR(CONDITION) constexpr (CONDITION)
-
-#else
-
-#define BOOST_GEOMETRY_CONSTEXPR(CONDITION) (BOOST_GEOMETRY_CONDITION(CONDITION))
-
-#endif
 
 
 #endif // BOOST_GEOMETRY_UTIL_CONSTEXPR_HPP

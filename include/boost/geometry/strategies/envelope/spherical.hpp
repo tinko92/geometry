@@ -46,61 +46,28 @@ struct spherical
     {}
 
     template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         util::enable_if_point_t<Geometry> * = nullptr)
+    static auto envelope(Geometry const&, Box const&)
     {
-        return strategy::envelope::spherical_point();
-    }
-
-    template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         util::enable_if_multi_point_t<Geometry> * = nullptr)
-    {
-        return strategy::envelope::spherical_multipoint();
-    }
-
-    template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         util::enable_if_box_t<Geometry> * = nullptr)
-    {
-        return strategy::envelope::spherical_box();
-    }
-
-    template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         util::enable_if_segment_t<Geometry> * = nullptr)
-    {
-        return strategy::envelope::spherical_segment<CalculationType>();
-    }
-
-    template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         util::enable_if_linestring_t<Geometry> * = nullptr)
-    {
-        return strategy::envelope::spherical_linestring<CalculationType>();
-    }
-
-    template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         std::enable_if_t
-                            <
-                                util::is_ring<Geometry>::value
-                             || util::is_polygon<Geometry>::value
-                            > * = nullptr)
-    {
-        return strategy::envelope::spherical_ring<CalculationType>();
-    }
-
-    template <typename Geometry, typename Box>
-    static auto envelope(Geometry const&, Box const&,
-                         std::enable_if_t
-                            <
-                                util::is_multi_linestring<Geometry>::value
-                             || util::is_multi_polygon<Geometry>::value
-                             || util::is_geometry_collection<Geometry>::value
-                            > * = nullptr)
-    {
-        return strategy::envelope::spherical_boxes();
+        if constexpr (util::is_point<Geometry>::value)
+            return strategy::envelope::spherical_point();
+        else if constexpr (util::is_multi_point<Geometry>::value)
+            return strategy::envelope::spherical_multipoint();
+        else if constexpr (util::is_box<Geometry>::value)
+            return strategy::envelope::spherical_box();
+        else if constexpr (util::is_segment<Geometry>::value)
+            return strategy::envelope::spherical_segment<CalculationType>();
+        else if constexpr (util::is_linestring<Geometry>::value)
+            return strategy::envelope::spherical_linestring<CalculationType>();
+        else if constexpr (util::is_ring<Geometry>::value
+                        || util::is_polygon<Geometry>::value)
+            return strategy::envelope::spherical_ring<CalculationType>();
+        else
+        {
+            static_assert(util::is_multi_linestring<Geometry>::value
+                       || util::is_multi_polygon<Geometry>::value
+                       || util::is_geometry_collection<Geometry>::value);
+            return strategy::envelope::spherical_boxes();
+        }
     }
 };
 

@@ -12,6 +12,8 @@
 #ifndef BOOST_GEOMETRY_STRATEGIES_NORMALIZE_HPP
 #define BOOST_GEOMETRY_STRATEGIES_NORMALIZE_HPP
 
+#include <utility>
+
 #include <cstddef>
 #include <type_traits>
 
@@ -51,72 +53,53 @@ struct do_nothing
 template <std::size_t Dimension, std::size_t DimensionCount>
 struct assign_loop
 {
-    template <typename CoordinateType, typename PointIn, typename PointOut>
-    static inline void apply(CoordinateType const& longitude,
-                             CoordinateType const& latitude,
-                             PointIn const& point_in,
-                             PointOut& point_out)
+private:
+    template <std::size_t I, typename CoordinateType, typename PointIn, typename PointOut>
+    static inline void apply_dimension(CoordinateType const& longitude,
+                                       CoordinateType const& latitude,
+                                       PointIn const& point_in,
+                                       PointOut& point_out)
     {
-        geometry::set<Dimension>(point_out, util::numeric_cast
+        if constexpr (I == 0)
+        {
+            geometry::set<0>(point_out,
+                util::numeric_cast<coordinate_type_t<PointOut>>(longitude));
+        }
+        else if constexpr (I == 1)
+        {
+            geometry::set<1>(point_out,
+                util::numeric_cast<coordinate_type_t<PointOut>>(latitude));
+        }
+        else
+        {
+            geometry::set<I>(point_out, util::numeric_cast
             <
                 coordinate_type_t<PointOut>
-            >(geometry::get<Dimension>(point_in)));
-
-        assign_loop
-            <
-                Dimension + 1, DimensionCount
-            >::apply(longitude, latitude, point_in, point_out);
+            >(geometry::get<I>(point_in)));
+        }
     }
-};
 
-template <std::size_t DimensionCount>
-struct assign_loop<DimensionCount, DimensionCount>
-{
-    template <typename CoordinateType, typename PointIn, typename PointOut>
-    static inline void apply(CoordinateType const&,
-                             CoordinateType const&,
-                             PointIn const&,
-                             PointOut&)
+    template <typename CoordinateType, typename PointIn, typename PointOut,
+              std::size_t ...Is>
+    static inline void apply(CoordinateType const& longitude,
+                             CoordinateType const& latitude,
+                             PointIn const& point_in,
+                             PointOut& point_out,
+                             std::index_sequence<Is...>)
     {
+        (apply_dimension<Dimension + Is>(longitude, latitude,
+                                         point_in, point_out), ...);
     }
-};
 
-template <std::size_t DimensionCount>
-struct assign_loop<0, DimensionCount>
-{
+public:
     template <typename CoordinateType, typename PointIn, typename PointOut>
     static inline void apply(CoordinateType const& longitude,
                              CoordinateType const& latitude,
                              PointIn const& point_in,
                              PointOut& point_out)
     {
-        geometry::set<0>(point_out, util::numeric_cast<coordinate_type_t<PointOut>>(longitude));
-
-        assign_loop
-            <
-                1, DimensionCount
-            >::apply(longitude, latitude, point_in, point_out);
-    }
-};
-
-template <std::size_t DimensionCount>
-struct assign_loop<1, DimensionCount>
-{
-    template <typename CoordinateType, typename PointIn, typename PointOut>
-    static inline void apply(CoordinateType const& longitude,
-                             CoordinateType const& latitude,
-                             PointIn const& point_in,
-                             PointOut& point_out)
-    {
-        geometry::set<1>(point_out, util::numeric_cast
-            <
-                coordinate_type_t<PointOut>
-            >(latitude));
-
-        assign_loop
-            <
-                2, DimensionCount
-            >::apply(longitude, latitude, point_in, point_out);
+        apply(longitude, latitude, point_in, point_out,
+              std::make_index_sequence<DimensionCount - Dimension>{});
     }
 };
 

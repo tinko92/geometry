@@ -62,11 +62,14 @@ class point_point_on_spheroid
 public:
     using cs_tag = spherical_tag;
 
-private:
-    template <typename Point1, typename Point2, bool SameUnits>
-    struct are_same_points
+    template <typename Point1, typename Point2>
+    static inline bool apply(Point1 const& point1, Point2 const& point2)
     {
-        static inline bool apply(Point1 const& point1, Point2 const& point2)
+        if constexpr (std::is_same_v
+            <
+                typename detail::cs_angular_units<Point1>::type,
+                typename detail::cs_angular_units<Point2>::type
+            >)
         {
             using helper_point_type1 = typename helper_geometry<Point1>::type;
             using helper_point_type2 = typename helper_geometry<Point2>::type;
@@ -82,12 +85,7 @@ private:
                     0, dimension<Point1>::value
                 >::apply(point1_normalized, point2_normalized);
         }
-    };
-
-    template <typename Point1, typename Point2>
-    struct are_same_points<Point1, Point2, false> // points have different units
-    {
-        static inline bool apply(Point1 const& point1, Point2 const& point2)
+        else
         {
             using calculation_type = typename geometry::select_most_precise
                 <
@@ -113,22 +111,6 @@ private:
                     0, dimension<Point1>::value
                 >::apply(helper_point1, helper_point2);
         }
-    };
-
-public:
-    template <typename Point1, typename Point2>
-    static inline bool apply(Point1 const& point1, Point2 const& point2)
-    {
-        return are_same_points
-            <
-                Point1,
-                Point2,
-                std::is_same
-                    <
-                        typename detail::cs_angular_units<Point1>::type,
-                        typename detail::cs_angular_units<Point2>::type
-                    >::value
-            >::apply(point1, point2);
     }
 };
 

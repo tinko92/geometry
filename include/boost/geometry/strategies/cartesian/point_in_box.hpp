@@ -19,6 +19,8 @@
 #ifndef BOOST_GEOMETRY_STRATEGIES_CARTESIAN_POINT_IN_BOX_HPP
 #define BOOST_GEOMETRY_STRATEGIES_CARTESIAN_POINT_IN_BOX_HPP
 
+#include <utility>
+
 
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/coordinate_dimension.hpp>
@@ -153,39 +155,23 @@ template
 >
 struct relate_point_box_loop
 {
+private:
+    template <typename Point, typename Box, std::size_t ...Is>
+    static inline bool apply(Point const& point, Box const& box,
+                             std::index_sequence<Is...>)
+    {
+        return (... && SubStrategy<Point, Dimension + Is, CSTag>::apply(
+            get<Dimension + Is>(point),
+            get<min_corner, Dimension + Is>(box),
+            get<max_corner, Dimension + Is>(box)));
+    }
+
+public:
     template <typename Point, typename Box>
     static inline bool apply(Point const& point, Box const& box)
     {
-        if (! SubStrategy<Point, Dimension, CSTag>::apply(get<Dimension>(point),
-                    get<min_corner, Dimension>(box),
-                    get<max_corner, Dimension>(box))
-            )
-        {
-            return false;
-        }
-
-        return relate_point_box_loop
-            <
-                SubStrategy,
-                CSTag,
-                Dimension + 1, DimensionCount
-            >::apply(point, box);
-    }
-};
-
-
-template
-<
-    template <typename, std::size_t, typename> class SubStrategy,
-    typename CSTag,
-    std::size_t DimensionCount
->
-struct relate_point_box_loop<SubStrategy, CSTag, DimensionCount, DimensionCount>
-{
-    template <typename Point, typename Box>
-    static inline bool apply(Point const& , Box const& )
-    {
-        return true;
+        return apply(point, box,
+                     std::make_index_sequence<DimensionCount - Dimension>{});
     }
 };
 

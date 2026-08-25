@@ -103,10 +103,8 @@ struct topological_dimension
     : core_dispatch::top_dim<tag_t<Geometry>> {};
 
 
-#ifndef BOOST_NO_CXX17_INLINE_VARIABLES
 template <typename Geometry>
 inline constexpr int topological_dimension_v = topological_dimension<Geometry>::value;
-#endif
 
 
 }} // namespace boost::geometry

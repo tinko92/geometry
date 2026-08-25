@@ -43,24 +43,17 @@ struct cartesian
         return strategy::area::cartesian<CalculationType>();
     }
 
-    // For perimeter()
     template <typename Geometry1, typename Geometry2>
-    static auto distance(Geometry1 const&, Geometry2 const&,
-                         distance::detail::enable_if_pp_t<Geometry1, Geometry2> * = nullptr)
+    static auto distance(Geometry1 const&, Geometry2 const&)
     {
-        return strategy::distance::pythagoras<CalculationType>();
-    }
-
-    // For douglas_peucker
-    template <typename Geometry1, typename Geometry2>
-    static auto distance(Geometry1 const&, Geometry2 const&,
-                         distance::detail::enable_if_ps_t<Geometry1, Geometry2> * = nullptr)
-    {
-        return strategy::distance::projected_point
-            <
-                CalculationType,
-                strategy::distance::pythagoras<CalculationType>
-            >();
+        if constexpr (distance::detail::is_pp_v<Geometry1, Geometry2>)
+            return strategy::distance::pythagoras<CalculationType>();
+        else
+        {
+            static_assert(distance::detail::is_ps_v<Geometry1, Geometry2>);
+            return strategy::distance::projected_point
+                <CalculationType, strategy::distance::pythagoras<CalculationType>>();
+        }
     }
 
     // For equals()

@@ -59,25 +59,15 @@ public:
     // area
 
     template <typename Geometry>
-    auto area(Geometry const&,
-              std::enable_if_t<! util::is_box<Geometry>::value> * = nullptr) const
+    auto area(Geometry const&) const
     {
-        return strategy::area::geographic
-            <
-                FormulaPolicy,
-                strategy::default_order<FormulaPolicy>::value,
-                Spheroid, CalculationType
-            >(base_t::m_spheroid);
-    }
-
-    template <typename Geometry>
-    auto area(Geometry const&,
-              std::enable_if_t<util::is_box<Geometry>::value> * = nullptr) const
-    {
-        return strategy::area::geographic_box
-            <
-                Spheroid, CalculationType
-            >(base_t::m_spheroid);
+        if constexpr (util::is_box<Geometry>::value)
+            return strategy::area::geographic_box<Spheroid, CalculationType>
+                (base_t::m_spheroid);
+        else
+            return strategy::area::geographic
+                <FormulaPolicy, strategy::default_order<FormulaPolicy>::value,
+                 Spheroid, CalculationType>(base_t::m_spheroid);
     }
 
     template <typename Geometry1, typename Geometry2>
@@ -93,82 +83,52 @@ public:
     // covered_by
 
     template <typename Geometry1, typename Geometry2>
-    static auto covered_by(Geometry1 const&, Geometry2 const&,
-                           std::enable_if_t
-                                <
-                                    util::is_pointlike<Geometry1>::value
-                                 && util::is_box<Geometry2>::value
-                                > * = nullptr)
+    static auto covered_by(Geometry1 const&, Geometry2 const&)
     {
-        return strategy::covered_by::spherical_point_box();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    static auto covered_by(Geometry1 const&, Geometry2 const&,
-                           std::enable_if_t
-                            <
-                                util::is_box<Geometry1>::value
-                             && util::is_box<Geometry2>::value
-                            > * = nullptr)
-    {
-        return strategy::covered_by::spherical_box_box();
+        static_assert(util::is_box<Geometry2>::value);
+        if constexpr (util::is_pointlike<Geometry1>::value)
+            return strategy::covered_by::spherical_point_box();
+        else
+        {
+            static_assert(util::is_box<Geometry1>::value);
+            return strategy::covered_by::spherical_box_box();
+        }
     }
 
     // disjoint
 
     template <typename Geometry1, typename Geometry2>
-    static auto disjoint(Geometry1 const&, Geometry2 const&,
-                         std::enable_if_t
-                            <
-                                util::is_box<Geometry1>::value
-                             && util::is_box<Geometry2>::value
-                            > * = nullptr)
+    auto disjoint(Geometry1 const&, Geometry2 const&) const
     {
-        return strategy::disjoint::spherical_box_box();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto disjoint(Geometry1 const&, Geometry2 const&,
-                  std::enable_if_t
-                    <
-                        util::is_segment<Geometry1>::value
-                        && util::is_box<Geometry2>::value
-                    > * = nullptr) const
-    {
-        // NOTE: Inconsistent name
-        // The only disjoint(Seg, Box) strategy that takes CalculationType.
-        return strategy::disjoint::segment_box_geographic
-            <
-                FormulaPolicy, Spheroid, CalculationType
-            >(base_t::m_spheroid);
+        static_assert(util::is_box<Geometry2>::value);
+        if constexpr (util::is_box<Geometry1>::value)
+            return strategy::disjoint::spherical_box_box();
+        else
+        {
+            static_assert(util::is_segment<Geometry1>::value);
+            // NOTE: Inconsistent name. This is the only segment/box
+            // disjoint strategy taking CalculationType.
+            return strategy::disjoint::segment_box_geographic
+                <FormulaPolicy, Spheroid, CalculationType>(base_t::m_spheroid);
+        }
     }
 
     // relate
 
     template <typename Geometry1, typename Geometry2>
-    static auto relate(Geometry1 const&, Geometry2 const&,
-                       std::enable_if_t
-                            <
-                                util::is_pointlike<Geometry1>::value
-                             && util::is_pointlike<Geometry2>::value
-                            > * = nullptr)
+    auto relate(Geometry1 const&, Geometry2 const&) const
     {
-        return strategy::within::spherical_point_point();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto relate(Geometry1 const&, Geometry2 const&,
-                std::enable_if_t
-                    <
-                        util::is_pointlike<Geometry1>::value
-                        && ( util::is_linear<Geometry2>::value
-                        || util::is_polygonal<Geometry2>::value )
-                    > * = nullptr) const
-    {
-        return strategy::within::geographic_winding
-                <
-                    void, void, FormulaPolicy, Spheroid, CalculationType
-                >(base_t::m_spheroid);
+        static_assert(util::is_pointlike<Geometry1>::value);
+        if constexpr (util::is_pointlike<Geometry2>::value)
+            return strategy::within::spherical_point_point();
+        else
+        {
+            static_assert(util::is_linear<Geometry2>::value
+                       || util::is_polygonal<Geometry2>::value);
+            return strategy::within::geographic_winding
+                <void, void, FormulaPolicy, Spheroid, CalculationType>
+                (base_t::m_spheroid);
+        }
     }
 
     //template <typename Geometry1, typename Geometry2>
@@ -202,25 +162,16 @@ public:
     // within
 
     template <typename Geometry1, typename Geometry2>
-    static auto within(Geometry1 const&, Geometry2 const&,
-                       std::enable_if_t
-                            <
-                                util::is_pointlike<Geometry1>::value
-                                && util::is_box<Geometry2>::value
-                            > * = nullptr)
+    static auto within(Geometry1 const&, Geometry2 const&)
     {
-        return strategy::within::spherical_point_box();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    static auto within(Geometry1 const&, Geometry2 const&,
-                       std::enable_if_t
-                            <
-                                util::is_box<Geometry1>::value
-                             && util::is_box<Geometry2>::value
-                            > * = nullptr)
-    {
-        return strategy::within::spherical_box_box();
+        static_assert(util::is_box<Geometry2>::value);
+        if constexpr (util::is_pointlike<Geometry1>::value)
+            return strategy::within::spherical_point_box();
+        else
+        {
+            static_assert(util::is_box<Geometry1>::value);
+            return strategy::within::spherical_box_box();
+        }
     }
 
     template <typename ComparePolicy, typename EqualsPolicy>
@@ -323,36 +274,33 @@ struct strategy_converter<strategy::within::geographic_point_box_by_side<Formula
     struct altered_strategy
         : strategies::relate::geographic<FormulaPolicy, Spheroid, CalculationType>
     {
+        using base_t = strategies::relate::geographic
+            <FormulaPolicy, Spheroid, CalculationType>;
+
         altered_strategy(Spheroid const& spheroid)
-            : strategies::relate::geographic<FormulaPolicy, Spheroid, CalculationType>(spheroid)
+            : base_t(spheroid)
         {}
 
         template <typename Geometry1, typename Geometry2>
-        auto covered_by(Geometry1 const&, Geometry2 const&,
-                        std::enable_if_t
-                            <
-                                util::is_pointlike<Geometry1>::value
-                                && util::is_box<Geometry2>::value
-                            > * = nullptr) const
+        auto covered_by(Geometry1 const& geometry1, Geometry2 const& geometry2) const
         {
-            return strategy::covered_by::geographic_point_box_by_side
-                <
-                    FormulaPolicy, Spheroid, CalculationType
-                >(this->model());
+            if constexpr (util::is_pointlike<Geometry1>::value
+                       && util::is_box<Geometry2>::value)
+                return strategy::covered_by::geographic_point_box_by_side
+                    <FormulaPolicy, Spheroid, CalculationType>(this->model());
+            else
+                return base_t::covered_by(geometry1, geometry2);
         }
 
         template <typename Geometry1, typename Geometry2>
-        auto within(Geometry1 const&, Geometry2 const&,
-                    std::enable_if_t
-                        <
-                            util::is_pointlike<Geometry1>::value
-                            && util::is_box<Geometry2>::value
-                        > * = nullptr) const
+        auto within(Geometry1 const& geometry1, Geometry2 const& geometry2) const
         {
-            return strategy::within::geographic_point_box_by_side
-                <
-                    FormulaPolicy, Spheroid, CalculationType
-                >(this->model());
+            if constexpr (util::is_pointlike<Geometry1>::value
+                       && util::is_box<Geometry2>::value)
+                return strategy::within::geographic_point_box_by_side
+                    <FormulaPolicy, Spheroid, CalculationType>(this->model());
+            else
+                return base_t::within(geometry1, geometry2);
         }
     };
 

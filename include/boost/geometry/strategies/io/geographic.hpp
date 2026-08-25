@@ -52,30 +52,19 @@ public:
     }
 
     template <typename Geometry1, typename Geometry2>
-    static auto relate(Geometry1 const&, Geometry2 const&,
-                       std::enable_if_t
-                            <
-                                util::is_pointlike<Geometry1>::value
-                             && util::is_pointlike<Geometry2>::value
-                            > * = nullptr)
+    auto relate(Geometry1 const&, Geometry2 const&) const
     {
-        return strategy::within::spherical_point_point();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto relate(Geometry1 const&, Geometry2 const&,
-                std::enable_if_t
-                    <
-                        util::is_pointlike<Geometry1>::value
-                        && ( util::is_linear<Geometry2>::value
-                        || util::is_polygonal<Geometry2>::value )
-                    > * = nullptr) const
-    {
-        return strategy::within::geographic_winding
-            <
-                void, void,
-                FormulaPolicy, Spheroid, CalculationType
-            >(base_t::m_spheroid);
+        static_assert(util::is_pointlike<Geometry1>::value);
+        if constexpr (util::is_pointlike<Geometry2>::value)
+            return strategy::within::spherical_point_point();
+        else
+        {
+            static_assert(util::is_linear<Geometry2>::value
+                       || util::is_polygonal<Geometry2>::value);
+            return strategy::within::geographic_winding
+                <void, void, FormulaPolicy, Spheroid, CalculationType>
+                (base_t::m_spheroid);
+        }
     }
 };
 

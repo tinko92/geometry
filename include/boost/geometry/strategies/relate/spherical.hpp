@@ -60,23 +60,14 @@ public:
     // area
 
     template <typename Geometry>
-    auto area(Geometry const&,
-              std::enable_if_t<! util::is_box<Geometry>::value> * = nullptr) const
+    auto area(Geometry const&) const
     {
-        return strategy::area::spherical
-            <
-                typename base_t::radius_type, CalculationType
-            >(base_t::radius());
-    }
-
-    template <typename Geometry>
-    auto area(Geometry const&,
-              std::enable_if_t<util::is_box<Geometry>::value> * = nullptr) const
-    {
-        return strategy::area::spherical_box
-            <
-                typename base_t::radius_type, CalculationType
-            >(base_t::radius());
+        if constexpr (util::is_box<Geometry>::value)
+            return strategy::area::spherical_box
+                <typename base_t::radius_type, CalculationType>(base_t::radius());
+        else
+            return strategy::area::spherical
+                <typename base_t::radius_type, CalculationType>(base_t::radius());
     }
 
     template <typename Geometry1, typename Geometry2>
@@ -92,75 +83,48 @@ public:
     // covered_by
 
     template <typename Geometry1, typename Geometry2>
-    static auto covered_by(Geometry1 const&, Geometry2 const&,
-                           std::enable_if_t
-                                <
-                                    util::is_pointlike<Geometry1>::value
-                                 && util::is_box<Geometry2>::value
-                                > * = nullptr)
+    static auto covered_by(Geometry1 const&, Geometry2 const&)
     {
-        return strategy::covered_by::spherical_point_box();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    static auto covered_by(Geometry1 const&, Geometry2 const&,
-                           std::enable_if_t
-                            <
-                                util::is_box<Geometry1>::value
-                             && util::is_box<Geometry2>::value
-                            > * = nullptr)
-    {
-        return strategy::covered_by::spherical_box_box();
+        static_assert(util::is_box<Geometry2>::value);
+        if constexpr (util::is_pointlike<Geometry1>::value)
+            return strategy::covered_by::spherical_point_box();
+        else
+        {
+            static_assert(util::is_box<Geometry1>::value);
+            return strategy::covered_by::spherical_box_box();
+        }
     }
 
     // disjoint
 
     template <typename Geometry1, typename Geometry2>
-    static auto disjoint(Geometry1 const&, Geometry2 const&,
-                         std::enable_if_t
-                            <
-                                util::is_box<Geometry1>::value
-                             && util::is_box<Geometry2>::value
-                            > * = nullptr)
+    static auto disjoint(Geometry1 const&, Geometry2 const&)
     {
-        return strategy::disjoint::spherical_box_box();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    static auto disjoint(Geometry1 const&, Geometry2 const&,
-                         std::enable_if_t
-                            <
-                                util::is_segment<Geometry1>::value
-                             && util::is_box<Geometry2>::value
-                            > * = nullptr)
-    {
-        // NOTE: Inconsistent name.
-        return strategy::disjoint::segment_box_spherical();
+        static_assert(util::is_box<Geometry2>::value);
+        if constexpr (util::is_box<Geometry1>::value)
+            return strategy::disjoint::spherical_box_box();
+        else
+        {
+            static_assert(util::is_segment<Geometry1>::value);
+            // NOTE: Inconsistent name.
+            return strategy::disjoint::segment_box_spherical();
+        }
     }
 
     // relate
 
     template <typename Geometry1, typename Geometry2>
-    static auto relate(Geometry1 const&, Geometry2 const&,
-                       std::enable_if_t
-                            <
-                                util::is_pointlike<Geometry1>::value
-                             && util::is_pointlike<Geometry2>::value
-                            > * = nullptr)
+    static auto relate(Geometry1 const&, Geometry2 const&)
     {
-        return strategy::within::spherical_point_point();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    static auto relate(Geometry1 const&, Geometry2 const&,
-                       std::enable_if_t
-                            <
-                                util::is_pointlike<Geometry1>::value
-                             && ( util::is_linear<Geometry2>::value
-                               || util::is_polygonal<Geometry2>::value )
-                            > * = nullptr)
-    {
-        return strategy::within::spherical_winding<void, void, CalculationType>();
+        static_assert(util::is_pointlike<Geometry1>::value);
+        if constexpr (util::is_pointlike<Geometry2>::value)
+            return strategy::within::spherical_point_point();
+        else
+        {
+            static_assert(util::is_linear<Geometry2>::value
+                       || util::is_polygonal<Geometry2>::value);
+            return strategy::within::spherical_winding<void, void, CalculationType>();
+        }
     }
 
     //template <typename Geometry1, typename Geometry2>
@@ -186,25 +150,16 @@ public:
     // within
 
     template <typename Geometry1, typename Geometry2>
-    static auto within(Geometry1 const&, Geometry2 const&,
-                       std::enable_if_t
-                            <
-                                util::is_pointlike<Geometry1>::value
-                                && util::is_box<Geometry2>::value
-                            > * = nullptr)
+    static auto within(Geometry1 const&, Geometry2 const&)
     {
-        return strategy::within::spherical_point_box();
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    static auto within(Geometry1 const&, Geometry2 const&,
-                       std::enable_if_t
-                            <
-                                util::is_box<Geometry1>::value
-                             && util::is_box<Geometry2>::value
-                            > * = nullptr)
-    {
-        return strategy::within::spherical_box_box();
+        static_assert(util::is_box<Geometry2>::value);
+        if constexpr (util::is_pointlike<Geometry1>::value)
+            return strategy::within::spherical_point_box();
+        else
+        {
+            static_assert(util::is_box<Geometry1>::value);
+            return strategy::within::spherical_box_box();
+        }
     }
 
     template <typename ComparePolicy, typename EqualsPolicy>
@@ -336,26 +291,26 @@ struct strategy_converter<strategy::within::spherical_point_box_by_side<Calculat
     struct altered_strategy
         : strategies::relate::spherical<CalculationType>
     {
+        using base_t = strategies::relate::spherical<CalculationType>;
+
         template <typename Geometry1, typename Geometry2>
-        static auto covered_by(Geometry1 const&, Geometry2 const&,
-                               std::enable_if_t
-                                    <
-                                        util::is_pointlike<Geometry1>::value
-                                     && util::is_box<Geometry2>::value
-                                    > * = nullptr)
+        static auto covered_by(Geometry1 const& geometry1, Geometry2 const& geometry2)
         {
-            return strategy::covered_by::spherical_point_box_by_side<CalculationType>();
+            if constexpr (util::is_pointlike<Geometry1>::value
+                       && util::is_box<Geometry2>::value)
+                return strategy::covered_by::spherical_point_box_by_side<CalculationType>();
+            else
+                return base_t::covered_by(geometry1, geometry2);
         }
 
         template <typename Geometry1, typename Geometry2>
-        static auto within(Geometry1 const&, Geometry2 const&,
-                           std::enable_if_t
-                                <
-                                    util::is_pointlike<Geometry1>::value
-                                    && util::is_box<Geometry2>::value
-                                > * = nullptr)
+        static auto within(Geometry1 const& geometry1, Geometry2 const& geometry2)
         {
-            return strategy::within::spherical_point_box_by_side<CalculationType>();
+            if constexpr (util::is_pointlike<Geometry1>::value
+                       && util::is_box<Geometry2>::value)
+                return strategy::within::spherical_point_box_by_side<CalculationType>();
+            else
+                return base_t::within(geometry1, geometry2);
         }
     };
 

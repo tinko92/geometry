@@ -72,53 +72,27 @@ public:
     // distance
 
     template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  detail::enable_if_pp_t<Geometry1, Geometry2> * = nullptr) const
+    auto distance(Geometry1 const&, Geometry2 const&) const
     {
-        return strategy::distance::geographic
-                <
-                    FormulaPolicy, Spheroid, CalculationType
-                >(base_t::m_spheroid);
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  detail::enable_if_ps_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::geographic_cross_track
-            <
-                FormulaPolicy, Spheroid, CalculationType
-            >(base_t::m_spheroid);
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  detail::enable_if_pb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::geographic_cross_track_point_box
-            <
-                FormulaPolicy, Spheroid, CalculationType
-            >(base_t::m_spheroid);
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  detail::enable_if_sb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::geographic_segment_box
-            <
-                FormulaPolicy, Spheroid, CalculationType
-            >(base_t::m_spheroid);
-    }
-
-    template <typename Geometry1, typename Geometry2>
-    auto distance(Geometry1 const&, Geometry2 const&,
-                  detail::enable_if_bb_t<Geometry1, Geometry2> * = nullptr) const
-    {
-        return strategy::distance::geographic_cross_track_box_box
-            <
-                FormulaPolicy, Spheroid, CalculationType
-            >(base_t::m_spheroid);
+        if constexpr (detail::is_pp_v<Geometry1, Geometry2>)
+            return strategy::distance::geographic<FormulaPolicy, Spheroid, CalculationType>
+                (base_t::m_spheroid);
+        else if constexpr (detail::is_ps_v<Geometry1, Geometry2>)
+            return strategy::distance::geographic_cross_track
+                <FormulaPolicy, Spheroid, CalculationType>(base_t::m_spheroid);
+        else if constexpr (detail::is_pb_v<Geometry1, Geometry2>)
+            return strategy::distance::geographic_cross_track_point_box
+                <FormulaPolicy, Spheroid, CalculationType>(base_t::m_spheroid);
+        else if constexpr (detail::is_sb_v<Geometry1, Geometry2>)
+            return strategy::distance::geographic_segment_box
+                <FormulaPolicy, Spheroid, CalculationType>(base_t::m_spheroid);
+        else
+        {
+            static_assert(detail::is_bb_v<Geometry1, Geometry2>,
+                          "Distance strategy not implemented for these geometries.");
+            return strategy::distance::geographic_cross_track_box_box
+                <FormulaPolicy, Spheroid, CalculationType>(base_t::m_spheroid);
+        }
     }
 
     // normalize
@@ -231,16 +205,14 @@ struct strategy_converter<strategy::distance::detail::geographic_cross_track<FP,
 
         explicit altered_strategy(S const& s) : base_t(s) {}
 
-        using base_t::distance;
-
         template <typename Geometry1, typename Geometry2>
-        auto distance(Geometry1 const&, Geometry2 const&,
-                      detail::enable_if_ps_t<Geometry1, Geometry2> * = nullptr) const
+        auto distance(Geometry1 const& geometry1, Geometry2 const& geometry2) const
         {
-            return strategy::distance::detail::geographic_cross_track
-                <
-                    FP, S, CT, B, ECP
-                >(base_t::m_spheroid);
+            if constexpr (detail::is_ps_v<Geometry1, Geometry2>)
+                return strategy::distance::detail::geographic_cross_track
+                    <FP, S, CT, B, ECP>(base_t::m_spheroid);
+            else
+                return base_t::distance(geometry1, geometry2);
         }
     };
 

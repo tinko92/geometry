@@ -143,61 +143,58 @@ public :
         template <typename P1, typename P2, typename P, typename EpsPolicy>
         static inline PromotedType apply(P1 const& p1, P2 const& p2, P const& p, EpsPolicy & epsp)
         {
-            return side_value<CoordinateType, PromotedType>(p1, p2, p, epsp);
-        }
-    };
-
-    template <typename CoordinateType, typename PromotedType>
-    struct compute_side_value<CoordinateType, PromotedType, false>
-    {
-        template <typename P1, typename P2, typename P, typename EpsPolicy>
-        static inline PromotedType apply(P1 const& p1, P2 const& p2, P const& p, EpsPolicy & epsp)
-        {
-            // For robustness purposes, first check if any two points are
-            // the same; in this case simply return that the points are
-            // collinear
-            if (equals_point_point(p1, p2)
-                || equals_point_point(p1, p)
-                || equals_point_point(p2, p))
+            if constexpr (AreAllIntegralCoordinates)
             {
-                return PromotedType(0);
+                return side_value<CoordinateType, PromotedType>(p1, p2, p, epsp);
             }
-
-            // The side_by_triangle strategy computes the signed area of
-            // the point triplet (p1, p2, p); as such it is (in theory)
-            // invariant under cyclic permutations of its three arguments.
-            //
-            // In the context of numerical errors that arise in
-            // floating-point computations, and in order to make the strategy
-            // consistent with respect to cyclic permutations of its three
-            // arguments, we cyclically permute them so that the first
-            // argument is always the lexicographically smallest point.
-
-            using less = compare::cartesian<compare::less, compare::equals_epsilon>;
-
-            if (less::apply(p, p1))
+            else
             {
-                if (less::apply(p, p2))
+                // For robustness purposes, first check if any two points are
+                // the same; in this case simply return that the points are
+                // collinear
+                if (equals_point_point(p1, p2)
+                    || equals_point_point(p1, p)
+                    || equals_point_point(p2, p))
                 {
-                    // p is the lexicographically smallest
-                    return side_value<CoordinateType, PromotedType>(p, p1, p2, epsp);
+                    return PromotedType(0);
+                }
+
+                // The side_by_triangle strategy computes the signed area of
+                // the point triplet (p1, p2, p); as such it is (in theory)
+                // invariant under cyclic permutations of its three arguments.
+                //
+                // In the context of numerical errors that arise in
+                // floating-point computations, and in order to make the strategy
+                // consistent with respect to cyclic permutations of its three
+                // arguments, we cyclically permute them so that the first
+                // argument is always the lexicographically smallest point.
+
+                using less = compare::cartesian<compare::less, compare::equals_epsilon>;
+
+                if (less::apply(p, p1))
+                {
+                    if (less::apply(p, p2))
+                    {
+                        // p is the lexicographically smallest
+                        return side_value<CoordinateType, PromotedType>(p, p1, p2, epsp);
+                    }
+                    else
+                    {
+                        // p2 is the lexicographically smallest
+                        return side_value<CoordinateType, PromotedType>(p2, p, p1, epsp);
+                    }
+                }
+
+                if (less::apply(p1, p2))
+                {
+                    // p1 is the lexicographically smallest
+                    return side_value<CoordinateType, PromotedType>(p1, p2, p, epsp);
                 }
                 else
                 {
                     // p2 is the lexicographically smallest
                     return side_value<CoordinateType, PromotedType>(p2, p, p1, epsp);
                 }
-            }
-
-            if (less::apply(p1, p2))
-            {
-                // p1 is the lexicographically smallest
-                return side_value<CoordinateType, PromotedType>(p1, p2, p, epsp);
-            }
-            else
-            {
-                // p2 is the lexicographically smallest
-                return side_value<CoordinateType, PromotedType>(p2, p, p1, epsp);
             }
         }
     };

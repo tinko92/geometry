@@ -69,25 +69,19 @@ struct set_result
 {
     template <typename CT, typename ResultType>
     static void apply(CT const& distance,
-                      CT const&,
-                      CT const&,
-                      ResultType& result)
-    {
-        result.distance = distance;
-    }
-};
-
-template<>
-struct set_result<true>
-{
-    template <typename CT, typename ResultType>
-    static void apply(CT const&,
                       CT const& lon,
                       CT const& lat,
                       ResultType& result)
     {
-        result.lon = lon;
-        result.lat = lat;
+        if constexpr (EnableClosestPoint)
+        {
+            result.lon = lon;
+            result.lat = lat;
+        }
+        else
+        {
+            result.distance = distance;
+        }
     }
 };
 

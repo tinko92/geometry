@@ -22,8 +22,8 @@
 
 #include <boost/config.hpp>
 
-#if defined(BOOST_NO_CXX14_CONSTEXPR)
-#error "Use C++14 or higher to compile Boost.Geometry, or use Boost 1.72 or lower."
+#if defined(BOOST_NO_CXX17_IF_CONSTEXPR)
+#error "Use C++17 or higher to compile Boost.Geometry."
 #endif
 
 // Shortcut to include all header files

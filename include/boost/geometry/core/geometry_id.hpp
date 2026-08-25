@@ -104,10 +104,8 @@ struct geometry_id : core_dispatch::geometry_id<tag_t<Geometry>>
 {};
 
 
-#ifndef BOOST_NO_CXX17_INLINE_VARIABLES
 template <typename GeometryTag>
 inline constexpr int geometry_id_v = geometry_id<GeometryTag>::value;
-#endif
 
 
 }} // namespace boost::geometry

@@ -95,10 +95,8 @@ struct dimension
 {};
 
 
-#ifndef BOOST_NO_CXX17_INLINE_VARIABLES
 template <typename Geometry>
 inline constexpr std::size_t dimension_v = dimension<Geometry>::value;
-#endif
 
 
 /*!

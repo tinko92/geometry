@@ -28,17 +28,16 @@ template <typename CalculationType = void>
 struct cartesian : strategies::detail::cartesian_base
 {
     template <typename Geometry>
-    static auto area(Geometry const&,
-                     std::enable_if_t<! util::is_box<Geometry>::value> * = nullptr)
+    static auto area(Geometry const&)
     {
-        return strategy::area::cartesian<CalculationType>();
-    }
-
-    template <typename Geometry>
-    static auto area(Geometry const&,
-                     std::enable_if_t<util::is_box<Geometry>::value> * = nullptr)
-    {
-        return strategy::area::cartesian_box<CalculationType>();
+        if constexpr (util::is_box<Geometry>::value)
+        {
+            return strategy::area::cartesian_box<CalculationType>();
+        }
+        else
+        {
+            return strategy::area::cartesian<CalculationType>();
+        }
     }
 };
 

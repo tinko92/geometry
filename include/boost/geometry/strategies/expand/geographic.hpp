@@ -44,27 +44,25 @@ public:
     {}
 
     template <typename Box, typename Geometry>
-    static auto expand(Box const&, Geometry const&,
-                       typename util::enable_if_point_t<Geometry> * = nullptr)
+    auto expand(Box const&, Geometry const&) const
     {
-        return strategy::expand::spherical_point();
-    }
-
-    template <typename Box, typename Geometry>
-    static auto expand(Box const&, Geometry const&,
-                       typename util::enable_if_box_t<Geometry> * = nullptr)
-    {
-        return strategy::expand::spherical_box();
-    }
-
-    template <typename Box, typename Geometry>
-    auto expand(Box const&, Geometry const&,
-                typename util::enable_if_segment_t<Geometry> * = nullptr) const
-    {
-        return strategy::expand::geographic_segment
-            <
-                FormulaPolicy, Spheroid, CalculationType
-            >(base_t::m_spheroid);
+        if constexpr (util::is_point<Geometry>::value)
+        {
+            return strategy::expand::spherical_point();
+        }
+        else if constexpr (util::is_box<Geometry>::value)
+        {
+            return strategy::expand::spherical_box();
+        }
+        else
+        {
+            static_assert(util::is_segment<Geometry>::value,
+                          "Expand strategy not implemented for this geometry.");
+            return strategy::expand::geographic_segment
+                <
+                    FormulaPolicy, Spheroid, CalculationType
+                >(base_t::m_spheroid);
+        }
     }
 };
 

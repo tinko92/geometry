@@ -11,11 +11,6 @@
 #define BOOST_GEOMETRY_GEOMETRIES_ADAPTED_STD_VARIANT_HPP
 
 
-#include <boost/config.hpp>
-
-#ifndef BOOST_NO_CXX17_HDR_VARIANT
-
-
 #include <utility>
 #include <variant>
 
@@ -72,9 +67,6 @@ struct geometry_types<std::variant<Ts...>>
 
 
 }} // namespace boost::geometry
-
-
-#endif // BOOST_NO_CXX17_HDR_VARIANT
 
 
 #endif // BOOST_GEOMETRY_GEOMETRIES_ADAPTED_STD_VARIANT_HPP

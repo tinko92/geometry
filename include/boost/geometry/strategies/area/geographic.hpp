@@ -43,25 +43,24 @@ public:
     {}
 
     template <typename Geometry>
-    auto area(Geometry const&,
-              std::enable_if_t<! util::is_box<Geometry>::value> * = nullptr) const
+    auto area(Geometry const&) const
     {
-        return strategy::area::geographic
-            <
-                FormulaPolicy,
-                strategy::default_order<FormulaPolicy>::value,
-                Spheroid, CalculationType
-            >(base_t::m_spheroid);
-    }
-
-    template <typename Geometry>
-    auto area(Geometry const&,
-              std::enable_if_t<util::is_box<Geometry>::value> * = nullptr) const
-    {
-        return strategy::area::geographic_box
-            <
-                Spheroid, CalculationType
-            >(base_t::m_spheroid);
+        if constexpr (util::is_box<Geometry>::value)
+        {
+            return strategy::area::geographic_box
+                <
+                    Spheroid, CalculationType
+                >(base_t::m_spheroid);
+        }
+        else
+        {
+            return strategy::area::geographic
+                <
+                    FormulaPolicy,
+                    strategy::default_order<FormulaPolicy>::value,
+                    Spheroid, CalculationType
+                >(base_t::m_spheroid);
+        }
     }
 };
 
@@ -86,13 +85,17 @@ struct strategy_converter<strategy::area::geographic<FP, SO, S, CT> >
             : strategies::area::geographic<FP, S, CT>(spheroid)
         {}
 
-        using strategies::area::geographic<FP, S, CT>::area;
-
         template <typename Geometry>
-        auto area(Geometry const&,
-                  std::enable_if_t<! util::is_box<Geometry>::value> * = nullptr) const
+        auto area(Geometry const& geometry) const
         {
-            return strategy::area::geographic<FP, SO, S, CT>(this->m_spheroid);
+            if constexpr (util::is_box<Geometry>::value)
+            {
+                return strategies::area::geographic<FP, S, CT>::area(geometry);
+            }
+            else
+            {
+                return strategy::area::geographic<FP, SO, S, CT>(this->m_spheroid);
+            }
         }
     };
 

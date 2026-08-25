@@ -105,41 +105,32 @@ public:
         typename P1,
         typename P2,
         typename P,
-        typename EpsPolicyInternal,
-        std::enable_if_t<std::is_fundamental<PromotedType>::value, int> = 0
+        typename EpsPolicyInternal
     >
-    static inline PromotedType side_value(P1 const& p1,
-                                          P2 const& p2,
-                                          P const& p,
-                                          EpsPolicyInternal& eps_policy)
+    static inline auto side_value(P1 const& p1,
+                                  P2 const& p2,
+                                  P const& p,
+                                  EpsPolicyInternal& eps_policy)
     {
-        using vec2d = ::boost::geometry::detail::precise_math::vec2d<PromotedType>;
-        vec2d pa;
-        pa.x = get<0>(p1);
-        pa.y = get<1>(p1);
-        vec2d pb;
-        pb.x = get<0>(p2);
-        pb.y = get<1>(p2);
-        vec2d pc;
-        pc.x = get<0>(p);
-        pc.y = get<1>(p);
-        return ::boost::geometry::detail::precise_math::orient2d
-            <PromotedType, Robustness>(pa, pb, pc, eps_policy);
-    }
-
-    template
-    <
-        typename PromotedType,
-        typename P1,
-        typename P2,
-        typename P,
-        typename EpsPolicyInternal,
-        std::enable_if_t<!std::is_fundamental<PromotedType>::value, int> = 0
-    >
-    static inline auto side_value(P1 const& p1, P2 const& p2, P const& p,
-                                  EpsPolicyInternal&)
-    {
-        return side_non_robust<>::apply(p1, p2, p);
+        if constexpr (std::is_fundamental_v<PromotedType>)
+        {
+            using vec2d = ::boost::geometry::detail::precise_math::vec2d<PromotedType>;
+            vec2d pa;
+            pa.x = get<0>(p1);
+            pa.y = get<1>(p1);
+            vec2d pb;
+            pb.x = get<0>(p2);
+            pb.y = get<1>(p2);
+            vec2d pc;
+            pc.x = get<0>(p);
+            pc.y = get<1>(p);
+            return ::boost::geometry::detail::precise_math::orient2d
+                <PromotedType, Robustness>(pa, pb, pc, eps_policy);
+        }
+        else
+        {
+            return side_non_robust<>::apply(p1, p2, p);
+        }
     }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
