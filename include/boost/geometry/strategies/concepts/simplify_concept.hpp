@@ -18,14 +18,10 @@
 #ifndef BOOST_GEOMETRY_STRATEGIES_CONCEPTS_SIMPLIFY_CONCEPT_HPP
 #define BOOST_GEOMETRY_STRATEGIES_CONCEPTS_SIMPLIFY_CONCEPT_HPP
 
+#include <concepts>
 #include <iterator>
-#include <type_traits>
 #include <vector>
 
-#include <boost/concept_check.hpp>
-#include <boost/core/ignore_unused.hpp>
-
-#include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/strategies/concepts/distance_concept.hpp>
 
 
@@ -38,61 +34,19 @@ namespace boost { namespace geometry { namespace concepts
     \ingroup simplify
 */
 template <typename Strategy, typename Point>
-struct SimplifyStrategy
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-private :
-
-    // 1) must define distance_strategy_type,
-    //    defining point-segment distance strategy (to be checked)
-    typedef typename Strategy::distance_strategy_type ds_type;
-
-
-    struct checker
+concept SimplifyStrategy =
+    requires
     {
-        template <typename ApplyMethod>
-        static void apply(ApplyMethod)
-        {
-            namespace ft = boost::function_types;
-            typedef typename ft::parameter_types
-                <
-                    ApplyMethod
-                >::type parameter_types;
-
-            typedef std::conditional_t
-                <
-                    ft::is_member_function_pointer<ApplyMethod>::value,
-                    std::integral_constant<int, 1>,
-                    std::integral_constant<int, 0>
-                > base_index;
-
-            BOOST_CONCEPT_ASSERT
-                (
-                    (concepts::PointSegmentDistanceStrategy<ds_type, Point, Point>)
-                );
-
-            Strategy *str = 0;
-            std::vector<Point> const* v1 = 0;
-            std::vector<Point> * v2 = 0;
-
-            // 2) must implement method apply with arguments
-            //    - Range
-            //    - OutputIterator
-            //    - floating point value
-            str->apply(*v1, std::back_inserter(*v2), 1.0);
-
-            boost::ignore_unused<parameter_types, base_index>();
-            boost::ignore_unused(str);
-        }
-    };
-
-public :
-    BOOST_CONCEPT_USAGE(SimplifyStrategy)
-    {
-        checker::apply(&ds_type::template apply<Point, Point>);
+        typename Strategy::distance_strategy_type;
+        requires PointSegmentDistanceStrategy
+            <typename Strategy::distance_strategy_type, Point, Point>;
     }
-#endif
-};
+    && requires(Strategy& strategy,
+                std::vector<Point> const& input,
+                std::vector<Point>& output)
+    {
+        strategy.apply(input, std::back_inserter(output), 1.0);
+    };
 
 
 

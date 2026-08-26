@@ -208,8 +208,7 @@ inline void test_services()
 
     typedef bgsd::pythagoras_point_box<CalculationType> strategy_type;
 
-    BOOST_CONCEPT_ASSERT
-        ( (bg::concepts::PointDistanceStrategy<strategy_type, Point, Box>) );
+    static_assert(bg::concepts::PointDistanceStrategy<strategy_type, Point, Box>);
 
     typedef typename bgsd::services::return_type
         <
@@ -493,4 +492,3 @@ BOOST_AUTO_TEST_CASE( test_time_compare )
     // TODO move this to another non-unit test
     //    time_compare<bg::model::point<double, 2, bg::cs::cartesian> >(10000);
 }
-

@@ -78,7 +78,7 @@ void test_distance_point()
 
     {
         // Test custom strategy
-        BOOST_CONCEPT_ASSERT( (bg::concepts::PointDistanceStrategy<taxicab_distance, P, P>) );
+        static_assert(bg::concepts::PointDistanceStrategy<taxicab_distance, P, P>);
 
         typedef typename services::return_type<taxicab_distance, P, P>::type cab_return_type;
         BOOST_GEOMETRY_STATIC_ASSERT(

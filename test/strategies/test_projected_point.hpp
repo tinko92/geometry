@@ -76,7 +76,7 @@ void test_services()
 
     typedef bgsd::projected_point<CalculationType> strategy_type;
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::PointSegmentDistanceStrategy<strategy_type, P, PS>) );
+    static_assert(bg::concepts::PointSegmentDistanceStrategy<strategy_type, P, PS>);
 
     typedef typename services::return_type<strategy_type, P, PS>::type return_type;
 
@@ -124,14 +124,9 @@ void test_2d(std::string const& wkt_p,
     bg::read_wkt(wkt_sp1, sp1);
     bg::read_wkt(wkt_sp2, sp2);
 
-    BOOST_CONCEPT_ASSERT
-        (
-            (bg::concepts::PointSegmentDistanceStrategy<Strategy, P1, P2>)
-        );
-    BOOST_CONCEPT_ASSERT
-        (
-            (bg::concepts::PointSegmentDistanceStrategy<ComparableStrategy, P1, P2>)
-        );
+    static_assert(bg::concepts::PointSegmentDistanceStrategy<Strategy, P1, P2>);
+    static_assert(bg::concepts::PointSegmentDistanceStrategy
+        <ComparableStrategy, P1, P2>);
 
     {
         typedef typename bg::strategy::distance::services::return_type<Strategy, P1, P2>::type return_type;

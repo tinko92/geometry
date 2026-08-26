@@ -47,10 +47,7 @@ void test_distance(double lon1, double lat1, double lon2, double lat2, double ex
     typedef bg::strategy::distance::thomas<stype> thomas_type;
     typedef bg::strategy::distance::geographic<bg::strategy::thomas, stype> geographic_type;
 
-    BOOST_CONCEPT_ASSERT
-        ( 
-            (bg::concepts::PointDistanceStrategy<thomas_type, P1, P2>)
-        );
+    static_assert(bg::concepts::PointDistanceStrategy<thomas_type, P1, P2>);
 
     thomas_type thomas;
     geographic_type geographic;

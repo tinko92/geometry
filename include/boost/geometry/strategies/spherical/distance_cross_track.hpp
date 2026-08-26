@@ -442,10 +442,8 @@ public:
     {
 
 #if !defined(BOOST_MSVC)
-        BOOST_CONCEPT_ASSERT
-            (
-                (concepts::PointDistanceStrategy<Strategy, Point, PointOfSegment>)
-            );
+        static_assert(concepts::PointDistanceStrategy
+            <Strategy, Point, PointOfSegment>);
 #endif
 
         using return_type = typename return_type<Point, PointOfSegment>::type;
@@ -588,10 +586,8 @@ public :
     {
 
 #if !defined(BOOST_MSVC)
-        BOOST_CONCEPT_ASSERT
-            (
-                (concepts::PointDistanceStrategy<Strategy, Point, PointOfSegment>)
-            );
+        static_assert(concepts::PointDistanceStrategy
+            <Strategy, Point, PointOfSegment>);
 #endif
         using return_type = typename return_type<Point, PointOfSegment>::type;
         using this_type = cross_track<CalculationType, Strategy>;

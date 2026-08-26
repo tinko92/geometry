@@ -17,7 +17,7 @@
 
 //NOT FINISHED!
 
-#include <boost/concept_check.hpp>
+#include <concepts>
 
 
 namespace boost { namespace geometry { namespace concepts
@@ -29,47 +29,17 @@ namespace boost { namespace geometry { namespace concepts
     \ingroup segment_intersection
 */
 template <typename Strategy>
-class SegmentIntersectStrategy
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-
-    // 1) must define return_type
-    typedef typename Strategy::return_type return_type;
-
-    // 2) must define point_type (of segment points)
-    //typedef typename Strategy::point_type point_type;
-
-    // 3) must define segment_type 1 and 2 (of segment points)
-    typedef typename Strategy::segment_type1 segment_type1;
-    typedef typename Strategy::segment_type2 segment_type2;
-
-
-    struct check_methods
+concept SegmentIntersectStrategy =
+    requires(Strategy const& strategy,
+             typename Strategy::segment_type1 const& segment1,
+             typename Strategy::segment_type2 const& segment2)
     {
-        static void apply()
-        {
-            Strategy const* str;
-
-            return_type* rt;
-            //point_type const* p;
-            segment_type1 const* s1;
-            segment_type2 const* s2;
-
-            // 4) must implement a method apply
-            //    having two segments
-            *rt = str->apply(*s1, *s2);
-
-        }
+        typename Strategy::return_type;
+        typename Strategy::segment_type1;
+        typename Strategy::segment_type2;
+        { strategy.apply(segment1, segment2) }
+            -> std::convertible_to<typename Strategy::return_type>;
     };
-
-
-public :
-    BOOST_CONCEPT_USAGE(SegmentIntersectStrategy)
-    {
-        check_methods::apply();
-    }
-#endif
-};
 
 
 

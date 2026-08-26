@@ -167,10 +167,8 @@ void test_vincenty(double lon1, double lat1, double lon2, double lat2,
         typedef bg::strategy::distance::vincenty<Spheroid> vincenty_type;
         typedef bg::strategy::distance::geographic<bg::strategy::vincenty, Spheroid> geographic_type;
 
-        BOOST_CONCEPT_ASSERT(
-            (
-                bg::concepts::PointDistanceStrategy<vincenty_type, P1, P2>)
-            );
+        static_assert(bg::concepts::PointDistanceStrategy
+            <vincenty_type, P1, P2>);
 
         vincenty_type vincenty(spheroid);
         geographic_type geographic(spheroid);
