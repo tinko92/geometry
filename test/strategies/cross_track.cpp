@@ -81,10 +81,8 @@ void test_distance(
     }
 
 
-    BOOST_CONCEPT_ASSERT
-        (
-            (bg::concepts::PointSegmentDistanceStrategy<strategy_type, Point, Point>)
-        );
+    static_assert(bg::concepts::PointSegmentDistanceStrategy
+        <strategy_type, Point, Point>);
 
 
     Point p1, p2, p3;

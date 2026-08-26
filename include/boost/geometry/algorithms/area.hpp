@@ -87,7 +87,7 @@ struct ring_area
     {
         using strategy_type = decltype(strategies.area(ring));
 
-        BOOST_CONCEPT_ASSERT( (geometry::concepts::AreaStrategy<Ring, strategy_type>) );
+        static_assert(geometry::concepts::AreaStrategy<Ring, strategy_type>);
         assert_dimension<Ring, 2>();
 
         // Ignore warning (because using static method sometimes) on strategy

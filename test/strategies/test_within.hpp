@@ -77,7 +77,7 @@ void test_point_in_polygon(std::string const& case_id,
                            bool expected,
                            bool use_within = true)
 {
-    BOOST_CONCEPT_ASSERT( (bg::concepts::WithinStrategyPolygonal<Point, Polygon, Strategy>) );
+    static_assert(bg::concepts::WithinStrategyPolygonal<Point, Polygon, Strategy>);
     bool detected = use_within ?
                     bg::within(point, polygon, strategy) :
                     bg::covered_by(point, polygon, strategy);

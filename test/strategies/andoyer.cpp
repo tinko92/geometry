@@ -74,10 +74,7 @@ void test_distance(double lon1, double lat1, double lon2, double lat2, double ex
     typedef bg::strategy::distance::geographic<bg::strategy::andoyer, stype> geographic_type;
     typedef bg::formula::andoyer_inverse<rtype, true, false> andoyer_inverse_type;
 
-    BOOST_CONCEPT_ASSERT
-        ( 
-            (bg::concepts::PointDistanceStrategy<andoyer_type, P1, P2>) 
-        );
+    static_assert(bg::concepts::PointDistanceStrategy<andoyer_type, P1, P2>);
 
     andoyer_type andoyer;
     geographic_type geographic;

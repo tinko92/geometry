@@ -35,10 +35,8 @@ struct test_distance
     typedef bg::strategy::distance::haversine<double> haversine_type;
     typedef typename bg::strategy::distance::services::return_type<haversine_type, Point, Point>::type return_type;
 
-    BOOST_CONCEPT_ASSERT
-        (
-            (bg::concepts::PointDistanceStrategy<haversine_type, Point, Point>)
-        );
+    static_assert(bg::concepts::PointDistanceStrategy
+        <haversine_type, Point, Point>);
 
 
     static void test(double lon1, double lat1, double lon2, double lat2,

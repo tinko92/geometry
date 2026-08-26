@@ -164,7 +164,7 @@ void test_geometry(std::string const& wkt,
             bg::strategy::distance::projected_point<double>
         > dp;
 
-    BOOST_CONCEPT_ASSERT((bg::concepts::SimplifyStrategy<dp, point_type>));
+    static_assert(bg::concepts::SimplifyStrategy<dp, point_type>);
 
     check_geometry(geometry, expected, distance);
     check_geometry(v, expected, distance);
@@ -207,8 +207,8 @@ void test_geometry(std::string const& wkt,
 
     typename boost_variant_type<Geometry>::type v(geometry);
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::SimplifyStrategy<Strategy,
-                           typename bg::point_type<Geometry>::type>) );
+    static_assert(bg::concepts::SimplifyStrategy
+        <Strategy, typename bg::point_type<Geometry>::type>);
 
     check_geometry(geometry, expected, distance, strategy);
     check_geometry(v, expected, distance, strategy);

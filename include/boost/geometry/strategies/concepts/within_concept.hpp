@@ -19,24 +19,16 @@
 #define BOOST_GEOMETRY_STRATEGIES_CONCEPTS_WITHIN_CONCEPT_HPP
 
 
+#include <concepts>
 #include <type_traits>
+#include <utility>
 
-#include <boost/concept_check.hpp>
-#include <boost/core/ignore_unused.hpp>
-#include <boost/function_types/result_type.hpp>
-
-#include <boost/geometry/core/static_assert.hpp>
-#include <boost/geometry/core/tag.hpp>
-#include <boost/geometry/core/tag_cast.hpp>
-#include <boost/geometry/core/tags.hpp>
+#include <boost/geometry/core/point_type.hpp>
 
 #include <boost/geometry/geometries/concepts/box_concept.hpp>
 #include <boost/geometry/geometries/concepts/point_concept.hpp>
 
 #include <boost/geometry/strategies/detail.hpp>
-
-#include <boost/geometry/util/parameter_type_of.hpp>
-
 
 namespace boost { namespace geometry { namespace concepts
 {
@@ -46,39 +38,43 @@ namespace detail
 {
 
 
-template
-<
-    typename Point, typename Geometry, typename Strategy,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategy>::value
->
-struct relate_strategy_dispatch
+template <typename Point, typename Geometry, typename Strategy>
+consteval auto relate_strategy_identity()
 {
-    using type = decltype(std::declval<Strategy>().relate(
-                    std::declval<Point>(), std::declval<Geometry>()));
-};
+    if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        using type = decltype(std::declval<Strategy>().relate(
+            std::declval<Point>(), std::declval<Geometry>()));
+        return std::type_identity<type>{};
+    }
+    else
+    {
+        return std::type_identity<Strategy>{};
+    }
+}
 
 template <typename Point, typename Geometry, typename Strategy>
-struct relate_strategy_dispatch<Point, Geometry, Strategy, false>
-{
-    using type = Strategy;
-};
-
-template
-<
-    typename Point, typename Geometry, typename Strategy,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategy>::value
->
-struct within_strategy_dispatch
-{
-    using type = decltype(std::declval<Strategy>().within(
-                    std::declval<Point>(), std::declval<Geometry>()));
-};
+using relate_strategy_t = typename decltype(
+    relate_strategy_identity<Point, Geometry, Strategy>())::type;
 
 template <typename Point, typename Geometry, typename Strategy>
-struct within_strategy_dispatch<Point, Geometry, Strategy, false>
+consteval auto within_strategy_identity()
 {
-    using type = Strategy;
-};
+    if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        using type = decltype(std::declval<Strategy>().within(
+            std::declval<Point>(), std::declval<Geometry>()));
+        return std::type_identity<type>{};
+    }
+    else
+    {
+        return std::type_identity<Strategy>{};
+    }
+}
+
+template <typename Point, typename Geometry, typename Strategy>
+using within_strategy_t = typename decltype(
+    within_strategy_identity<Point, Geometry, Strategy>())::type;
 
 
 } // namespace detail
@@ -89,274 +85,73 @@ struct within_strategy_dispatch<Point, Geometry, Strategy, false>
 \ingroup within
 */
 template <typename Point, typename Polygonal, typename Strategy>
-class WithinStrategyPolygonal
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-
-    using point_of_segment = geometry::point_type_t<Polygonal>;
-
-    // 0)
-    using strategy_type = typename concepts::detail::relate_strategy_dispatch
-        <
-            Point, Polygonal, Strategy
-        >::type;
-
-    // 1) must define state_type
-    using state_type = typename strategy_type::state_type;
-
-    struct checker
+concept WithinStrategyPolygonal =
+    concepts::ConstPoint<Point>
+    && requires(detail::relate_strategy_t<Point, Polygonal, Strategy> const& strategy,
+                Point const& point,
+                point_type_t<Polygonal> const& segment_point,
+                typename detail::relate_strategy_t
+                    <Point, Polygonal, Strategy>::state_type& state)
     {
-        template <typename ApplyMethod, typename ResultMethod>
-        static void apply(ApplyMethod, ResultMethod)
-        {
-            typedef typename parameter_type_of
-                <
-                    ApplyMethod, 0
-                >::type point_type;
-            typedef typename parameter_type_of
-                <
-                    ApplyMethod, 1
-                >::type segment_point_type;
-
-            // CHECK: apply-arguments should both fulfill point concept
-            static_assert(concepts::ConstPoint<point_type>);
-
-            static_assert(concepts::ConstPoint<segment_point_type>);
-
-            // CHECK: return types (result: int, apply: bool)
-            BOOST_GEOMETRY_STATIC_ASSERT
-                (
-                    (std::is_same
-                        <
-                            bool, typename boost::function_types::result_type<ApplyMethod>::type
-                        >::value),
-                    "Wrong return type of apply().",
-                    bool, ApplyMethod
-                );
-            BOOST_GEOMETRY_STATIC_ASSERT
-                (
-                    (std::is_same
-                        <
-                            int, typename boost::function_types::result_type<ResultMethod>::type
-                        >::value),
-                    "Wrong return type of result().",
-                    int, ResultMethod
-                );
-
-
-            // CHECK: calling method apply and result
-            strategy_type const* str = 0;
-            state_type* st = 0;
-            point_type const* p = 0;
-            segment_point_type const* sp = 0;
-
-            bool b = str->apply(*p, *sp, *sp, *st);
-            int r = str->result(*st);
-
-            boost::ignore_unused(r, b, str);
-        }
+        typename detail::relate_strategy_t
+            <Point, Polygonal, Strategy>::state_type;
+        { strategy.apply(point, segment_point, segment_point, state) }
+            -> std::same_as<bool>;
+        { strategy.result(state) } -> std::same_as<int>;
     };
-
-
-public :
-    BOOST_CONCEPT_USAGE(WithinStrategyPolygonal)
-    {
-        checker::apply(&strategy_type::template apply<Point, point_of_segment>,
-                       &strategy_type::result);
-    }
-#endif
-};
 
 template <typename Point, typename Box, typename Strategy>
-class WithinStrategyPointBox
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-
-    // 0)
-    typedef typename concepts::detail::within_strategy_dispatch
-        <
-            Point, Box, Strategy
-        >::type strategy_type;
-
-    struct checker
+concept WithinStrategyPointBox =
+    concepts::ConstPoint<Point>
+    && concepts::ConstBox<Box>
+    && requires(detail::within_strategy_t<Point, Box, Strategy> const& strategy,
+                Point const& point,
+                Box const& box)
     {
-        template <typename ApplyMethod>
-        static void apply(ApplyMethod)
-        {
-            typedef typename parameter_type_of
-                <
-                    ApplyMethod, 0
-                >::type point_type;
-            typedef typename parameter_type_of
-                <
-                    ApplyMethod, 1
-                >::type box_type;
-
-            // CHECK: apply-arguments should fulfill point/box concept
-            static_assert(concepts::ConstPoint<point_type>);
-
-            static_assert(concepts::ConstBox<box_type>);
-
-            // CHECK: return types (apply: bool)
-            BOOST_GEOMETRY_STATIC_ASSERT
-                (
-                    (std::is_same
-                        <
-                            bool,
-                            typename boost::function_types::result_type<ApplyMethod>::type
-                        >::value),
-                    "Wrong return type of apply().",
-                    bool, ApplyMethod
-                );
-
-
-            // CHECK: calling method apply
-            strategy_type const* str = 0;
-            point_type const* p = 0;
-            box_type const* bx = 0;
-
-            bool b = str->apply(*p, *bx);
-
-            boost::ignore_unused(b, str);
-        }
+        { strategy.apply(point, box) } -> std::same_as<bool>;
     };
-
-
-public :
-    BOOST_CONCEPT_USAGE(WithinStrategyPointBox)
-    {
-        checker::apply(&strategy_type::template apply<Point, Box>);
-    }
-#endif
-};
 
 template <typename Box1, typename Box2, typename Strategy>
-class WithinStrategyBoxBox
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-
-    // 0)
-    typedef typename concepts::detail::within_strategy_dispatch
-        <
-            Box1, Box2, Strategy
-        >::type strategy_type;
-
-    struct checker
+concept WithinStrategyBoxBox =
+    concepts::ConstBox<Box1>
+    && concepts::ConstBox<Box2>
+    && requires(detail::within_strategy_t<Box1, Box2, Strategy> const& strategy,
+                Box1 const& box1,
+                Box2 const& box2)
     {
-        template <typename ApplyMethod>
-        static void apply(ApplyMethod const&)
-        {
-            typedef typename parameter_type_of
-                <
-                    ApplyMethod, 0
-                >::type box_type1;
-            typedef typename parameter_type_of
-                <
-                    ApplyMethod, 1
-                >::type box_type2;
-
-            // CHECK: apply-arguments should both fulfill box concept
-            static_assert(concepts::ConstBox<box_type1>);
-
-            static_assert(concepts::ConstBox<box_type2>);
-
-            // CHECK: return types (apply: bool)
-            BOOST_GEOMETRY_STATIC_ASSERT
-                (
-                    (std::is_same
-                        <
-                            bool,
-                            typename boost::function_types::result_type<ApplyMethod>::type
-                        >::value),
-                    "Wrong return type of apply().",
-                    bool, ApplyMethod
-                );
-
-
-            // CHECK: calling method apply
-            strategy_type const* str = 0;
-            box_type1 const* b1 = 0;
-            box_type2 const* b2 = 0;
-
-            bool b = str->apply(*b1, *b2);
-
-            boost::ignore_unused(b, str);
-        }
+        { strategy.apply(box1, box2) } -> std::same_as<bool>;
     };
-
-
-public :
-    BOOST_CONCEPT_USAGE(WithinStrategyBoxBox)
-    {
-        checker::apply(&strategy_type::template apply<Box1, Box2>);
-    }
-#endif
-};
 
 // So now: boost::geometry::concepts::within
 namespace within
 {
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-template
-<
-    typename Geometry1, typename Geometry2,
-    typename FirstTag, typename SecondTag, typename CastedTag,
-    typename Strategy
->
-struct check_within
-{};
-
-
-template
-<
-    typename Geometry1, typename Geometry2,
-    typename AnyTag,
-    typename Strategy
->
-struct check_within<Geometry1, Geometry2, point_tag, AnyTag, areal_tag, Strategy>
-{
-    BOOST_CONCEPT_ASSERT( (WithinStrategyPolygonal<Geometry1, Geometry2, Strategy>) );
-};
-
-
-template <typename Geometry1, typename Geometry2, typename Strategy>
-struct check_within<Geometry1, Geometry2, point_tag, box_tag, areal_tag, Strategy>
-{
-    BOOST_CONCEPT_ASSERT( (WithinStrategyPointBox<Geometry1, Geometry2, Strategy>) );
-};
-
-template <typename Geometry1, typename Geometry2, typename Strategy>
-struct check_within<Geometry1, Geometry2, box_tag, box_tag, areal_tag, Strategy>
-{
-    BOOST_CONCEPT_ASSERT( (WithinStrategyBoxBox<Geometry1, Geometry2, Strategy>) );
-};
-
-
-} // namespace dispatch
-#endif
-
-
 /*!
 \brief Checks, in compile-time, the concept of any within-strategy
 \ingroup concepts
 */
-template <typename Geometry1, typename Geometry2, typename Strategy>
-inline void check()
+template <concepts::ConstGeometry Geometry1,
+          concepts::ConstGeometry Geometry2,
+          typename Strategy>
+constexpr void check()
 {
-    dispatch::check_within
-        <
-            Geometry1,
-            Geometry2,
-            tag_t<Geometry1>,
-            tag_t<Geometry2>,
-            tag_cast_t<tag_t<Geometry2>, areal_tag>,
-            Strategy
-        > c;
-    boost::ignore_unused(c);
+    if constexpr (concepts::ConstPoint<Geometry1>
+                  && concepts::ConstBox<Geometry2>)
+    {
+        static_assert(WithinStrategyPointBox
+            <Geometry1, Geometry2, Strategy>);
+    }
+    else if constexpr (concepts::ConstBox<Geometry1>
+                       && concepts::ConstBox<Geometry2>)
+    {
+        static_assert(WithinStrategyBoxBox
+            <Geometry1, Geometry2, Strategy>);
+    }
+    else if constexpr (concepts::ConstPoint<Geometry1>)
+    {
+        static_assert(WithinStrategyPolygonal
+            <Geometry1, Geometry2, Strategy>);
+    }
 }
 
 

@@ -20,8 +20,7 @@
 #define BOOST_GEOMETRY_STRATEGIES_CONCEPTS_AREA_CONCEPT_HPP
 
 
-#include <boost/concept_check.hpp>
-#include <boost/core/ignore_unused.hpp>
+#include <concepts>
 
 #include <boost/geometry/geometries/point.hpp>
 
@@ -35,42 +34,18 @@ namespace boost { namespace geometry { namespace concepts
     \ingroup area
 */
 template <typename Geometry, typename Strategy>
-class AreaStrategy
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-
-    // 1) must define state template,
-    typedef typename Strategy::template state<Geometry> state_type;
-
-    // 2) must define result_type template,
-    typedef typename Strategy::template result_type<Geometry>::type return_type;
-
-    struct check_methods
+concept AreaStrategy =
+    requires(Strategy const& strategy,
+             point_type_t<Geometry> const& point,
+             typename Strategy::template state<Geometry>& state)
     {
-        static void apply()
-        {
-            Strategy const* str = 0;
-            state_type *st = 0;
-
-            // 3) must implement a method apply with the following signature
-            geometry::point_type_t<Geometry> const* sp = 0;
-            str->apply(*sp, *sp, *st);
-
-            // 4) must implement a static method result with the following signature
-            return_type r = str->result(*st);
-
-            boost::ignore_unused(r, str);
-        }
+        typename Strategy::template state<Geometry>;
+        typename Strategy::template result_type<Geometry>::type;
+        strategy.apply(point, point, state);
+        { strategy.result(state) }
+            -> std::convertible_to
+                <typename Strategy::template result_type<Geometry>::type>;
     };
-
-public :
-    BOOST_CONCEPT_USAGE(AreaStrategy)
-    {
-        check_methods::apply();
-    }
-
-#endif
-};
 
 
 }}} // namespace boost::geometry::concepts

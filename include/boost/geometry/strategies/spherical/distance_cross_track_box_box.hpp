@@ -335,15 +335,8 @@ public:
     apply(Box1 const& box1, Box2 const& box2) const
     {
 #if !defined(BOOST_MSVC)
-        BOOST_CONCEPT_ASSERT
-            (
-                (concepts::PointDistanceStrategy
-                    <
-                        Strategy,
-                        point_type_t<Box1>,
-                        point_type_t<Box2>
-                    >)
-            );
+        static_assert(concepts::PointDistanceStrategy
+            <Strategy, point_type_t<Box1>, point_type_t<Box2>>);
 #endif
         typedef typename return_type<Box1, Box2>::type return_type;
         return details::cross_track_box_box_generic
