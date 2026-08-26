@@ -103,7 +103,7 @@ struct is_properly_oriented
         boost::ignore_unused(visitor);
 
         // Check area
-        auto const area = detail::area::ring_area::apply(ring, strategy);
+        auto const area = detail::area_impl(ring, strategy);
         decltype(area) const zero = 0;
 
         if (IsInteriorRing ? (area < zero) : (area > zero))

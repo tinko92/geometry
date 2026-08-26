@@ -26,6 +26,7 @@
 #include <boost/geometry/algorithms/area.hpp>
 #include <boost/geometry/extensions/nsphere/core/radius.hpp>
 #include <boost/geometry/extensions/nsphere/core/tags.hpp>
+#include <boost/geometry/extensions/nsphere/geometries/concepts/nsphere_concept.hpp>
 
 
 
@@ -33,56 +34,45 @@ namespace boost { namespace geometry
 {
 
 #ifndef DOXYGEN_NO_DETAIL
-namespace detail { namespace area
+namespace detail
 {
 
-template<typename C>
-struct circle_area
+template <concepts::ConstNsphere NSphere>
+inline auto area_nsphere(NSphere const& nsphere)
 {
-    typedef typename coordinate_type<C>::type coordinate_type;
+    using coordinate_type = coordinate_type_t<NSphere>;
 
-    // Returning the coordinate precision, but if integer, returning a double
-    typedef std::conditional_t
+    using return_type = std::conditional_t
         <
-            std::is_integral<coordinate_type>::value,
+            std::is_integral_v<coordinate_type>,
             double,
             coordinate_type
-        > return_type;
+        >;
 
-    template <typename S>
-    static inline return_type apply(C const& c, S const&)
-    {
-        // Currently only works for Cartesian circles
-        // Todo: use strategy
-        // Todo: use concept
-        assert_dimension<C, 2>();
+    assert_dimension<NSphere, 2>();
 
-        return_type r = get_radius<0>(c);
-        r *= r * boost::math::constants::pi<return_type>();
-        return r;
-    }
-};
+    return_type radius = get_radius<0>(nsphere);
+    radius *= radius * boost::math::constants::pi<return_type>();
+    return radius;
+}
 
-
-
-}} // namespace detail::area
+} // namespace detail
 
 #endif // DOXYGEN_NO_DETAIL
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
+template <concepts::ConstGeometry NSphere>
+    requires concepts::ConstNsphere<NSphere>
+inline auto area(NSphere const& nsphere)
 {
+    return detail::area_nsphere(nsphere);
+}
 
-
-template <typename Geometry>
-struct area<Geometry, nsphere_tag>
-    : detail::area::circle_area<Geometry>
-{};
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
+template <concepts::ConstGeometry NSphere, typename Strategy>
+    requires concepts::ConstNsphere<NSphere>
+inline auto area(NSphere const& nsphere, Strategy const&)
+{
+    return detail::area_nsphere(nsphere);
+}
 
 
 }} // namespace boost::geometry

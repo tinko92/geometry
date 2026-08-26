@@ -21,6 +21,7 @@
 #define BOOST_GEOMETRY_ALGORITHMS_CLEAR_HPP
 
 
+#include <concepts>
 #include <type_traits>
 
 #include <boost/geometry/algorithms/not_implemented.hpp>
@@ -37,63 +38,61 @@
 namespace boost { namespace geometry
 {
 
+template <concepts::MutableGeometry Geometry>
+inline void clear(Geometry& geometry);
+
 #ifndef DOXYGEN_NO_DETAIL
-namespace detail { namespace clear
+namespace detail
 {
 
-template <typename Geometry>
-struct collection_clear
+template <concepts::MutableGeometry Polygon>
+    requires std::same_as<tag_t<Polygon>, polygon_tag>
+inline void clear_impl(Polygon& polygon)
 {
-    static inline void apply(Geometry& geometry)
+    traits::clear
+        <
+            std::remove_reference_t
+                <
+                    typename traits::interior_mutable_type<Polygon>::type
+                >
+        >::apply(interior_rings(polygon));
+    traits::clear
+        <
+            std::remove_reference_t
+                <
+                    typename traits::ring_mutable_type<Polygon>::type
+                >
+        >::apply(exterior_ring(polygon));
+}
+
+template <concepts::MutableGeometry Geometry>
+    requires std::same_as<tag_t<Geometry>, linestring_tag>
+          || std::same_as<tag_t<Geometry>, ring_tag>
+          || std::same_as<tag_t<Geometry>, multi_point_tag>
+          || std::same_as<tag_t<Geometry>, multi_linestring_tag>
+          || std::same_as<tag_t<Geometry>, multi_polygon_tag>
+          || std::same_as<tag_t<Geometry>, polyhedral_surface_tag>
+          || std::same_as<tag_t<Geometry>, geometry_collection_tag>
+inline void clear_impl(Geometry& geometry)
+{
+    traits::clear<Geometry>::apply(geometry);
+}
+
+template <concepts::MutableGeometry Geometry>
+    requires std::same_as<tag_t<Geometry>, dynamic_geometry_tag>
+inline void clear_impl(Geometry& geometry)
+{
+    traits::visit<Geometry>::apply([](auto& g)
     {
-        traits::clear<Geometry>::apply(geometry);
-    }
-};
+        geometry::clear(g);
+    }, geometry);
+}
 
-template <typename Polygon>
-struct polygon_clear
-{
-    static inline void apply(Polygon& polygon)
-    {
-        traits::clear
-            <
-                std::remove_reference_t
-                    <
-                        typename traits::interior_mutable_type<Polygon>::type
-                    >
-            >::apply(interior_rings(polygon));
-        traits::clear
-            <
-                std::remove_reference_t
-                    <
-                        typename traits::ring_mutable_type<Polygon>::type
-                    >
-            >::apply(exterior_ring(polygon));
-    }
-};
+template <concepts::MutableGeometry Geometry>
+inline void clear_impl(Geometry&)
+{}
 
-template <typename PolyhedralSurface>
-struct polyhedral_surface_clear
-{
-    static inline void apply(PolyhedralSurface& polyhedral_surface)
-    {
-        traits::clear
-            <
-                typename std::remove_reference<PolyhedralSurface>::type
-            >::apply(polyhedral_surface);
-    }
-};
-
-template <typename Geometry>
-struct no_action
-{
-    static inline void apply(Geometry& )
-    {
-    }
-};
-
-
-}} // namespace detail::clear
+} // namespace detail
 #endif // DOXYGEN_NO_DETAIL
 
 /*!
@@ -112,27 +111,7 @@ struct no_action
 template <concepts::MutableGeometry Geometry>
 inline void clear(Geometry& geometry)
 {
-    if constexpr (concepts::DynamicGeometry<Geometry>)
-    {
-        traits::visit<Geometry>::apply([](auto& g)
-        {
-            geometry::clear(g);
-        }, geometry);
-    }
-    else if constexpr (concepts::Polygon<Geometry>)
-    {
-        detail::clear::polygon_clear<Geometry>::apply(geometry);
-    }
-    else if constexpr (concepts::Linestring<Geometry>
-                    || concepts::Ring<Geometry>
-                    || concepts::MultiPoint<Geometry>
-                    || concepts::MultiLinestring<Geometry>
-                    || concepts::MultiPolygon<Geometry>
-                    || concepts::PolyhedralSurface<Geometry>
-                    || concepts::GeometryCollection<Geometry>)
-    {
-        traits::clear<Geometry>::apply(geometry);
-    }
+    detail::clear_impl(geometry);
 }
 
 

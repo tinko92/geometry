@@ -37,40 +37,72 @@
 namespace boost { namespace geometry
 {
 
+template <concepts::MutableGeometry Geometry>
+inline void reverse(Geometry& geometry);
 
 #ifndef DOXYGEN_NO_DETAIL
-namespace detail { namespace reverse
+namespace detail
 {
 
-
-struct range_reverse
+template <concepts::MutableGeometry Geometry>
+    requires concepts::Ring<Geometry> || concepts::Linestring<Geometry>
+inline void reverse_impl(Geometry& geometry)
 {
-    template <typename Range>
-    static inline void apply(Range& range)
+    std::reverse(boost::begin(geometry), boost::end(geometry));
+}
+
+template <concepts::MutableGeometry Polygon>
+    requires concepts::Polygon<Polygon>
+inline void reverse_impl(Polygon& polygon)
+{
+    reverse_impl(exterior_ring(polygon));
+
+    auto&& rings = interior_rings(polygon);
+    auto const end = boost::end(rings);
+    for (auto it = boost::begin(rings); it != end; ++it)
     {
-        std::reverse(boost::begin(range), boost::end(range));
+        reverse_impl(*it);
     }
-};
+}
 
-
-struct polygon_reverse: private range_reverse
+template <concepts::MutableGeometry MultiGeometry>
+    requires concepts::MultiLinestring<MultiGeometry>
+          || concepts::MultiPolygon<MultiGeometry>
+inline void reverse_impl(MultiGeometry& geometry)
 {
-    template <typename Polygon>
-    static inline void apply(Polygon& polygon)
+    for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
     {
-        range_reverse::apply(exterior_ring(polygon));
-
-        auto&& rings = interior_rings(polygon);
-        auto const end = boost::end(rings);
-        for (auto it = boost::begin(rings); it != end; ++it)
-        {
-            range_reverse::apply(*it);
-        }
+        reverse_impl(*it);
     }
-};
+}
 
+template <concepts::MutableGeometry DynamicGeometry>
+    requires concepts::DynamicGeometry<DynamicGeometry>
+inline void reverse_impl(DynamicGeometry& geometry)
+{
+    traits::visit<DynamicGeometry>::apply([](auto& g)
+    {
+        geometry::reverse(g);
+    }, geometry);
+}
 
-}} // namespace detail::reverse
+template <concepts::MutableGeometry GeometryCollection>
+    requires concepts::GeometryCollection<GeometryCollection>
+inline void reverse_impl(GeometryCollection& geometry)
+{
+    detail::visit_breadth_first([](auto& g)
+    {
+        geometry::reverse(g);
+        return true;
+    }, geometry);
+}
+
+template <concepts::MutableGeometry Geometry>
+inline void reverse_impl(Geometry&)
+{
+}
+
+} // namespace detail
 #endif // DOXYGEN_NO_DETAIL
 
 
@@ -88,38 +120,7 @@ struct polygon_reverse: private range_reverse
 template <concepts::MutableGeometry Geometry>
 inline void reverse(Geometry& geometry)
 {
-    if constexpr (concepts::DynamicGeometry<Geometry>)
-    {
-        traits::visit<Geometry>::apply([](auto& g)
-        {
-            geometry::reverse(g);
-        }, geometry);
-    }
-    else if constexpr (concepts::GeometryCollection<Geometry>)
-    {
-        detail::visit_breadth_first([](auto& g)
-        {
-            geometry::reverse(g);
-            return true;
-        }, geometry);
-    }
-    else if constexpr (concepts::Ring<Geometry>
-                    || concepts::Linestring<Geometry>)
-    {
-        detail::reverse::range_reverse::apply(geometry);
-    }
-    else if constexpr (concepts::Polygon<Geometry>)
-    {
-        detail::reverse::polygon_reverse::apply(geometry);
-    }
-    else if constexpr (concepts::MultiLinestring<Geometry>
-                    || concepts::MultiPolygon<Geometry>)
-    {
-        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
-        {
-            geometry::reverse(*it);
-        }
-    }
+    detail::reverse_impl(geometry);
 }
 
 }} // namespace boost::geometry

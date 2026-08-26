@@ -20,6 +20,8 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_AREA_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_AREA_HPP
 
+#include <type_traits>
+
 #include <boost/core/ignore_unused.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
@@ -35,10 +37,7 @@
 #include <boost/geometry/core/tags.hpp>
 #include <boost/geometry/core/visit.hpp>
 
-#include <boost/geometry/algorithms/detail/calculate_null.hpp>
-#include <boost/geometry/algorithms/detail/calculate_sum.hpp>
 // #include <boost/geometry/algorithms/detail/throw_on_empty_input.hpp>
-#include <boost/geometry/algorithms/detail/multi_sum.hpp>
 #include <boost/geometry/algorithms/detail/visit.hpp>
 
 #include <boost/geometry/algorithms/area_result.hpp>
@@ -62,172 +61,155 @@ namespace boost { namespace geometry
 
 
 #ifndef DOXYGEN_NO_DETAIL
-namespace detail { namespace area
+namespace detail
 {
 
-struct box_area
+template <typename Geometry, typename Strategy>
+using area_result_t = typename area_result<Geometry, Strategy>::type;
+
+template <concepts::ConstGeometry Geometry>
+inline auto resolve_area_strategy(Geometry const&, default_strategy)
 {
-    template <typename Box, typename Strategies>
-    static inline auto
-    apply(Box const& box, Strategies const& strategies)
+    using strategy_type = typename strategies::area::services::default_strategy
+        <Geometry>::type;
+    return strategy_type();
+}
+
+template <concepts::ConstGeometry Geometry, typename Strategy>
+    requires strategies::detail::is_umbrella_strategy<Strategy>::value
+inline Strategy const& resolve_area_strategy(Geometry const&, Strategy const& strategy)
+{
+    return strategy;
+}
+
+template <concepts::ConstGeometry Geometry, typename Strategy>
+    requires (! std::same_as<Strategy, default_strategy>)
+          && (! strategies::detail::is_umbrella_strategy<Strategy>::value)
+inline auto resolve_area_strategy(Geometry const&, Strategy const& strategy)
+{
+    using strategies::area::services::strategy_converter;
+    return strategy_converter<Strategy>::get(strategy);
+}
+
+template <concepts::ConstBox Box, typename Strategies>
+inline area_result_t<Box, Strategies>
+area_impl(Box const& box, Strategies const& strategies)
+{
+    assert_dimension<Box, 2>();
+    return strategies.area(box).apply(box);
+}
+
+template <concepts::ConstRing Ring, typename Strategies>
+inline area_result_t<Ring, Strategies>
+area_impl(Ring const& ring, Strategies const& strategies)
+{
+    using strategy_type = decltype(strategies.area(ring));
+
+    static_assert(concepts::AreaStrategy<Ring, strategy_type>);
+    assert_dimension<Ring, 2>();
+
+    boost::ignore_unused(strategies);
+
+    if (boost::size(ring) < detail::minimum_ring_size<Ring>::value)
     {
-        // Currently only works for 2D Cartesian boxes
-        assert_dimension<Box, 2>();
-
-        return strategies.area(box).apply(box);
+        return area_result_t<Ring, Strategies>();
     }
-};
 
+    detail::closed_clockwise_view<Ring const> const view(ring);
+    auto it = boost::begin(view);
+    auto const end = boost::end(view);
 
-struct ring_area
-{
-    template <typename Ring, typename Strategies>
-    static inline typename area_result<Ring, Strategies>::type
-    apply(Ring const& ring, Strategies const& strategies)
+    strategy_type const ring_strategy = strategies.area(ring);
+    typename strategy_type::template state<Ring> state;
+
+    for (auto previous = it++; it != end; ++previous, ++it)
     {
-        using strategy_type = decltype(strategies.area(ring));
-
-        static_assert(geometry::concepts::AreaStrategy<Ring, strategy_type>);
-        assert_dimension<Ring, 2>();
-
-        // Ignore warning (because using static method sometimes) on strategy
-        boost::ignore_unused(strategies);
-
-        // An open ring has at least three points,
-        // A closed ring has at least four points,
-        // if not, there is no (zero) area
-        if (boost::size(ring) < detail::minimum_ring_size<Ring>::value)
-        {
-            return typename area_result<Ring, Strategies>::type();
-        }
-
-        detail::closed_clockwise_view<Ring const> const view(ring);
-        auto it = boost::begin(view);
-        auto const end = boost::end(view);
-
-        strategy_type const strategy = strategies.area(ring);
-        typename strategy_type::template state<Ring> state;
-
-        for (auto previous = it++; it != end; ++previous, ++it)
-        {
-            strategy.apply(*previous, *it, state);
-        }
-
-        return strategy.result(state);
+        ring_strategy.apply(*previous, *it, state);
     }
-};
 
+    return ring_strategy.result(state);
+}
 
-}} // namespace detail::area
+template <concepts::ConstPolygon Polygon, typename Strategies>
+inline area_result_t<Polygon, Strategies>
+area_impl(Polygon const& polygon, Strategies const& strategies)
+{
+    area_result_t<Polygon, Strategies> result
+        = area_impl(exterior_ring(polygon), strategies);
+    auto const& rings = interior_rings(polygon);
+    for (auto it = boost::begin(rings); it != boost::end(rings); ++it)
+    {
+        result += area_impl(*it, strategies);
+    }
+    return result;
+}
 
+template <concepts::ConstMultiPolygon MultiPolygon, typename Strategies>
+inline area_result_t<MultiPolygon, Strategies>
+area_impl(MultiPolygon const& multi, Strategies const& strategies)
+{
+    area_result_t<MultiPolygon, Strategies> result = 0;
+    for (auto it = boost::begin(multi); it != boost::end(multi); ++it)
+    {
+        result += area_impl(*it, strategies);
+    }
+    return result;
+}
 
+template <concepts::ConstGeometry Geometry, typename Strategies>
+    requires (! concepts::ArealGeometry<Geometry>)
+          && (! concepts::ConstDynamicGeometry<Geometry>)
+          && (! concepts::ConstGeometryCollection<Geometry>)
+inline auto area_impl(Geometry const& geometry, Strategies const& strategies)
+{
+    boost::ignore_unused(geometry, strategies);
+    return area_result_t<Geometry, Strategies>();
+}
+
+template <concepts::ConstDynamicGeometry DynamicGeometry, typename Strategy>
+inline area_result_t<DynamicGeometry, Strategy>
+area_resolved(DynamicGeometry const& dynamic, Strategy const& strategy);
+
+template <concepts::ConstGeometryCollection GeometryCollection, typename Strategy>
+inline area_result_t<GeometryCollection, Strategy>
+area_resolved(GeometryCollection const& collection, Strategy const& strategy);
+
+template <concepts::ConstGeometry Geometry, typename Strategy>
+    requires (! concepts::ConstDynamicGeometry<Geometry>)
+          && (! concepts::ConstGeometryCollection<Geometry>)
+inline auto area_resolved(Geometry const& geometry, Strategy const& strategy)
+{
+    auto&& strategies = resolve_area_strategy(geometry, strategy);
+    return area_impl(geometry, strategies);
+}
+
+template <concepts::ConstDynamicGeometry DynamicGeometry, typename Strategy>
+inline area_result_t<DynamicGeometry, Strategy>
+area_resolved(DynamicGeometry const& dynamic, Strategy const& strategy)
+{
+    area_result_t<DynamicGeometry, Strategy> result = 0;
+    traits::visit<DynamicGeometry>::apply([&](auto const& geometry)
+    {
+        result = area_resolved(geometry, strategy);
+    }, dynamic);
+    return result;
+}
+
+template <concepts::ConstGeometryCollection GeometryCollection, typename Strategy>
+inline area_result_t<GeometryCollection, Strategy>
+area_resolved(GeometryCollection const& collection, Strategy const& strategy)
+{
+    area_result_t<GeometryCollection, Strategy> result = 0;
+    detail::visit_breadth_first([&](auto const& geometry)
+    {
+        result += area_resolved(geometry, strategy);
+        return true;
+    }, collection);
+    return result;
+}
+
+} // namespace detail
 #endif // DOXYGEN_NO_DETAIL
-
-
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-template <concepts::ConstGeometry Geometry, typename Strategy>
-inline auto area(Geometry const& geometry, Strategy const& strategy)
-{
-    if constexpr (concepts::ConstBox<Geometry>)
-    {
-        return detail::area::box_area::apply(geometry, strategy);
-    }
-    else if constexpr (concepts::ConstRing<Geometry>)
-    {
-        return detail::area::ring_area::apply(geometry, strategy);
-    }
-    else if constexpr (concepts::ConstPolygon<Geometry>)
-    {
-        return detail::calculate_polygon_sum::apply
-            <
-                typename area_result<Geometry, Strategy>::type,
-                detail::area::ring_area
-            >(geometry, strategy);
-    }
-    else if constexpr (concepts::ConstMultiPolygon<Geometry>)
-    {
-        typename area_result<Geometry, Strategy>::type result = 0;
-        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
-        {
-            result += dispatch::area(*it, strategy);
-        }
-        return result;
-    }
-    else
-    {
-        return detail::calculate_null::apply
-            <typename area_result<Geometry, Strategy>::type>(geometry, strategy);
-    }
-}
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
-
-namespace resolve_strategy
-{
-
-template <concepts::ConstGeometry Geometry, typename Strategy>
-inline auto area(Geometry const& geometry, Strategy const& strategy)
-{
-    if constexpr (std::same_as<Strategy, default_strategy>)
-    {
-        using strategy_type = typename strategies::area::services::default_strategy
-            <Geometry>::type;
-        return dispatch::area(geometry, strategy_type());
-    }
-    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
-    {
-        return dispatch::area(geometry, strategy);
-    }
-    else
-    {
-        using strategies::area::services::strategy_converter;
-        return dispatch::area(geometry,
-            strategy_converter<Strategy>::get(strategy));
-    }
-}
-
-
-} // namespace resolve_strategy
-
-
-namespace resolve_dynamic
-{
-
-template <concepts::ConstGeometry Geometry, typename Strategy>
-inline auto area(Geometry const& geometry, Strategy const& strategy)
-{
-    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
-    {
-        typename area_result<Geometry, Strategy>::type result = 0;
-        traits::visit<Geometry>::apply([&](auto const& g)
-        {
-            result = resolve_dynamic::area(g, strategy);
-        }, geometry);
-        return result;
-    }
-    else if constexpr (concepts::ConstGeometryCollection<Geometry>)
-    {
-        typename area_result<Geometry, Strategy>::type result = 0;
-        detail::visit_breadth_first([&](auto const& g)
-        {
-            result += resolve_dynamic::area(g, strategy);
-            return true;
-        }, geometry);
-        return result;
-    }
-    else
-    {
-        return resolve_strategy::area(geometry, strategy);
-    }
-}
-
-} // namespace resolve_dynamic
 
 
 /*!
@@ -256,7 +238,7 @@ inline auto area(Geometry const& geometry)
 {
     // detail::throw_on_empty_input(geometry);
 
-    return resolve_dynamic::area(geometry, default_strategy());
+    return detail::area_resolved(geometry, default_strategy());
 }
 
 /*!
@@ -289,7 +271,7 @@ inline auto area(Geometry const& geometry, Strategy const& strategy)
 {
     // detail::throw_on_empty_input(geometry);
 
-    return resolve_dynamic::area(geometry, strategy);
+    return detail::area_resolved(geometry, strategy);
 }
 
 

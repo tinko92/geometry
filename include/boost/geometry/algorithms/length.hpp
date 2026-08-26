@@ -20,14 +20,14 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_LENGTH_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_LENGTH_HPP
 
+#include <concepts>
+
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/value_type.hpp>
 
 #include "boost/geometry/algorithms/detail/assign_indexed_point.hpp"
-#include <boost/geometry/algorithms/detail/calculate_null.hpp>
 #include <boost/geometry/algorithms/detail/dummy_geometries.hpp>
-#include <boost/geometry/algorithms/detail/multi_sum.hpp>
 // #include <boost/geometry/algorithms/detail/throw_on_empty_input.hpp>
 #include <boost/geometry/algorithms/detail/visit.hpp>
 
@@ -53,162 +53,130 @@ namespace boost { namespace geometry
 
 
 #ifndef DOXYGEN_NO_DETAIL
-namespace detail { namespace length
+namespace detail
 {
 
-
-template<typename Segment>
-struct segment_length
+template <closure_selector Closure, typename Range, typename Strategies>
+inline typename default_length_result<Range>::type
+range_length(Range const& range, Strategies const& strategies)
 {
-    template <typename Strategies>
-    static inline typename default_length_result<Segment>::type
-    apply(Segment const& segment, Strategies const& strategies)
+    typename default_length_result<Range>::type sum = 0;
+    detail::closed_view<Range const> const view(range);
+    auto it = boost::begin(view);
+    auto const end = boost::end(view);
+    if (it != end)
     {
-        point_type_t<Segment> p1, p2;
-        geometry::detail::assign_point_from_index<0>(segment, p1);
-        geometry::detail::assign_point_from_index<1>(segment, p2);
-        return strategies.distance(p1, p2).apply(p1, p2);
-    }
-};
-
-/*!
-\brief Internal, calculates length of a linestring using iterator pairs and
-    specified strategy
-\note for_each could be used here, now that point_type is changed by boost
-    range iterator
-*/
-template<typename Range, closure_selector Closure>
-struct range_length
-{
-    typedef typename default_length_result<Range>::type return_type;
-
-    template <typename Strategies>
-    static inline return_type
-    apply(Range const& range, Strategies const& strategies)
-    {
-        return_type sum = return_type();
-        detail::closed_view<Range const> const view(range);
-        auto it = boost::begin(view);
-        auto const end = boost::end(view);
-        if (it != end)
+        auto const strategy = strategies.distance(dummy_point(), dummy_point());
+        for (auto previous = it++; it != end; ++previous, ++it)
         {
-            auto const strategy = strategies.distance(dummy_point(), dummy_point());
-
-            for(auto previous = it++; it != end; ++previous, ++it)
-            {
-                // Add point-point distance using the return type belonging
-                // to strategy
-                sum += strategy.apply(*previous, *it);
-            }
+            sum += strategy.apply(*previous, *it);
         }
-
-        return sum;
     }
-};
+    return sum;
+}
 
+template <concepts::ConstGeometry Geometry>
+inline auto resolve_length_strategy(Geometry const&, default_strategy)
+{
+    using strategies_type = typename strategies::length::services::default_strategy
+        <Geometry>::type;
+    return strategies_type();
+}
 
-}} // namespace detail::length
+template <concepts::ConstGeometry Geometry, typename Strategy>
+    requires strategies::detail::is_umbrella_strategy<Strategy>::value
+inline Strategy const& resolve_length_strategy(
+    Geometry const&, Strategy const& strategy)
+{
+    return strategy;
+}
+
+template <concepts::ConstGeometry Geometry, typename Strategy>
+    requires (! std::same_as<Strategy, default_strategy>)
+          && (! strategies::detail::is_umbrella_strategy<Strategy>::value)
+inline auto resolve_length_strategy(Geometry const&, Strategy const& strategy)
+{
+    using strategies::length::services::strategy_converter;
+    return strategy_converter<Strategy>::get(strategy);
+}
+
+template <concepts::ConstDynamicGeometry DynamicGeometry, typename Strategy>
+inline typename default_length_result<DynamicGeometry>::type
+length_impl(DynamicGeometry const& dynamic, Strategy const& strategy);
+
+template <concepts::ConstGeometryCollection GeometryCollection, typename Strategy>
+inline typename default_length_result<GeometryCollection>::type
+length_impl(GeometryCollection const& collection, Strategy const& strategy);
+
+template <concepts::ConstLinestring Linestring, typename Strategy>
+inline typename default_length_result<Linestring>::type
+length_impl(Linestring const& linestring, Strategy const& strategy)
+{
+    auto&& strategies = resolve_length_strategy(linestring, strategy);
+    return range_length<closed>(linestring, strategies);
+}
+
+template <concepts::ConstSegment Segment, typename Strategy>
+inline typename default_length_result<Segment>::type
+length_impl(Segment const& segment, Strategy const& strategy)
+{
+    auto&& strategies = resolve_length_strategy(segment, strategy);
+    point_type_t<Segment> p1, p2;
+    geometry::detail::assign_point_from_index<0>(segment, p1);
+    geometry::detail::assign_point_from_index<1>(segment, p2);
+    return strategies.distance(p1, p2).apply(p1, p2);
+}
+
+template <concepts::ConstMultiLinestring MultiLinestring, typename Strategy>
+inline typename default_length_result<MultiLinestring>::type
+length_impl(MultiLinestring const& multi, Strategy const& strategy)
+{
+    auto&& strategies = resolve_length_strategy(multi, strategy);
+    typename default_length_result<MultiLinestring>::type result = 0;
+    for (auto it = boost::begin(multi); it != boost::end(multi); ++it)
+    {
+        result += length_impl(*it, strategies);
+    }
+    return result;
+}
+
+template <concepts::ConstGeometry Geometry, typename Strategy>
+    requires (! concepts::GeometryCategory<Geometry, linear_tag>)
+          && (! concepts::ConstDynamicGeometry<Geometry>)
+          && (! concepts::ConstGeometryCollection<Geometry>)
+inline typename default_length_result<Geometry>::type
+length_impl(Geometry const&, Strategy const&)
+{
+    return 0;
+}
+
+template <concepts::ConstDynamicGeometry DynamicGeometry, typename Strategy>
+inline typename default_length_result<DynamicGeometry>::type
+length_impl(DynamicGeometry const& dynamic, Strategy const& strategy)
+{
+    typename default_length_result<DynamicGeometry>::type result = 0;
+    traits::visit<DynamicGeometry>::apply([&](auto const& geometry)
+    {
+        result = length_impl(geometry, strategy);
+    }, dynamic);
+    return result;
+}
+
+template <concepts::ConstGeometryCollection GeometryCollection, typename Strategy>
+inline typename default_length_result<GeometryCollection>::type
+length_impl(GeometryCollection const& collection, Strategy const& strategy)
+{
+    typename default_length_result<GeometryCollection>::type result = 0;
+    detail::visit_breadth_first([&](auto const& geometry)
+    {
+        result += length_impl(geometry, strategy);
+        return true;
+    }, collection);
+    return result;
+}
+
+} // namespace detail
 #endif // DOXYGEN_NO_DETAIL
-
-
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-template <concepts::ConstGeometry Geometry, typename Strategy>
-inline typename default_length_result<Geometry>::type
-length(Geometry const& geometry, Strategy const& strategy)
-{
-    if constexpr (concepts::ConstLinestring<Geometry>)
-    {
-        return detail::length::range_length<Geometry, closed>::apply(
-            geometry, strategy);
-    }
-    else if constexpr (concepts::ConstSegment<Geometry>)
-    {
-        return detail::length::segment_length<Geometry>::apply(
-            geometry, strategy);
-    }
-    else if constexpr (concepts::ConstMultiLinestring<Geometry>)
-    {
-        typename default_length_result<Geometry>::type result = 0;
-        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
-        {
-            result += dispatch::length(*it, strategy);
-        }
-        return result;
-    }
-    else
-    {
-        return detail::calculate_null::apply
-            <typename default_length_result<Geometry>::type>(geometry, strategy);
-    }
-}
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
-
-namespace resolve_strategy {
-
-template <concepts::ConstGeometry Geometry, typename Strategy>
-inline typename default_length_result<Geometry>::type
-length(Geometry const& geometry, Strategy const& strategy)
-{
-    if constexpr (std::same_as<Strategy, default_strategy>)
-    {
-        using strategies_type = typename strategies::length::services::default_strategy
-            <Geometry>::type;
-        return dispatch::length(geometry, strategies_type());
-    }
-    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
-    {
-        return dispatch::length(geometry, strategy);
-    }
-    else
-    {
-        using strategies::length::services::strategy_converter;
-        return dispatch::length(
-            geometry, strategy_converter<Strategy>::get(strategy));
-    }
-}
-
-} // namespace resolve_strategy
-
-
-namespace resolve_dynamic {
-
-template <concepts::ConstGeometry Geometry, typename Strategy>
-inline typename default_length_result<Geometry>::type
-length(Geometry const& geometry, Strategy const& strategy)
-{
-    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
-    {
-        typename default_length_result<Geometry>::type result = 0;
-        traits::visit<Geometry>::apply([&](auto const& g)
-        {
-            result = resolve_dynamic::length(g, strategy);
-        }, geometry);
-        return result;
-    }
-    else if constexpr (concepts::ConstGeometryCollection<Geometry>)
-    {
-        typename default_length_result<Geometry>::type result = 0;
-        detail::visit_breadth_first([&](auto const& g)
-        {
-            result += resolve_dynamic::length(g, strategy);
-            return true;
-        }, geometry);
-        return result;
-    }
-    else
-    {
-        return resolve_strategy::length(geometry, strategy);
-    }
-}
-
-} // namespace resolve_dynamic
 
 
 /*!
@@ -228,7 +196,7 @@ length(Geometry const& geometry)
 {
     // detail::throw_on_empty_input(geometry);
 
-    return resolve_dynamic::length(geometry, default_strategy());
+    return detail::length_impl(geometry, default_strategy());
 }
 
 
@@ -252,7 +220,7 @@ length(Geometry const& geometry, Strategy const& strategy)
 {
     // detail::throw_on_empty_input(geometry);
 
-    return resolve_dynamic::length(geometry, strategy);
+    return detail::length_impl(geometry, strategy);
 }
 
 

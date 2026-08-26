@@ -286,7 +286,7 @@ struct calculate_point_order_by_area
     template <typename Ring, typename Strategy>
     static geometry::order_selector apply(Ring const& ring, Strategy const& strategy)
     {
-        auto const result = detail::area::ring_area::apply(
+        auto const result = detail::area_impl(
                                 ring,
                                 // TEMP - in the future (umbrella) strategy will be passed
                                 geometry::strategies::area::services::strategy_converter

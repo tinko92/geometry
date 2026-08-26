@@ -12,6 +12,8 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_IS_EMPTY_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_IS_EMPTY_HPP
 
+#include <algorithm>
+
 #include <boost/range/begin.hpp>
 #include <boost/range/empty.hpp>
 #include <boost/range/end.hpp>
@@ -35,114 +37,88 @@ namespace boost { namespace geometry
 
 
 #ifndef DOXYGEN_NO_DETAIL
-namespace detail { namespace is_empty
+namespace detail
 {
 
-struct always_not_empty
+template <concepts::ConstDynamicGeometry DynamicGeometry>
+inline bool is_empty_impl(DynamicGeometry const& dynamic);
+
+template <concepts::ConstGeometryCollection GeometryCollection>
+inline bool is_empty_impl(GeometryCollection const& collection);
+
+template <typename Geometry>
+    requires concepts::ConstPoint<Geometry>
+          || concepts::ConstBox<Geometry>
+          || concepts::ConstSegment<Geometry>
+inline bool is_empty_impl(Geometry const&)
 {
-    template <typename Geometry>
-    static inline bool apply(Geometry const&)
-    {
-        return false;
-    }
-};
-
-struct range_is_empty
-{
-    template <typename Range>
-    static inline bool apply(Range const& range)
-    {
-        return boost::empty(range);
-    }
-};
-
-class polygon_is_empty
-{
-    template <typename InteriorRings>
-    static inline bool check_interior_rings(InteriorRings const& interior_rings)
-    {
-        return std::all_of(boost::begin(interior_rings), boost::end(interior_rings),
-                           []( auto const& range ){ return boost::empty(range); });
-    }
-
-public:
-    template <typename Polygon>
-    static inline bool apply(Polygon const& polygon)
-    {
-        return boost::empty(exterior_ring(polygon))
-            && check_interior_rings(interior_rings(polygon));
-    }
-};
-
-template <typename Policy = range_is_empty>
-struct multi_is_empty
-{
-    template <typename MultiGeometry>
-    static inline bool apply(MultiGeometry const& multigeometry)
-    {
-        return std::all_of(boost::begin(multigeometry),
-                           boost::end(multigeometry),
-                           []( auto const& range ){ return Policy::apply(range); });
-    }
-};
-
-}} // namespace detail::is_empty
-#endif // DOXYGEN_NO_DETAIL
-
-
-namespace resolve_dynamic
-{
-
-template <concepts::ConstGeometry Geometry>
-inline bool is_empty(Geometry const& geometry)
-{
-    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
-    {
-        bool result = true;
-        traits::visit<Geometry>::apply([&](auto const& g)
-        {
-            result = resolve_dynamic::is_empty(g);
-        }, geometry);
-        return result;
-    }
-    else if constexpr (concepts::ConstGeometryCollection<Geometry>)
-    {
-        bool result = true;
-        detail::visit_breadth_first([&](auto const& g)
-        {
-            result = resolve_dynamic::is_empty(g);
-            return result;
-        }, geometry);
-        return result;
-    }
-    else if constexpr (concepts::ConstPoint<Geometry>
-                    || concepts::ConstBox<Geometry>
-                    || concepts::ConstSegment<Geometry>)
-    {
-        return false;
-    }
-    else if constexpr (concepts::ConstLinestring<Geometry>
-                    || concepts::ConstRing<Geometry>
-                    || concepts::ConstMultiPoint<Geometry>)
-    {
-        return boost::empty(geometry);
-    }
-    else if constexpr (concepts::ConstPolygon<Geometry>)
-    {
-        return detail::is_empty::polygon_is_empty::apply(geometry);
-    }
-    else if constexpr (concepts::ConstMultiPolygon<Geometry>)
-    {
-        return detail::is_empty::multi_is_empty
-            <detail::is_empty::polygon_is_empty>::apply(geometry);
-    }
-    else
-    {
-        return detail::is_empty::multi_is_empty<>::apply(geometry);
-    }
+    return false;
 }
 
-} // namespace resolve_dynamic
+template <typename Geometry>
+    requires concepts::ConstLinestring<Geometry>
+          || concepts::ConstRing<Geometry>
+          || concepts::ConstMultiPoint<Geometry>
+inline bool is_empty_impl(Geometry const& geometry)
+{
+    return boost::empty(geometry);
+}
+
+template <concepts::ConstPolygon Polygon>
+inline bool is_empty_impl(Polygon const& polygon)
+{
+    auto const& rings = interior_rings(polygon);
+    return boost::empty(exterior_ring(polygon))
+        && std::all_of(boost::begin(rings), boost::end(rings),
+            [](auto const& ring) { return boost::empty(ring); });
+}
+
+template <concepts::ConstMultiPolygon MultiPolygon>
+inline bool is_empty_impl(MultiPolygon const& multi)
+{
+    return std::all_of(boost::begin(multi), boost::end(multi),
+        [](auto const& polygon) { return is_empty_impl(polygon); });
+}
+
+template <concepts::ConstMultiLinestring MultiLinestring>
+inline bool is_empty_impl(MultiLinestring const& multi)
+{
+    return std::all_of(boost::begin(multi), boost::end(multi),
+        [](auto const& linestring) { return boost::empty(linestring); });
+}
+
+template <concepts::ConstPolyhedralSurface PolyhedralSurface>
+inline bool is_empty_impl(PolyhedralSurface const& surface)
+{
+    return std::all_of(boost::begin(surface), boost::end(surface),
+        [](auto const& face) { return boost::empty(face); });
+}
+
+template <concepts::ConstDynamicGeometry DynamicGeometry>
+inline bool is_empty_impl(DynamicGeometry const& dynamic)
+{
+    bool result = true;
+    traits::visit<DynamicGeometry>::apply([&](auto const& geometry)
+    {
+        result = is_empty_impl(geometry);
+    }, dynamic);
+    return result;
+}
+
+template <concepts::ConstGeometryCollection GeometryCollection>
+inline bool is_empty_impl(GeometryCollection const& collection)
+{
+    bool result = true;
+    detail::visit_breadth_first([&](auto const& geometry)
+    {
+        result = is_empty_impl(geometry);
+        return result;
+    }, collection);
+    return result;
+}
+
+} // namespace detail
+#endif // DOXYGEN_NO_DETAIL
 
 
 /*!
@@ -157,7 +133,7 @@ inline bool is_empty(Geometry const& geometry)
 template <concepts::ConstGeometry Geometry>
 inline bool is_empty(Geometry const& geometry)
 {
-    return resolve_dynamic::is_empty(geometry);
+    return detail::is_empty_impl(geometry);
 }
 
 

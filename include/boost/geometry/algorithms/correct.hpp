@@ -108,7 +108,7 @@ struct correct_ring
         // Check area
         using area_t = typename area_result<Ring, Strategy>::type;
         area_t const zero = 0;
-        if (Predicate()(detail::area::ring_area::apply(r, strategy), zero))
+        if (Predicate()(detail::area_impl(r, strategy), zero))
         {
             std::reverse(boost::begin(r), boost::end(r));
         }
