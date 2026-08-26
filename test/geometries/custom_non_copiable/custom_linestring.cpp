@@ -31,7 +31,7 @@ void test_const()
 
     boost::ignore_unused<point_t>();
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstLinestring<linestring_t>) );
+    static_assert(bg::concepts::ConstLinestring<linestring_t>);
 
     linestring_t geo;
     fill(geo, {{0, 0}, {5, 5}, {7, 3}, {9, 5}, {10, 10}});
@@ -106,7 +106,7 @@ void test_mutable()
 
     boost::ignore_unused<point_t>();
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::Linestring<linestring_t>) );
+    static_assert(bg::concepts::Linestring<linestring_t>);
 
     linestring_t geo;
     bg::read_wkt("LINESTRING(0 0, 5 5, 7 3, 9 5, 10 10)", geo);

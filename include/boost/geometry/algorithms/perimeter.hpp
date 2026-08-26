@@ -50,63 +50,38 @@ namespace boost { namespace geometry
 namespace dispatch
 {
 
-// Default perimeter is 0.0, specializations implement calculated values
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct perimeter : detail::calculate_null
+template <concepts::ConstGeometry Geometry, typename Strategy>
+inline typename default_length_result<Geometry>::type
+perimeter(Geometry const& geometry, Strategy const& strategy)
 {
-    typedef typename default_length_result<Geometry>::type return_type;
-
-    template <typename Strategy>
-    static inline return_type apply(Geometry const& geometry, Strategy const& strategy)
+    if constexpr (concepts::ConstRing<Geometry>)
     {
-        return calculate_null::apply<return_type>(geometry, strategy);
+        return detail::length::range_length
+            <Geometry, closure<Geometry>::value>::apply(geometry, strategy);
     }
-};
-
-template <typename Geometry>
-struct perimeter<Geometry, ring_tag>
-    : detail::length::range_length
-        <
-            Geometry,
-            closure<Geometry>::value
-        >
-{};
-
-template <typename Polygon>
-struct perimeter<Polygon, polygon_tag> : detail::calculate_polygon_sum
-{
-    using return_type = typename default_length_result<Polygon>::type;
-    using policy = detail::length::range_length
-                <
-                    ring_type_t<Polygon>,
-                    closure<Polygon>::value
-                >;
-
-    template <typename Strategy>
-    static inline return_type apply(Polygon const& polygon, Strategy const& strategy)
+    else if constexpr (concepts::ConstPolygon<Geometry>)
     {
-        return calculate_polygon_sum::apply<return_type, policy>(polygon, strategy);
+        using policy = detail::length::range_length
+            <ring_type_t<Geometry>, closure<Geometry>::value>;
+        return detail::calculate_polygon_sum::apply
+            <typename default_length_result<Geometry>::type, policy>(
+                geometry, strategy);
     }
-};
-
-template <typename MultiPolygon>
-struct perimeter<MultiPolygon, multi_polygon_tag> : detail::multi_sum
-{
-    typedef typename default_length_result<MultiPolygon>::type return_type;
-
-    template <typename Strategy>
-    static inline return_type apply(MultiPolygon const& multi, Strategy const& strategy)
+    else if constexpr (concepts::ConstMultiPolygon<Geometry>)
     {
-        return multi_sum::apply
-               <
-                   return_type,
-                   perimeter<typename boost::range_value<MultiPolygon>::type>
-               >(multi, strategy);
+        typename default_length_result<Geometry>::type result = 0;
+        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
+        {
+            result += dispatch::perimeter(*it, strategy);
+        }
+        return result;
     }
-};
-
-
-// box,n-sphere: to be implemented
+    else
+    {
+        return detail::calculate_null::apply
+            <typename default_length_result<Geometry>::type>(geometry, strategy);
+    }
+}
 
 } // namespace dispatch
 #endif // DOXYGEN_NO_DISPATCH
@@ -114,99 +89,61 @@ struct perimeter<MultiPolygon, multi_polygon_tag> : detail::multi_sum
 
 namespace resolve_strategy {
 
-template
-<
-    typename Strategies,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategies>::value
->
-struct perimeter
+template <concepts::ConstGeometry Geometry, typename Strategy>
+inline typename default_length_result<Geometry>::type
+perimeter(Geometry const& geometry, Strategy const& strategy)
 {
-    template <typename Geometry>
-    static inline typename default_length_result<Geometry>::type
-    apply(Geometry const& geometry, Strategies const& strategies)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
-        return dispatch::perimeter<Geometry>::apply(geometry, strategies);
+        using strategies_type = typename strategies::length::services::default_strategy
+            <Geometry>::type;
+        return dispatch::perimeter(geometry, strategies_type());
     }
-};
-
-template <typename Strategy>
-struct perimeter<Strategy, false>
-{
-    template <typename Geometry>
-    static inline typename default_length_result<Geometry>::type
-    apply(Geometry const& geometry, Strategy const& strategy)
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        return dispatch::perimeter(geometry, strategy);
+    }
+    else
     {
         using strategies::length::services::strategy_converter;
-        return dispatch::perimeter<Geometry>::apply(
-                geometry, strategy_converter<Strategy>::get(strategy));
+        return dispatch::perimeter(
+            geometry, strategy_converter<Strategy>::get(strategy));
     }
-};
-
-template <>
-struct perimeter<default_strategy, false>
-{
-    template <typename Geometry>
-    static inline typename default_length_result<Geometry>::type
-    apply(Geometry const& geometry, default_strategy const&)
-    {
-        typedef typename strategies::length::services::default_strategy
-            <
-                Geometry
-            >::type strategies_type;
-
-        return dispatch::perimeter<Geometry>::apply(geometry, strategies_type());
-    }
-};
+}
 
 } // namespace resolve_strategy
 
 
 namespace resolve_dynamic {
 
-template <typename Geometry, typename Tag = geometry::tag_t<Geometry>>
-struct perimeter
+template <concepts::ConstGeometry Geometry, typename Strategy>
+inline typename default_length_result<Geometry>::type
+perimeter(Geometry const& geometry, Strategy const& strategy)
 {
-    template <typename Strategy>
-    static inline typename default_length_result<Geometry>::type
-    apply(Geometry const& geometry, Strategy const& strategy)
-    {
-        concepts::check<Geometry const>();
-        return resolve_strategy::perimeter<Strategy>::apply(geometry, strategy);
-    }
-};
-
-template <typename Geometry>
-struct perimeter<Geometry, dynamic_geometry_tag>
-{
-    template <typename Strategy>
-    static inline typename default_length_result<Geometry>::type
-    apply(Geometry const& geometry, Strategy const& strategy)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
     {
         typename default_length_result<Geometry>::type result = 0;
         traits::visit<Geometry>::apply([&](auto const& g)
         {
-            result = perimeter<util::remove_cref_t<decltype(g)>>::apply(g, strategy);
+            result = resolve_dynamic::perimeter(g, strategy);
         }, geometry);
         return result;
     }
-};
-
-template <typename Geometry>
-struct perimeter<Geometry, geometry_collection_tag>
-{
-    template <typename Strategy>
-    static inline typename default_length_result<Geometry>::type
-    apply(Geometry const& geometry, Strategy const& strategy)
+    else if constexpr (concepts::ConstGeometryCollection<Geometry>)
     {
         typename default_length_result<Geometry>::type result = 0;
         detail::visit_breadth_first([&](auto const& g)
         {
-            result += perimeter<util::remove_cref_t<decltype(g)>>::apply(g, strategy);
+            result += resolve_dynamic::perimeter(g, strategy);
             return true;
         }, geometry);
         return result;
     }
-};
+    else
+    {
+        return resolve_strategy::perimeter(geometry, strategy);
+    }
+}
 
 } // namespace resolve_dynamic
 
@@ -227,12 +164,12 @@ struct perimeter<Geometry, geometry_collection_tag>
 [perimeter_output]
 }
  */
-template<typename Geometry>
+template<concepts::ConstGeometry Geometry>
 inline typename default_length_result<Geometry>::type perimeter(
         Geometry const& geometry)
 {
     // detail::throw_on_empty_input(geometry);
-    return resolve_dynamic::perimeter<Geometry>::apply(geometry, default_strategy());
+    return resolve_dynamic::perimeter(geometry, default_strategy());
 }
 
 /*!
@@ -249,15 +186,14 @@ inline typename default_length_result<Geometry>::type perimeter(
 \qbk{distinguish,with strategy}
 \qbk{[include reference/algorithms/perimeter.qbk]}
  */
-template<typename Geometry, typename Strategy>
+template<concepts::ConstGeometry Geometry, typename Strategy>
 inline typename default_length_result<Geometry>::type perimeter(
         Geometry const& geometry, Strategy const& strategy)
 {
     // detail::throw_on_empty_input(geometry);
-    return resolve_dynamic::perimeter<Geometry>::apply(geometry, strategy);
+    return resolve_dynamic::perimeter(geometry, strategy);
 }
 
 }} // namespace boost::geometry
 
 #endif // BOOST_GEOMETRY_ALGORITHMS_PERIMETER_HPP
-

@@ -62,126 +62,71 @@ struct range_count
 
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct num_segments
-    : not_implemented<Tag>
-{};
-
-template <typename Geometry>
-struct num_segments<Geometry, point_tag>
-    : detail::counting::other_count<0>
-{};
-
-// the number of segments (1-dimensional faces) of the hypercube is
-// given by the formula: d * 2^(d-1), where d is the dimension of the
-// hypercube; see also:
-//            http://en.wikipedia.org/wiki/Hypercube
-template <typename Geometry>
-struct num_segments<Geometry, box_tag>
-    : detail::counting::other_count
-        <
-            geometry::dimension<Geometry>::value
-            * (1 << (geometry::dimension<Geometry>::value - 1))
-        >
-{};
-
-template <typename Geometry>
-struct num_segments<Geometry, segment_tag>
-    : detail::counting::other_count<1>
-{};
-
-template <typename Geometry>
-struct num_segments<Geometry, linestring_tag>
-    : detail::num_segments::range_count
-{};
-
-template <typename Geometry>
-struct num_segments<Geometry, ring_tag>
-    : detail::num_segments::range_count
-{};
-
-template <typename Geometry>
-struct num_segments<Geometry, polygon_tag>
-    : detail::counting::polygon_count<detail::num_segments::range_count>
-{};
-
-template <typename Geometry>
-struct num_segments<Geometry, multi_point_tag>
-    : detail::counting::other_count<0>
-{};
-
-template <typename Geometry>
-struct num_segments<Geometry, multi_linestring_tag>
-    : detail::counting::multi_count
-        <
-            num_segments< typename boost::range_value<Geometry>::type>
-        >
-{};
-
-template <typename Geometry>
-struct num_segments<Geometry, multi_polygon_tag>
-    : detail::counting::multi_count
-        <
-            num_segments< typename boost::range_value<Geometry>::type>
-        >
-{};
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
-
-
 namespace resolve_dynamic
 {
 
-
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct num_segments
+template <concepts::ConstGeometry Geometry>
+inline std::size_t num_segments(Geometry const& geometry)
 {
-    static inline std::size_t apply(Geometry const& geometry)
-    {
-        concepts::check<Geometry const>();
-
-        return dispatch::num_segments<Geometry>::apply(geometry);
-    }
-};
-
-
-template <typename Geometry>
-struct num_segments<Geometry, dynamic_geometry_tag>
-{
-    static inline std::size_t apply(Geometry const& geometry)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
     {
         std::size_t result = 0;
         traits::visit<Geometry>::apply([&](auto const& g)
         {
-            result = num_segments<util::remove_cref_t<decltype(g)>>::apply(g);
+            result = resolve_dynamic::num_segments(g);
         }, geometry);
         return result;
     }
-};
-
-
-template <typename Geometry>
-struct num_segments<Geometry, geometry_collection_tag>
-{
-    static inline std::size_t apply(Geometry const& geometry)
+    else if constexpr (concepts::ConstGeometryCollection<Geometry>)
     {
         std::size_t result = 0;
         detail::visit_breadth_first([&](auto const& g)
         {
-            result += num_segments<util::remove_cref_t<decltype(g)>>::apply(g);
+            result += resolve_dynamic::num_segments(g);
             return true;
         }, geometry);
         return result;
     }
-};
-
+    else if constexpr (concepts::ConstPoint<Geometry>
+                    || concepts::ConstMultiPoint<Geometry>)
+    {
+        return 0;
+    }
+    else if constexpr (concepts::ConstBox<Geometry>)
+    {
+        constexpr auto dimensions = geometry::dimension<Geometry>::value;
+        return dimensions * (1 << (dimensions - 1));
+    }
+    else if constexpr (concepts::ConstSegment<Geometry>)
+    {
+        return 1;
+    }
+    else if constexpr (concepts::ConstLinestring<Geometry>
+                    || concepts::ConstRing<Geometry>)
+    {
+        return detail::num_segments::range_count::apply(geometry);
+    }
+    else if constexpr (concepts::ConstPolygon<Geometry>)
+    {
+        std::size_t result = resolve_dynamic::num_segments(
+            exterior_ring(geometry));
+        auto const& rings = interior_rings(geometry);
+        for (auto it = boost::begin(rings); it != boost::end(rings); ++it)
+        {
+            result += resolve_dynamic::num_segments(*it);
+        }
+        return result;
+    }
+    else
+    {
+        std::size_t result = 0;
+        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
+        {
+            result += resolve_dynamic::num_segments(*it);
+        }
+        return result;
+    }
+}
 
 } // namespace resolve_dynamic
 
@@ -197,10 +142,10 @@ struct num_segments<Geometry, geometry_collection_tag>
 
 \qbk{[include reference/algorithms/num_segments.qbk]}
 */
-template <typename Geometry>
+template <concepts::ConstGeometry Geometry>
 inline std::size_t num_segments(Geometry const& geometry)
 {
-    return resolve_dynamic::num_segments<Geometry>::apply(geometry);
+    return resolve_dynamic::num_segments(geometry);
 }
 
 

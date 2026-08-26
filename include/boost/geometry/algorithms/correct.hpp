@@ -138,158 +138,61 @@ struct correct_polygon
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct correct: not_implemented<Tag>
-{};
-
-template <typename Point>
-struct correct<Point, point_tag>
-    : detail::correct::correct_nop
-{};
-
-template <typename LineString>
-struct correct<LineString, linestring_tag>
-    : detail::correct::correct_nop
-{};
-
-template <typename Segment>
-struct correct<Segment, segment_tag>
-    : detail::correct::correct_nop
-{};
-
-
-template <typename Box>
-struct correct<Box, box_tag>
-    : detail::correct::correct_box
-{};
-
-template <typename Ring>
-struct correct<Ring, ring_tag>
-    : detail::correct::correct_ring<>
-{};
-
-template <typename Polygon>
-struct correct<Polygon, polygon_tag>
-    : detail::correct::correct_polygon
-{};
-
-
-template <typename MultiPoint>
-struct correct<MultiPoint, multi_point_tag>
-    : detail::correct::correct_nop
-{};
-
-
-template <typename MultiLineString>
-struct correct<MultiLineString, multi_linestring_tag>
-    : detail::correct::correct_nop
-{};
-
-
-template <typename Geometry>
-struct correct<Geometry, multi_polygon_tag>
-    : detail::multi_modify<detail::correct::correct_polygon>
-{};
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
-
 namespace resolve_strategy
 {
 
-template
-<
-    typename Strategy,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategy>::value
->
-struct correct
+template <concepts::MutableGeometry Geometry, typename Strategy>
+inline void correct(Geometry& geometry, Strategy const& strategy)
 {
-    template <typename Geometry>
-    static inline void apply(Geometry& geometry, Strategy const& strategy)
+    if constexpr (concepts::DynamicGeometry<Geometry>)
     {
-        dispatch::correct<Geometry>::apply(geometry, strategy);
-    }
-};
-
-template <typename Strategy>
-struct correct<Strategy, false>
-{
-    template <typename Geometry>
-    static inline void apply(Geometry& geometry, Strategy const& strategy)
-    {
-        // NOTE: calculate_point_order strategy should probably be used here instead.
-        using geometry::strategies::area::services::strategy_converter;
-        dispatch::correct<Geometry>::apply(geometry, strategy_converter<Strategy>::get(strategy));
-    }
-};
-
-template <>
-struct correct<default_strategy, false>
-{
-    template <typename Geometry>
-    static inline void apply(Geometry& geometry, default_strategy const& )
-    {
-        // NOTE: calculate_point_order strategy should probably be used here instead.
-        using strategy_type = typename strategies::area::services::default_strategy
-            <
-                Geometry
-            >::type;
-        dispatch::correct<Geometry>::apply(geometry, strategy_type());
-    }
-};
-
-} // namespace resolve_strategy
-
-
-namespace resolve_dynamic
-{
-
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct correct
-{
-    template <typename Strategy>
-    static inline void apply(Geometry& geometry, Strategy const& strategy)
-    {
-        concepts::check<Geometry>();
-        resolve_strategy::correct<Strategy>::apply(geometry, strategy);
-    }
-};
-
-template <typename Geometry>
-struct correct<Geometry, dynamic_geometry_tag>
-{
-    template <typename Strategy>
-    static inline void apply(Geometry& geometry, Strategy const& strategy)
-    {
-        traits::visit<Geometry>::apply([&](auto & g)
+        traits::visit<Geometry>::apply([&](auto& g)
         {
-            correct<util::remove_cref_t<decltype(g)>>::apply(g, strategy);
+            resolve_strategy::correct(g, strategy);
         }, geometry);
     }
-};
-
-template <typename Geometry>
-struct correct<Geometry, geometry_collection_tag>
-{
-    template <typename Strategy>
-    static inline void apply(Geometry& geometry, Strategy const& strategy)
+    else if constexpr (concepts::GeometryCollection<Geometry>)
     {
-        detail::visit_breadth_first([&](auto & g)
+        detail::visit_breadth_first([&](auto& g)
         {
-            correct<util::remove_cref_t<decltype(g)>>::apply(g, strategy);
+            resolve_strategy::correct(g, strategy);
             return true;
         }, geometry);
     }
-};
+    else if constexpr (std::same_as<Strategy, default_strategy>)
+    {
+        using strategy_type = typename strategies::area::services::default_strategy
+            <Geometry>::type;
+        resolve_strategy::correct(geometry, strategy_type());
+    }
+    else if constexpr (! strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        using geometry::strategies::area::services::strategy_converter;
+        resolve_strategy::correct(
+            geometry, strategy_converter<Strategy>::get(strategy));
+    }
+    else if constexpr (concepts::Box<Geometry>)
+    {
+        detail::correct::correct_box::apply(geometry, strategy);
+    }
+    else if constexpr (concepts::Ring<Geometry>)
+    {
+        detail::correct::correct_ring<>::apply(geometry, strategy);
+    }
+    else if constexpr (concepts::Polygon<Geometry>)
+    {
+        detail::correct::correct_polygon::apply(geometry, strategy);
+    }
+    else if constexpr (concepts::MultiPolygon<Geometry>)
+    {
+        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
+        {
+            detail::correct::correct_polygon::apply(*it, strategy);
+        }
+    }
+}
 
-
-} // namespace resolve_dynamic
+} // namespace resolve_strategy
 
 
 /*!
@@ -304,10 +207,10 @@ struct correct<Geometry, geometry_collection_tag>
 
 \qbk{[include reference/algorithms/correct.qbk]}
 */
-template <typename Geometry>
+template <concepts::MutableGeometry Geometry>
 inline void correct(Geometry& geometry)
 {
-    resolve_dynamic::correct<Geometry>::apply(geometry, default_strategy());
+    resolve_strategy::correct(geometry, default_strategy());
 }
 
 /*!
@@ -326,10 +229,10 @@ inline void correct(Geometry& geometry)
 
 \qbk{[include reference/algorithms/correct.qbk]}
 */
-template <typename Geometry, typename Strategy>
+template <concepts::MutableGeometry Geometry, typename Strategy>
 inline void correct(Geometry& geometry, Strategy const& strategy)
 {
-    resolve_dynamic::correct<Geometry>::apply(geometry, strategy);
+    resolve_strategy::correct(geometry, strategy);
 }
 
 #if defined(_MSC_VER)

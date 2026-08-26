@@ -19,9 +19,6 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_CHECK_HPP
 
 
-#include <boost/concept_check.hpp>
-#include <boost/concept/requires.hpp>
-
 #include <boost/geometry/algorithms/detail/select_geometry_type.hpp>
 
 #include <boost/geometry/geometries/concepts/concept_type.hpp>
@@ -45,15 +42,9 @@ namespace boost { namespace geometry { namespace concepts
     \brief Checks, in compile-time, the concept of any geometry
     \ingroup concepts
 */
-template <typename Geometry>
-// workaround for VS2015
-#if !defined(_MSC_VER) || (_MSC_VER >= 1910)
-constexpr
-#endif
-inline void check()
-{
-    BOOST_CONCEPT_ASSERT((typename concept_type<Geometry>::type));
-}
+template <GeometryType Geometry>
+constexpr void check()
+{}
 
 
 /*!
@@ -61,12 +52,8 @@ inline void check()
         have equal dimensions
     \ingroup concepts
 */
-template <typename Geometry1, typename Geometry2>
-// workaround for VS2015
-#if !defined(_MSC_VER) || (_MSC_VER >= 1910)
-constexpr
-#endif
-inline void check_concepts_and_equal_dimensions()
+template <GeometryType Geometry1, GeometryType Geometry2>
+constexpr void check_concepts_and_equal_dimensions()
 {
     check<Geometry1>();
     check<Geometry2>();

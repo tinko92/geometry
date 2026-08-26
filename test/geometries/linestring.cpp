@@ -79,8 +79,8 @@ void test_concept()
 {
     typedef bg::model::linestring<P> L;
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstLinestring<L>) );
-    BOOST_CONCEPT_ASSERT( (bg::concepts::Linestring<L>) );
+    static_assert(bg::concepts::ConstLinestring<L>);
+    static_assert(bg::concepts::Linestring<L>);
 
     typedef typename bg::coordinate_type<L>::type T;
     typedef typename bg::point_type<L>::type LP;

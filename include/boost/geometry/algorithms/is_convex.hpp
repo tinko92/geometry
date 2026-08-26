@@ -147,188 +147,81 @@ struct multi_polygon_is_convex
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-template
-<
-    typename Geometry,
-    typename Tag = tag_t<Geometry>
->
-struct is_convex
-{
-    template <typename Strategies>
-    static inline bool apply(Geometry const&, Strategies const&)
-    {
-        // Convexity is not defined for PointLike and Linear geometries.
-        // We could implement this because the following definitions would work:
-        // - no line segment between two points on the interior or boundary ever goes outside.
-        // - convex_hull of geometry is equal to the original geometry, this implies equal
-        //   topological dimension.
-        // For MultiPoint we'd have to check whether or not an arbitrary number of equal points
-        //   is stored.
-        // MultiPolygon we'd have to check for continuous chain of Linestrings which would require
-        //   the use of relate(pt, seg) or distance(pt, pt) strategy.
-        return false;
-    }
-};
-
-template <typename Box>
-struct is_convex<Box, box_tag>
-{
-    template <typename Strategies>
-    static inline bool apply(Box const& , Strategies const& )
-    {
-        // Any box is convex (TODO: consider spherical boxes)
-        // TODO: in spherical and geographic the answer would be "false" most of the time.
-        //   Assuming that:
-        //   - it even makes sense to consider Box in spherical and geographic in this context
-        //     because it's not a Polygon, e.g. it can degenerate to a Point.
-        //   - line segments are defined by geodesics and box edges by parallels and meridians
-        //   - we use this definition: A convex polygon is a simple polygon (not self-intersecting)
-        //     in which no line segment between two points on the boundary ever goes outside the
-        //     polygon.
-        //   Then a geodesic segment would go into the exterior of a Box for all horizontal edges
-        //   of a Box unless it was one of the poles (edge degenerated to a point) or equator and
-        //   longitude difference was lesser than 360 (otherwise depending on the CS there would be
-        //   no solution or there would be two possible solutions - segment going through one of
-        //   the poles, at least in case of oblate spheroid, either way the answer would probably
-        //   be "false").
-        return true;
-    }
-};
-
-template <typename Ring>
-struct is_convex<Ring, ring_tag> : detail::is_convex::ring_is_convex
-{};
-
-template <typename Polygon>
-struct is_convex<Polygon, polygon_tag> : detail::is_convex::polygon_is_convex
-{};
-
-template <typename MultiPolygon>
-struct is_convex<MultiPolygon, multi_polygon_tag> : detail::is_convex::multi_polygon_is_convex
-{};
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
 namespace resolve_strategy {
 
-template
-<
-    typename Strategies,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategies>::value
->
-struct is_convex
+template <concepts::ConstGeometry Geometry, typename Strategy>
+inline bool is_convex(Geometry const& geometry, Strategy const& strategy)
 {
-    template <typename Geometry>
-    static bool apply(Geometry const& geometry, Strategies const& strategies)
-    {
-        return dispatch::is_convex<Geometry>::apply(geometry, strategies);
-    }
-};
-
-template <typename Strategy>
-struct is_convex<Strategy, false>
-{
-    template <typename Geometry>
-    static bool apply(Geometry const& geometry, Strategy const& strategy)
-    {
-        using strategies::is_convex::services::strategy_converter;
-        return dispatch::is_convex
-            <
-                Geometry
-            >::apply(geometry, strategy_converter<Strategy>::get(strategy));
-    }
-};
-
-template <>
-struct is_convex<default_strategy, false>
-{
-    template <typename Geometry>
-    static bool apply(Geometry const& geometry, default_strategy const& )
-    {
-        typedef typename strategies::is_convex::services::default_strategy
-            <
-                Geometry
-            >::type strategy_type;
-
-        return dispatch::is_convex<Geometry>::apply(geometry, strategy_type());
-    }
-};
-
-} // namespace resolve_strategy
-
-namespace resolve_dynamic {
-
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct is_convex
-{
-    template <typename Strategy>
-    static bool apply(Geometry const& geometry, Strategy const& strategy)
-    {
-        concepts::check<Geometry const>();
-        return resolve_strategy::is_convex<Strategy>::apply(geometry, strategy);
-    }
-};
-
-template <typename Geometry>
-struct is_convex<Geometry, dynamic_geometry_tag>
-{
-    template <typename Strategy>
-    static inline bool apply(Geometry const& geometry, Strategy const& strategy)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
     {
         bool result = false;
         traits::visit<Geometry>::apply([&](auto const& g)
         {
-            result = is_convex<util::remove_cref_t<decltype(g)>>::apply(g, strategy);
+            result = resolve_strategy::is_convex(g, strategy);
         }, geometry);
         return result;
     }
-};
-
-// NOTE: This is a simple implementation checking if a GC contains single convex geometry.
-//   Technically a GC could store e.g. polygons touching with edges and together creating a convex
-//   region. To check this we'd require relate() strategy and the algorithm would be quite complex.
-template <typename Geometry>
-struct is_convex<Geometry, geometry_collection_tag>
-{
-    template <typename Strategy>
-    static inline bool apply(Geometry const& geometry, Strategy const& strategy)
+    else if constexpr (concepts::ConstGeometryCollection<Geometry>)
     {
         bool result = false;
         bool is_first = true;
         detail::visit_breadth_first([&](auto const& g)
         {
-            result = is_first
-                  && is_convex<util::remove_cref_t<decltype(g)>>::apply(g, strategy);
+            result = is_first && resolve_strategy::is_convex(g, strategy);
             is_first = false;
             return result;
         }, geometry);
         return result;
     }
-};
+    else if constexpr (std::same_as<Strategy, default_strategy>)
+    {
+        using strategy_type = typename strategies::is_convex::services::default_strategy
+            <Geometry>::type;
+        return resolve_strategy::is_convex(geometry, strategy_type());
+    }
+    else if constexpr (! strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        using strategies::is_convex::services::strategy_converter;
+        return resolve_strategy::is_convex(
+            geometry, strategy_converter<Strategy>::get(strategy));
+    }
+    else if constexpr (concepts::ConstBox<Geometry>)
+    {
+        return true;
+    }
+    else if constexpr (concepts::ConstRing<Geometry>)
+    {
+        return detail::is_convex::ring_is_convex::apply(geometry, strategy);
+    }
+    else if constexpr (concepts::ConstPolygon<Geometry>)
+    {
+        return detail::is_convex::polygon_is_convex::apply(geometry, strategy);
+    }
+    else if constexpr (concepts::ConstMultiPolygon<Geometry>)
+    {
+        return detail::is_convex::multi_polygon_is_convex::apply(
+            geometry, strategy);
+    }
+    else
+    {
+        return false;
+    }
+}
 
-} // namespace resolve_dynamic
+} // namespace resolve_strategy
 
 // TODO: documentation / qbk
-template<typename Geometry>
+template<concepts::ConstGeometry Geometry>
 inline bool is_convex(Geometry const& geometry)
 {
-    return resolve_dynamic::is_convex
-            <
-                Geometry
-            >::apply(geometry, geometry::default_strategy());
+    return resolve_strategy::is_convex(geometry, geometry::default_strategy());
 }
 
 // TODO: documentation / qbk
-template<typename Geometry, typename Strategy>
+template<concepts::ConstGeometry Geometry, typename Strategy>
 inline bool is_convex(Geometry const& geometry, Strategy const& strategy)
 {
-    return resolve_dynamic::is_convex<Geometry>::apply(geometry, strategy);
+    return resolve_strategy::is_convex(geometry, strategy);
 }
 
 

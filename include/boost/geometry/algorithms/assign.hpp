@@ -21,9 +21,6 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_ASSIGN_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_ASSIGN_HPP
 
-#include <type_traits>
-#include <variant>
-
 #include <boost/geometry/algorithms/append.hpp>
 #include <boost/geometry/algorithms/clear.hpp>
 #include <boost/geometry/algorithms/convert.hpp>
@@ -33,6 +30,7 @@
 #include <boost/geometry/algorithms/detail/assign_values.hpp>
 
 #include <boost/geometry/core/static_assert.hpp>
+#include <boost/geometry/core/visit.hpp>
 
 #include <boost/geometry/geometries/concepts/check.hpp>
 
@@ -58,11 +56,9 @@ namespace boost { namespace geometry
 \* [link geometry.reference.algorithms.append append]
 }
  */
-template <typename Geometry, typename Range>
+template <concepts::MutableGeometry Geometry, typename Range>
 inline void assign_points(Geometry& geometry, Range const& range)
 {
-    concepts::check<Geometry>();
-
     clear(geometry);
     geometry::append(geometry, range, -1, 0);
 }
@@ -85,11 +81,9 @@ collect the minimum bounding box of a geometry.
 \* [link geometry.reference.algorithms.make.make_inverse make_inverse]
 }
  */
-template <typename Geometry>
+template <concepts::MutableGeometry Geometry>
 inline void assign_inverse(Geometry& geometry)
 {
-    concepts::check<Geometry>();
-
     dispatch::assign_inverse
         <
             tag_t<Geometry>,
@@ -105,11 +99,9 @@ inline void assign_inverse(Geometry& geometry)
 \param geometry \param_geometry
 
  */
-template <typename Geometry>
+template <concepts::MutableGeometry Geometry>
 inline void assign_zero(Geometry& geometry)
 {
-    concepts::check<Geometry>();
-
     dispatch::assign_zero
         <
             tag_t<Geometry>,
@@ -135,11 +127,9 @@ inline void assign_zero(Geometry& geometry)
 \* [link geometry.reference.algorithms.make.make_2_2_coordinate_values make]
 }
  */
-template <typename Geometry, typename Type>
+template <concepts::MutableGeometry Geometry, typename Type>
 inline void assign_values(Geometry& geometry, Type const& c1, Type const& c2)
 {
-    concepts::check<Geometry>();
-
     dispatch::assign
         <
             tag_t<Geometry>,
@@ -167,12 +157,10 @@ inline void assign_values(Geometry& geometry, Type const& c1, Type const& c2)
 \* [link geometry.reference.algorithms.make.make_3_3_coordinate_values make]
 }
  */
-template <typename Geometry, typename Type>
+template <concepts::MutableGeometry Geometry, typename Type>
 inline void assign_values(Geometry& geometry,
             Type const& c1, Type const& c2, Type const& c3)
 {
-    concepts::check<Geometry>();
-
     dispatch::assign
         <
             tag_t<Geometry>,
@@ -194,12 +182,10 @@ inline void assign_values(Geometry& geometry,
 
 \qbk{distinguish, 4 coordinate values}
  */
-template <typename Geometry, typename Type>
+template <concepts::MutableGeometry Geometry, typename Type>
 inline void assign_values(Geometry& geometry,
                 Type const& c1, Type const& c2, Type const& c3, Type const& c4)
 {
-    concepts::check<Geometry>();
-
     dispatch::assign
         <
             tag_t<Geometry>,
@@ -210,88 +196,50 @@ inline void assign_values(Geometry& geometry,
 
 
 
-namespace resolve_variant
+namespace resolve_dynamic
 {
 
-template <typename Geometry1, typename Geometry2>
-struct assign
+template <concepts::MutableGeometry Geometry1,
+          concepts::ConstGeometry Geometry2>
+inline void assign(Geometry1& geometry1, Geometry2 const& geometry2)
 {
-    static inline void
-    apply(Geometry1& geometry1, Geometry2 const& geometry2)
+    if constexpr (concepts::DynamicGeometry<Geometry1>
+                  && concepts::ConstDynamicGeometry<Geometry2>)
     {
-        concepts::check<Geometry1>();
-        concepts::check<Geometry2 const>();
-        concepts::check_concepts_and_equal_dimensions<Geometry1, Geometry2 const>();
-
-        static bool const same_point_order
-            = point_order<Geometry1>::value == point_order<Geometry2>::value;
-        BOOST_GEOMETRY_STATIC_ASSERT(
-            same_point_order,
-            "Assign is not supported for different point orders.",
-            Geometry1, Geometry2);
-        static bool const same_closure
-            = closure<Geometry1>::value == closure<Geometry2>::value;
-        BOOST_GEOMETRY_STATIC_ASSERT(
-            same_closure,
-            "Assign is not supported for different closures.",
-            Geometry1, Geometry2);
-
-        dispatch::convert<Geometry2, Geometry1>::apply(geometry2, geometry1);
+        traits::visit<Geometry1, Geometry2>::apply(
+            [](auto& target, auto const& source)
+            {
+                resolve_dynamic::assign(target, source);
+            }, geometry1, geometry2);
     }
-};
-
-
-template <typename ...Ts, typename Geometry2>
-struct assign<std::variant<Ts...>, Geometry2>
-{
-    static inline void
-    apply(std::variant<Ts...>& geometry1,
-          Geometry2 const& geometry2)
+    else if constexpr (concepts::DynamicGeometry<Geometry1>)
     {
-        std::visit([&geometry2](auto& concrete)
+        traits::visit<Geometry1>::apply([&](auto& target)
         {
-            assign<std::decay_t<decltype(concrete)>, Geometry2>::apply(
-                concrete, geometry2);
+            resolve_dynamic::assign(target, geometry2);
         }, geometry1);
     }
-};
-
-
-template <typename Geometry1, typename ...Ts>
-struct assign<Geometry1, std::variant<Ts...>>
-{
-    static inline void
-    apply(Geometry1& geometry1,
-          std::variant<Ts...> const& geometry2)
+    else if constexpr (concepts::ConstDynamicGeometry<Geometry2>)
     {
-        std::visit([&geometry1](auto const& concrete)
+        traits::visit<Geometry2>::apply([&](auto const& source)
         {
-            assign<Geometry1, std::decay_t<decltype(concrete)>>::apply(
-                geometry1, concrete);
+            resolve_dynamic::assign(geometry1, source);
         }, geometry2);
     }
-};
-
-
-template <typename ...Ts1, typename ...Ts2>
-struct assign<std::variant<Ts1...>, std::variant<Ts2...>>
-{
-    static inline void
-    apply(std::variant<Ts1...>& geometry1,
-          std::variant<Ts2...> const& geometry2)
+    else
     {
-        std::visit([](auto& concrete1, auto const& concrete2)
-        {
-            assign
-                <
-                    std::decay_t<decltype(concrete1)>,
-                    std::decay_t<decltype(concrete2)>
-                >::apply(concrete1, concrete2);
-        }, geometry1, geometry2);
+        concepts::check_concepts_and_equal_dimensions
+            <Geometry1, Geometry2 const>();
+        static_assert(point_order<Geometry1>::value
+                          == point_order<Geometry2>::value,
+                      "Assign is not supported for different point orders.");
+        static_assert(closure<Geometry1>::value == closure<Geometry2>::value,
+                      "Assign is not supported for different closures.");
+        dispatch::convert<Geometry2, Geometry1>::apply(geometry2, geometry1);
     }
-};
+}
 
-} // namespace resolve_variant
+} // namespace resolve_dynamic
 
 
 /*!
@@ -312,10 +260,11 @@ geometry, e.g. a RING. This only works if it is possible and applicable.
 \* [link geometry.reference.algorithms.convert convert]
 }
  */
-template <typename Geometry1, typename Geometry2>
+template <concepts::MutableGeometry Geometry1,
+          concepts::ConstGeometry Geometry2>
 inline void assign(Geometry1& geometry1, Geometry2 const& geometry2)
 {
-    resolve_variant::assign<Geometry1, Geometry2>::apply(geometry1, geometry2);
+    resolve_dynamic::assign(geometry1, geometry2);
 }
 
 

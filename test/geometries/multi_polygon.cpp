@@ -104,8 +104,8 @@ void test_concept()
 {
     typedef bg::model::multi_polygon<PL> MPL;
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstMultiPolygon<MPL>) );
-    BOOST_CONCEPT_ASSERT( (bg::concepts::MultiPolygon<MPL>) );
+    static_assert(bg::concepts::ConstMultiPolygon<MPL>);
+    static_assert(bg::concepts::MultiPolygon<MPL>);
 
     typedef typename bg::coordinate_type<MPL>::type T;
     typedef typename bg::point_type<MPL>::type PMPL;

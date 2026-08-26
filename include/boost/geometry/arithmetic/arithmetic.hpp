@@ -43,7 +43,7 @@ namespace boost { namespace geometry
 template <typename Point>
 inline void add_value(Point& p, coordinate_type_t<Point> const& value)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point>) );
+    static_assert(concepts::Point<Point>);
 
     detail::for_each_dimension<Point>([&](auto index)
     {
@@ -64,8 +64,8 @@ inline void add_value(Point& p, coordinate_type_t<Point> const& value)
 template <typename Point1, typename Point2>
 inline void add_point(Point1& p1, Point2 const& p2)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point1>) );
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<Point2>) );
+    static_assert(concepts::Point<Point1>);
+    static_assert(concepts::ConstPoint<Point2>);
 
     detail::for_each_dimension<Point1>([&](auto index)
     {
@@ -85,7 +85,7 @@ inline void add_point(Point1& p1, Point2 const& p2)
 template <typename Point>
 inline void subtract_value(Point& p, coordinate_type_t<Point> const& value)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point>) );
+    static_assert(concepts::Point<Point>);
 
     detail::for_each_dimension<Point>([&](auto index)
     {
@@ -106,8 +106,8 @@ inline void subtract_value(Point& p, coordinate_type_t<Point> const& value)
 template <typename Point1, typename Point2>
 inline void subtract_point(Point1& p1, Point2 const& p2)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point1>) );
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<Point2>) );
+    static_assert(concepts::Point<Point1>);
+    static_assert(concepts::ConstPoint<Point2>);
 
     detail::for_each_dimension<Point1>([&](auto index)
     {
@@ -127,7 +127,7 @@ inline void subtract_point(Point1& p1, Point2 const& p2)
 template <typename Point>
 inline void multiply_value(Point& p, coordinate_type_t<Point> const& value)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point>) );
+    static_assert(concepts::Point<Point>);
 
     detail::for_each_dimension<Point>([&](auto index)
     {
@@ -149,8 +149,8 @@ inline void multiply_value(Point& p, coordinate_type_t<Point> const& value)
 template <typename Point1, typename Point2>
 inline void multiply_point(Point1& p1, Point2 const& p2)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point1>) );
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<Point2>) );
+    static_assert(concepts::Point<Point1>);
+    static_assert(concepts::ConstPoint<Point2>);
 
     detail::for_each_dimension<Point1>([&](auto index)
     {
@@ -170,7 +170,7 @@ inline void multiply_point(Point1& p1, Point2 const& p2)
 template <typename Point>
 inline void divide_value(Point& p, coordinate_type_t<Point> const& value)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point>) );
+    static_assert(concepts::Point<Point>);
 
     detail::for_each_dimension<Point>([&](auto index)
     {
@@ -191,8 +191,8 @@ inline void divide_value(Point& p, coordinate_type_t<Point> const& value)
 template <typename Point1, typename Point2>
 inline void divide_point(Point1& p1, Point2 const& p2)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point1>) );
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<Point2>) );
+    static_assert(concepts::Point<Point1>);
+    static_assert(concepts::ConstPoint<Point2>);
 
     detail::for_each_dimension<Point1>([&](auto index)
     {
@@ -212,7 +212,7 @@ inline void divide_point(Point1& p1, Point2 const& p2)
 template <typename Point>
 inline void assign_value(Point& p, coordinate_type_t<Point> const& value)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point>) );
+    static_assert(concepts::Point<Point>);
 
     detail::for_each_dimension<Point>([&](auto index)
     {
@@ -233,8 +233,8 @@ inline void assign_value(Point& p, coordinate_type_t<Point> const& value)
 template <typename Point1, typename Point2>
 inline void assign_point(Point1& p1, Point2 const& p2)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point1>) );
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<Point2>) );
+    static_assert(concepts::Point<Point1>);
+    static_assert(concepts::ConstPoint<Point2>);
 
     detail::for_each_dimension<Point1>([&](auto index)
     {

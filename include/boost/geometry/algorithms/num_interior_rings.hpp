@@ -20,95 +20,24 @@
 #define BOOST_GEOMETRY_ALGORITHMS_NUM_INTERIOR_RINGS_HPP
 
 #include <cstddef>
-#include <type_traits>
-#include <variant>
-
 #include <boost/range/size.hpp>
 #include <boost/range/value_type.hpp>
 
 
 #include <boost/geometry/core/tag.hpp>
 #include <boost/geometry/core/tags.hpp>
+#include <boost/geometry/core/visit.hpp>
 
 #include <boost/geometry/core/interior_rings.hpp>
 
 #include <boost/geometry/algorithms/detail/counting.hpp>
+#include <boost/geometry/algorithms/detail/visit.hpp>
 
 #include <boost/geometry/geometries/concepts/check.hpp>
 
 
 namespace boost { namespace geometry
 {
-
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct num_interior_rings
-    : detail::counting::other_count<0>
-{};
-
-
-
-template <typename Polygon>
-struct num_interior_rings<Polygon, polygon_tag>
-{
-    static inline std::size_t apply(Polygon const& polygon)
-    {
-        return boost::size(geometry::interior_rings(polygon));
-    }
-
-};
-
-
-template <typename MultiPolygon>
-struct num_interior_rings<MultiPolygon, multi_polygon_tag>
-    : detail::counting::multi_count
-        <
-            num_interior_rings
-                <
-                    typename boost::range_value<MultiPolygon const>::type
-                >
-        >
-{};
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
-
-namespace resolve_variant
-{
-
-template <typename Geometry>
-struct num_interior_rings
-{
-    static inline std::size_t apply(Geometry const& geometry)
-    {
-        concepts::check<Geometry const>();
-
-        return dispatch::num_interior_rings<Geometry>::apply(geometry);
-    }
-};
-
-template <typename ...Ts>
-struct num_interior_rings<std::variant<Ts...>>
-{
-    static inline std::size_t
-    apply(std::variant<Ts...> const& geometry)
-    {
-        return std::visit([](auto const& concrete)
-        {
-            return num_interior_rings<std::decay_t<decltype(concrete)>>::apply(
-                concrete);
-        }, geometry);
-    }
-};
-
-} // namespace resolve_variant
-
 
 /*!
 \brief \brief_calc{number of interior rings}
@@ -123,10 +52,45 @@ struct num_interior_rings<std::variant<Ts...>>
 \note Defined by OGC as "numInteriorRing". To be consistent with "numPoints"
     letter "s" is appended
 */
-template <typename Geometry>
+template <concepts::ConstGeometry Geometry>
 inline std::size_t num_interior_rings(Geometry const& geometry)
 {
-    return resolve_variant::num_interior_rings<Geometry>::apply(geometry);
+    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
+    {
+        std::size_t result = 0;
+        traits::visit<Geometry>::apply([&](auto const& g)
+        {
+            result = geometry::num_interior_rings(g);
+        }, geometry);
+        return result;
+    }
+    else if constexpr (concepts::ConstGeometryCollection<Geometry>)
+    {
+        std::size_t result = 0;
+        detail::visit_breadth_first([&](auto const& g)
+        {
+            result += geometry::num_interior_rings(g);
+            return true;
+        }, geometry);
+        return result;
+    }
+    else if constexpr (concepts::ConstPolygon<Geometry>)
+    {
+        return boost::size(geometry::interior_rings(geometry));
+    }
+    else if constexpr (concepts::ConstMultiPolygon<Geometry>)
+    {
+        std::size_t result = 0;
+        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
+        {
+            result += geometry::num_interior_rings(*it);
+        }
+        return result;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 

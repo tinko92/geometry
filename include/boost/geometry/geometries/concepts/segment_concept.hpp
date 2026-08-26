@@ -19,8 +19,9 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_SEGMENT_CONCEPT_HPP
 
 
-#include <boost/concept_check.hpp>
-#include <boost/core/ignore_unused.hpp>
+#include <concepts>
+#include <type_traits>
+#include <utility>
 
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/point_type.hpp>
@@ -33,100 +34,35 @@ namespace boost { namespace geometry { namespace concepts
 {
 
 template <typename Geometry>
-class Segment
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    using point_type = point_type_t<Geometry>;
-
-    BOOST_CONCEPT_ASSERT( (concepts::Point<point_type>) );
-
-
-    template <size_t Index, size_t Dimension, size_t DimensionCount>
-    struct dimension_checker
-    {
-        static void apply()
-        {
-            Geometry* s = 0;
-            geometry::set<Index, Dimension>(*s, geometry::get<Index, Dimension>(*s));
-            dimension_checker<Index, Dimension + 1, DimensionCount>::apply();
-        }
-    };
-
-    template <size_t Index, size_t DimensionCount>
-    struct dimension_checker<Index, DimensionCount, DimensionCount>
-    {
-        static void apply() {}
-    };
-
-public :
-
-    BOOST_CONCEPT_USAGE(Segment)
-    {
-        static const size_t n = dimension<point_type>::type::value;
-        dimension_checker<0, 0, n>::apply();
-        dimension_checker<1, 0, n>::apply();
-    }
-#endif
-};
+concept ConstSegment =
+    std::same_as<tag_t<geometry_type_t<Geometry>>, segment_tag>
+    && ConstPoint<point_type_t<geometry_type_t<Geometry>>>
+    && detail::const_indexed_coordinates<geometry_type_t<Geometry>, 0>(
+        std::make_index_sequence<dimension<point_type_t<geometry_type_t<Geometry>>>::value>{})
+    && detail::const_indexed_coordinates<geometry_type_t<Geometry>, 1>(
+        std::make_index_sequence<dimension<point_type_t<geometry_type_t<Geometry>>>::value>{});
 
 
-/*!
-\brief Segment concept (const version).
-\ingroup const_concepts
-\details The ConstSegment concept verifies the same as the Segment concept,
-but does not verify write access.
-*/
 template <typename Geometry>
-class ConstSegment
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    using point_type = point_type_t<Geometry>;
-    using coordinate_type = coordinate_type_t<Geometry>;
-
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<point_type>) );
-
-
-    template <size_t Index, size_t Dimension, size_t DimensionCount>
-    struct dimension_checker
-    {
-        static void apply()
-        {
-            const Geometry* s = 0;
-            coordinate_type coord(geometry::get<Index, Dimension>(*s));
-            boost::ignore_unused(coord);
-            dimension_checker<Index, Dimension + 1, DimensionCount>::apply();
-        }
-    };
-
-    template <size_t Index, size_t DimensionCount>
-    struct dimension_checker<Index, DimensionCount, DimensionCount>
-    {
-        static void apply() {}
-    };
-
-public :
-
-    BOOST_CONCEPT_USAGE(ConstSegment)
-    {
-        static const size_t n = dimension<point_type>::type::value;
-        dimension_checker<0, 0, n>::apply();
-        dimension_checker<1, 0, n>::apply();
-    }
-#endif
-};
+concept Segment =
+    ! std::is_const_v<std::remove_reference_t<Geometry>>
+    && ConstSegment<Geometry>
+    && Point<point_type_t<geometry_type_t<Geometry>>>
+    && detail::mutable_indexed_coordinates<geometry_type_t<Geometry>, 0>(
+        std::make_index_sequence<dimension<point_type_t<geometry_type_t<Geometry>>>::value>{})
+    && detail::mutable_indexed_coordinates<geometry_type_t<Geometry>, 1>(
+        std::make_index_sequence<dimension<point_type_t<geometry_type_t<Geometry>>>::value>{});
 
 
 template <typename Geometry>
 struct concept_type<Geometry, segment_tag>
-{
-    using type = Segment<Geometry>;
-};
+    : std::bool_constant<Segment<Geometry>>
+{};
 
 template <typename Geometry>
 struct concept_type<Geometry const, segment_tag>
-{
-    using type = ConstSegment<Geometry>;
-};
+    : std::bool_constant<ConstSegment<Geometry>>
+{};
 
 
 }}} // namespace boost::geometry::concepts

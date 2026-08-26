@@ -286,13 +286,12 @@ inline bool calculate_point_on_surface(Geometry const& geometry, Point& point,
 \param point Point to assign
 \param strategy side strategy
  */
-template <typename Geometry, typename Point, typename SideStrategy>
+template <concepts::ConstGeometry Geometry,
+          concepts::Point Point,
+          typename SideStrategy>
 inline void point_on_surface(Geometry const& geometry, Point & point,
                              SideStrategy const& strategy)
 {
-    concepts::check<Point>();
-    concepts::check<Geometry const>();
-
     // First try in Y-direction (which should always succeed for valid polygons)
     if (! detail::point_on_surface::calculate_point_on_surface<1>(geometry, point, strategy))
     {
@@ -307,7 +306,7 @@ inline void point_on_surface(Geometry const& geometry, Point & point,
 \param geometry Geometry to take point from
 \param point Point to assign
  */
-template <typename Geometry, typename Point>
+template <concepts::ConstGeometry Geometry, concepts::Point Point>
 inline void point_on_surface(Geometry const& geometry, Point & point)
 {
     using strategy_type = typename strategy::side::services::default_strategy
@@ -326,7 +325,8 @@ inline void point_on_surface(Geometry const& geometry, Point & point)
 \param strategy side strategy
 \return The Point guaranteed to lie on the surface of the Geometry
  */
-template<typename Geometry, typename SideStrategy>
+template <concepts::ConstGeometry Geometry, typename SideStrategy>
+    requires concepts::Point<point_type_t<Geometry>>
 inline geometry::point_type_t<Geometry>
 return_point_on_surface(Geometry const& geometry, SideStrategy const& strategy)
 {
@@ -341,7 +341,8 @@ return_point_on_surface(Geometry const& geometry, SideStrategy const& strategy)
 \param geometry Geometry to take point from
 \return The Point guaranteed to lie on the surface of the Geometry
  */
-template<typename Geometry>
+template <concepts::ConstGeometry Geometry>
+    requires concepts::Point<point_type_t<Geometry>>
 inline geometry::point_type_t<Geometry>
 return_point_on_surface(Geometry const& geometry)
 {

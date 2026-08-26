@@ -20,14 +20,12 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_RING_CONCEPT_HPP
 
 
-#include <boost/concept_check.hpp>
-#include <boost/range/concepts.hpp>
-
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/mutable_range.hpp>
 #include <boost/geometry/core/point_type.hpp>
 
 #include <boost/geometry/geometries/concepts/concept_type.hpp>
+#include <boost/geometry/geometries/concepts/detail/mutable_range.hpp>
 #include <boost/geometry/geometries/concepts/point_concept.hpp>
 
 
@@ -35,64 +33,30 @@ namespace boost { namespace geometry { namespace concepts
 {
 
 template <typename Geometry>
-class Ring
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    using point_type = point_type_t<Geometry>;
-
-    BOOST_CONCEPT_ASSERT( (concepts::Point<point_type>) );
-    BOOST_CONCEPT_ASSERT( (boost::RandomAccessRangeConcept<Geometry>) );
-
-public :
-
-    BOOST_CONCEPT_USAGE(Ring)
-    {
-        Geometry* ring = 0;
-        traits::clear<Geometry>::apply(*ring);
-        traits::resize<Geometry>::apply(*ring, 0);
-        point_type* point = 0;
-        traits::push_back<Geometry>::apply(*ring, *point);
-    }
-#endif
-};
+concept ConstRing =
+    std::same_as<tag_t<geometry_type_t<Geometry>>, ring_tag>
+    && detail::ConstRandomAccessRange<geometry_type_t<Geometry>>
+    && ConstPoint<point_type_t<geometry_type_t<Geometry>>>;
 
 
-/*!
-\brief (linear) ring concept (const version)
-\ingroup const_concepts
-\details The ConstLinearRing concept check the same as the Geometry concept,
-but does not check write access.
-*/
 template <typename Geometry>
-class ConstRing
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    using point_type = point_type_t<Geometry>;
-
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<point_type>) );
-    BOOST_CONCEPT_ASSERT( (boost::RandomAccessRangeConcept<Geometry>) );
-
-
-public :
-
-    BOOST_CONCEPT_USAGE(ConstRing)
-    {
-    }
-#endif
-};
+concept Ring =
+    ! std::is_const_v<std::remove_reference_t<Geometry>>
+    && ConstRing<Geometry>
+    && Point<point_type_t<geometry_type_t<Geometry>>>
+    && detail::MutableRange<geometry_type_t<Geometry>,
+                            point_type_t<geometry_type_t<Geometry>>>;
 
 
 template <typename Geometry>
 struct concept_type<Geometry, ring_tag>
-{
-    using type = Ring<Geometry>;
-};
+    : std::bool_constant<Ring<Geometry>>
+{};
 
 template <typename Geometry>
 struct concept_type<Geometry const, ring_tag>
-{
-    using type = ConstRing<Geometry>;
-};
+    : std::bool_constant<ConstRing<Geometry>>
+{};
 
 
 }}} // namespace boost::geometry::concepts

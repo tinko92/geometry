@@ -21,6 +21,7 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_FOR_EACH_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_FOR_EACH_HPP
 
+#include <type_traits>
 
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
@@ -366,194 +367,142 @@ struct for_each_multi
 namespace dispatch
 {
 
-template
-<
-    typename Geometry,
-    typename Tag = tag_cast_t<tag_t<Geometry>, multi_tag>
->
-struct for_each_point: not_implemented<Tag>
-{};
+template <concepts::GeometryType Geometry, typename Functor>
+inline bool for_each_point(Geometry& geometry, Functor&& functor)
+{
+    using geometry_type = std::remove_cv_t<Geometry>;
 
+    if constexpr (concepts::ConstPoint<geometry_type>)
+    {
+        return detail::for_each::fe_point_point::apply(
+            geometry, std::forward<Functor>(functor));
+    }
+    else if constexpr (concepts::ConstSegment<geometry_type>)
+    {
+        return detail::for_each::fe_point_segment::apply(
+            geometry, std::forward<Functor>(functor));
+    }
+    else if constexpr (concepts::ConstLinestring<geometry_type>
+                       || concepts::ConstRing<geometry_type>)
+    {
+        return detail::for_each::fe_point_range::apply(
+            geometry, std::forward<Functor>(functor));
+    }
+    else if constexpr (concepts::ConstPolygon<geometry_type>)
+    {
+        return detail::for_each::for_each_polygon
+            <detail::for_each::fe_point_range>::apply(
+                geometry, std::forward<Functor>(functor));
+    }
+    else
+    {
+        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
+        {
+            if (! dispatch::for_each_point(*it, functor))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+}
 
-template <typename Point>
-struct for_each_point<Point, point_tag>
-    : detail::for_each::fe_point_point
-{};
+template <concepts::GeometryType Geometry, typename Functor>
+inline bool for_each_segment(Geometry& geometry, Functor&& functor)
+{
+    using geometry_type = std::remove_cv_t<Geometry>;
 
-
-template <typename Segment>
-struct for_each_point<Segment, segment_tag>
-    : detail::for_each::fe_point_segment
-{};
-
-
-template <typename Linestring>
-struct for_each_point<Linestring, linestring_tag>
-    : detail::for_each::fe_point_range
-{};
-
-
-template <typename Ring>
-struct for_each_point<Ring, ring_tag>
-    : detail::for_each::fe_point_range
-{};
-
-
-template <typename Polygon>
-struct for_each_point<Polygon, polygon_tag>
-    : detail::for_each::for_each_polygon
-        <
-            detail::for_each::fe_point_range
-        >
-{};
-
-
-template <typename MultiGeometry>
-struct for_each_point<MultiGeometry, multi_tag>
-    : detail::for_each::for_each_multi
-        <
-            // Specify the dispatch of the single-version as policy
-            for_each_point
-                <
-                    typename detail::for_each::fe_range_value
-                        <
-                            MultiGeometry
-                        >::type
-                >
-        >
-{};
-
-
-template
-<
-    typename Geometry,
-    typename Tag = tag_t<Geometry>
->
-struct for_each_segment: not_implemented<Tag>
-{};
-
-template <typename Point>
-struct for_each_segment<Point, point_tag>
-    : detail::for_each::fe_segment_point // empty
-{};
-
-
-template <typename Segment>
-struct for_each_segment<Segment, segment_tag>
-    : detail::for_each::fe_segment_segment
-{};
-
-
-template <typename Linestring>
-struct for_each_segment<Linestring, linestring_tag>
-    : detail::for_each::fe_segment_range
-{};
-
-
-template <typename Ring>
-struct for_each_segment<Ring, ring_tag>
-    : detail::for_each::fe_segment_range
-{};
-
-
-template <typename Polygon>
-struct for_each_segment<Polygon, polygon_tag>
-    : detail::for_each::for_each_polygon
-        <
-            detail::for_each::fe_segment_range
-        >
-{};
-
-
-template <typename MultiPoint>
-struct for_each_segment<MultiPoint, multi_point_tag>
-    : detail::for_each::fe_segment_point // empty
-{};
-
-
-template <typename MultiLinestring>
-struct for_each_segment<MultiLinestring, multi_linestring_tag>
-    : detail::for_each::for_each_multi
-        <
-            detail::for_each::fe_segment_range
-        >
-{};
-
-template <typename MultiPolygon>
-struct for_each_segment<MultiPolygon, multi_polygon_tag>
-    : detail::for_each::for_each_multi
-        <
-            detail::for_each::for_each_polygon
-                <
-                    detail::for_each::fe_segment_range
-                >
-        >
-{};
+    if constexpr (concepts::ConstPoint<geometry_type>
+                  || concepts::ConstMultiPoint<geometry_type>)
+    {
+        return detail::for_each::fe_segment_point::apply(
+            geometry, std::forward<Functor>(functor));
+    }
+    else if constexpr (concepts::ConstSegment<geometry_type>)
+    {
+        return detail::for_each::fe_segment_segment::apply(
+            geometry, std::forward<Functor>(functor));
+    }
+    else if constexpr (concepts::ConstLinestring<geometry_type>
+                       || concepts::ConstRing<geometry_type>)
+    {
+        return detail::for_each::fe_segment_range::apply(
+            geometry, std::forward<Functor>(functor));
+    }
+    else if constexpr (concepts::ConstPolygon<geometry_type>)
+    {
+        return detail::for_each::for_each_polygon
+            <detail::for_each::fe_segment_range>::apply(
+                geometry, std::forward<Functor>(functor));
+    }
+    else if constexpr (concepts::ConstMultiLinestring<geometry_type>)
+    {
+        return detail::for_each::for_each_multi
+            <detail::for_each::fe_segment_range>::apply(
+                geometry, std::forward<Functor>(functor));
+    }
+    else
+    {
+        return detail::for_each::for_each_multi
+            <
+                detail::for_each::for_each_polygon
+                    <detail::for_each::fe_segment_range>
+            >::apply(geometry, std::forward<Functor>(functor));
+    }
+}
 
 
 } // namespace dispatch
 #endif // DOXYGEN_NO_DISPATCH
 
 
-template<typename Geometry, typename UnaryPredicate>
+template <concepts::ConstGeometry Geometry, typename UnaryPredicate>
 inline bool all_points_of(Geometry& geometry, UnaryPredicate p)
 {
-    concepts::check<Geometry>();
-
-    return dispatch::for_each_point<Geometry>::apply(geometry, p);
+    return dispatch::for_each_point(geometry, p);
 }
 
 
-template<typename Geometry, typename UnaryPredicate>
+template <concepts::ConstGeometry Geometry, typename UnaryPredicate>
 inline bool all_segments_of(Geometry const& geometry, UnaryPredicate p)
 {
-    concepts::check<Geometry const>();
-
-    return dispatch::for_each_segment<Geometry const>::apply(geometry, p);
+    return dispatch::for_each_segment(geometry, p);
 }
 
 
-template<typename Geometry, typename UnaryPredicate>
+template <concepts::ConstGeometry Geometry, typename UnaryPredicate>
 inline bool any_point_of(Geometry& geometry, UnaryPredicate p)
 {
-    concepts::check<Geometry>();
-
-    return ! dispatch::for_each_point<Geometry>::apply(geometry, [&](auto&& pt)
+    return ! dispatch::for_each_point(geometry, [&](auto&& pt)
     {
         return ! p(pt);
     });
 }
 
 
-template<typename Geometry, typename UnaryPredicate>
+template <concepts::ConstGeometry Geometry, typename UnaryPredicate>
 inline bool any_segment_of(Geometry const& geometry, UnaryPredicate p)
 {
-    concepts::check<Geometry const>();
-
-    return ! dispatch::for_each_segment<Geometry const>::apply(geometry, [&](auto&& s)
+    return ! dispatch::for_each_segment(geometry, [&](auto&& s)
     {
         return ! p(s);
     });
 }
 
-template<typename Geometry, typename UnaryPredicate>
+template <concepts::ConstGeometry Geometry, typename UnaryPredicate>
 inline bool none_point_of(Geometry& geometry, UnaryPredicate p)
 {
-    concepts::check<Geometry>();
-
-    return dispatch::for_each_point<Geometry>::apply(geometry, [&](auto&& pt)
+    return dispatch::for_each_point(geometry, [&](auto&& pt)
     {
         return ! p(pt);
     });
 }
 
 
-template<typename Geometry, typename UnaryPredicate>
+template <concepts::ConstGeometry Geometry, typename UnaryPredicate>
 inline bool none_segment_of(Geometry const& geometry, UnaryPredicate p)
 {
-    concepts::check<Geometry const>();
-
-    return dispatch::for_each_segment<Geometry const>::apply(geometry, [&](auto&& s)
+    return dispatch::for_each_segment(geometry, [&](auto&& s)
     {
         return ! p(s);
     });
@@ -574,12 +523,10 @@ inline bool none_segment_of(Geometry const& geometry, UnaryPredicate p)
 \qbk{[for_each_point] [for_each_point_output]}
 \qbk{[for_each_point_const] [for_each_point_const_output]}
 */
-template<typename Geometry, typename Functor>
+template <concepts::ConstGeometry Geometry, typename Functor>
 inline Functor for_each_point(Geometry& geometry, Functor f)
 {
-    concepts::check<Geometry>();
-
-    dispatch::for_each_point<Geometry>::apply(geometry, [&](auto&& pt)
+    dispatch::for_each_point(geometry, [&](auto&& pt)
     {
         f(pt);
         // TODO: Implement separate function?
@@ -602,12 +549,10 @@ inline Functor for_each_point(Geometry& geometry, Functor f)
 \qbk{[heading Example]}
 \qbk{[for_each_segment_const] [for_each_segment_const_output]}
 */
-template<typename Geometry, typename Functor>
+template <concepts::ConstGeometry Geometry, typename Functor>
 inline Functor for_each_segment(Geometry& geometry, Functor f)
 {
-    concepts::check<Geometry>();
-
-    dispatch::for_each_segment<Geometry>::apply(geometry, [&](auto&& s)
+    dispatch::for_each_segment(geometry, [&](auto&& s)
     {
         f(s);
         // TODO: Implement separate function?

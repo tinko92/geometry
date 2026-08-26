@@ -108,9 +108,9 @@ struct cross_product<3>
 template <typename ResultP, typename P1, typename P2>
 constexpr inline ResultP cross_product(P1 const& p1, P2 const& p2)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<ResultP>) );
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<P1>) );
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<P2>) );
+    static_assert(concepts::Point<ResultP>);
+    static_assert(concepts::ConstPoint<P1>);
+    static_assert(concepts::ConstPoint<P2>);
 
     if constexpr (dimension<ResultP>::value == 3
                && traits::make<ResultP>::is_specialized)
@@ -139,8 +139,8 @@ constexpr inline ResultP cross_product(P1 const& p1, P2 const& p2)
 template <typename P>
 constexpr inline P cross_product(P const& p1, P const& p2)
 {
-    BOOST_CONCEPT_ASSERT((concepts::Point<P>));
-    BOOST_CONCEPT_ASSERT((concepts::ConstPoint<P>));
+    static_assert(concepts::Point<P>);
+    static_assert(concepts::ConstPoint<P>);
 
     if constexpr (dimension<P>::value == 3
                && traits::make<P>::is_specialized)

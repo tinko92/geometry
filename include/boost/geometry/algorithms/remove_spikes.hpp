@@ -18,7 +18,6 @@
 #define BOOST_GEOMETRY_ALGORITHMS_REMOVE_SPIKES_HPP
 
 #include <type_traits>
-#include <variant>
 
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
@@ -28,10 +27,12 @@
 #include <boost/geometry/core/cs.hpp>
 #include <boost/geometry/core/interior_rings.hpp>
 #include <boost/geometry/core/tags.hpp>
+#include <boost/geometry/core/visit.hpp>
 
 #include <boost/geometry/geometries/concepts/check.hpp>
 
 #include <boost/geometry/algorithms/detail/point_is_spike_or_equal.hpp>
+#include <boost/geometry/algorithms/detail/visit.hpp>
 #include <boost/geometry/algorithms/clear.hpp>
 
 #include <boost/geometry/strategies/default_strategy.hpp>
@@ -196,87 +197,47 @@ struct multi_remove_spikes
 
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-
-template
-<
-    typename Geometry,
-    typename Tag = tag_t<Geometry>
->
-struct remove_spikes
-{
-    template <typename SideStrategy>
-    static inline void apply(Geometry&, SideStrategy const&)
-    {}
-};
-
-
-template <typename Ring>
-struct remove_spikes<Ring, ring_tag>
-    : detail::remove_spikes::range_remove_spikes
-{};
-
-
-
-template <typename Polygon>
-struct remove_spikes<Polygon, polygon_tag>
-    : detail::remove_spikes::polygon_remove_spikes
-{};
-
-
-template <typename MultiPolygon>
-struct remove_spikes<MultiPolygon, multi_polygon_tag>
-    : detail::remove_spikes::multi_remove_spikes
-        <
-            detail::remove_spikes::polygon_remove_spikes
-        >
-{};
-
-
-} // namespace dispatch
-#endif
-
-
 namespace resolve_variant {
 
-template <typename Geometry>
-struct remove_spikes
+template <concepts::MutableGeometry Geometry, typename Strategy>
+inline void remove_spikes(Geometry& geometry, Strategy const& strategy)
 {
-    template <typename Strategy>
-    static void apply(Geometry& geometry, Strategy const& strategy)
+    if constexpr (concepts::DynamicGeometry<Geometry>)
     {
-        concepts::check<Geometry>();
-        dispatch::remove_spikes<Geometry>::apply(geometry, strategy);
-    }
-
-    static void apply(Geometry& geometry, geometry::default_strategy const&)
-    {
-        using side_strategy = typename strategy::side::services::default_strategy
-            <
-                cs_tag_t<Geometry>
-            >::type;
-
-        apply(geometry, side_strategy());
-    }
-};
-
-template <typename ...Ts>
-struct remove_spikes<std::variant<Ts...>>
-{
-    template <typename Strategy>
-    static inline void apply(std::variant<Ts...>& geometry,
-                             Strategy const& strategy)
-    {
-        std::visit([&strategy](auto& concrete)
+        traits::visit<Geometry>::apply([&](auto& g)
         {
-            remove_spikes<std::decay_t<decltype(concrete)>>::apply(
-                concrete, strategy);
+            resolve_variant::remove_spikes(g, strategy);
         }, geometry);
     }
-};
+    else if constexpr (concepts::GeometryCollection<Geometry>)
+    {
+        detail::visit_breadth_first([&](auto& g)
+        {
+            resolve_variant::remove_spikes(g, strategy);
+            return true;
+        }, geometry);
+    }
+    else if constexpr (std::same_as<Strategy, geometry::default_strategy>)
+    {
+        using side_strategy = typename strategy::side::services::default_strategy
+            <cs_tag_t<Geometry>>::type;
+        resolve_variant::remove_spikes(geometry, side_strategy());
+    }
+    else if constexpr (concepts::Ring<Geometry>)
+    {
+        detail::remove_spikes::range_remove_spikes::apply(geometry, strategy);
+    }
+    else if constexpr (concepts::Polygon<Geometry>)
+    {
+        detail::remove_spikes::polygon_remove_spikes::apply(geometry, strategy);
+    }
+    else if constexpr (concepts::MultiPolygon<Geometry>)
+    {
+        detail::remove_spikes::multi_remove_spikes
+            <detail::remove_spikes::polygon_remove_spikes>::apply(
+                geometry, strategy);
+    }
+}
 
 } // namespace resolve_variant
 
@@ -286,10 +247,10 @@ struct remove_spikes<std::variant<Ts...>>
     \tparam Geometry geometry type
     \param geometry the geometry to make remove_spikes
 */
-template <typename Geometry>
+template <concepts::MutableGeometry Geometry>
 inline void remove_spikes(Geometry& geometry)
 {
-    resolve_variant::remove_spikes<Geometry>::apply(geometry, geometry::default_strategy());
+    resolve_variant::remove_spikes(geometry, geometry::default_strategy());
 }
 
 /*!
@@ -299,10 +260,10 @@ inline void remove_spikes(Geometry& geometry)
     \param geometry the geometry to make remove_spikes
     \param strategy the side strategy used by the algorithm
 */
-template <typename Geometry, typename Strategy>
+template <concepts::MutableGeometry Geometry, typename Strategy>
 inline void remove_spikes(Geometry& geometry, Strategy const& strategy)
 {
-    resolve_variant::remove_spikes<Geometry>::apply(geometry, strategy);
+    resolve_variant::remove_spikes(geometry, strategy);
 }
 
 

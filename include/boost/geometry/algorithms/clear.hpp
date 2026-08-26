@@ -96,90 +96,6 @@ struct no_action
 }} // namespace detail::clear
 #endif // DOXYGEN_NO_DETAIL
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-template
-<
-    typename Geometry,
-    typename Tag = tag_cast_t<tag_t<Geometry>, multi_tag>
->
-struct clear: not_implemented<Tag>
-{};
-
-// Point/box/segment do not have clear. So specialize to do nothing.
-template <typename Geometry>
-struct clear<Geometry, point_tag>
-    : detail::clear::no_action<Geometry>
-{};
-
-template <typename Geometry>
-struct clear<Geometry, box_tag>
-    : detail::clear::no_action<Geometry>
-{};
-
-template <typename Geometry>
-struct clear<Geometry, segment_tag>
-    : detail::clear::no_action<Geometry>
-{};
-
-template <typename Geometry>
-struct clear<Geometry, linestring_tag>
-    : detail::clear::collection_clear<Geometry>
-{};
-
-template <typename Geometry>
-struct clear<Geometry, ring_tag>
-    : detail::clear::collection_clear<Geometry>
-{};
-
-// Clear for Polyhedral surface
-template <typename Geometry>
-struct clear<Geometry, polyhedral_surface_tag>
-    : detail::clear::polyhedral_surface_clear<Geometry>
-{};
-
-// Polygon can (indirectly) use std for clear
-template <typename Polygon>
-struct clear<Polygon, polygon_tag>
-    : detail::clear::polygon_clear<Polygon>
-{};
-
-
-template <typename Geometry>
-struct clear<Geometry, multi_tag>
-    : detail::clear::collection_clear<Geometry>
-{};
-
-
-template <typename Geometry>
-struct clear<Geometry, dynamic_geometry_tag>
-{
-    static void apply(Geometry& geometry)
-    {
-        traits::visit<Geometry>::apply([](auto & g)
-        {
-            clear<std::remove_reference_t<decltype(g)>>::apply(g);
-        }, geometry);
-    }
-};
-
-
-template <typename Geometry>
-struct clear<Geometry, geometry_collection_tag>
-{
-    static void apply(Geometry& geometry)
-    {
-        traits::clear<Geometry>::apply(geometry);
-    }
-};
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
-
 /*!
 \brief Clears a linestring, ring or polygon (exterior+interiors) or multi*
 \details Generic function to clear a geometry. All points will be removed from the collection or collections
@@ -193,12 +109,30 @@ struct clear<Geometry, geometry_collection_tag>
 
 \qbk{[include reference/algorithms/clear.qbk]}
 */
-template <typename Geometry>
+template <concepts::MutableGeometry Geometry>
 inline void clear(Geometry& geometry)
 {
-    concepts::check<Geometry>();
-
-    dispatch::clear<Geometry>::apply(geometry);
+    if constexpr (concepts::DynamicGeometry<Geometry>)
+    {
+        traits::visit<Geometry>::apply([](auto& g)
+        {
+            geometry::clear(g);
+        }, geometry);
+    }
+    else if constexpr (concepts::Polygon<Geometry>)
+    {
+        detail::clear::polygon_clear<Geometry>::apply(geometry);
+    }
+    else if constexpr (concepts::Linestring<Geometry>
+                    || concepts::Ring<Geometry>
+                    || concepts::MultiPoint<Geometry>
+                    || concepts::MultiLinestring<Geometry>
+                    || concepts::MultiPolygon<Geometry>
+                    || concepts::PolyhedralSurface<Geometry>
+                    || concepts::GeometryCollection<Geometry>)
+    {
+        traits::clear<Geometry>::apply(geometry);
+    }
 }
 
 

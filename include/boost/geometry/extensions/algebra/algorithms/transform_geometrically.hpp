@@ -73,7 +73,7 @@ struct transform_geometrically
 template <typename Point, typename Vector>
 struct transform_geometrically<Point, Vector, point_tag, vector_tag>
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point>) );
+    static_assert(concepts::Point<Point>);
     BOOST_CONCEPT_ASSERT( (concepts::Vector<Vector>) );
 
     static inline void apply(Point & point, Vector const& vector)
@@ -105,7 +105,7 @@ struct transform_geometrically<Box, Vector, box_tag, vector_tag>
 {
     typedef typename traits::point_type<Box>::type point_type;
 
-    BOOST_CONCEPT_ASSERT( (concepts::Point<point_type>) );
+    static_assert(concepts::Point<point_type>);
     BOOST_CONCEPT_ASSERT( (concepts::Vector<Vector>) );
 
     static inline void apply(Box & box, Vector const& vector)

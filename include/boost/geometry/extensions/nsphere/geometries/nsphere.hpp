@@ -48,7 +48,7 @@ namespace model
 template <typename P, typename T>
 class nsphere
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<P>) );
+    static_assert(concepts::Point<P>);
 
 public:
 

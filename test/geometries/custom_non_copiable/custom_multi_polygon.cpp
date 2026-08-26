@@ -35,7 +35,7 @@ void test_const()
 
     boost::ignore_unused<point_t>();
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstMultiPolygon<multi_t>) );
+    static_assert(bg::concepts::ConstMultiPolygon<multi_t>);
 
     multi_t geo;
     geo.custom_resize(1);
@@ -111,7 +111,7 @@ void test_mutable()
 
     boost::ignore_unused<point_t>();
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::MultiPolygon<multi_t>) );
+    static_assert(bg::concepts::MultiPolygon<multi_t>);
 
     multi_t geo;
     // TODO: support WKT reading for multi-polygons with non-copyable rings

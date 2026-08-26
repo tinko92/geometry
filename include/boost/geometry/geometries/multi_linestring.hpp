@@ -54,7 +54,7 @@ template
 >
 class multi_linestring : public Container<LineString, Allocator<LineString> >
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Linestring<LineString>) );
+    static_assert(concepts::Linestring<LineString>);
 
     // default constructor and base_type definitions are required only
     // if the constructor taking std::initializer_list is defined

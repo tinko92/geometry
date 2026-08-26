@@ -125,7 +125,7 @@ struct veshape_point
     }
 
     private:
-        BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<P>) );
+        static_assert(concepts::ConstPoint<P>);
 };
 
 /*!
@@ -156,7 +156,7 @@ struct veshape_range
 
     private:
         typedef typename boost::range_value<R>::type point;
-        BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<point>) );
+        static_assert(concepts::ConstPoint<point>);
 };
 
 
@@ -184,7 +184,7 @@ struct veshape_poly
     }
 
     private:
-        BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<typename point_type<P>::type>) );
+        static_assert(concepts::ConstPoint<typename point_type<P>::type>);
 };
 
 

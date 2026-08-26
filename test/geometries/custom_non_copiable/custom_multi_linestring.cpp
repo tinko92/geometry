@@ -33,7 +33,7 @@ void test_const()
 
     boost::ignore_unused<point_t>();
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstMultiLinestring<multi_t>) );
+    static_assert(bg::concepts::ConstMultiLinestring<multi_t>);
 
     multi_t geo;
     geo.custom_resize(2);
@@ -108,7 +108,7 @@ void test_mutable()
 
     boost::ignore_unused<point_t>();
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::MultiLinestring<multi_t>) );
+    static_assert(bg::concepts::MultiLinestring<multi_t>);
 
     multi_t geo;
     bg::read_wkt("MULTILINESTRING((0 0, 5 5, 7 3, 9 5, 10 10),(0 10, 2 8, 4 9))", geo);

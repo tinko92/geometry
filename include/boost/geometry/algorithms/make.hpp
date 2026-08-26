@@ -48,11 +48,9 @@ namespace detail { namespace make
 \* [link geometry.reference.algorithms.assign.assign_points assign]
 }
  */
-template <typename Geometry, typename Range>
+template <concepts::MutableGeometry Geometry, typename Range>
 inline Geometry make_points(Range const& range)
 {
-    concepts::check<Geometry>();
-
     Geometry geometry;
     geometry::append(geometry, range);
     return geometry;
@@ -81,40 +79,21 @@ inline Geometry make_points(Range const& range)
 \* [link geometry.reference.algorithms.assign.assign_values_3_2_coordinate_values assign]
 }
 */
-template
-<
-    typename Geometry,
-    typename Type,
-    std::enable_if_t<! traits::make<Geometry>::is_specialized, int> = 0
->
-inline Geometry make(Type const& c1, Type const& c2)
-{
-    concepts::check<Geometry>();
-
-    Geometry geometry;
-    dispatch::assign
-        <
-            tag_t<Geometry>,
-            Geometry,
-            geometry::dimension<Geometry>::type::value
-        >::apply(geometry, c1, c2);
-    return geometry;
-}
-
-
-template
-<
-    typename Geometry,
-    typename Type,
-    std::enable_if_t<traits::make<Geometry>::is_specialized, int> = 0
->
+template <concepts::MutableGeometry Geometry, typename Type>
 constexpr inline Geometry make(Type const& c1, Type const& c2)
 {
-    concepts::check<Geometry>();
-
-    // NOTE: This is not fully equivalent to the above because assign uses
-    //       numeric_cast which can't be used here since it's not constexpr.
-    return traits::make<Geometry>::apply(c1, c2);
+    if constexpr (traits::make<Geometry>::is_specialized)
+    {
+        return traits::make<Geometry>::apply(c1, c2);
+    }
+    else
+    {
+        Geometry geometry;
+        dispatch::assign
+            <tag_t<Geometry>, Geometry, dimension<Geometry>::value>
+            ::apply(geometry, c1, c2);
+        return geometry;
+    }
 }
 
 
@@ -137,47 +116,27 @@ constexpr inline Geometry make(Type const& c1, Type const& c2)
 \* [link geometry.reference.algorithms.assign.assign_values_4_3_coordinate_values assign]
 }
  */
-template
-<
-    typename Geometry,
-    typename Type,
-    std::enable_if_t<! traits::make<Geometry>::is_specialized, int> = 0
->
-inline Geometry make(Type const& c1, Type const& c2, Type const& c3)
-{
-    concepts::check<Geometry>();
-
-    Geometry geometry;
-    dispatch::assign
-        <
-            tag_t<Geometry>,
-            Geometry,
-            geometry::dimension<Geometry>::type::value
-        >::apply(geometry, c1, c2, c3);
-    return geometry;
-}
-
-template
-<
-    typename Geometry,
-    typename Type,
-    std::enable_if_t<traits::make<Geometry>::is_specialized, int> = 0
->
+template <concepts::MutableGeometry Geometry, typename Type>
 constexpr inline Geometry make(Type const& c1, Type const& c2, Type const& c3)
 {
-    concepts::check<Geometry>();
-
-    // NOTE: This is not fully equivalent to the above because assign uses
-    //       numeric_cast which can't be used here since it's not constexpr.
-    return traits::make<Geometry>::apply(c1, c2, c3);
+    if constexpr (traits::make<Geometry>::is_specialized)
+    {
+        return traits::make<Geometry>::apply(c1, c2, c3);
+    }
+    else
+    {
+        Geometry geometry;
+        dispatch::assign
+            <tag_t<Geometry>, Geometry, dimension<Geometry>::value>
+            ::apply(geometry, c1, c2, c3);
+        return geometry;
+    }
 }
 
 
-template <typename Geometry, typename Type>
+template <concepts::MutableGeometry Geometry, typename Type>
 inline Geometry make(Type const& c1, Type const& c2, Type const& c3, Type const& c4)
 {
-    concepts::check<Geometry>();
-
     Geometry geometry;
     dispatch::assign
         <
@@ -209,11 +168,9 @@ inline Geometry make(Type const& c1, Type const& c2, Type const& c3, Type const&
 \* [link geometry.reference.algorithms.assign.assign_inverse assign_inverse]
 }
  */
-template <typename Geometry>
+template <concepts::MutableGeometry Geometry>
 inline Geometry make_inverse()
 {
-    concepts::check<Geometry>();
-
     Geometry geometry;
     dispatch::assign_inverse
         <
@@ -230,11 +187,9 @@ inline Geometry make_inverse()
 \tparam Geometry \tparam_geometry
 \return The constructed and zero-initialized geometry
  */
-template <typename Geometry>
+template <concepts::MutableGeometry Geometry>
 inline Geometry make_zero()
 {
-    concepts::check<Geometry>();
-
     Geometry geometry;
     dispatch::assign_zero
         <

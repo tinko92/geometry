@@ -11,7 +11,8 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_CONCEPT_TYPE_HPP
 
 
-#include <boost/geometry/core/static_assert.hpp>
+#include <type_traits>
+
 #include <boost/geometry/core/tag.hpp>
 
 
@@ -19,10 +20,24 @@ namespace boost { namespace geometry { namespace concepts
 {
 
 template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct concept_type
-{
-    BOOST_GEOMETRY_STATIC_ASSERT_FALSE("Not implemented for this Tag.", Tag);
-};
+struct concept_type : std::false_type
+{};
+
+template <typename Geometry>
+using geometry_type_t = std::remove_cvref_t<Geometry>;
+
+
+template <typename Geometry>
+concept GeometryType = concept_type<std::remove_reference_t<Geometry>>::value;
+
+template <typename Geometry>
+concept ConstGeometry = concept_type
+    <geometry_type_t<Geometry> const>::value;
+
+template <typename Geometry>
+concept MutableGeometry =
+    ! std::is_const_v<std::remove_reference_t<Geometry>>
+    && concept_type<geometry_type_t<Geometry>>::value;
 
 
 }}} // namespace boost::geometry::concepts

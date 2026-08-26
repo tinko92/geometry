@@ -44,29 +44,14 @@ namespace dispatch
 {
 
 
-template
-<
-    typename Geometry1,
-    typename Geometry2,
-    typename Tag1 = tag_t<Geometry1>,
-    typename Tag2 = tag_t<Geometry2>
->
-struct crosses
-    : detail::relate::relate_impl
-        <
-            detail::de9im::static_mask_crosses_type,
-            Geometry1,
-            Geometry2
-        >
-{};
-
-
-template <typename Geometry1, typename Geometry2>
-struct crosses<Geometry1, Geometry2, geometry_collection_tag, geometry_collection_tag>
+template <concepts::ConstGeometry Geometry1,
+          concepts::ConstGeometry Geometry2,
+          typename Strategy>
+inline bool crosses(Geometry1 const& geometry1, Geometry2 const& geometry2,
+                    Strategy const& strategy)
 {
-    template <typename Strategy>
-    static inline bool apply(Geometry1 const& geometry1, Geometry2 const& geometry2,
-                             Strategy const& strategy)
+    if constexpr (concepts::ConstGeometryCollection<Geometry1>
+                  && concepts::ConstGeometryCollection<Geometry2>)
     {
         int const dimension1 = detail::gc_topological_dimension(geometry1);
         int const dimension2 = detail::gc_topological_dimension(geometry2);
@@ -104,37 +89,28 @@ struct crosses<Geometry1, Geometry2, geometry_collection_tag, geometry_collectio
 
         return false;
     }
-};
-
-template <typename Geometry1, typename Geometry2, typename Tag1>
-struct crosses<Geometry1, Geometry2, Tag1, geometry_collection_tag>
-{
-    template <typename Strategy>
-    static inline bool apply(Geometry1 const& geometry1, Geometry2 const& geometry2,
-                             Strategy const& strategy)
+    else if constexpr (concepts::ConstGeometryCollection<Geometry2>)
     {
-        using gc1_view_t = detail::geometry_collection_view<Geometry1>;
-        return crosses
-            <
-                gc1_view_t, Geometry2
-            >::apply(gc1_view_t(geometry1), geometry2, strategy);
+        using view_type = detail::geometry_collection_view<Geometry1>;
+        return dispatch::crosses(
+            view_type(geometry1), geometry2, strategy);
     }
-};
-
-template <typename Geometry1, typename Geometry2, typename Tag2>
-struct crosses<Geometry1, Geometry2, geometry_collection_tag, Tag2>
-{
-    template <typename Strategy>
-    static inline bool apply(Geometry1 const& geometry1, Geometry2 const& geometry2,
-                             Strategy const& strategy)
+    else if constexpr (concepts::ConstGeometryCollection<Geometry1>)
     {
-        using gc2_view_t = detail::geometry_collection_view<Geometry2>;
-        return crosses
-            <
-                Geometry1, gc2_view_t
-            >::apply(geometry1, gc2_view_t(geometry2), strategy);
+        using view_type = detail::geometry_collection_view<Geometry2>;
+        return dispatch::crosses(
+            geometry1, view_type(geometry2), strategy);
     }
-};
+    else
+    {
+        return detail::relate::relate_impl
+            <
+                detail::de9im::static_mask_crosses_type,
+                Geometry1,
+                Geometry2
+            >::apply(geometry1, geometry2, strategy);
+    }
+}
 
 
 } // namespace dispatch
@@ -144,67 +120,31 @@ struct crosses<Geometry1, Geometry2, geometry_collection_tag, Tag2>
 namespace resolve_strategy
 {
 
-template
-<
-    typename Strategy,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategy>::value
->
-struct crosses
+template <concepts::ConstGeometry Geometry1,
+          concepts::ConstGeometry Geometry2,
+          typename Strategy>
+inline bool crosses(Geometry1 const& geometry1,
+                    Geometry2 const& geometry2,
+                    Strategy const& strategy)
 {
-    template <typename Geometry1, typename Geometry2>
-    static inline bool apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Strategy const& strategy)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
-        concepts::check<Geometry1 const>();
-        concepts::check<Geometry2 const>();
-
-        return dispatch::crosses
-            <
-                Geometry1, Geometry2
-            >::apply(geometry1, geometry2, strategy);
+        using strategy_type = typename strategies::relate::services
+            ::default_strategy<Geometry1, Geometry2>::type;
+        return dispatch::crosses(
+            geometry1, geometry2, strategy_type());
     }
-};
-
-template <typename Strategy>
-struct crosses<Strategy, false>
-{
-    template <typename Geometry1, typename Geometry2>
-    static inline bool apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Strategy const& strategy)
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
     {
-        //using strategies::crosses::services::strategy_converter;
+        return dispatch::crosses(geometry1, geometry2, strategy);
+    }
+    else
+    {
         using strategies::relate::services::strategy_converter;
-        return crosses
-            <
-                decltype(strategy_converter<Strategy>::get(strategy))
-            >::apply(geometry1, geometry2,
-                     strategy_converter<Strategy>::get(strategy));
+        auto const converted = strategy_converter<Strategy>::get(strategy);
+        return dispatch::crosses(geometry1, geometry2, converted);
     }
-};
-
-template <>
-struct crosses<default_strategy, false>
-{
-    template <typename Geometry1, typename Geometry2>
-    static inline bool apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             default_strategy)
-    {
-        //typedef typename strategies::crosses::services::default_strategy
-        typedef typename strategies::relate::services::default_strategy
-            <
-                Geometry1,
-                Geometry2
-            >::type strategy_type;
-
-        return crosses
-            <
-                strategy_type
-            >::apply(geometry1, geometry2, strategy_type());
-    }
-};
+}
 
 } // namespace resolve_strategy
 
@@ -212,88 +152,47 @@ struct crosses<default_strategy, false>
 namespace resolve_dynamic
 {
 
-template
-<
-    typename Geometry1, typename Geometry2,
-    typename Tag1 = geometry::tag_t<Geometry1>,
-    typename Tag2 = geometry::tag_t<Geometry2>
->
-struct crosses
+template <concepts::ConstGeometry Geometry1,
+          concepts::ConstGeometry Geometry2,
+          typename Strategy>
+inline bool crosses(Geometry1 const& geometry1,
+                    Geometry2 const& geometry2,
+                    Strategy const& strategy)
 {
-    template <typename Strategy>
-    static inline bool apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Strategy const& strategy)
-    {
-        return resolve_strategy::crosses
-            <
-                Strategy
-            >::apply(geometry1, geometry2, strategy);
-    }
-};
-
-
-template <typename DynamicGeometry1, typename Geometry2, typename Tag2>
-struct crosses<DynamicGeometry1, Geometry2, dynamic_geometry_tag, Tag2>
-{
-    template <typename Strategy>
-    static inline bool apply(DynamicGeometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Strategy const& strategy)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry1>
+                  && concepts::ConstDynamicGeometry<Geometry2>)
     {
         bool result = false;
-        traits::visit<DynamicGeometry1>::apply([&](auto const& g1)
+        traits::visit<Geometry1, Geometry2>::apply(
+            [&](auto const& g1, auto const& g2)
+            {
+                result = resolve_strategy::crosses(g1, g2, strategy);
+            }, geometry1, geometry2);
+        return result;
+    }
+    else if constexpr (concepts::ConstDynamicGeometry<Geometry1>)
+    {
+        bool result = false;
+        traits::visit<Geometry1>::apply([&](auto const& g1)
         {
-            result = resolve_strategy::crosses
-                <
-                    Strategy
-                >::apply(g1, geometry2, strategy);
+            result = resolve_strategy::crosses(g1, geometry2, strategy);
         }, geometry1);
         return result;
     }
-};
-
-
-template <typename Geometry1, typename DynamicGeometry2, typename Tag1>
-struct crosses<Geometry1, DynamicGeometry2, Tag1, dynamic_geometry_tag>
-{
-    template <typename Strategy>
-    static inline bool apply(Geometry1 const& geometry1,
-                             DynamicGeometry2 const& geometry2,
-                             Strategy const& strategy)
+    else if constexpr (concepts::ConstDynamicGeometry<Geometry2>)
     {
         bool result = false;
-        traits::visit<DynamicGeometry2>::apply([&](auto const& g2)
+        traits::visit<Geometry2>::apply([&](auto const& g2)
         {
-            result = resolve_strategy::crosses
-                <
-                    Strategy
-                >::apply(geometry1, g2, strategy);
+            result = resolve_strategy::crosses(geometry1, g2, strategy);
         }, geometry2);
         return result;
     }
-};
-
-
-template <typename DynamicGeometry1, typename DynamicGeometry2>
-struct crosses<DynamicGeometry1, DynamicGeometry2, dynamic_geometry_tag, dynamic_geometry_tag>
-{
-    template <typename Strategy>
-    static inline bool apply(DynamicGeometry1 const& geometry1,
-                             DynamicGeometry2 const& geometry2,
-                             Strategy const& strategy)
+    else
     {
-        bool result = false;
-        traits::visit<DynamicGeometry1, DynamicGeometry2>::apply([&](auto const& g1, auto const& g2)
-        {
-            result = resolve_strategy::crosses
-                <
-                    Strategy
-                >::apply(g1, g2, strategy);
-        }, geometry1, geometry2);
-        return result;
+        return resolve_strategy::crosses(geometry1, geometry2, strategy);
     }
-};
+}
 
 
 } // namespace resolve_dynamic
@@ -313,15 +212,14 @@ struct crosses<DynamicGeometry1, DynamicGeometry2, dynamic_geometry_tag, dynamic
 \qbk{distinguish,with strategy}
 \qbk{[include reference/algorithms/crosses.qbk]}
 */
-template <typename Geometry1, typename Geometry2, typename Strategy>
+template <concepts::ConstGeometry Geometry1,
+          concepts::ConstGeometry Geometry2,
+          typename Strategy>
 inline bool crosses(Geometry1 const& geometry1,
                     Geometry2 const& geometry2,
                     Strategy const& strategy)
 {
-    return resolve_dynamic::crosses
-            <
-                Geometry1, Geometry2
-            >::apply(geometry1, geometry2, strategy);
+    return resolve_dynamic::crosses(geometry1, geometry2, strategy);
 }
 
 /*!
@@ -340,13 +238,12 @@ inline bool crosses(Geometry1 const& geometry1,
 [crosses_output]
 }
 */
-template <typename Geometry1, typename Geometry2>
+template <concepts::ConstGeometry Geometry1,
+          concepts::ConstGeometry Geometry2>
 inline bool crosses(Geometry1 const& geometry1, Geometry2 const& geometry2)
 {
-    return resolve_dynamic::crosses
-            <
-                Geometry1, Geometry2
-            >::apply(geometry1, geometry2, default_strategy());
+    return resolve_dynamic::crosses(
+        geometry1, geometry2, default_strategy());
 }
 
 }} // namespace boost::geometry

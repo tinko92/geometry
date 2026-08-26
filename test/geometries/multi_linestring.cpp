@@ -89,8 +89,8 @@ void test_concept()
 {
     typedef bg::model::multi_linestring<L> ML;
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstMultiLinestring<ML>) );
-    BOOST_CONCEPT_ASSERT( (bg::concepts::MultiLinestring<ML>) );
+    static_assert(bg::concepts::ConstMultiLinestring<ML>);
+    static_assert(bg::concepts::MultiLinestring<ML>);
 
     typedef typename bg::coordinate_type<ML>::type T;
     typedef typename bg::point_type<ML>::type PML;

@@ -21,7 +21,6 @@
 #define BOOST_GEOMETRY_ALGORITHMS_TRANSFORM_HPP
 
 #include <type_traits>
-#include <variant>
 
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
@@ -39,9 +38,11 @@
 #include <boost/geometry/core/mutable_range.hpp>
 #include <boost/geometry/core/tag_cast.hpp>
 #include <boost/geometry/core/tags.hpp>
+#include <boost/geometry/core/visit.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 #include <boost/geometry/strategies/default_strategy.hpp>
 #include <boost/geometry/strategies/transform.hpp>
+#include <boost/geometry/util/range.hpp>
 
 
 namespace boost { namespace geometry
@@ -258,70 +259,61 @@ struct transform_multi
 namespace dispatch
 {
 
-template
-<
-    typename Geometry1, typename Geometry2,
-    typename Tag1 = tag_cast_t<tag_t<Geometry1>, multi_tag>,
-    typename Tag2 = tag_cast_t<tag_t<Geometry2>, multi_tag>
->
-struct transform {};
-
-template <typename Point1, typename Point2>
-struct transform<Point1, Point2, point_tag, point_tag>
-    : detail::transform::transform_point
+template <concepts::ConstGeometry Geometry1,
+          concepts::MutableGeometry Geometry2,
+          typename Strategy>
+    requires (concepts::ConstPoint<Geometry1> && concepts::Point<Geometry2>)
+          || (concepts::ConstLinestring<Geometry1> && concepts::Linestring<Geometry2>)
+          || (concepts::ConstRing<Geometry1> && concepts::Ring<Geometry2>)
+          || (concepts::ConstPolygon<Geometry1> && concepts::Polygon<Geometry2>)
+          || (concepts::ConstBox<Geometry1> && concepts::Box<Geometry2>)
+          || (concepts::ConstSegment<Geometry1> && concepts::Segment<Geometry2>)
+          || (concepts::ConstMultiPoint<Geometry1> && concepts::MultiPoint<Geometry2>)
+          || (concepts::ConstMultiLinestring<Geometry1> && concepts::MultiLinestring<Geometry2>)
+          || (concepts::ConstMultiPolygon<Geometry1> && concepts::MultiPolygon<Geometry2>)
+inline bool transform(Geometry1 const& geometry1, Geometry2& geometry2,
+                      Strategy const& strategy)
 {
-};
-
-
-template <typename Linestring1, typename Linestring2>
-struct transform
-    <
-        Linestring1, Linestring2,
-        linestring_tag, linestring_tag
-    >
-    : detail::transform::transform_range
-{
-};
-
-template <typename Range1, typename Range2>
-struct transform<Range1, Range2, ring_tag, ring_tag>
-    : detail::transform::transform_range
-{
-};
-
-template <typename Polygon1, typename Polygon2>
-struct transform<Polygon1, Polygon2, polygon_tag, polygon_tag>
-    : detail::transform::transform_polygon
-{
-};
-
-template <typename Box1, typename Box2>
-struct transform<Box1, Box2, box_tag, box_tag>
-    : detail::transform::transform_box
-{
-};
-
-template <typename Segment1, typename Segment2>
-struct transform<Segment1, Segment2, segment_tag, segment_tag>
-    : detail::transform::transform_box_or_segment
-{
-};
-
-template <typename Multi1, typename Multi2>
-struct transform
-    <
-        Multi1, Multi2,
-        multi_tag, multi_tag
-    >
-    : detail::transform::transform_multi
-        <
-            dispatch::transform
-                <
-                    typename boost::range_value<Multi1>::type,
-                    typename boost::range_value<Multi2>::type
-                >
-        >
-{};
+    if constexpr (concepts::ConstPoint<Geometry1>)
+    {
+        return detail::transform::transform_point::apply(
+            geometry1, geometry2, strategy);
+    }
+    else if constexpr (concepts::ConstLinestring<Geometry1>
+                       || concepts::ConstRing<Geometry1>)
+    {
+        return detail::transform::transform_range::apply(
+            geometry1, geometry2, strategy);
+    }
+    else if constexpr (concepts::ConstPolygon<Geometry1>)
+    {
+        return detail::transform::transform_polygon::apply(
+            geometry1, geometry2, strategy);
+    }
+    else if constexpr (concepts::ConstBox<Geometry1>)
+    {
+        return detail::transform::transform_box::apply(
+            geometry1, geometry2, strategy);
+    }
+    else if constexpr (concepts::ConstSegment<Geometry1>)
+    {
+        return detail::transform::transform_box_or_segment::apply(
+            geometry1, geometry2, strategy);
+    }
+    else
+    {
+        range::resize(geometry2, boost::size(geometry1));
+        auto out = boost::begin(geometry2);
+        for (auto it = boost::begin(geometry1); it != boost::end(geometry1); ++it)
+        {
+            if (! dispatch::transform(*it, *out++, strategy))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+}
 
 
 } // namespace dispatch
@@ -330,76 +322,51 @@ struct transform
 
 namespace resolve_strategy {
 
-struct transform
+template <concepts::ConstGeometry Geometry1,
+          concepts::MutableGeometry Geometry2,
+          typename Strategy>
+inline bool transform(Geometry1 const& geometry1, Geometry2& geometry2,
+                      Strategy const& strategy)
 {
-    template <typename Geometry1, typename Geometry2, typename Strategy>
-    static inline bool apply(Geometry1 const& geometry1,
-                             Geometry2& geometry2,
-                             Strategy const& strategy)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
-        concepts::check<Geometry1 const>();
-        concepts::check<Geometry2>();
-
-        return dispatch::transform<Geometry1, Geometry2>::apply(
-            geometry1,
-            geometry2,
-            strategy
-        );
+        using strategy_type = typename detail::transform
+            ::select_strategy<Geometry1, Geometry2>::type;
+        return dispatch::transform(geometry1, geometry2, strategy_type());
     }
-
-    template <typename Geometry1, typename Geometry2>
-    static inline bool apply(Geometry1 const& geometry1,
-                             Geometry2& geometry2,
-                             default_strategy)
+    else
     {
-        return apply(
-            geometry1,
-            geometry2,
-            typename detail::transform::select_strategy<Geometry1, Geometry2>::type()
-        );
+        return dispatch::transform(geometry1, geometry2, strategy);
     }
-};
+}
 
 } // namespace resolve_strategy
 
 
-namespace resolve_variant {
+namespace resolve_dynamic {
 
-template <typename Geometry1, typename Geometry2>
-struct transform
+template <concepts::ConstGeometry Geometry1,
+          concepts::MutableGeometry Geometry2,
+          typename Strategy>
+inline bool transform(Geometry1 const& geometry1, Geometry2& geometry2,
+                      Strategy const& strategy)
 {
-    template <typename Strategy>
-    static inline bool apply(Geometry1 const& geometry1,
-                             Geometry2& geometry2,
-                             Strategy const& strategy)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry1>)
     {
-        return resolve_strategy::transform::apply(
-            geometry1,
-            geometry2,
-            strategy
-        );
-    }
-};
-
-template <typename ...Ts, typename Geometry2>
-struct transform<std::variant<Ts...>, Geometry2>
-{
-    template <typename Strategy>
-    static inline bool apply(
-        std::variant<Ts...> const& geometry1,
-        Geometry2& geometry2,
-        Strategy const& strategy
-    )
-    {
-        return std::visit([&](auto const& concrete)
+        bool result = false;
+        traits::visit<Geometry1>::apply([&](auto const& source)
         {
-            return transform<std::decay_t<decltype(concrete)>, Geometry2>::apply(
-                concrete, geometry2, strategy);
+            result = resolve_strategy::transform(source, geometry2, strategy);
         }, geometry1);
+        return result;
     }
-};
+    else
+    {
+        return resolve_strategy::transform(geometry1, geometry2, strategy);
+    }
+}
 
-} // namespace resolve_variant
+} // namespace resolve_dynamic
 
 
 /*!
@@ -417,12 +384,13 @@ struct transform<std::variant<Ts...>, Geometry2>
 
 \qbk{[include reference/algorithms/transform_with_strategy.qbk]}
  */
-template <typename Geometry1, typename Geometry2, typename Strategy>
+template <concepts::ConstGeometry Geometry1,
+          concepts::MutableGeometry Geometry2,
+          typename Strategy>
 inline bool transform(Geometry1 const& geometry1, Geometry2& geometry2,
             Strategy const& strategy)
 {
-    return resolve_variant::transform<Geometry1, Geometry2>
-                          ::apply(geometry1, geometry2, strategy);
+    return resolve_dynamic::transform(geometry1, geometry2, strategy);
 }
 
 
@@ -437,7 +405,8 @@ inline bool transform(Geometry1 const& geometry1, Geometry2& geometry2,
 
 \qbk{[include reference/algorithms/transform.qbk]}
  */
-template <typename Geometry1, typename Geometry2>
+template <concepts::ConstGeometry Geometry1,
+          concepts::MutableGeometry Geometry2>
 inline bool transform(Geometry1 const& geometry1, Geometry2& geometry2)
 {
     return geometry::transform(geometry1, geometry2, default_strategy());

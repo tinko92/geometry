@@ -48,8 +48,8 @@ void test_all()
     BOOST_CHECK_EQUAL(&s.second, &p2);
 
     // Compilation tests, all things should compile.
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstSegment<S>) );
-    BOOST_CONCEPT_ASSERT( (bg::concepts::Segment<S>) );
+    static_assert(bg::concepts::ConstSegment<S>);
+    static_assert(bg::concepts::Segment<S>);
 
     typedef typename bg::coordinate_type<S>::type T;
     typedef typename bg::point_type<S>::type SP;
@@ -58,7 +58,7 @@ void test_all()
     //std::cout << sizeof(typename coordinate_type<S>::type) << std::endl;
 
     typedef bg::model::referring_segment<P const> refseg_t;
-    //BOOST_CONCEPT_ASSERT( (concepts::ConstSegment<refseg_t>) );
+    //static_assert(concepts::ConstSegment<refseg_t>);
 
     refseg_t seg(p1, p2);
 

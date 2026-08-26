@@ -24,6 +24,7 @@
 #include <boost/geometry/core/tag.hpp>
 #include <boost/geometry/core/tags.hpp>
 #include <boost/geometry/core/visit.hpp>
+#include <boost/geometry/geometries/concepts/check.hpp>
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/policies/compare.hpp>
 #include <boost/geometry/util/range.hpp>
@@ -296,15 +297,15 @@ namespace dispatch
 {
 
 
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct merge_elements
-    : not_implemented<Geometry, Tag>
-{};
-
-template <typename GeometryCollection>
-struct merge_elements<GeometryCollection, geometry_collection_tag>
-    : geometry::detail::merge_elements::merge_gc
-{};
+template <concepts::ConstGeometryCollection Geometry,
+          concepts::GeometryCollection GeometryOut,
+          typename Strategy>
+inline void merge_elements(Geometry const& geometry, GeometryOut& out,
+                           Strategy const& strategy)
+{
+    geometry::detail::merge_elements::merge_gc::apply(
+        geometry, out, strategy);
+}
 
 
 } // namespace dispatch
@@ -314,57 +315,42 @@ struct merge_elements<GeometryCollection, geometry_collection_tag>
 namespace resolve_strategy
 {
 
-template <typename Strategy>
-struct merge_elements
+template <concepts::ConstGeometryCollection Geometry,
+          concepts::GeometryCollection GeometryOut,
+          typename Strategy>
+inline void merge_elements(Geometry const& geometry, GeometryOut& out,
+                           Strategy const& strategy)
 {
-    template <typename Geometry>
-    static void apply(Geometry const& geometry, Geometry & out, Strategy const& strategy)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
-        dispatch::merge_elements
-            <
-                Geometry
-            >::apply(geometry, out, strategy);
+        using strategy_type = typename strategies::relate::services
+            ::default_strategy<Geometry, Geometry>::type;
+        dispatch::merge_elements(geometry, out, strategy_type());
     }
-};
-
-template <>
-struct merge_elements<default_strategy>
-{
-    template <typename Geometry>
-    static void apply(Geometry const& geometry, Geometry & out, default_strategy)
+    else
     {
-        using strategy_type = typename strategies::relate::services::default_strategy
-            <
-                Geometry, Geometry
-            >::type;
-
-        dispatch::merge_elements
-            <
-                Geometry
-            >::apply(geometry, out, strategy_type());
+        dispatch::merge_elements(geometry, out, strategy);
     }
-};
+}
 
 } // namespace resolve_strategy
 
 
-template <typename Geometry, typename Strategy>
-inline void merge_elements(Geometry const& geometry, Geometry & out, Strategy const& strategy)
+template <concepts::ConstGeometryCollection Geometry,
+          concepts::GeometryCollection GeometryOut,
+          typename Strategy>
+inline void merge_elements(Geometry const& geometry, GeometryOut& out,
+                           Strategy const& strategy)
 {
-    resolve_strategy::merge_elements
-        <
-            Strategy
-        >::apply(geometry, out, strategy);
+    resolve_strategy::merge_elements(geometry, out, strategy);
 }
 
 
-template <typename Geometry>
-inline void merge_elements(Geometry const& geometry, Geometry & out)
+template <concepts::ConstGeometryCollection Geometry,
+          concepts::GeometryCollection GeometryOut>
+inline void merge_elements(Geometry const& geometry, GeometryOut& out)
 {
-    resolve_strategy::merge_elements
-        <
-            default_strategy
-        >::apply(geometry, out, default_strategy());
+    resolve_strategy::merge_elements(geometry, out, default_strategy());
 }
 
 

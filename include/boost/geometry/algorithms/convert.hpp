@@ -23,7 +23,6 @@
 
 #include <cstddef>
 #include <type_traits>
-#include <variant>
 
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
@@ -42,6 +41,7 @@
 #include <boost/geometry/core/point_order.hpp>
 #include <boost/geometry/core/tag_cast.hpp>
 #include <boost/geometry/core/tags.hpp>
+#include <boost/geometry/core/visit.hpp>
 
 #include <boost/geometry/geometries/concepts/check.hpp>
 
@@ -637,35 +637,28 @@ struct convert<GeometryIn, GeometryOut, polygon_tag, multi_polygon_tag, Dimensio
 #endif // DOXYGEN_NO_DISPATCH
 
 
-namespace resolve_variant {
+namespace resolve_dynamic {
 
-template <typename Geometry1, typename Geometry2>
-struct convert
+template <concepts::ConstGeometry Geometry1,
+          concepts::MutableGeometry Geometry2>
+inline void convert(Geometry1 const& geometry1, Geometry2& geometry2)
 {
-    static inline void apply(Geometry1 const& geometry1, Geometry2& geometry2)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry1>)
     {
-        concepts::check_concepts_and_equal_dimensions<Geometry1 const, Geometry2>();
-        dispatch::convert<Geometry1, Geometry2>::apply(geometry1, geometry2);
-    }
-};
-
-template <typename ...Ts, typename Geometry2>
-struct convert<std::variant<Ts...>, Geometry2>
-{
-    static inline void apply(
-        std::variant<Ts...> const& geometry1,
-        Geometry2& geometry2
-    )
-    {
-        std::visit([&geometry2](auto const& concrete)
+        traits::visit<Geometry1>::apply([&](auto const& source)
         {
-            convert<std::decay_t<decltype(concrete)>, Geometry2>::apply(
-                concrete, geometry2);
+            resolve_dynamic::convert(source, geometry2);
         }, geometry1);
     }
-};
-
+    else
+    {
+        concepts::check_concepts_and_equal_dimensions
+            <Geometry1 const, Geometry2>();
+        dispatch::convert<Geometry1, Geometry2>::apply(geometry1, geometry2);
+    }
 }
+
+} // namespace resolve_dynamic
 
 
 /*!
@@ -683,10 +676,11 @@ points or closing or opening the polygon rings.
 
 \qbk{[include reference/algorithms/convert.qbk]}
  */
-template <typename Geometry1, typename Geometry2>
+template <concepts::ConstGeometry Geometry1,
+          concepts::MutableGeometry Geometry2>
 inline void convert(Geometry1 const& geometry1, Geometry2& geometry2)
 {
-    resolve_variant::convert<Geometry1, Geometry2>::apply(geometry1, geometry2);
+    resolve_dynamic::convert(geometry1, geometry2);
 }
 
 #if defined(_MSC_VER)

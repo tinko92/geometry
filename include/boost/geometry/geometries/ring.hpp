@@ -62,7 +62,7 @@ template
 >
 class ring : public Container<Point, Allocator<Point> >
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point>) );
+    static_assert(concepts::Point<Point>);
 
     typedef Container<Point, Allocator<Point> > base_type;
 

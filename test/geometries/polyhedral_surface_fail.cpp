@@ -36,8 +36,8 @@ int test_main(int, char* [])
     using polygon_geo_t = bg::model::polygon<point_geo_t>;
     using polyhedral_geo_t = bg::model::polyhedral_surface<polygon_geo_t>;
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::PolyhedralSurface<polyhedral2_t>) );
-    BOOST_CONCEPT_ASSERT( (bg::concepts::PolyhedralSurface<polyhedral_geo_t>) );
+    static_assert(bg::concepts::PolyhedralSurface<polyhedral2_t>);
+    static_assert(bg::concepts::PolyhedralSurface<polyhedral_geo_t>);
 
     return 0;
 }

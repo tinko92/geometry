@@ -33,7 +33,7 @@ void test_const()
 
     boost::ignore_unused<point_t>();
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstRing<ring_t>) );
+    static_assert(bg::concepts::ConstRing<ring_t>);
 
     ring_t geo;
     fill(geo, {{0, 0}, {0, 4}, {4, 4}, {4, 0}, {0, 0}});
@@ -108,7 +108,7 @@ void test_mutable()
 
     boost::ignore_unused<point_t>();
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::Ring<ring_t>) );
+    static_assert(bg::concepts::Ring<ring_t>);
 
     ring_t geo;
     bg::read_wkt("POLYGON((0 0,0 4,4 4,4 0))", geo);

@@ -20,14 +20,12 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_LINESTRING_CONCEPT_HPP
 
 
-#include <boost/concept_check.hpp>
-#include <boost/range/concepts.hpp>
-
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/mutable_range.hpp>
 #include <boost/geometry/core/point_type.hpp>
 
 #include <boost/geometry/geometries/concepts/concept_type.hpp>
+#include <boost/geometry/geometries/concepts/detail/mutable_range.hpp>
 #include <boost/geometry/geometries/concepts/point_concept.hpp>
 
 
@@ -36,66 +34,30 @@ namespace boost { namespace geometry { namespace concepts
 {
 
 template <typename Geometry>
-class Linestring
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    using point_type = point_type_t<Geometry>;
-
-    BOOST_CONCEPT_ASSERT( (concepts::Point<point_type>) );
-    BOOST_CONCEPT_ASSERT( (boost::RandomAccessRangeConcept<Geometry>) );
-
-public :
-
-    BOOST_CONCEPT_USAGE(Linestring)
-    {
-        Geometry* ls = 0;
-        traits::clear<Geometry>::apply(*ls);
-        traits::resize<Geometry>::apply(*ls, 0);
-        point_type* point = 0;
-        traits::push_back<Geometry>::apply(*ls, *point);
-    }
-#endif
-};
+concept ConstLinestring =
+    std::same_as<tag_t<geometry_type_t<Geometry>>, linestring_tag>
+    && detail::ConstForwardRange<geometry_type_t<Geometry>>
+    && ConstPoint<point_type_t<geometry_type_t<Geometry>>>;
 
 
-/*!
-\brief Linestring concept (const version)
-\ingroup const_concepts
-\details The ConstLinestring concept check the same as the Linestring concept,
-but does not check write access.
-*/
 template <typename Geometry>
-class ConstLinestring
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    using point_type = point_type_t<Geometry>;
-
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<point_type>) );
-    //BOOST_CONCEPT_ASSERT( (boost::RandomAccessRangeConcept<Geometry>) );
-    // Relaxed the concept.
-    BOOST_CONCEPT_ASSERT( (boost::ForwardRangeConcept<Geometry>) );
-
-
-public :
-
-    BOOST_CONCEPT_USAGE(ConstLinestring)
-    {
-    }
-#endif
-};
+concept Linestring =
+    ! std::is_const_v<std::remove_reference_t<Geometry>>
+    && ConstLinestring<Geometry>
+    && Point<point_type_t<geometry_type_t<Geometry>>>
+    && detail::MutableRange<geometry_type_t<Geometry>,
+                            point_type_t<geometry_type_t<Geometry>>>;
 
 
 template <typename Geometry>
 struct concept_type<Geometry, linestring_tag>
-{
-    using type = Linestring<Geometry>;
-};
+    : std::bool_constant<Linestring<Geometry>>
+{};
 
 template <typename Geometry>
 struct concept_type<Geometry const, linestring_tag>
-{
-    using type = ConstLinestring<Geometry>;
-};
+    : std::bool_constant<ConstLinestring<Geometry>>
+{};
 
 
 }}} // namespace boost::geometry::concepts
