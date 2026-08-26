@@ -16,6 +16,7 @@
 #endif
 
 #include <algorithm>
+#include <concepts>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -23,9 +24,7 @@
 
 #include <boost/test/included/unit_test.hpp>
 
-#include <boost/concept_check.hpp>
 #include <boost/core/ignore_unused.hpp>
-#include <boost/iterator/iterator_concepts.hpp>
 #include <tuple>
 
 #include <boost/geometry/algorithms/convert.hpp>
@@ -103,10 +102,8 @@ template <typename Geometry>
 struct test_iterator_concepts
 {
     typedef bg::segment_iterator<Geometry> iterator;
-    BOOST_CONCEPT_ASSERT(( boost::BidirectionalIteratorConcept<iterator> ));
-    BOOST_CONCEPT_ASSERT(( boost_concepts::ReadableIteratorConcept<iterator> ));
-    BOOST_CONCEPT_ASSERT
-        (( boost_concepts::BidirectionalTraversalConcept<iterator> ));
+    static_assert(std::bidirectional_iterator<iterator>);
+    static_assert(std::indirectly_readable<iterator>);
 };
 
 struct equals

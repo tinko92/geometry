@@ -19,7 +19,6 @@ target_link_libraries(boost_geometry
   INTERFACE
     Boost::algorithm
     Boost::assert
-    Boost::concept_check
     Boost::config
     Boost::core
     Boost::function_types

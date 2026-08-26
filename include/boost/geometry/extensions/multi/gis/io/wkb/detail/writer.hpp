@@ -19,7 +19,6 @@
 #include <iterator>
 #include <limits>
 
-#include <boost/concept_check.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>

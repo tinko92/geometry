@@ -38,8 +38,6 @@ namespace model
 template <typename T>
 class quaternion
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Quaternion<quaternion>) );
-
 public:
 
     /// @brief Default constructor, no initialization

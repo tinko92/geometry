@@ -19,7 +19,6 @@
 
 #include <geometry_test_common.hpp>
 
-#include <boost/concept_check.hpp>
 
 #include <boost/geometry/algorithms/assign.hpp>
 #include <boost/geometry/algorithms/distance.hpp>

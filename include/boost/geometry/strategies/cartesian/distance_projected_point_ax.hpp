@@ -25,7 +25,6 @@ BOOST_PRAGMA_MESSAGE("This include file is deprecated and will be removed in Boo
 
 #include <algorithm>
 
-#include <boost/concept_check.hpp>
 #include <boost/core/ignore_unused.hpp>
 
 #include <boost/geometry/core/access.hpp>

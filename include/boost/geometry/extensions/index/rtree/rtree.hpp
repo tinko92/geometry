@@ -18,7 +18,6 @@
 #include <utility>
 #include <vector>
 
-#include <boost/concept_check.hpp>
 #include <boost/core/ignore_unused.hpp>
 
 #include <boost/geometry/algorithms/area.hpp>
@@ -773,4 +772,3 @@ private:
 }}} // namespace boost::geometry::index
 
 #endif // BOOST_GEOMETRY_EXTENSIONS_INDEX_RTREE_RTREE_HPP
-

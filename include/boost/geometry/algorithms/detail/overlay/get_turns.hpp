@@ -20,7 +20,6 @@
 #include <cstddef>
 #include <map>
 
-#include <boost/concept_check.hpp>
 #include <boost/core/ignore_unused.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>

@@ -32,7 +32,7 @@ template <typename Vector>
 struct coordinate_system<vector_tag, Vector>
 {
     typedef typename traits::coordinate_system<
-        typename detail::remove_cptrref<Vector>::type
+        util::remove_cptrref_t<Vector>
     >::type type;
 };
 
@@ -57,7 +57,7 @@ template <typename G>
 struct coordinate_system<rotation_quaternion_tag, G>
 {
     typedef typename traits::coordinate_system<
-        typename detail::remove_cptrref<G>::type
+        util::remove_cptrref_t<G>
     >::type type;
 };
 
@@ -65,7 +65,7 @@ template <typename G>
 struct coordinate_system<rotation_matrix_tag, G>
 {
     typedef typename traits::coordinate_system<
-        typename detail::remove_cptrref<G>::type
+        util::remove_cptrref_t<G>
     >::type type;
 };
 

@@ -13,14 +13,13 @@
 #define BOOST_GEOMETRY_UTIL_RANGE_HPP
 
 #include <algorithm>
+#include <concepts>
 #include <iterator>
 #include <memory>
 #include <type_traits>
 
-#include <boost/concept_check.hpp>
 #include <boost/config.hpp>
 #include <boost/mpl/has_xxx.hpp>
-#include <boost/range/concepts.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/empty.hpp>
@@ -75,6 +74,22 @@ struct is_range
 template <typename Range>
 concept mutable_range = ! std::is_const_v<std::remove_reference_t<Range>>;
 
+template <typename Range, typename Category>
+concept range_with_category =
+    is_range<std::remove_reference_t<Range>>::value
+    && std::derived_from
+        <typename std::iterator_traits
+            <typename boost::range_iterator<Range>::type>::iterator_category,
+         Category>;
+
+template <typename Range>
+concept random_access_range =
+    range_with_category<Range, std::random_access_iterator_tag>;
+
+template <typename Range>
+concept bidirectional_range =
+    range_with_category<Range, std::bidirectional_iterator_tag>;
+
 
 } // namespace detail
 
@@ -84,11 +99,11 @@ concept mutable_range = ! std::is_const_v<std::remove_reference_t<Range>>;
 \ingroup utility
 */
 template <typename RandomAccessRange>
+    requires detail::random_access_range<RandomAccessRange>
 inline typename boost::range_iterator<RandomAccessRange>::type
 pos(RandomAccessRange && rng,
     typename boost::range_size<RandomAccessRange>::type i)
 {
-    BOOST_RANGE_CONCEPT_ASSERT((boost::RandomAccessRangeConcept<RandomAccessRange>));
     BOOST_GEOMETRY_ASSERT(i <= boost::size(rng));
     return boost::begin(rng)
          + static_cast<typename boost::range_difference<RandomAccessRange>::type>(i);
@@ -123,10 +138,10 @@ front(Range && rng)
 \ingroup utility
 */
 template <typename BidirectionalRange>
+    requires detail::bidirectional_range<BidirectionalRange>
 inline typename boost::range_reference<BidirectionalRange>::type
 back(BidirectionalRange && rng)
 {
-    BOOST_RANGE_CONCEPT_ASSERT((boost::BidirectionalRangeConcept<BidirectionalRange>));
     BOOST_GEOMETRY_ASSERT(!boost::empty(rng));
     auto it = boost::end(rng);
     return *(--it);
@@ -231,6 +246,7 @@ inline void pop_back(Range && rng)
 */
 template <typename Range>
     requires detail::mutable_range<Range>
+          && detail::random_access_range<Range>
 inline typename boost::range_iterator<Range>::type
 erase(Range && rng,
       typename boost::range_iterator<Range>::type it)
@@ -268,8 +284,6 @@ inline typename boost::range_iterator<Range>::type
 erase(Range && rng,
       typename boost::range_iterator<std::remove_reference_t<Range> const>::type cit)
 {
-    BOOST_RANGE_CONCEPT_ASSERT(( boost::RandomAccessRangeConcept<Range> ));
-
     typename boost::range_iterator<Range>::type
         it = boost::begin(rng)
                 + std::distance(boost::const_begin(rng), cit);
@@ -284,6 +298,7 @@ erase(Range && rng,
 */
 template <typename Range>
     requires detail::mutable_range<Range>
+          && detail::random_access_range<Range>
 inline typename boost::range_iterator<Range>::type
 erase(Range && rng,
       typename boost::range_iterator<Range>::type first,
@@ -328,8 +343,6 @@ erase(Range && rng,
       typename boost::range_iterator<std::remove_reference_t<Range> const>::type cfirst,
       typename boost::range_iterator<std::remove_reference_t<Range> const>::type clast)
 {
-    BOOST_RANGE_CONCEPT_ASSERT(( boost::RandomAccessRangeConcept<Range> ));
-
     typename boost::range_iterator<Range>::type
         first = boost::begin(rng)
                     + std::distance(boost::const_begin(rng), cfirst);

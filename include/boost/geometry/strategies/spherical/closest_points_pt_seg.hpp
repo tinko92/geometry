@@ -16,7 +16,6 @@
 #include <type_traits>
 
 #include <boost/config.hpp>
-#include <boost/concept_check.hpp>
 
 #include <boost/geometry/algorithms/detail/convert_point_to_point.hpp>
 

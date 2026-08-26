@@ -17,7 +17,6 @@
 #include <type_traits>
 
 #include <boost/config.hpp>
-#include <boost/concept_check.hpp>
 
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/assert.hpp>

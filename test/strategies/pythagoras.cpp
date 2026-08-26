@@ -29,7 +29,6 @@
 //#include <boost/timer.hpp>
 
 #include <boost/concept/requires.hpp>
-#include <boost/concept_check.hpp>
 #include <boost/core/ignore_unused.hpp>
 
 #include <boost/geometry/algorithms/assign.hpp>

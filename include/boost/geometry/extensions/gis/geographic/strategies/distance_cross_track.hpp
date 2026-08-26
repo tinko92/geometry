@@ -16,7 +16,6 @@
 
 #include <type_traits>
 
-#include <boost/concept_check.hpp>
 
 #include <boost/geometry/strategies/spherical/distance_cross_track.hpp>
 

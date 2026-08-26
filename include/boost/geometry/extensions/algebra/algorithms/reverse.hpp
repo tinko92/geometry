@@ -22,44 +22,32 @@
 namespace boost { namespace geometry
 {
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
 // This is experimental implementation of reverse() which negates vectors
 // and inverses rotations. It doesn't work for them as for Geometries.
 
 template <typename Vector>
-struct reverse<Vector, vector_tag>
+    requires concepts::MutableGeometry<Vector> && concepts::Vector<Vector>
+inline void reverse(Vector& vector)
 {
-    static inline void apply(Vector & v)
-    {
-        detail::algebra::neg<0, dimension<Vector>::value>(v);
-    }
-};
+    detail::algebra::neg<0, dimension<Vector>::value>(vector);
+}
 
-template <typename R>
-struct reverse<R, rotation_quaternion_tag>
+template <typename RotationQuaternion>
+    requires concepts::MutableGeometry<RotationQuaternion>
+          && concepts::RotationQuaternion<RotationQuaternion>
+inline void reverse(RotationQuaternion& rotation)
 {
-    static inline void apply(R & r)
-    {
-        detail::algebra::neg<1, 4>(r);
-    }
-};
+    detail::algebra::neg<1, 4>(rotation);
+}
 
-template <typename R>
-struct reverse<R, rotation_matrix_tag>
+template <typename RotationMatrix>
+    requires concepts::MutableGeometry<RotationMatrix>
+          && concepts::RotationMatrix<RotationMatrix>
+inline void reverse(RotationMatrix& rotation)
 {
-    static inline void apply(R & r)
-    {
-        detail::algebra::matrix_transpose<
-            R, 0, 0, dimension<R>::value
-        >::apply(r);
-    }
-};
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
+    detail::algebra::matrix_transpose
+        <RotationMatrix, 0, 0, dimension<RotationMatrix>::value>::apply(rotation);
+}
 
 }} // namespace boost::geometry
 

@@ -8,6 +8,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #include <algorithm>
+#include <concepts>
 #include <iterator>
 #include <sstream>
 #include <string>
@@ -56,8 +57,10 @@ void test_geometry(std::string const& wkt, std::string const& expected,
         BOOST_CHECK_EQUAL(n, 5);
     }
 
-    // Check Boost.Range concept
-    BOOST_CONCEPT_ASSERT( (boost::RandomAccessRangeConcept<view_type>) );
+    using iterator = typename boost::range_iterator<view_type>::type;
+    static_assert(std::derived_from
+        <typename std::iterator_traits<iterator>::iterator_category,
+         std::random_access_iterator_tag>);
 
     // Check order
     bg::order_selector order = bg::point_order<view_type>::value;

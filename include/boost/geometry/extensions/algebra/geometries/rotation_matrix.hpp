@@ -35,8 +35,6 @@ namespace model {
 template <typename T, std::size_t Dimension>
 class rotation_matrix
 {
-    BOOST_CONCEPT_ASSERT( (concepts::RotationMatrix<rotation_matrix>) );
-
 public:
 
     /// @brief Default constructor, no initialization

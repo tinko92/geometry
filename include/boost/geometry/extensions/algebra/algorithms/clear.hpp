@@ -22,42 +22,24 @@
 namespace boost { namespace geometry
 {
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
 // This is experimental implementation of clear() which assigns zeros to vectors
 // and identities to rotations. It doesn't work for them as for Geometries.
 
 template <typename Vector>
-struct clear<Vector, vector_tag>
+    requires concepts::MutableGeometry<Vector> && concepts::Vector<Vector>
+inline void clear(Vector& vector)
 {
-    static inline void apply(Vector & v)
-    {
-        geometry::assign_zero(v);
-    }
-};
+    geometry::assign_zero(vector);
+}
 
-template <typename R>
-struct clear<R, rotation_quaternion_tag>
+template <typename Rotation>
+    requires concepts::MutableGeometry<Rotation>
+          && (concepts::RotationQuaternion<Rotation>
+           || concepts::RotationMatrix<Rotation>)
+inline void clear(Rotation& rotation)
 {
-    static inline void apply(R & r)
-    {
-        geometry::assign_identity(r);
-    }
-};
-
-template <typename R>
-struct clear<R, rotation_matrix_tag>
-{
-    static inline void apply(R & r)
-    {
-        geometry::assign_identity(r);
-    }
-};
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
+    geometry::assign_identity(rotation);
+}
 
 }} // namespace boost::geometry
 

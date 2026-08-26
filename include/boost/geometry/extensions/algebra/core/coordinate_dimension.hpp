@@ -43,12 +43,12 @@ namespace core_dispatch {
 
 template <typename V>
 struct dimension<vector_tag, V>
-    : traits::dimension<typename detail::remove_cptrref<V>::type>
+    : traits::dimension<util::remove_cptrref_t<V>>
 {};
 
 template <typename G>
 struct dimension<quaternion_tag, G>
-    : traits::dimension<typename detail::remove_cptrref<G>::type>
+    : traits::dimension<util::remove_cptrref_t<G>>
 {};
 
 template <typename T, typename G, std::size_t Index>
@@ -61,18 +61,18 @@ struct indexed_dimension
 
 template <typename G, std::size_t Index>
 struct indexed_dimension<matrix_tag, G, Index>
-    : traits::indexed_dimension<typename detail::remove_cptrref<G>::type, Index>
+    : traits::indexed_dimension<util::remove_cptrref_t<G>, Index>
 {};
 
 
 template <typename G>
 struct dimension<rotation_quaternion_tag, G>
-    : traits::dimension<typename detail::remove_cptrref<G>::type>
+    : traits::dimension<util::remove_cptrref_t<G>>
 {};
 
 template <typename G>
 struct dimension<rotation_matrix_tag, G>
-    : traits::dimension<typename detail::remove_cptrref<G>::type>
+    : traits::dimension<util::remove_cptrref_t<G>>
 {};
 
 } // namespace core_dispatch

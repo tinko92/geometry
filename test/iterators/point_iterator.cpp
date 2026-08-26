@@ -16,6 +16,7 @@
 #endif
 
 #include <cstddef>
+#include <concepts>
 #include <iostream>
 #include <string>
 #include <iterator>
@@ -23,9 +24,7 @@
 
 #include <boost/test/included/unit_test.hpp>
 
-#include <boost/concept_check.hpp>
 #include <boost/core/ignore_unused.hpp>
-#include <boost/iterator/iterator_concepts.hpp>
 #include <tuple>
 #include <boost/optional.hpp>
 
@@ -145,11 +144,9 @@ template
 struct test_iterator_concepts
 {
     typedef bg::point_iterator<Geometry> iterator;
-    BOOST_CONCEPT_ASSERT((boost::BidirectionalIteratorConcept<iterator>));
-    BOOST_CONCEPT_ASSERT((boost_concepts::ReadableIteratorConcept<iterator>));
-    BOOST_CONCEPT_ASSERT((boost_concepts::LvalueIteratorConcept<iterator>));
-    BOOST_CONCEPT_ASSERT
-        ((boost_concepts::BidirectionalTraversalConcept<iterator>));
+    static_assert(std::bidirectional_iterator<iterator>);
+    static_assert(std::indirectly_readable<iterator>);
+    static_assert(std::is_lvalue_reference_v<std::iter_reference_t<iterator>>);
 };
 
 template <typename Geometry>
@@ -157,12 +154,9 @@ struct test_iterator_concepts<Geometry, true, false>
     : test_iterator_concepts<Geometry, true, true>
 {
     typedef bg::point_iterator<Geometry> iterator;
-    BOOST_CONCEPT_ASSERT
-        ((boost::Mutable_BidirectionalIteratorConcept<iterator>));
-    BOOST_CONCEPT_ASSERT
-        ((boost_concepts::WritableIteratorConcept<iterator>));
-    BOOST_CONCEPT_ASSERT
-        ((boost_concepts::SwappableIteratorConcept<iterator>));
+    using value_type = std::iter_value_t<iterator>;
+    static_assert(std::indirectly_writable<iterator, value_type>);
+    static_assert(std::indirectly_swappable<iterator, iterator>);
 };
 
 template <typename Geometry, bool IsConst>

@@ -53,7 +53,6 @@
 #endif // defined(BOOST_MSVC)
 
 #include <boost/config.hpp>
-#include <boost/concept_check.hpp>
 #include <boost/core/ignore_unused.hpp>
 
 #include <string_from_type.hpp>

@@ -19,137 +19,67 @@
 #ifndef BOOST_GEOMETRY_EXTENSIONS_ALGEBRA_GEOMETRIES_CONCEPTS_MATRIX_CONCEPT_HPP
 #define BOOST_GEOMETRY_EXTENSIONS_ALGEBRA_GEOMETRIES_CONCEPTS_MATRIX_CONCEPT_HPP
 
+#include <concepts>
 #include <type_traits>
+#include <utility>
 
-#include <boost/concept_check.hpp>
-#include <boost/core/ignore_unused.hpp>
-
-#include <boost/geometry/core/cs.hpp>
-#include <boost/geometry/core/static_assert.hpp>
 #include <boost/geometry/extensions/algebra/core/access.hpp>
 #include <boost/geometry/extensions/algebra/core/coordinate_dimension.hpp>
-#include <boost/geometry/extensions/algebra/core/coordinate_system.hpp>
 #include <boost/geometry/extensions/algebra/core/coordinate_type.hpp>
+#include <boost/geometry/extensions/algebra/geometries/concepts/detail/coordinate_concepts.hpp>
+#include <boost/geometry/geometries/concepts/concept_type.hpp>
 
 namespace boost { namespace geometry { namespace concepts {
 
-template <typename Geometry>
-class Matrix
+namespace detail
 {
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-
-    typedef typename coordinate_type<Geometry>::type ctype;
-    typedef typename coordinate_system<Geometry>::type csystem;
-
-    enum { ccount = dimension<Geometry>::value };
-
-    template <typename G, std::size_t I, std::size_t J, std::size_t N>
-    struct dimension_checker_row
-    {
-        static void apply()
-        {
-            G* g = 0;
-            geometry::set<I, J>(*g, geometry::get<I, J>(*g));
-            dimension_checker_row<G, I, J+1, N>::apply();
-        }
-    };
-
-    template <typename G, std::size_t I, std::size_t N>
-    struct dimension_checker_row<G, I, N, N>
-    {
-        static void apply() {}
-    };
-
-    template <typename G, std::size_t I, std::size_t N>
-    struct dimension_checker
-    {
-        static void apply()
-        {
-            dimension_checker_row<G, I, 0, N>::apply();
-            dimension_checker<G, I+1, N>::apply();
-        }
-    };
-
-    template <typename G, std::size_t N>
-    struct dimension_checker<G, N, N>
-    {
-        static void apply() {}
-    };
-
-public:
-
-    /// BCCL macro to apply the concept
-    BOOST_CONCEPT_USAGE(Matrix)
-    {
-        static const bool cs_check = std::is_same<csystem, cs::cartesian>::value;
-        BOOST_GEOMETRY_STATIC_ASSERT(
-            cs_check,
-            "Not implemented for this coordinate system.",
-            csystem
-        );
-
-        dimension_checker<Geometry, 0, ccount>::apply();
-    }
-#endif
-};
-
 
 template <typename Geometry>
-class ConstMatrix
+consteval bool const_matrix_coordinates()
 {
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
+    constexpr std::size_t rows = traits::indexed_dimension<Geometry, 0>::value;
+    constexpr std::size_t columns = traits::indexed_dimension<Geometry, 1>::value;
+    return const_algebra_indexed_coordinates<Geometry, columns>(
+        std::make_index_sequence<rows * columns>{});
+}
 
-    //typedef typename coordinate_type<Geometry>::type ctype;
-    //typedef typename coordinate_system<Geometry>::type csystem;
+template <typename Geometry>
+consteval bool mutable_matrix_coordinates()
+{
+    constexpr std::size_t rows = traits::indexed_dimension<Geometry, 0>::value;
+    constexpr std::size_t columns = traits::indexed_dimension<Geometry, 1>::value;
+    return mutable_algebra_indexed_coordinates<Geometry, columns>(
+        std::make_index_sequence<rows * columns>{});
+}
 
-    //enum { ccount = dimension<Geometry>::value };
+} // namespace detail
 
-    template <typename G, std::size_t I, std::size_t J, std::size_t N>
-    struct dimension_checker_row
+template <typename Geometry>
+concept ConstMatrix =
+    std::same_as<tag_t<geometry_type_t<Geometry>>, matrix_tag>
+    && requires
     {
-        static void apply()
-        {
-            const G* g = 0;
-            typename coordinate_type<G>::type coord(geometry::get<I, J>(*g));
-            boost::ignore_unused(coord);
-            dimension_checker_row<G, I, J+1, N>::apply();
-        }
-    };
-
-    template <typename G, std::size_t I, std::size_t N>
-    struct dimension_checker_row<G, I, N, N>
-    {
-        static void apply() {}
-    };
-
-    template <typename G, std::size_t I, std::size_t N>
-    struct dimension_checker
-    {
-        static void apply()
-        {
-            dimension_checker_row<G, I, 0, N>::apply();
-            dimension_checker<G, I+1, N>::apply();
-        }
-    };
-
-    template <typename G, std::size_t N>
-    struct dimension_checker<G, N, N>
-    {
-        static void apply() {}
-    };
-
-public:
-
-    /// BCCL macro to apply the concept
-    BOOST_CONCEPT_USAGE(ConstMatrix)
-    {
-        //static const bool cs_check = std::is_same<csystem, cs::cartesian>::value;
-        //BOOST_GEOMETRY_STATIC_ASSERT(cs_check, "Not implemented for this coordinate system.", csystem);
-
-        //dimension_checker<Geometry, 0, ccount>::apply();
+        typename coordinate_type_t<geometry_type_t<Geometry>>;
+        traits::indexed_dimension<geometry_type_t<Geometry>, 0>::value;
+        traits::indexed_dimension<geometry_type_t<Geometry>, 1>::value;
     }
-#endif
-};
+    && detail::const_matrix_coordinates<geometry_type_t<Geometry>>();
+
+template <typename Geometry>
+concept Matrix =
+    ! std::is_const_v<std::remove_reference_t<Geometry>>
+    && ConstMatrix<Geometry>
+    && detail::mutable_matrix_coordinates<geometry_type_t<Geometry>>();
+
+template <typename Geometry>
+struct concept_type<Geometry, matrix_tag>
+    : std::bool_constant<Matrix<Geometry>>
+{};
+
+template <typename Geometry>
+struct concept_type<Geometry const, matrix_tag>
+    : std::bool_constant<ConstMatrix<Geometry>>
+{};
 
 }}} // namespace boost::geometry::concepts
 

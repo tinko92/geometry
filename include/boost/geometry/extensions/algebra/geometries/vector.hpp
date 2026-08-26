@@ -37,8 +37,6 @@ namespace model
 template <typename CoordinateType, std::size_t DimensionCount>
 class vector
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Vector<vector>) );
-
 public:
 
     /// @brief Default constructor, no initialization

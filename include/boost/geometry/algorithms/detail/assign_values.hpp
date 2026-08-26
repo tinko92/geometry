@@ -25,7 +25,6 @@
 #include <type_traits>
 
 #include <boost/concept/requires.hpp>
-#include <boost/concept_check.hpp>
 
 #include <boost/geometry/algorithms/append.hpp>
 #include <boost/geometry/algorithms/clear.hpp>

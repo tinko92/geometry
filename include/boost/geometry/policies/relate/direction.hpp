@@ -13,7 +13,6 @@
 #include <cstddef>
 #include <string>
 
-#include <boost/concept_check.hpp>
 
 #include <boost/geometry/arithmetic/determinant.hpp>
 #include <boost/geometry/strategies/side_info.hpp>

@@ -23,7 +23,6 @@
 
 #include <boost/geometry/core/exception.hpp>
 
-#include <boost/concept_check.hpp>
 
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/assert.hpp>

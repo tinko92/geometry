@@ -19,7 +19,6 @@
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_WITHIN_INTERFACE_HPP
 
 
-#include <boost/concept_check.hpp>
 
 #include <boost/geometry/algorithms/not_implemented.hpp>
 

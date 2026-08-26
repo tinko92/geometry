@@ -30,103 +30,103 @@ namespace boost { namespace geometry
 namespace core_dispatch
 {
 
-template <typename Vector, typename CoordinateType, std::size_t Dimension>
-struct access<vector_tag, Vector, CoordinateType, Dimension, std::false_type>
+template <typename Vector, std::size_t Dimension>
+struct access<vector_tag, Vector, Dimension, false>
 {
-    static inline CoordinateType get(Vector const& v)
+    static inline coordinate_type_t<Vector> get(Vector const& v)
     {
         return traits::access<Vector, Dimension>::get(v);
     }
-    static inline void set(Vector& v, CoordinateType const& value)
+    static inline void set(Vector& v, coordinate_type_t<Vector> const& value)
     {
         traits::access<Vector, Dimension>::set(v, value);
     }
 };
 
-template <typename Vector, typename CoordinateType, std::size_t Dimension>
-struct access<vector_tag, Vector, CoordinateType, Dimension, std::true_type>
+template <typename Vector, std::size_t Dimension>
+struct access<vector_tag, Vector, Dimension, true>
 {
-    static inline CoordinateType get(Vector const* v)
+    static inline coordinate_type_t<Vector> get(Vector const* v)
     {
-        return traits::access<typename std::remove_pointer<Vector>::type, Dimension>::get(*v);
+        return traits::access<std::remove_pointer_t<Vector>, Dimension>::get(*v);
     }
-    static inline void set(Vector* v, CoordinateType const& value)
+    static inline void set(Vector* v, coordinate_type_t<Vector> const& value)
     {
-        traits::access<typename std::remove_pointer<Vector>::type, Dimension>::set(*v, value);
+        traits::access<std::remove_pointer_t<Vector>, Dimension>::set(*v, value);
     }
 };
 
-template <typename Q, typename CoordinateType, std::size_t Dimension>
-struct access<quaternion_tag, Q, CoordinateType, Dimension, std::false_type>
+template <typename Q, std::size_t Dimension>
+struct access<quaternion_tag, Q, Dimension, false>
 {
-    static inline CoordinateType get(Q const& v)
+    static inline coordinate_type_t<Q> get(Q const& v)
     {
         return traits::access<Q, Dimension>::get(v);
     }
-    static inline void set(Q& v, CoordinateType const& value)
+    static inline void set(Q& v, coordinate_type_t<Q> const& value)
     {
         traits::access<Q, Dimension>::set(v, value);
     }
 };
 
-template <typename Q, typename CoordinateType, std::size_t Dimension>
-struct access<quaternion_tag, Q, CoordinateType, Dimension, std::true_type>
+template <typename Q, std::size_t Dimension>
+struct access<quaternion_tag, Q, Dimension, true>
 {
-    static inline CoordinateType get(Q const* v)
+    static inline coordinate_type_t<Q> get(Q const* v)
     {
-        return traits::access<typename std::remove_pointer<Q>::type, Dimension>::get(*v);
+        return traits::access<std::remove_pointer_t<Q>, Dimension>::get(*v);
     }
-    static inline void set(Q* v, CoordinateType const& value)
+    static inline void set(Q* v, coordinate_type_t<Q> const& value)
     {
-        traits::access<typename std::remove_pointer<Q>::type, Dimension>::set(*v, value);
+        traits::access<std::remove_pointer_t<Q>, Dimension>::set(*v, value);
     }
 };
 
-template<typename M, typename CoordinateType, std::size_t I, std::size_t J>
-struct indexed_access<matrix_tag, M, CoordinateType, I, J, std::false_type>
-    : detail::indexed_access_non_pointer<M, CoordinateType, I, J>
+template <typename M, std::size_t I, std::size_t J>
+struct indexed_access<matrix_tag, M, I, J, false>
+    : detail::indexed_access_non_pointer<M, I, J>
 {};
 
-template<typename M, typename CoordinateType, std::size_t I, std::size_t J>
-struct indexed_access<matrix_tag, M, CoordinateType, I, J, std::true_type>
-    : detail::indexed_access_pointer<M, CoordinateType, I, J>
+template <typename M, std::size_t I, std::size_t J>
+struct indexed_access<matrix_tag, M, I, J, true>
+    : detail::indexed_access_pointer<M, I, J>
 {};
 
 
-template <typename Q, typename CoordinateType, std::size_t Dimension>
-struct access<rotation_quaternion_tag, Q, CoordinateType, Dimension, std::false_type>
+template <typename Q, std::size_t Dimension>
+struct access<rotation_quaternion_tag, Q, Dimension, false>
 {
-    static inline CoordinateType get(Q const& v)
+    static inline coordinate_type_t<Q> get(Q const& v)
     {
         return traits::access<Q, Dimension>::get(v);
     }
-    static inline void set(Q& v, CoordinateType const& value)
+    static inline void set(Q& v, coordinate_type_t<Q> const& value)
     {
         traits::access<Q, Dimension>::set(v, value);
     }
 };
 
-template <typename Q, typename CoordinateType, std::size_t Dimension>
-struct access<rotation_quaternion_tag, Q, CoordinateType, Dimension, std::true_type>
+template <typename Q, std::size_t Dimension>
+struct access<rotation_quaternion_tag, Q, Dimension, true>
 {
-    static inline CoordinateType get(Q const* v)
+    static inline coordinate_type_t<Q> get(Q const* v)
     {
-        return traits::access<typename std::remove_pointer<Q>::type, Dimension>::get(*v);
+        return traits::access<std::remove_pointer_t<Q>, Dimension>::get(*v);
     }
-    static inline void set(Q* v, CoordinateType const& value)
+    static inline void set(Q* v, coordinate_type_t<Q> const& value)
     {
-        traits::access<typename std::remove_pointer<Q>::type, Dimension>::set(*v, value);
+        traits::access<std::remove_pointer_t<Q>, Dimension>::set(*v, value);
     }
 };
 
-template<typename RM, typename CoordinateType, std::size_t I, std::size_t J>
-struct indexed_access<rotation_matrix_tag, RM, CoordinateType, I, J, std::false_type>
-    : detail::indexed_access_non_pointer<RM, CoordinateType, I, J>
+template <typename RM, std::size_t I, std::size_t J>
+struct indexed_access<rotation_matrix_tag, RM, I, J, false>
+    : detail::indexed_access_non_pointer<RM, I, J>
 {};
 
-template<typename RM, typename CoordinateType, std::size_t I, std::size_t J>
-struct indexed_access<rotation_matrix_tag, RM, CoordinateType, I, J, std::true_type>
-    : detail::indexed_access_pointer<RM, CoordinateType, I, J>
+template <typename RM, std::size_t I, std::size_t J>
+struct indexed_access<rotation_matrix_tag, RM, I, J, true>
+    : detail::indexed_access_pointer<RM, I, J>
 {};
 
 } // namespace core_dispatch

@@ -23,7 +23,6 @@
 #include <ostream>
 #include <string>
 
-#include <boost/concept_check.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/value_type.hpp>

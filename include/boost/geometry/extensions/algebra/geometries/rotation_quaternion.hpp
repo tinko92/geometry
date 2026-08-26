@@ -41,8 +41,6 @@ namespace model
 template <typename T>
 class rotation_quaternion
 {
-    BOOST_CONCEPT_ASSERT( (concepts::RotationQuaternion<rotation_quaternion>) );
-
 public:
 
     /// @brief Default constructor, no initialization

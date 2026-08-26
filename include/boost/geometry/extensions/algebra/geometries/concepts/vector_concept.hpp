@@ -19,108 +19,43 @@
 #ifndef BOOST_GEOMETRY_EXTENSIONS_ALGEBRA_GEOMETRIES_CONCEPTS_VECTOR_CONCEPT_HPP
 #define BOOST_GEOMETRY_EXTENSIONS_ALGEBRA_GEOMETRIES_CONCEPTS_VECTOR_CONCEPT_HPP
 
+#include <concepts>
 #include <type_traits>
-
-#include <boost/concept_check.hpp>
-#include <boost/core/ignore_unused.hpp>
+#include <utility>
 
 #include <boost/geometry/core/cs.hpp>
-#include <boost/geometry/core/static_assert.hpp>
 #include <boost/geometry/extensions/algebra/core/access.hpp>
 #include <boost/geometry/extensions/algebra/core/coordinate_dimension.hpp>
 #include <boost/geometry/extensions/algebra/core/coordinate_type.hpp>
 #include <boost/geometry/extensions/algebra/core/coordinate_system.hpp>
+#include <boost/geometry/extensions/algebra/geometries/concepts/detail/coordinate_concepts.hpp>
+#include <boost/geometry/geometries/concepts/concept_type.hpp>
 
 namespace boost { namespace geometry { namespace concepts {
 
 template <typename Geometry>
-class Vector
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-
-    typedef typename coordinate_type<Geometry>::type ctype;
-    typedef typename coordinate_system<Geometry>::type csystem;
-
-    enum { ccount = dimension<Geometry>::value };
-
-
-    template <typename V, std::size_t Dimension, std::size_t DimensionCount>
-    struct dimension_checker
-    {
-        static void apply()
-        {
-            V* v = 0;
-            geometry::set<Dimension>(*v, geometry::get<Dimension>(*v));
-            dimension_checker<V, Dimension+1, DimensionCount>::apply();
-        }
-    };
-
-
-    template <typename V, std::size_t DimensionCount>
-    struct dimension_checker<V, DimensionCount, DimensionCount>
-    {
-        static void apply() {}
-    };
-
-public:
-
-    /// BCCL macro to apply the Vector concept
-    BOOST_CONCEPT_USAGE(Vector)
-    {
-        static const bool cs_check = std::is_same<csystem, cs::cartesian>::value;
-        BOOST_GEOMETRY_STATIC_ASSERT(cs_check,
-            "Not implemented for this coordinate system.",
-            csystem);
-
-        dimension_checker<Geometry, 0, ccount>::apply();
-    }
-#endif
-};
-
+concept ConstVector =
+    std::same_as<tag_t<geometry_type_t<Geometry>>, vector_tag>
+    && std::same_as<coordinate_system_t<geometry_type_t<Geometry>>, cs::cartesian>
+    && detail::const_algebra_coordinates<geometry_type_t<Geometry>>(
+        std::make_index_sequence<dimension<geometry_type_t<Geometry>>::value>{});
 
 template <typename Geometry>
-class ConstVector
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
+concept Vector =
+    ! std::is_const_v<std::remove_reference_t<Geometry>>
+    && ConstVector<Geometry>
+    && detail::mutable_algebra_coordinates<geometry_type_t<Geometry>>(
+        std::make_index_sequence<dimension<geometry_type_t<Geometry>>::value>{});
 
-    typedef typename coordinate_type<Geometry>::type ctype;
-    typedef typename coordinate_system<Geometry>::type csystem;
+template <typename Geometry>
+struct concept_type<Geometry, vector_tag>
+    : std::bool_constant<Vector<Geometry>>
+{};
 
-    enum { ccount = dimension<Geometry>::value };
-
-    template <typename V, std::size_t Dimension, std::size_t DimensionCount>
-    struct dimension_checker
-    {
-        static void apply()
-        {
-            const V* v = 0;
-            ctype coord(geometry::get<Dimension>(*v));
-            boost::ignore_unused(coord);
-            dimension_checker<V, Dimension+1, DimensionCount>::apply();
-        }
-    };
-
-
-    template <typename V, std::size_t DimensionCount>
-    struct dimension_checker<V, DimensionCount, DimensionCount>
-    {
-        static void apply() {}
-    };
-
-public:
-
-    /// BCCL macro to apply the ConstVector concept
-    BOOST_CONCEPT_USAGE(ConstVector)
-    {
-        static const bool cs_check = std::is_same<csystem, cs::cartesian>::value;
-        BOOST_GEOMETRY_STATIC_ASSERT(cs_check,
-            "Not implemented for this coordinate system.",
-            csystem);
-
-        dimension_checker<Geometry, 0, ccount>::apply();
-    }
-#endif
-};
+template <typename Geometry>
+struct concept_type<Geometry const, vector_tag>
+    : std::bool_constant<ConstVector<Geometry>>
+{};
 
 }}} // namespace boost::geometry::concepts
 

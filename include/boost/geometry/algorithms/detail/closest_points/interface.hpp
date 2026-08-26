@@ -10,7 +10,6 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_CLOSEST_POINTS_INTERFACE_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_CLOSEST_POINTS_INTERFACE_HPP
 
-#include <boost/concept_check.hpp>
 
 #include <boost/geometry/algorithms/detail/throw_on_empty_input.hpp>
 #include <boost/geometry/algorithms/detail/closest_points/utilities.hpp>

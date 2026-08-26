@@ -19,100 +19,41 @@
 #ifndef BOOST_GEOMETRY_EXTENSIONS_ALGEBRA_GEOMETRIES_CONCEPTS_QUATERNION_CONCEPT_HPP
 #define BOOST_GEOMETRY_EXTENSIONS_ALGEBRA_GEOMETRIES_CONCEPTS_QUATERNION_CONCEPT_HPP
 
+#include <concepts>
 #include <type_traits>
-
-#include <boost/concept_check.hpp>
-#include <boost/core/ignore_unused.hpp>
+#include <utility>
 
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/coordinate_dimension.hpp>
-#include <boost/geometry/core/static_assert.hpp>
+#include <boost/geometry/extensions/algebra/core/tags.hpp>
+#include <boost/geometry/extensions/algebra/geometries/concepts/detail/coordinate_concepts.hpp>
+#include <boost/geometry/geometries/concepts/concept_type.hpp>
 
 namespace boost { namespace geometry { namespace concepts {
 
 template <typename Geometry>
-class Quaternion
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-
-    //typedef typename coordinate_type<Geometry>::type ctype;
-    //typedef typename coordinate_system<Geometry>::type csystem;
-
-    template <typename G, std::size_t I, std::size_t N>
-    struct dimension_checker
-    {
-        static void apply()
-        {
-            G* g = 0;
-            geometry::set<I>(*g, geometry::get<I>(*g));
-            dimension_checker<G, I+1, N>::apply();
-        }
-    };
-
-
-    template <typename G, std::size_t N>
-    struct dimension_checker<G, N, N>
-    {
-        static void apply() {}
-    };
-
-public:
-
-    /// BCCL macro to apply the Vector concept
-    BOOST_CONCEPT_USAGE(Quaternion)
-    {
-        //static const bool dim_check = dimension<Geometry>::value == 4;
-        //BOOST_GEOMETRY_STATIC_ASSERT(dim_check, "INVALID_DIMENSION", RotationQuaternion);
-        //static const bool cs_check = std::is_same<csystem, cs::cartesian>::value;
-        //BOOST_GEOMETRY_STATIC_ASSERT(cs_check, "NOT_IMPLEMENTED_FOR_THIS_CS", csystem);
-
-        dimension_checker<Geometry, 0, 4>::apply();
-    }
-#endif
-};
-
+concept ConstQuaternion =
+    std::same_as<tag_t<geometry_type_t<Geometry>>, quaternion_tag>
+    && dimension<geometry_type_t<Geometry>>::value == 4
+    && detail::const_algebra_coordinates<geometry_type_t<Geometry>>(
+        std::make_index_sequence<4>{});
 
 template <typename Geometry>
-class ConstQuaternion
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
+concept Quaternion =
+    ! std::is_const_v<std::remove_reference_t<Geometry>>
+    && ConstQuaternion<Geometry>
+    && detail::mutable_algebra_coordinates<geometry_type_t<Geometry>>(
+        std::make_index_sequence<4>{});
 
-    //typedef typename coordinate_type<Geometry>::type ctype;
-    //typedef typename coordinate_system<Geometry>::type csystem;
+template <typename Geometry>
+struct concept_type<Geometry, quaternion_tag>
+    : std::bool_constant<Quaternion<Geometry>>
+{};
 
-    template <typename G, std::size_t I, std::size_t N>
-    struct dimension_checker
-    {
-        static void apply()
-        {
-            const G* g = 0;
-            typename coordinate_type<Geometry>::type coord(geometry::get<I>(*g));
-            boost::ignore_unused(coord);
-            dimension_checker<G, I+1, N>::apply();
-        }
-    };
-
-
-    template <typename G, std::size_t N>
-    struct dimension_checker<G, N, N>
-    {
-        static void apply() {}
-    };
-
-public:
-
-    /// BCCL macro to apply the ConstVector concept
-    BOOST_CONCEPT_USAGE(ConstQuaternion)
-    {
-        //static const bool dim_check = dimension<Geometry>::value == 4;
-        //BOOST_GEOMETRY_STATIC_ASSERT(dim_check, "INVALID_DIMENSION", ConstRotationQuaternion);
-        //static const bool cs_check = std::is_same<csystem, cs::cartesian>::value;
-        //BOOST_GEOMETRY_STATIC_ASSERT(cs_check, "NOT_IMPLEMENTED_FOR_THIS_CS", csystem);
-
-        dimension_checker<Geometry, 0, 4>::apply();
-    }
-#endif
-};
+template <typename Geometry>
+struct concept_type<Geometry const, quaternion_tag>
+    : std::bool_constant<ConstQuaternion<Geometry>>
+{};
 
 }}} // namespace boost::geometry::concepts
 
