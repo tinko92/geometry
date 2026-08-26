@@ -676,8 +676,7 @@ struct static_geometry_type
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
+namespace detail { namespace simplify
 {
 
 template <concepts::ConstGeometry GeometryIn,
@@ -694,9 +693,9 @@ template <concepts::ConstGeometry GeometryIn,
           || (concepts::ConstMultiPoint<GeometryIn> && concepts::MultiPoint<GeometryOut>)
           || (concepts::ConstMultiLinestring<GeometryIn> && concepts::MultiLinestring<GeometryOut>)
           || (concepts::ConstMultiPolygon<GeometryIn> && concepts::MultiPolygon<GeometryOut>)
-inline void simplify(GeometryIn const& geometry, GeometryOut& out,
-                     Distance const& max_distance, Impl const& impl,
-                     Strategies const& strategies)
+inline void apply(GeometryIn const& geometry, GeometryOut& out,
+                  Distance const& max_distance, Impl const& impl,
+                  Strategies const& strategies)
 {
     if constexpr (concepts::ConstPoint<GeometryIn>)
     {
@@ -749,17 +748,16 @@ template <concepts::ConstGeometry Geometry,
           typename Strategies>
     requires concepts::ConstLinestring<Geometry>
           || concepts::ConstRing<Geometry>
-inline void simplify_insert(Geometry const& geometry, OutputIterator& out,
-                            Distance const& max_distance, Impl const& impl,
-                            Strategies const& strategies)
+inline void apply_insert(Geometry const& geometry, OutputIterator& out,
+                         Distance const& max_distance, Impl const& impl,
+                         Strategies const& strategies)
 {
     detail::simplify::simplify_range_insert::apply(
         geometry, out, max_distance, impl, strategies);
 }
 
 
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
+}} // namespace detail::simplify
 
 
 namespace resolve_strategy
@@ -778,21 +776,21 @@ inline void simplify(GeometryIn const& geometry, GeometryOut& out,
                       "Incompatible coordinate systems");
         using strategy_type = typename strategies::simplify::services
             ::default_strategy<GeometryIn>::type;
-        dispatch::simplify(geometry, out, max_distance,
-                           detail::simplify::douglas_peucker(),
-                           strategy_type());
+        detail::simplify::apply(geometry, out, max_distance,
+                                detail::simplify::douglas_peucker(),
+                                strategy_type());
     }
     else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
     {
-        dispatch::simplify(geometry, out, max_distance,
-                           detail::simplify::douglas_peucker(), strategy);
+        detail::simplify::apply(geometry, out, max_distance,
+                                detail::simplify::douglas_peucker(), strategy);
     }
     else
     {
         using strategies::simplify::services::strategy_converter;
         auto const converted = strategy_converter<Strategy>::get(strategy);
-        dispatch::simplify(geometry, out, max_distance,
-                           detail::simplify::douglas_peucker(), converted);
+        detail::simplify::apply(geometry, out, max_distance,
+                                detail::simplify::douglas_peucker(), converted);
     }
 }
 
@@ -810,21 +808,21 @@ inline void simplify_insert(Geometry const& geometry, OutputIterator& out,
     {
         using strategy_type = typename strategies::simplify::services
             ::default_strategy<Geometry>::type;
-        dispatch::simplify_insert(geometry, out, max_distance,
-                                  detail::simplify::douglas_peucker(),
-                                  strategy_type());
+        detail::simplify::apply_insert(geometry, out, max_distance,
+                                       detail::simplify::douglas_peucker(),
+                                       strategy_type());
     }
     else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
     {
-        dispatch::simplify_insert(geometry, out, max_distance,
-                                  detail::simplify::douglas_peucker(), strategy);
+        detail::simplify::apply_insert(geometry, out, max_distance,
+                                       detail::simplify::douglas_peucker(), strategy);
     }
     else
     {
         using strategies::simplify::services::strategy_converter;
         auto const converted = strategy_converter<Strategy>::get(strategy);
-        dispatch::simplify_insert(geometry, out, max_distance,
-                                  detail::simplify::douglas_peucker(), converted);
+        detail::simplify::apply_insert(geometry, out, max_distance,
+                                       detail::simplify::douglas_peucker(), converted);
     }
 }
 

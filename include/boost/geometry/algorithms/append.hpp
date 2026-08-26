@@ -46,15 +46,6 @@ namespace boost { namespace geometry
 namespace detail { namespace append
 {
 
-struct append_no_action
-{
-    template <typename Geometry, typename Point>
-    static inline void apply(Geometry& , Point const& ,
-                             signed_size_type = -1, signed_size_type = 0)
-    {
-    }
-};
-
 struct to_range_point
 {
     template <typename Geometry, typename Point>
@@ -150,109 +141,99 @@ struct to_multigeometry
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
+namespace detail { namespace append
 {
 
-template
-<
-    typename Geometry,
-    typename RangeOrPoint
->
-struct append
-    : detail::append::append_no_action
-{};
+template <typename Geometry, typename RangeOrPoint>
+inline void apply(Geometry&, RangeOrPoint const&,
+                  signed_size_type = -1, signed_size_type = 0)
+{}
 
-template <concepts::Linestring Geometry, concepts::ConstPoint Point>
-struct append<Geometry, Point>
-    : detail::append::to_range_point
-{};
-
-template <concepts::Ring Geometry, concepts::ConstPoint Point>
-struct append<Geometry, Point>
-    : detail::append::to_range_point
-{};
+template <typename Geometry, concepts::ConstPoint Point>
+    requires concepts::Linestring<Geometry>
+          || concepts::Ring<Geometry>
+          || concepts::MultiPoint<Geometry>
+inline void apply(Geometry& geometry, Point const& point,
+                  signed_size_type ring_index, signed_size_type multi_index)
+{
+    to_range_point::apply(geometry, point, ring_index, multi_index);
+}
 
 template <concepts::Polygon Polygon, concepts::ConstPoint Point>
-struct append<Polygon, Point>
-        : detail::append::to_polygon_point
-{};
+inline void apply(Polygon& polygon, Point const& point,
+                  signed_size_type ring_index, signed_size_type multi_index)
+{
+    to_polygon_point::apply(polygon, point, ring_index, multi_index);
+}
 
-template <concepts::Linestring Geometry, typename Range>
+template <typename Geometry, typename Range>
     requires (! concepts::ConstPoint<Range>)
-struct append<Geometry, Range>
-    : detail::append::to_range_range
-{};
-
-template <concepts::Ring Geometry, typename Range>
-    requires (! concepts::ConstPoint<Range>)
-struct append<Geometry, Range>
-    : detail::append::to_range_range
-{};
+          && (concepts::Linestring<Geometry>
+              || concepts::Ring<Geometry>
+              || concepts::MultiPoint<Geometry>)
+inline void apply(Geometry& geometry, Range const& range,
+                  signed_size_type ring_index, signed_size_type multi_index)
+{
+    to_range_range::apply(geometry, range, ring_index, multi_index);
+}
 
 template <concepts::Polygon Polygon, typename Range>
     requires (! concepts::ConstPoint<Range>)
-struct append<Polygon, Range>
-        : detail::append::to_polygon_range
-{};
-
-
-template <concepts::MultiPoint Geometry, concepts::ConstPoint Point>
-struct append<Geometry, Point>
-    : detail::append::to_range_point
-{};
-
-template <concepts::MultiPoint Geometry, typename Range>
-    requires (! concepts::ConstPoint<Range>)
-struct append<Geometry, Range>
-    : detail::append::to_range_range
-{};
+inline void apply(Polygon& polygon, Range const& range,
+                  signed_size_type ring_index, signed_size_type multi_index)
+{
+    to_polygon_range::apply(polygon, range, ring_index, multi_index);
+}
 
 template <concepts::MultiLinestring MultiGeometry, concepts::ConstPoint Point>
-struct append<MultiGeometry, Point>
-    : detail::append::to_multigeometry<detail::append::to_range_point>
-{};
+inline void apply(MultiGeometry& multi, Point const& point,
+                  signed_size_type ring_index, signed_size_type multi_index)
+{
+    to_multigeometry<to_range_point>::apply(
+        multi, point, ring_index, multi_index);
+}
 
 template <concepts::MultiLinestring MultiGeometry, typename Range>
     requires (! concepts::ConstPoint<Range>)
-struct append<MultiGeometry, Range>
-    : detail::append::to_multigeometry<detail::append::to_range_range>
-{};
+inline void apply(MultiGeometry& multi, Range const& range,
+                  signed_size_type ring_index, signed_size_type multi_index)
+{
+    to_multigeometry<to_range_range>::apply(
+        multi, range, ring_index, multi_index);
+}
 
 template <concepts::MultiPolygon MultiGeometry, concepts::ConstPoint Point>
-struct append<MultiGeometry, Point>
-    : detail::append::to_multigeometry<detail::append::to_polygon_point>
-{};
+inline void apply(MultiGeometry& multi, Point const& point,
+                  signed_size_type ring_index, signed_size_type multi_index)
+{
+    to_multigeometry<to_polygon_point>::apply(
+        multi, point, ring_index, multi_index);
+}
 
 template <concepts::MultiPolygon MultiGeometry, typename Range>
     requires (! concepts::ConstPoint<Range>)
-struct append<MultiGeometry, Range>
-    : detail::append::to_multigeometry<detail::append::to_polygon_range>
-{};
-
+inline void apply(MultiGeometry& multi, Range const& range,
+                  signed_size_type ring_index, signed_size_type multi_index)
+{
+    to_multigeometry<to_polygon_range>::apply(
+        multi, range, ring_index, multi_index);
+}
 
 template <concepts::DynamicGeometry Geometry, typename RangeOrPoint>
-struct append<Geometry, RangeOrPoint>
+inline void apply(Geometry& geometry, RangeOrPoint const& range_or_point,
+                  signed_size_type ring_index, signed_size_type multi_index)
 {
-    static inline void apply(Geometry& geometry,
-                             RangeOrPoint const& range_or_point,
-                             signed_size_type ring_index, signed_size_type multi_index)
+    traits::visit<Geometry>::apply([&](auto& concrete)
     {
-        traits::visit<Geometry>::apply([&](auto & g)
-        {
-            append
-                <
-                    std::remove_reference_t<decltype(g)>, RangeOrPoint
-                >::apply(g, range_or_point, ring_index, multi_index);
-        }, geometry);
-    }
-};
+        detail::append::apply(
+            concrete, range_or_point, ring_index, multi_index);
+    }, geometry);
+}
 
 // TODO: It's unclear how append should work for GeometryCollection because
 //   it can hold multiple different geometries.
 
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
+}} // namespace detail::append
 
 
 /*!
@@ -273,10 +254,8 @@ template <concepts::MutableGeometry Geometry, typename RangeOrPoint>
 inline void append(Geometry& geometry, RangeOrPoint const& range_or_point,
                    signed_size_type ring_index = -1, signed_size_type multi_index = 0)
 {
-    dispatch::append
-        <
-            Geometry, RangeOrPoint
-        >::apply(geometry, range_or_point, ring_index, multi_index);
+    detail::append::apply(
+        geometry, range_or_point, ring_index, multi_index);
 }
 
 

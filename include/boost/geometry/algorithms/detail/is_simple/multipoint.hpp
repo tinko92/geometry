@@ -27,7 +27,7 @@
 #include <boost/geometry/algorithms/detail/is_valid/has_duplicates.hpp>
 #include <boost/geometry/algorithms/detail/is_simple/failure_policy.hpp>
 
-#include <boost/geometry/algorithms/dispatch/is_simple.hpp>
+#include <boost/geometry/geometries/concepts/check.hpp>
 
 
 namespace boost { namespace geometry
@@ -39,57 +39,31 @@ namespace detail { namespace is_simple
 {
 
 
-template <typename MultiPoint>
-struct is_simple_multipoint
+template <concepts::ConstMultiPoint MultiPoint, typename Strategy>
+inline bool apply(MultiPoint const& multipoint, Strategy const& strategy)
 {
-    template <typename Strategy>
-    static inline bool apply(MultiPoint const& multipoint, Strategy const& strategy)
+    typedef geometry::less
+        <
+            point_type_t<MultiPoint>,
+            -1,
+            Strategy
+        > less_type;
+
+    if (boost::empty(multipoint))
     {
-        typedef geometry::less
-            <
-                point_type_t<MultiPoint>,
-                -1,
-                Strategy
-            > less_type;
-
-        if (boost::empty(multipoint))
-        {
-            return true;
-        }
-
-        MultiPoint mp(multipoint);
-        std::sort(boost::begin(mp), boost::end(mp), less_type());
-
-        simplicity_failure_policy policy;
-        return ! detail::is_valid::has_duplicates<MultiPoint>::apply(mp, policy, strategy);
+        return true;
     }
-};
+
+    MultiPoint mp(multipoint);
+    std::sort(boost::begin(mp), boost::end(mp), less_type());
+
+    simplicity_failure_policy policy;
+    return ! detail::is_valid::has_duplicates<MultiPoint>::apply(mp, policy, strategy);
+}
 
 
 }} // namespace detail::is_simple
 #endif // DOXYGEN_NO_DETAIL
-
-
-
-
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-
-// A MultiPoint is simple if no two Points in the MultiPoint are equal
-// (have identical coordinate values in X and Y)
-//
-// Reference: OGC 06-103r4 (6.1.5)
-template <typename MultiPoint>
-struct is_simple<MultiPoint, multi_point_tag>
-    : detail::is_simple::is_simple_multipoint<MultiPoint>
-{};
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
 
 }} // namespace boost::geometry
 

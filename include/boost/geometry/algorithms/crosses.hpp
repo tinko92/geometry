@@ -39,16 +39,16 @@
 namespace boost { namespace geometry
 {
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
+namespace detail
 {
 
 
 template <concepts::ConstGeometry Geometry1,
           concepts::ConstGeometry Geometry2,
           typename Strategy>
-inline bool crosses(Geometry1 const& geometry1, Geometry2 const& geometry2,
-                    Strategy const& strategy)
+inline bool crosses_impl(Geometry1 const& geometry1,
+                         Geometry2 const& geometry2,
+                         Strategy const& strategy)
 {
     if constexpr (concepts::ConstGeometryCollection<Geometry1>
                   && concepts::ConstGeometryCollection<Geometry2>)
@@ -92,13 +92,13 @@ inline bool crosses(Geometry1 const& geometry1, Geometry2 const& geometry2,
     else if constexpr (concepts::ConstGeometryCollection<Geometry2>)
     {
         using view_type = detail::geometry_collection_view<Geometry1>;
-        return dispatch::crosses(
+        return detail::crosses_impl(
             view_type(geometry1), geometry2, strategy);
     }
     else if constexpr (concepts::ConstGeometryCollection<Geometry1>)
     {
         using view_type = detail::geometry_collection_view<Geometry2>;
-        return dispatch::crosses(
+        return detail::crosses_impl(
             geometry1, view_type(geometry2), strategy);
     }
     else
@@ -113,8 +113,7 @@ inline bool crosses(Geometry1 const& geometry1, Geometry2 const& geometry2,
 }
 
 
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
+} // namespace detail
 
 
 namespace resolve_strategy
@@ -131,18 +130,18 @@ inline bool crosses(Geometry1 const& geometry1,
     {
         using strategy_type = typename strategies::relate::services
             ::default_strategy<Geometry1, Geometry2>::type;
-        return dispatch::crosses(
+        return detail::crosses_impl(
             geometry1, geometry2, strategy_type());
     }
     else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
     {
-        return dispatch::crosses(geometry1, geometry2, strategy);
+        return detail::crosses_impl(geometry1, geometry2, strategy);
     }
     else
     {
         using strategies::relate::services::strategy_converter;
         auto const converted = strategy_converter<Strategy>::get(strategy);
-        return dispatch::crosses(geometry1, geometry2, converted);
+        return detail::crosses_impl(geometry1, geometry2, converted);
     }
 }
 

@@ -174,8 +174,7 @@ struct interpolate_segment
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
+namespace detail { namespace line_interpolate
 {
 
 
@@ -187,10 +186,10 @@ template <concepts::ConstGeometry Geometry,
               || concepts::ConstSegment<Geometry>)
           && (concepts::Point<Pointlike>
               || concepts::MultiPoint<Pointlike>)
-inline void line_interpolate(Geometry const& geometry,
-                             Distance const& max_distance,
-                             Pointlike& pointlike,
-                             Strategies const& strategies)
+inline void apply(Geometry const& geometry,
+                  Distance const& max_distance,
+                  Pointlike& pointlike,
+                  Strategies const& strategies)
 {
     using policy = std::conditional_t
         <
@@ -211,8 +210,7 @@ inline void line_interpolate(Geometry const& geometry,
     }
 }
 
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
+}} // namespace detail::line_interpolate
 
 
 namespace resolve_strategy {
@@ -230,18 +228,18 @@ inline void line_interpolate(Geometry const& geometry,
     {
         using strategy_type = typename strategies::line_interpolate::services
             ::default_strategy<Geometry>::type;
-        dispatch::line_interpolate(
+        detail::line_interpolate::apply(
             geometry, max_distance, pointlike, strategy_type());
     }
     else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
     {
-        dispatch::line_interpolate(
+        detail::line_interpolate::apply(
             geometry, max_distance, pointlike, strategy);
     }
     else
     {
         using strategies::line_interpolate::services::strategy_converter;
-        dispatch::line_interpolate(
+        detail::line_interpolate::apply(
             geometry, max_distance, pointlike,
             strategy_converter<Strategy>::get(strategy));
     }

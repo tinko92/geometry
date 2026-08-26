@@ -292,26 +292,6 @@ struct merge_gc
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-
-template <concepts::ConstGeometryCollection Geometry,
-          concepts::GeometryCollection GeometryOut,
-          typename Strategy>
-inline void merge_elements(Geometry const& geometry, GeometryOut& out,
-                           Strategy const& strategy)
-{
-    geometry::detail::merge_elements::merge_gc::apply(
-        geometry, out, strategy);
-}
-
-
-} // namespace dispatch
-#endif
-
-
 namespace resolve_strategy
 {
 
@@ -325,11 +305,12 @@ inline void merge_elements(Geometry const& geometry, GeometryOut& out,
     {
         using strategy_type = typename strategies::relate::services
             ::default_strategy<Geometry, Geometry>::type;
-        dispatch::merge_elements(geometry, out, strategy_type());
+        detail::merge_elements::merge_gc::apply(
+            geometry, out, strategy_type());
     }
     else
     {
-        dispatch::merge_elements(geometry, out, strategy);
+        detail::merge_elements::merge_gc::apply(geometry, out, strategy);
     }
 }
 

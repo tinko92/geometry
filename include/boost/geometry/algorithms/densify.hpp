@@ -160,8 +160,7 @@ struct densify_convert
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
+namespace detail { namespace densify
 {
 
 
@@ -178,8 +177,8 @@ template <concepts::ConstGeometry Geometry,
           || (concepts::ConstRing<Geometry> && concepts::Ring<GeometryOut>)
           || (concepts::ConstPolygon<Geometry> && concepts::Polygon<GeometryOut>)
           || (concepts::ConstMultiPolygon<Geometry> && concepts::MultiPolygon<GeometryOut>)
-inline void densify(Geometry const& geometry, GeometryOut& out,
-                    T const& len, Strategies const& strategies)
+inline void apply(Geometry const& geometry, GeometryOut& out,
+                  T const& len, Strategies const& strategies)
 {
     if constexpr (concepts::ConstPoint<Geometry>
                   || concepts::ConstSegment<Geometry>
@@ -214,16 +213,16 @@ inline void densify(Geometry const& geometry, GeometryOut& out,
     }
     else if constexpr (concepts::ConstPolygon<Geometry>)
     {
-        dispatch::densify(exterior_ring(geometry), exterior_ring(out),
-                          len, strategies);
+        detail::densify::apply(exterior_ring(geometry), exterior_ring(out),
+                               len, strategies);
 
         std::size_t const count = boost::size(interior_rings(geometry));
         range::resize(interior_rings(out), count);
         for (std::size_t i = 0; i < count; ++i)
         {
-            dispatch::densify(range::at(interior_rings(geometry), i),
-                              range::at(interior_rings(out), i),
-                              len, strategies);
+            detail::densify::apply(range::at(interior_rings(geometry), i),
+                                   range::at(interior_rings(out), i),
+                                   len, strategies);
         }
     }
     else
@@ -232,15 +231,14 @@ inline void densify(Geometry const& geometry, GeometryOut& out,
         range::resize(out, count);
         for (std::size_t i = 0; i < count; ++i)
         {
-            dispatch::densify(range::at(geometry, i), range::at(out, i),
-                              len, strategies);
+            detail::densify::apply(range::at(geometry, i), range::at(out, i),
+                                   len, strategies);
         }
     }
 }
 
 
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
+}} // namespace detail::densify
 
 
 namespace resolve_strategy
@@ -257,17 +255,17 @@ inline void densify(Geometry const& geometry, GeometryOut& out,
     {
         using strategies_type = typename strategies::densify::services
             ::default_strategy<Geometry>::type;
-        dispatch::densify(geometry, out, max_distance, strategies_type());
+        detail::densify::apply(geometry, out, max_distance, strategies_type());
     }
     else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
     {
-        dispatch::densify(geometry, out, max_distance, strategy);
+        detail::densify::apply(geometry, out, max_distance, strategy);
     }
     else
     {
         using strategies::densify::services::strategy_converter;
-        dispatch::densify(geometry, out, max_distance,
-                          strategy_converter<Strategy>::get(strategy));
+        detail::densify::apply(geometry, out, max_distance,
+                               strategy_converter<Strategy>::get(strategy));
     }
 }
 

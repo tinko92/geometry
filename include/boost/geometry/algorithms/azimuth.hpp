@@ -31,22 +31,13 @@ namespace boost { namespace geometry
 {
 
 
-#ifndef DOXYGEN_NO_DETAIL
 namespace detail
-{
-
-} // namespace detail
-#endif // DOXYGEN_NO_DETAIL
-
-
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
 {
 
 template <concepts::ConstPoint Point1, concepts::ConstPoint Point2,
           typename Strategy>
-inline auto azimuth(Point1 const& p1, Point2 const& p2,
-                    Strategy const& strategy)
+inline auto azimuth_impl(Point1 const& p1, Point2 const& p2,
+                         Strategy const& strategy)
 {
     auto azimuth_strategy = strategy.azimuth();
     using calc_t = typename decltype(azimuth_strategy)::template result_type
@@ -86,8 +77,7 @@ inline auto azimuth(Point1 const& p1, Point2 const& p2,
     return result;
 }
 
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
+} // namespace detail
 
 
 namespace resolve_strategy
@@ -102,16 +92,16 @@ inline auto azimuth(Point1 const& point1, Point2 const& point2,
     {
         using strategy_type = typename strategies::azimuth::services
             ::default_strategy<Point1, Point2>::type;
-        return dispatch::azimuth(point1, point2, strategy_type());
+        return detail::azimuth_impl(point1, point2, strategy_type());
     }
     else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
     {
-        return dispatch::azimuth(point1, point2, strategy);
+        return detail::azimuth_impl(point1, point2, strategy);
     }
     else
     {
         using strategies::azimuth::services::strategy_converter;
-        return dispatch::azimuth(point1, point2,
+        return detail::azimuth_impl(point1, point2,
             strategy_converter<Strategy>::get(strategy));
     }
 }

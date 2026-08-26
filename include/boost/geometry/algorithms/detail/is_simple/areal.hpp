@@ -25,7 +25,7 @@
 #include <boost/geometry/algorithms/detail/is_simple/failure_policy.hpp>
 #include <boost/geometry/algorithms/detail/is_valid/has_duplicates.hpp>
 
-#include <boost/geometry/algorithms/dispatch/is_simple.hpp>
+#include <boost/geometry/geometries/concepts/check.hpp>
 
 
 namespace boost { namespace geometry
@@ -65,69 +65,31 @@ inline bool is_simple_polygon(Polygon const& polygon, Strategy const& strategy)
         && are_simple_interior_rings(geometry::interior_rings(polygon), strategy);
 }
 
+template <concepts::ConstRing Ring, typename Strategy>
+inline bool apply(Ring const& ring, Strategy const& strategy)
+{
+    return is_simple_ring(ring, strategy);
+}
+
+template <concepts::ConstPolygon Polygon, typename Strategy>
+inline bool apply(Polygon const& polygon, Strategy const& strategy)
+{
+    return is_simple_polygon(polygon, strategy);
+}
+
+template <concepts::ConstMultiPolygon MultiPolygon, typename Strategy>
+inline bool apply(MultiPolygon const& multipolygon, Strategy const& strategy)
+{
+    return std::none_of(boost::begin(multipolygon), boost::end(multipolygon),
+        [&](auto const& polygon)
+        {
+            return ! is_simple_polygon(polygon, strategy);
+        });
+}
+
 
 }} // namespace detail::is_simple
 #endif // DOXYGEN_NO_DETAIL
-
-
-
-
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-
-// A Ring is a Polygon.
-// A Polygon is always a simple geometric object provided that it is valid.
-//
-// Reference (for polygon validity): OGC 06-103r4 (6.1.11.1)
-template <typename Ring>
-struct is_simple<Ring, ring_tag>
-{
-    template <typename Strategy>
-    static inline bool apply(Ring const& ring, Strategy const& strategy)
-    {
-        return detail::is_simple::is_simple_ring(ring, strategy);
-    }
-};
-
-
-// A Polygon is always a simple geometric object provided that it is valid.
-//
-// Reference (for validity of Polygons): OGC 06-103r4 (6.1.11.1)
-template <typename Polygon>
-struct is_simple<Polygon, polygon_tag>
-{
-    template <typename Strategy>
-    static inline bool apply(Polygon const& polygon, Strategy const& strategy)
-    {
-        return detail::is_simple::is_simple_polygon(polygon, strategy);
-    }
-};
-
-
-// Not clear what the definition is.
-// Right now we consider a MultiPolygon as simple if it is valid.
-//
-// Reference (for validity of MultiPolygons): OGC 06-103r4 (6.1.14)
-template <typename MultiPolygon>
-struct is_simple<MultiPolygon, multi_polygon_tag>
-{
-    template <typename Strategy>
-    static inline bool apply(MultiPolygon const& multipolygon, Strategy const& strategy)
-    {
-        return std::none_of(boost::begin(multipolygon), boost::end(multipolygon),
-                            [&](auto const& po) {
-                                return ! detail::is_simple::is_simple_polygon(po, strategy);
-                            }); // non-simple polygon not found
-                                // allow empty multi-polygon
-    }
-};
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
 
 }} // namespace boost::geometry
 

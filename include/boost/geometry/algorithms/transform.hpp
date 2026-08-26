@@ -255,8 +255,7 @@ struct transform_multi
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
+namespace detail { namespace transform
 {
 
 template <concepts::ConstGeometry Geometry1,
@@ -271,8 +270,8 @@ template <concepts::ConstGeometry Geometry1,
           || (concepts::ConstMultiPoint<Geometry1> && concepts::MultiPoint<Geometry2>)
           || (concepts::ConstMultiLinestring<Geometry1> && concepts::MultiLinestring<Geometry2>)
           || (concepts::ConstMultiPolygon<Geometry1> && concepts::MultiPolygon<Geometry2>)
-inline bool transform(Geometry1 const& geometry1, Geometry2& geometry2,
-                      Strategy const& strategy)
+inline bool apply(Geometry1 const& geometry1, Geometry2& geometry2,
+                  Strategy const& strategy)
 {
     if constexpr (concepts::ConstPoint<Geometry1>)
     {
@@ -306,7 +305,7 @@ inline bool transform(Geometry1 const& geometry1, Geometry2& geometry2,
         auto out = boost::begin(geometry2);
         for (auto it = boost::begin(geometry1); it != boost::end(geometry1); ++it)
         {
-            if (! dispatch::transform(*it, *out++, strategy))
+            if (! detail::transform::apply(*it, *out++, strategy))
             {
                 return false;
             }
@@ -316,8 +315,7 @@ inline bool transform(Geometry1 const& geometry1, Geometry2& geometry2,
 }
 
 
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
+}} // namespace detail::transform
 
 
 namespace resolve_strategy {
@@ -332,11 +330,11 @@ inline bool transform(Geometry1 const& geometry1, Geometry2& geometry2,
     {
         using strategy_type = typename detail::transform
             ::select_strategy<Geometry1, Geometry2>::type;
-        return dispatch::transform(geometry1, geometry2, strategy_type());
+        return detail::transform::apply(geometry1, geometry2, strategy_type());
     }
     else
     {
-        return dispatch::transform(geometry1, geometry2, strategy);
+        return detail::transform::apply(geometry1, geometry2, strategy);
     }
 }
 

@@ -50,7 +50,7 @@
 #include <boost/geometry/algorithms/detail/is_simple/failure_policy.hpp>
 #include <boost/geometry/algorithms/detail/is_valid/debug_print_turns.hpp>
 
-#include <boost/geometry/algorithms/dispatch/is_simple.hpp>
+#include <boost/geometry/geometries/concepts/check.hpp>
 
 #include <boost/geometry/strategies/intersection.hpp>
 
@@ -223,31 +223,21 @@ inline bool has_self_intersections(Linear const& linear, Strategy const& strateg
 }
 
 
-template <typename Linestring, bool CheckSelfIntersections = true>
-struct is_simple_linestring
+template <bool CheckSelfIntersections = true, typename Linestring, typename Strategy>
+inline bool is_simple_linestring(Linestring const& linestring,
+                                 Strategy const& strategy)
 {
-    template <typename Strategy>
-    static inline bool apply(Linestring const& linestring,
-                             Strategy const& strategy)
-    {
-        simplicity_failure_policy policy;
-        return ! boost::empty(linestring)
-            && ! detail::is_valid::has_duplicates<Linestring>::apply(linestring, policy, strategy)
-            && ! detail::is_valid::has_spikes<Linestring>::apply(linestring, policy, strategy);
-    }
-};
+    simplicity_failure_policy policy;
+    bool result = ! boost::empty(linestring)
+        && ! detail::is_valid::has_duplicates<Linestring>::apply(linestring, policy, strategy)
+        && ! detail::is_valid::has_spikes<Linestring>::apply(linestring, policy, strategy);
 
-template <typename Linestring>
-struct is_simple_linestring<Linestring, true>
-{
-    template <typename Strategy>
-    static inline bool apply(Linestring const& linestring,
-                             Strategy const& strategy)
+    if constexpr (CheckSelfIntersections)
     {
-        return is_simple_linestring<Linestring, false>::apply(linestring, strategy)
-            && ! has_self_intersections(linestring, strategy);
+        result = result && ! has_self_intersections(linestring, strategy);
     }
-};
+    return result;
+}
 
 
 template <typename MultiLinestring>
@@ -264,11 +254,8 @@ private:
         template <typename Linestring>
         inline bool operator()(Linestring const& linestring) const
         {
-            return ! detail::is_simple::is_simple_linestring
-                <
-                    Linestring,
-                    false // do not compute self-intersections
-                >::apply(linestring, m_strategy);
+            return ! detail::is_simple::is_simple_linestring<false>(
+                linestring, m_strategy);
         }
 
         Strategy const& m_strategy;
@@ -297,43 +284,24 @@ public:
     }
 };
 
+template <concepts::ConstLinestring Linestring, typename Strategy>
+inline bool apply(Linestring const& linestring, Strategy const& strategy)
+{
+    return is_simple_linestring(linestring, strategy);
+}
+
+template <concepts::ConstMultiLinestring MultiLinestring, typename Strategy>
+inline bool apply(MultiLinestring const& multilinestring,
+                  Strategy const& strategy)
+{
+    return is_simple_multilinestring<MultiLinestring>::apply(
+        multilinestring, strategy);
+}
+
 
 
 }} // namespace detail::is_simple
 #endif // DOXYGEN_NO_DETAIL
-
-
-
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-// A linestring is a curve.
-// A curve is simple if it does not pass through the same point twice,
-// with the possible exception of its two endpoints
-//
-// Reference: OGC 06-103r4 (6.1.6.1)
-template <typename Linestring>
-struct is_simple<Linestring, linestring_tag>
-    : detail::is_simple::is_simple_linestring<Linestring>
-{};
-
-
-// A MultiLinestring is a MultiCurve
-// A MultiCurve is simple if all of its elements are simple and the
-// only intersections between any two elements occur at Points that
-// are on the boundaries of both elements.
-//
-// Reference: OGC 06-103r4 (6.1.8.1; Fig. 9)
-template <typename MultiLinestring>
-struct is_simple<MultiLinestring, multi_linestring_tag>
-    : detail::is_simple::is_simple_multilinestring<MultiLinestring>
-{};
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
 
 }} // namespace boost::geometry
 

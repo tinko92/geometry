@@ -363,12 +363,11 @@ struct for_each_multi
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
+namespace detail { namespace for_each
 {
 
 template <concepts::GeometryType Geometry, typename Functor>
-inline bool for_each_point(Geometry& geometry, Functor&& functor)
+inline bool apply_point(Geometry& geometry, Functor&& functor)
 {
     using geometry_type = std::remove_cv_t<Geometry>;
 
@@ -398,7 +397,7 @@ inline bool for_each_point(Geometry& geometry, Functor&& functor)
     {
         for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
         {
-            if (! dispatch::for_each_point(*it, functor))
+            if (! detail::for_each::apply_point(*it, functor))
             {
                 return false;
             }
@@ -408,7 +407,7 @@ inline bool for_each_point(Geometry& geometry, Functor&& functor)
 }
 
 template <concepts::GeometryType Geometry, typename Functor>
-inline bool for_each_segment(Geometry& geometry, Functor&& functor)
+inline bool apply_segment(Geometry& geometry, Functor&& functor)
 {
     using geometry_type = std::remove_cv_t<Geometry>;
 
@@ -452,28 +451,27 @@ inline bool for_each_segment(Geometry& geometry, Functor&& functor)
 }
 
 
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
+}} // namespace detail::for_each
 
 
 template <concepts::ConstGeometry Geometry, typename UnaryPredicate>
 inline bool all_points_of(Geometry& geometry, UnaryPredicate p)
 {
-    return dispatch::for_each_point(geometry, p);
+    return detail::for_each::apply_point(geometry, p);
 }
 
 
 template <concepts::ConstGeometry Geometry, typename UnaryPredicate>
 inline bool all_segments_of(Geometry const& geometry, UnaryPredicate p)
 {
-    return dispatch::for_each_segment(geometry, p);
+    return detail::for_each::apply_segment(geometry, p);
 }
 
 
 template <concepts::ConstGeometry Geometry, typename UnaryPredicate>
 inline bool any_point_of(Geometry& geometry, UnaryPredicate p)
 {
-    return ! dispatch::for_each_point(geometry, [&](auto&& pt)
+    return ! detail::for_each::apply_point(geometry, [&](auto&& pt)
     {
         return ! p(pt);
     });
@@ -483,7 +481,7 @@ inline bool any_point_of(Geometry& geometry, UnaryPredicate p)
 template <concepts::ConstGeometry Geometry, typename UnaryPredicate>
 inline bool any_segment_of(Geometry const& geometry, UnaryPredicate p)
 {
-    return ! dispatch::for_each_segment(geometry, [&](auto&& s)
+    return ! detail::for_each::apply_segment(geometry, [&](auto&& s)
     {
         return ! p(s);
     });
@@ -492,7 +490,7 @@ inline bool any_segment_of(Geometry const& geometry, UnaryPredicate p)
 template <concepts::ConstGeometry Geometry, typename UnaryPredicate>
 inline bool none_point_of(Geometry& geometry, UnaryPredicate p)
 {
-    return dispatch::for_each_point(geometry, [&](auto&& pt)
+    return detail::for_each::apply_point(geometry, [&](auto&& pt)
     {
         return ! p(pt);
     });
@@ -502,7 +500,7 @@ inline bool none_point_of(Geometry& geometry, UnaryPredicate p)
 template <concepts::ConstGeometry Geometry, typename UnaryPredicate>
 inline bool none_segment_of(Geometry const& geometry, UnaryPredicate p)
 {
-    return dispatch::for_each_segment(geometry, [&](auto&& s)
+    return detail::for_each::apply_segment(geometry, [&](auto&& s)
     {
         return ! p(s);
     });
@@ -526,7 +524,7 @@ inline bool none_segment_of(Geometry const& geometry, UnaryPredicate p)
 template <concepts::ConstGeometry Geometry, typename Functor>
 inline Functor for_each_point(Geometry& geometry, Functor f)
 {
-    dispatch::for_each_point(geometry, [&](auto&& pt)
+    detail::for_each::apply_point(geometry, [&](auto&& pt)
     {
         f(pt);
         // TODO: Implement separate function?
@@ -552,7 +550,7 @@ inline Functor for_each_point(Geometry& geometry, Functor f)
 template <concepts::ConstGeometry Geometry, typename Functor>
 inline Functor for_each_segment(Geometry& geometry, Functor f)
 {
-    dispatch::for_each_segment(geometry, [&](auto&& s)
+    detail::for_each::apply_segment(geometry, [&](auto&& s)
     {
         f(s);
         // TODO: Implement separate function?
