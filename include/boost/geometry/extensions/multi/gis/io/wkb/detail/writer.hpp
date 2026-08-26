@@ -15,11 +15,11 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 #include <limits>
 
 #include <boost/concept_check.hpp>
-#include <boost/cstdint.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
@@ -52,15 +52,15 @@ namespace detail { namespace wkb
                           byte_order_type::enum_t byte_order)
         {
             // write endian type
-            value_writer<uint8_t>::write(byte_order, iter, byte_order);
+            value_writer<std::uint8_t>::write(byte_order, iter, byte_order);
 
             // write geometry type
-            uint32_t type = geometry_type<MultiPoint>::get();
-            value_writer<uint32_t>::write(type, iter, byte_order);
+            std::uint32_t type = geometry_type<MultiPoint>::get();
+            value_writer<std::uint32_t>::write(type, iter, byte_order);
 
             // write num points
-            uint32_t num_points = boost::size(multipoint);
-            value_writer<uint32_t>::write(num_points, iter, byte_order);
+            std::uint32_t num_points = boost::size(multipoint);
+            value_writer<std::uint32_t>::write(num_points, iter, byte_order);
 
             typedef typename point_type<MultiPoint>::type point_type;
 
@@ -85,15 +85,15 @@ namespace detail { namespace wkb
                           byte_order_type::enum_t byte_order)
         {
             // write endian type
-            value_writer<uint8_t>::write(byte_order, iter, byte_order);
+            value_writer<std::uint8_t>::write(byte_order, iter, byte_order);
 
             // write geometry type
-            uint32_t type = geometry_type<MultiLinestring>::get();
-            value_writer<uint32_t>::write(type, iter, byte_order);
+            std::uint32_t type = geometry_type<MultiLinestring>::get();
+            value_writer<std::uint32_t>::write(type, iter, byte_order);
 
             // write num linestrings
-            uint32_t num_linestrings = boost::size(multilinestring);
-            value_writer<uint32_t>::write(num_linestrings, iter, byte_order);
+            std::uint32_t num_linestrings = boost::size(multilinestring);
+            value_writer<std::uint32_t>::write(num_linestrings, iter, byte_order);
 
             typedef typename boost::range_value<MultiLinestring>::type linestring_type;
 
@@ -118,15 +118,15 @@ namespace detail { namespace wkb
                           byte_order_type::enum_t byte_order)
         {
             // write endian type
-            value_writer<uint8_t>::write(byte_order, iter, byte_order);
+            value_writer<std::uint8_t>::write(byte_order, iter, byte_order);
 
             // write geometry type
-            uint32_t type = geometry_type<MultiPolygon>::get();
-            value_writer<uint32_t>::write(type, iter, byte_order);
+            std::uint32_t type = geometry_type<MultiPolygon>::get();
+            value_writer<std::uint32_t>::write(type, iter, byte_order);
 
             // write num polygons
-            uint32_t num_polygons = boost::size(multipolygon);
-            value_writer<uint32_t>::write(num_polygons, iter, byte_order);
+            std::uint32_t num_polygons = boost::size(multipolygon);
+            value_writer<std::uint32_t>::write(num_polygons, iter, byte_order);
 
             typedef typename boost::range_value<MultiPolygon>::type polygon_type;
 

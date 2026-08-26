@@ -31,9 +31,6 @@
 #include <boost/geometry/util/sequence.hpp>
 #include <boost/geometry/util/tuples.hpp>
 
-#include <boost/variant/variant.hpp>
-
-
 namespace boost { namespace geometry { namespace srs
 {
 

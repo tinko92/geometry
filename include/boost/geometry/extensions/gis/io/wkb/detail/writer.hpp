@@ -16,11 +16,11 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 #include <limits>
 
 #include <boost/concept_check.hpp>
-#include <boost/cstdint.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
@@ -113,11 +113,11 @@ namespace detail { namespace wkb
                           byte_order_type::enum_t byte_order)
         {
             // write endian type
-            value_writer<uint8_t>::write(byte_order, iter, byte_order);
+            value_writer<std::uint8_t>::write(byte_order, iter, byte_order);
 
             // write geometry type
-            uint32_t type = geometry_type<Point>::get();
-            value_writer<uint32_t>::write(type, iter, byte_order);
+            std::uint32_t type = geometry_type<Point>::get();
+            value_writer<std::uint32_t>::write(type, iter, byte_order);
 
             // write point's x, y, z
             writer_assigner<Point>::run(point, iter, byte_order);
@@ -135,15 +135,15 @@ namespace detail { namespace wkb
                           byte_order_type::enum_t byte_order)
         {
             // write endian type
-            value_writer<uint8_t>::write(byte_order, iter, byte_order);
+            value_writer<std::uint8_t>::write(byte_order, iter, byte_order);
 
             // write geometry type
-            uint32_t type = geometry_type<Linestring>::get();
-            value_writer<uint32_t>::write(type, iter, byte_order);
+            std::uint32_t type = geometry_type<Linestring>::get();
+            value_writer<std::uint32_t>::write(type, iter, byte_order);
 
             // write num points
-            uint32_t num_points = boost::size(linestring);
-            value_writer<uint32_t>::write(num_points, iter, byte_order);
+            std::uint32_t num_points = boost::size(linestring);
+            value_writer<std::uint32_t>::write(num_points, iter, byte_order);
 
             for(typename boost::range_iterator<Linestring const>::type
                     point_iter = boost::begin(linestring);
@@ -168,15 +168,15 @@ namespace detail { namespace wkb
                           byte_order_type::enum_t byte_order)
         {
             // write endian type
-            value_writer<uint8_t>::write(byte_order, iter, byte_order);
+            value_writer<std::uint8_t>::write(byte_order, iter, byte_order);
 
             // write geometry type
-            uint32_t type = geometry_type<Polygon>::get();
-            value_writer<uint32_t>::write(type, iter, byte_order);
+            std::uint32_t type = geometry_type<Polygon>::get();
+            value_writer<std::uint32_t>::write(type, iter, byte_order);
 
             // write num rings
-            uint32_t num_rings = 1 + geometry::num_interior_rings(polygon);
-            value_writer<uint32_t>::write(num_rings, iter, byte_order);
+            std::uint32_t num_rings = 1 + geometry::num_interior_rings(polygon);
+            value_writer<std::uint32_t>::write(num_rings, iter, byte_order);
 
             // write exterior ring
             typedef typename geometry::ring_type<Polygon const>::type
@@ -185,9 +185,8 @@ namespace detail { namespace wkb
             typename geometry::ring_return_type<Polygon const>::type
                 exterior_ring = geometry::exterior_ring(polygon);
 
-            value_writer<uint32_t>::write(geometry::num_points(exterior_ring),
-                                          iter,
-                                          byte_order);
+            value_writer<std::uint32_t>::write(
+                geometry::num_points(exterior_ring), iter, byte_order);
 
             for(typename boost::range_iterator<ring_type const>::type
                     point_iter = boost::begin(exterior_ring);
@@ -211,9 +210,8 @@ namespace detail { namespace wkb
                 ring_iter != boost::end(interior_rings);
                 ++ring_iter)
             {
-                value_writer<uint32_t>::write(geometry::num_points(*ring_iter),
-                                              iter,
-                                              byte_order);
+                value_writer<std::uint32_t>::write(
+                    geometry::num_points(*ring_iter), iter, byte_order);
 
                 for(typename boost::range_iterator<ring_type const>::type
                         point_iter = boost::begin(*ring_iter);

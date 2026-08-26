@@ -16,6 +16,7 @@
 
 #include <string>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 #include <boost/geometry/core/radius.hpp>
@@ -34,46 +35,11 @@
 #include <boost/range/size.hpp>
 #include <boost/range/value_type.hpp>
 
-#include <boost/variant/get.hpp>
-#include <boost/variant/variant.hpp>
-
-
 namespace boost { namespace geometry { namespace srs
 {
 
 namespace detail
 {
-
-template <typename T, int I, typename ...>
-struct find_type_index_impl
-    : std::integral_constant<int, I>
-{};
-
-template
-<
-    typename T,
-    int I,
-    typename Type,
-    typename ...Types
->
-struct find_type_index_impl<T, I, Type, Types...>
-    : std::conditional_t
-        <
-            std::is_same<T, Type>::value,
-            std::integral_constant<int, I>,
-            typename find_type_index_impl<T, I + 1, Types...>::type
-        >
-{};
-
-template <typename Variant, typename T>
-struct find_type_index
-{};
-
-template <BOOST_VARIANT_ENUM_PARAMS(typename T), typename T>
-struct find_type_index<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>, T>
-    : find_type_index_impl<T, 0, BOOST_VARIANT_ENUM_PARAMS(T)>
-{};
-
 
 template
 <
@@ -684,7 +650,7 @@ struct parameter
     {}
 
 private:
-    typedef boost::variant
+    typedef std::variant
         <
             bool,
             int,
@@ -714,13 +680,13 @@ public:
     template <typename V>
     V const& get_value() const
     {
-        return boost::get<V>(m_value);
+        return std::get<V>(m_value);
     }
 
     template <typename V>
     bool is_value_set() const
     {
-        return m_value.which() == srs::detail::find_type_index<variant_type, V>::value;
+        return std::holds_alternative<V>(m_value);
     }
 
 private:

@@ -40,7 +40,6 @@
 #ifndef BOOST_GEOMETRY_PROJECTIONS_NSPER_HPP
 #define BOOST_GEOMETRY_PROJECTIONS_NSPER_HPP
 
-#include <boost/config.hpp>
 
 #include <boost/geometry/srs/projections/impl/base_static.hpp>
 #include <boost/geometry/srs/projections/impl/base_dynamic.hpp>
@@ -131,7 +130,7 @@ namespace projections
                         break;
                     case n_pole:
                         coslam = - coslam;
-                        BOOST_FALLTHROUGH;
+                        [[fallthrough]];
                     case s_pole:
                         xy_y *= cosphi * coslam;
                         break;
@@ -325,4 +324,3 @@ namespace projections
 }} // namespace boost::geometry
 
 #endif // BOOST_GEOMETRY_PROJECTIONS_NSPER_HPP
-

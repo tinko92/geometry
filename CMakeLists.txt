@@ -18,8 +18,6 @@ target_compile_features(boost_geometry INTERFACE cxx_std_17)
 target_link_libraries(boost_geometry
   INTERFACE
     Boost::algorithm
-    Boost::any
-    Boost::array
     Boost::assert
     Boost::concept_check
     Boost::config
@@ -29,7 +27,6 @@ target_link_libraries(boost_geometry
     Boost::iterator
     Boost::lexical_cast
     Boost::math
-    Boost::move
     Boost::mpl
     Boost::multiprecision
     Boost::numeric_conversion
@@ -39,7 +36,6 @@ target_link_libraries(boost_geometry
     Boost::throw_exception
     Boost::tokenizer
     Boost::tuple
-    Boost::utility
     Boost::variant
 )
 
@@ -54,8 +50,9 @@ target_link_libraries(boost_geometry
 if(BOOST_GEOMETRY_BUILD_OPTIONAL)
   target_link_libraries(boost_geometry
     INTERFACE
+      Boost::any
+      Boost::array
       Boost::fusion
-      Boost::integer
       Boost::polygon
       Boost::variant2
   )
@@ -74,7 +71,6 @@ if(BOOST_GEOMETRY_BUILD_OPTIONAL)
       )
 
 endif()
-
 
 if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt")
 

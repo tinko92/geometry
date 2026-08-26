@@ -47,7 +47,6 @@
 
 #include <type_traits>
 
-#include <boost/config.hpp>
 
 #include <boost/geometry/formulas/vincenty_direct.hpp>
 #include <boost/geometry/formulas/vincenty_inverse.hpp>
@@ -111,7 +110,7 @@ namespace projections
                 switch (proj_parm.mode) {
                 case n_pole:
                     coslam = - coslam;
-                    BOOST_FALLTHROUGH;
+                    [[fallthrough]];
                 case s_pole:
                     xy_x = (rho = fabs(proj_parm.Mp - pj_mlfn(lp_lat, sinphi, cosphi, proj_parm.en))) *
                         sin(lp_lon);
@@ -233,7 +232,7 @@ namespace projections
                 case n_pole:
                     lp_lat = -lp_lat;
                     coslam = -coslam;
-                    BOOST_FALLTHROUGH;
+                    [[fallthrough]];
                 case s_pole:
                     if (fabs(lp_lat - half_pi) < epsilon10)
                         BOOST_THROW_EXCEPTION( projection_exception(error_tolerance_condition) );
@@ -545,4 +544,3 @@ namespace projections
 }} // namespace boost::geometry
 
 #endif // BOOST_GEOMETRY_PROJECTIONS_AEQD_HPP
-

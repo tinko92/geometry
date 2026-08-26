@@ -19,9 +19,8 @@
 
 
 #include <cstddef>
+#include <functional>
 #include <memory>
-
-#include <boost/core/ref.hpp>
 
 #include <boost/geometry/core/cs.hpp>
 #include <boost/geometry/core/tag_cast.hpp>
@@ -54,7 +53,7 @@ template
 struct translating_transformer
 {
     using point_type = geometry::point_type_t<Geometry>;
-    using result_type = boost::reference_wrapper<point_type const>;
+    using result_type = std::reference_wrapper<point_type const>;
 
     explicit translating_transformer(Geometry const&) {}
     explicit translating_transformer(point_type const&) {}

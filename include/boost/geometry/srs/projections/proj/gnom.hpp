@@ -40,7 +40,6 @@
 #ifndef BOOST_GEOMETRY_PROJECTIONS_GNOM_HPP
 #define BOOST_GEOMETRY_PROJECTIONS_GNOM_HPP
 
-#include <boost/config.hpp>
 #include <boost/geometry/util/math.hpp>
 #include <boost/math/special_functions/hypot.hpp>
 
@@ -118,7 +117,7 @@ namespace projections
                         break;
                     case n_pole:
                         coslam = - coslam;
-                        BOOST_FALLTHROUGH;
+                        [[fallthrough]];
                     case s_pole:
                         xy_y *= cosphi * coslam;
                         break;
@@ -245,4 +244,3 @@ namespace projections
 }} // namespace boost::geometry
 
 #endif // BOOST_GEOMETRY_PROJECTIONS_GNOM_HPP
-

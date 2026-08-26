@@ -40,7 +40,6 @@
 #ifndef BOOST_GEOMETRY_PROJECTIONS_ORTHO_HPP
 #define BOOST_GEOMETRY_PROJECTIONS_ORTHO_HPP
 
-#include <boost/config.hpp>
 #include <boost/geometry/util/math.hpp>
 #include <boost/math/special_functions/hypot.hpp>
 
@@ -106,7 +105,7 @@ namespace projections
                         break;
                     case n_pole:
                         coslam = - coslam;
-                        BOOST_FALLTHROUGH;
+                        [[fallthrough]];
                     case s_pole:
                         if (fabs(lp_lat - par.phi0) - epsilon10 > half_pi) {
                             BOOST_THROW_EXCEPTION( projection_exception(error_tolerance_condition) );
@@ -235,4 +234,3 @@ namespace projections
 }} // namespace boost::geometry
 
 #endif // BOOST_GEOMETRY_PROJECTIONS_ORTHO_HPP
-

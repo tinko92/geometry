@@ -40,7 +40,6 @@
 #ifndef BOOST_GEOMETRY_PROJECTIONS_STERE_HPP
 #define BOOST_GEOMETRY_PROJECTIONS_STERE_HPP
 
-#include <boost/config.hpp>
 #include <boost/geometry/util/math.hpp>
 #include <boost/math/special_functions/hypot.hpp>
 
@@ -136,7 +135,7 @@ namespace projections
                         lp_lat = -lp_lat;
                         coslam = - coslam;
                         sinphi = -sinphi;
-                        BOOST_FALLTHROUGH;
+                        [[fallthrough]];
                     case n_pole:
                         // see IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2
                         // December 2021 pg. 82
@@ -188,7 +187,7 @@ namespace projections
                         break;
                     case n_pole:
                         xy_y = -xy_y;
-                        BOOST_FALLTHROUGH;
+                        [[fallthrough]];
                     case s_pole:
                         // see IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2
                         // December 2021 pg. 82
@@ -260,7 +259,7 @@ namespace projections
                     case n_pole:
                         coslam = - coslam;
                         lp_lat = - lp_lat;
-                        BOOST_FALLTHROUGH;
+                        [[fallthrough]];
                     case s_pole:
                         if (fabs(lp_lat - half_pi) < tolerance) {
                             BOOST_THROW_EXCEPTION( projection_exception(error_tolerance_condition) );
@@ -300,7 +299,7 @@ namespace projections
                         break;
                     case n_pole:
                         xy_y = -xy_y;
-                        BOOST_FALLTHROUGH;
+                        [[fallthrough]];
                     case s_pole:
                         if (fabs(rh) <= epsilon10)
                             lp_lat = par.phi0;
@@ -363,7 +362,7 @@ namespace projections
                     case obliq:
                         proj_parm.sinX1 = sin(par.phi0);
                         proj_parm.cosX1 = cos(par.phi0);
-                        BOOST_FALLTHROUGH;
+                        [[fallthrough]];
                     case equit:
                         proj_parm.akm1 = 2. * par.k0;
                         break;
@@ -539,4 +538,3 @@ namespace projections
 }} // namespace boost::geometry
 
 #endif // BOOST_GEOMETRY_PROJECTIONS_STERE_HPP
-
