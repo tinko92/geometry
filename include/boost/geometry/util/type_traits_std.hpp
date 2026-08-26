@@ -53,15 +53,8 @@ using not_ = negation<Trait>;
 */
 
 
-// C++20
-template <typename T>
-struct remove_cvref
-{
-    using type = std::remove_cv_t<std::remove_reference_t<T>>;
-};
-
-template <typename T>
-using remove_cvref_t = typename remove_cvref<T>::type;
+using std::remove_cvref;
+using std::remove_cvref_t;
 
 // non-standard
 template <typename T>

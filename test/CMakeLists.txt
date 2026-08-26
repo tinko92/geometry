@@ -44,8 +44,8 @@ function(boost_geometry_add_unit_test prefix item)
       "${PROJECT_SOURCE_DIR}/index/test"
       .)
 
-  # To compile with C++17
-  target_compile_features(${unit_test_name} PRIVATE cxx_std_17)
+  # To compile with C++20
+  target_compile_features(${unit_test_name} PRIVATE cxx_std_20)
 
   # To be able to run ctest
   set(extra_macro_args ${ARGN})

@@ -31,7 +31,7 @@ directories, so `include` directives of this scheme will work:
 
 [heading Supported Compilers]
 
-__boost_geometry__ library source code should successfully compile using any compiler with complete C++17 support.
+__boost_geometry__ library source code should successfully compile using any compiler with complete C++20 support.
 
 For the actual list of currently tested compilers, check results of the library CI builds linked
 from the [@https://github.com/boostorg/geometry/blob/develop/README.md README.md]
