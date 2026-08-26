@@ -72,12 +72,8 @@ struct is_range
     : is_range_impl<T>
 {};
 
-template <typename Range, typename T = void>
-using enable_if_mutable_t = std::enable_if_t
-    <
-        (! std::is_const<std::remove_reference_t<Range>>::value),
-        T
-    >;
+template <typename Range>
+concept mutable_range = ! std::is_const_v<std::remove_reference_t<Range>>;
 
 
 } // namespace detail
@@ -142,11 +138,8 @@ back(BidirectionalRange && rng)
        It uses traits::clear<>.
 \ingroup utility
 */
-template
-<
-    typename Range,
-    detail::enable_if_mutable_t<Range, int> = 0
->
+template <typename Range>
+    requires detail::mutable_range<Range>
 inline void clear(Range && rng)
 {
     geometry::traits::clear
@@ -160,11 +153,8 @@ inline void clear(Range && rng)
        It uses boost::geometry::traits::push_back<>.
 \ingroup utility
 */
-template
-<
-    typename Range,
-    detail::enable_if_mutable_t<Range, int> = 0
->
+template <typename Range>
+    requires detail::mutable_range<Range>
 inline void push_back(Range && rng,
                       typename boost::range_value<Range>::type const& value)
 {
@@ -179,11 +169,8 @@ inline void push_back(Range && rng,
        It uses boost::geometry::traits::push_back<>.
 \ingroup utility
 */
-template
-<
-    typename Range,
-    detail::enable_if_mutable_t<Range, int> = 0
->
+template <typename Range>
+    requires detail::mutable_range<Range>
 inline void push_back(Range && rng,
                       typename boost::range_value<Range>::type && value)
 {
@@ -198,12 +185,8 @@ inline void push_back(Range && rng,
        It uses boost::geometry::traits::emplace_back<>.
 \ingroup utility
 */
-template
-<
-    typename Range,
-    typename ...Args,
-    detail::enable_if_mutable_t<Range, int> = 0
->
+template <typename Range, typename ...Args>
+    requires detail::mutable_range<Range>
 inline void emplace_back(Range && rng, Args &&... args)
 {
     geometry::traits::emplace_back
@@ -217,11 +200,8 @@ inline void emplace_back(Range && rng, Args &&... args)
        It uses boost::geometry::traits::resize<>.
 \ingroup utility
 */
-template
-<
-    typename Range,
-    detail::enable_if_mutable_t<Range, int> = 0
->
+template <typename Range>
+    requires detail::mutable_range<Range>
 inline void resize(Range && rng,
                    typename boost::range_size<Range>::type new_size)
 {
@@ -236,11 +216,8 @@ inline void resize(Range && rng,
        It uses resize().
 \ingroup utility
 */
-template
-<
-    typename Range,
-    detail::enable_if_mutable_t<Range, int> = 0
->
+template <typename Range>
+    requires detail::mutable_range<Range>
 inline void pop_back(Range && rng)
 {
     BOOST_GEOMETRY_ASSERT(!boost::empty(rng));
@@ -252,11 +229,8 @@ inline void pop_back(Range && rng)
        It uses std::move() and resize(). Version taking mutable iterators.
 \ingroup utility
 */
-template
-<
-    typename Range,
-    detail::enable_if_mutable_t<Range, int> = 0
->
+template <typename Range>
+    requires detail::mutable_range<Range>
 inline typename boost::range_iterator<Range>::type
 erase(Range && rng,
       typename boost::range_iterator<Range>::type it)
@@ -288,11 +262,8 @@ erase(Range && rng,
        It uses std::move() and resize(). Version taking non-mutable iterators.
 \ingroup utility
 */
-template
-<
-    typename Range,
-    detail::enable_if_mutable_t<Range, int> = 0
->
+template <typename Range>
+    requires detail::mutable_range<Range>
 inline typename boost::range_iterator<Range>::type
 erase(Range && rng,
       typename boost::range_iterator<std::remove_reference_t<Range> const>::type cit)
@@ -311,11 +282,8 @@ erase(Range && rng,
        It uses std::move() and resize(). Version taking mutable iterators.
 \ingroup utility
 */
-template
-<
-    typename Range,
-    detail::enable_if_mutable_t<Range, int> = 0
->
+template <typename Range>
+    requires detail::mutable_range<Range>
 inline typename boost::range_iterator<Range>::type
 erase(Range && rng,
       typename boost::range_iterator<Range>::type first,
@@ -353,11 +321,8 @@ erase(Range && rng,
        It uses std::move() and resize(). Version taking non-mutable iterators.
 \ingroup utility
 */
-template
-<
-    typename Range,
-    detail::enable_if_mutable_t<Range, int> = 0
->
+template <typename Range>
+    requires detail::mutable_range<Range>
 inline typename boost::range_iterator<Range>::type
 erase(Range && rng,
       typename boost::range_iterator<std::remove_reference_t<Range> const>::type cfirst,

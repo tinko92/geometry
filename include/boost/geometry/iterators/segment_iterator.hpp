@@ -286,19 +286,12 @@ public:
 
     inline segment_iterator() = default;
 
-    template
-    <
-        typename OtherGeometry,
-        std::enable_if_t
+    template <typename OtherGeometry>
+        requires std::is_convertible_v
             <
-                std::is_convertible
-                    <
-                        typename detail::segment_iterator::iterator_type<OtherGeometry>::type,
-                        typename detail::segment_iterator::iterator_type<Geometry>::type
-                    >::value,
-                int
-            > = 0
-    >
+                typename detail::segment_iterator::iterator_type<OtherGeometry>::type,
+                typename detail::segment_iterator::iterator_type<Geometry>::type
+            >
     inline segment_iterator(segment_iterator<OtherGeometry> const& other)
         : base(*other.base_ptr())
     {}

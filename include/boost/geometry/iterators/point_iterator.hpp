@@ -11,6 +11,7 @@
 #define BOOST_GEOMETRY_ITERATORS_POINT_ITERATOR_HPP
 
 
+#include <iterator>
 #include <type_traits>
 
 #include <boost/iterator/iterator_adaptor.hpp>
@@ -262,21 +263,18 @@ private:
         : point_iterator::iterator_adaptor_(base_it) {}
 
 public:
+    // iterator_facade downgrades iterators returning values to input iterators.
+    // Point iteration is bidirectional and point_reverse_iterator depends on it.
+    using iterator_category = std::bidirectional_iterator_tag;
+
     inline point_iterator() = default;
 
-    template
-    <
-        typename OtherGeometry,
-        std::enable_if_t
+    template <typename OtherGeometry>
+        requires std::is_convertible_v
             <
-                std::is_convertible
-                    <
-                        typename detail::point_iterator::iterator_type<OtherGeometry>::type,
-                        typename detail::point_iterator::iterator_type<Geometry>::type
-                    >::value,
-                int
-            > = 0
-    >
+                typename detail::point_iterator::iterator_type<OtherGeometry>::type,
+                typename detail::point_iterator::iterator_type<Geometry>::type
+            >
     inline point_iterator(point_iterator<OtherGeometry> const& other)
         : point_iterator::iterator_adaptor_(other.base())
     {}

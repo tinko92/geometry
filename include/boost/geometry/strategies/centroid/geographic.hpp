@@ -33,12 +33,8 @@ class geographic
 public:
     // TODO: Box and Segment should have proper strategies.
     template <typename Geometry, typename Point>
-    static auto centroid(Geometry const&, Point const&,
-                         std::enable_if_t
-                            <
-                                util::is_segment<Geometry>::value
-                             || util::is_box<Geometry>::value
-                            > * = nullptr)
+        requires (util::segment<Geometry> || util::box<Geometry>)
+    static auto centroid(Geometry const&, Point const&)
     {
         return strategy::centroid::not_applicable_strategy();
     }

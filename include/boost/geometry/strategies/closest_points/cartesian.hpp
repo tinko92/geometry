@@ -42,8 +42,8 @@ struct cartesian
     : public strategies::distance::cartesian<CalculationType>
 {
     template <typename Geometry1, typename Geometry2>
-    static auto closest_points(Geometry1 const&, Geometry2 const&,
-                               distance::detail::enable_if_ps_t<Geometry1, Geometry2> * = nullptr)
+        requires distance::detail::point_segment<Geometry1, Geometry2>
+    static auto closest_points(Geometry1 const&, Geometry2 const&)
     {
         return strategy::closest_points::projected_point<CalculationType>();
     }

@@ -151,13 +151,15 @@ struct pj_transformation
             forward(in_xy[i], out_xy[i]);
     }
 
-    template <typename In, typename Out, boost::geometry::util::enable_if_point_t<In, int> = 0>
+    template <typename In, typename Out>
+        requires boost::geometry::util::point<In>
     void forward(In const& in, Out & out) const
     {
         transform_point(in, out, m_from, m_to);
     }
 
-    template <typename In, typename Out, boost::geometry::util::enable_if_point_t<In, int> = 0>
+    template <typename In, typename Out>
+        requires boost::geometry::util::point<In>
     void inverse(In const& in, Out & out) const
     {
         transform_point(in, out, m_to, m_from);
@@ -237,7 +239,8 @@ struct proj5_transformation
         out = std::move(in);
     }
 
-    template <typename In, typename Out, boost::geometry::util::enable_if_point_t<In, int> = 0>
+    template <typename In, typename Out>
+        requires boost::geometry::util::point<In>
     void forward(In const& in, Out & out) const
     {
         PJ_COORD c;
@@ -273,7 +276,8 @@ struct proj6_transformation
         out = std::move(in);
     }
 
-    template <typename In, typename Out, boost::geometry::util::enable_if_point_t<In, int> = 0>
+    template <typename In, typename Out>
+        requires boost::geometry::util::point<In>
     void forward(In const& in, Out & out) const
     {
         PJ_COORD c;

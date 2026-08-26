@@ -195,150 +195,71 @@ template <typename T>
 inline constexpr bool is_dynamic_geometry_v = is_dynamic_geometry<T>::value;
 
 
-template <typename Geometry, typename T = void>
-struct enable_if_point
-    : std::enable_if<is_point<Geometry>::value, T>
-{};
+template <typename T>
+concept geometry_type = is_geometry_v<T>;
 
-template <typename Geometry, typename T = void>
-using enable_if_point_t = typename enable_if_point<Geometry, T>::type;
+template <typename T>
+concept point = is_point_v<T>;
 
+template <typename T>
+concept multi_point = is_multi_point_v<T>;
 
-template <typename Geometry, typename T = void>
-struct enable_if_multi_point
-    : std::enable_if<is_multi_point<Geometry>::value, T>
-{};
+template <typename T>
+concept pointlike = is_pointlike_v<T>;
 
-template <typename Geometry, typename T = void>
-using enable_if_multi_point_t = typename enable_if_multi_point<Geometry, T>::type;
+template <typename T>
+concept segment = is_segment_v<T>;
 
-template <typename Geometry, typename T = void>
-struct enable_if_pointlike
-    : std::enable_if<is_pointlike<Geometry>::value, T>
-{};
+template <typename T>
+concept linestring = is_linestring_v<T>;
 
-template <typename Geometry, typename T = void>
-using enable_if_pointlike_t = typename enable_if_pointlike<Geometry, T>::type;
+template <typename T>
+concept multi_linestring = is_multi_linestring_v<T>;
 
+template <typename T>
+concept polylinear = is_polylinear_v<T>;
 
-template <typename Geometry, typename T = void>
-struct enable_if_segment
-    : std::enable_if<is_segment<Geometry>::value, T>
-{};
+template <typename T>
+concept linear = is_linear_v<T>;
 
-template <typename Geometry, typename T = void>
-using enable_if_segment_t = typename enable_if_segment<Geometry, T>::type;
+template <typename T>
+concept box = is_box_v<T>;
 
-template <typename Geometry, typename T = void>
-struct enable_if_linestring
-    : std::enable_if<is_linestring<Geometry>::value, T>
-{};
+template <typename T>
+concept ring = is_ring_v<T>;
 
-template <typename Geometry, typename T = void>
-using enable_if_linestring_t = typename enable_if_linestring<Geometry, T>::type;
+template <typename T>
+concept polygon = is_polygon_v<T>;
 
-template <typename Geometry, typename T = void>
-struct enable_if_multi_linestring
-    : std::enable_if<is_multi_linestring<Geometry>::value, T>
-{};
+template <typename T>
+concept multi_polygon = is_multi_polygon_v<T>;
 
-template <typename Geometry, typename T = void>
-using enable_if_multi_linestring_t = typename enable_if_multi_linestring<Geometry, T>::type;
+template <typename T>
+concept polygonal = is_polygonal_v<T>;
 
+template <typename T>
+concept areal = is_areal_v<T>;
 
-template <typename Geometry, typename T = void>
-struct enable_if_polylinear
-    : std::enable_if<is_polylinear<Geometry>::value, T>
-{};
+template <typename T>
+concept segmental = is_segmental_v<T>;
 
-template <typename Geometry, typename T = void>
-using enable_if_polylinear_t = typename enable_if_polylinear<Geometry, T>::type;
+template <typename T>
+concept polysegmental = is_polysegmental_v<T>;
 
+template <typename T>
+concept multi = is_multi_v<T>;
 
-template <typename Geometry, typename T = void>
-struct enable_if_linear
-    : std::enable_if<is_linear<Geometry>::value, T>
-{};
+template <typename T>
+concept multi_element = is_multi_element_v<T>;
 
-template <typename Geometry, typename T = void>
-using enable_if_linear_t = typename enable_if_linear<Geometry, T>::type;
+template <typename T>
+concept single = is_single_v<T>;
 
+template <typename T>
+concept geometry_collection = is_geometry_collection_v<T>;
 
-template <typename Geometry, typename T = void>
-struct enable_if_box
-    : std::enable_if<is_box<Geometry>::value, T>
-{};
-
-template <typename Geometry, typename T = void>
-using enable_if_box_t = typename enable_if_box<Geometry, T>::type;
-
-template <typename Geometry, typename T = void>
-struct enable_if_ring
-    : std::enable_if<is_ring<Geometry>::value, T>
-{};
-
-template <typename Geometry, typename T = void>
-using enable_if_ring_t = typename enable_if_ring<Geometry, T>::type;
-
-template <typename Geometry, typename T = void>
-struct enable_if_polygon
-    : std::enable_if<is_polygon<Geometry>::value, T>
-{};
-
-template <typename Geometry, typename T = void>
-using enable_if_polygon_t = typename enable_if_polygon<Geometry, T>::type;
-
-template <typename Geometry, typename T = void>
-struct enable_if_multi_polygon
-    : std::enable_if<is_multi_polygon<Geometry>::value, T>
-{};
-
-template <typename Geometry, typename T = void>
-using enable_if_multi_polygon_t = typename enable_if_multi_polygon<Geometry, T>::type;
-
-
-template <typename Geometry, typename T = void>
-struct enable_if_polygonal
-    : std::enable_if<is_polygonal<Geometry>::value, T>
-{};
-
-template <typename Geometry, typename T = void>
-using enable_if_polygonal_t = typename enable_if_polygonal<Geometry, T>::type;
-
-
-template <typename Geometry, typename T = void>
-struct enable_if_areal
-    : std::enable_if<is_areal<Geometry>::value, T>
-{};
-
-template <typename Geometry, typename T = void>
-using enable_if_areal_t = typename enable_if_areal<Geometry, T>::type;
-
-
-template <typename Geometry, typename T = void>
-struct enable_if_polysegmental
-    : std::enable_if<is_polysegmental<Geometry>::value, T>
-{};
-
-template <typename Geometry, typename T = void>
-using enable_if_polysegmental_t = typename enable_if_polysegmental<Geometry, T>::type;
-
-
-template <typename Geometry, typename T = void>
-struct enable_if_dynamic_geometry
-    : std::enable_if<is_dynamic_geometry<Geometry>::value, T>
-{};
-
-template <typename Geometry, typename T = void>
-using enable_if_dynamic_geometry_t = typename enable_if_dynamic_geometry<Geometry, T>::type;
-
-template <typename Geometry, typename T = void>
-struct enable_if_geometry_collection
-    : std::enable_if<is_geometry_collection<Geometry>::value, T>
-{};
-
-template <typename Geometry, typename T = void>
-using enable_if_geometry_collection_t = typename enable_if_geometry_collection<Geometry, T>::type;
+template <typename T>
+concept dynamic_geometry = is_dynamic_geometry_v<T>;
 
 
 } // namespace util

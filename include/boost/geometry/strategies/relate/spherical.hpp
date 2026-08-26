@@ -71,8 +71,8 @@ public:
     }
 
     template <typename Geometry1, typename Geometry2>
-    auto comparable_distance(Geometry1 const&, Geometry2 const&,
-                             distance::detail::enable_if_pp_t<Geometry1, Geometry2> * = nullptr) const
+        requires distance::detail::point_point<Geometry1, Geometry2>
+    auto comparable_distance(Geometry1 const&, Geometry2 const&) const
     {
         return strategy::distance::comparable::haversine
                 <

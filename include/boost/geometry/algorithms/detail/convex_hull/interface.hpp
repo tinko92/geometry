@@ -410,34 +410,34 @@ struct convex_hull_out<OutputGeometry, geometry_collection_tag>
     }
 
 private:
-    template <typename Polygonal, util::enable_if_ring_t<Polygonal, int> = 0>
+    template <util::ring Polygonal>
     static decltype(auto) ring(Polygonal const& polygonal)
     {
         return polygonal;
     }
-    template <typename Polygonal, util::enable_if_polygon_t<Polygonal, int> = 0>
+    template <util::polygon Polygonal>
     static decltype(auto) ring(Polygonal const& polygonal)
     {
         return exterior_ring(polygonal);
     }
-    template <typename Polygonal, util::enable_if_multi_polygon_t<Polygonal, int> = 0>
+    template <util::multi_polygon Polygonal>
     static decltype(auto) ring(Polygonal const& polygonal)
     {
         return exterior_ring(range::front(polygonal));
     }
 
-    template <typename Range, typename Linear, util::enable_if_segment_t<Linear, int> = 0>
+    template <typename Range, util::segment Linear>
     static void move_to_linear(Range & out_range, Linear & seg)
     {
         detail::assign_point_to_index<0>(range::front(out_range), seg);
         detail::assign_point_to_index<1>(range::at(out_range, 1), seg);
     }
-    template <typename Range, typename Linear, util::enable_if_linestring_t<Linear, int> = 0>
+    template <typename Range, util::linestring Linear>
     static void move_to_linear(Range & out_range, Linear & ls)
     {
         std::move(boost::begin(out_range), boost::begin(out_range) + 2, range::back_inserter(ls));
     }
-    template <typename Range, typename Linear, util::enable_if_multi_linestring_t<Linear, int> = 0>
+    template <typename Range, util::multi_linestring Linear>
     static void move_to_linear(Range & out_range, Linear & mls)
     {
         typename boost::range_value<Linear>::type ls;
@@ -445,31 +445,23 @@ private:
         range::push_back(mls, std::move(ls));
     }
 
-    template <typename Range, typename PointLike, util::enable_if_point_t<PointLike, int> = 0>
+    template <typename Range, util::point PointLike>
     static void move_to_pointlike(Range & out_range, PointLike & pt)
     {
         pt = range::front(out_range);
     }
-    template <typename Range, typename PointLike, util::enable_if_multi_point_t<PointLike, int> = 0>
+    template <typename Range, util::multi_point PointLike>
     static void move_to_pointlike(Range & out_range, PointLike & mpt)
     {
         range::push_back(mpt, std::move(range::front(out_range)));
     }
 
-    template
-    <
-        typename Geometry, typename OutputGeometry_,
-        util::enable_if_geometry_collection_t<OutputGeometry_, int> = 0
-    >
+    template <typename Geometry, util::geometry_collection OutputGeometry_>
     static void move_to_out(Geometry & g, OutputGeometry_ & out)
     {
         range::emplace_back(out, std::move(g));
     }
-    template
-    <
-        typename Geometry, typename OutputGeometry_,
-        util::enable_if_dynamic_geometry_t<OutputGeometry_, int> = 0
-    >
+    template <typename Geometry, util::dynamic_geometry OutputGeometry_>
     static void move_to_out(Geometry & g, OutputGeometry_ & out)
     {
         out = std::move(g);
