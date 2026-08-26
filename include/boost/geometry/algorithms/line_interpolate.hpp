@@ -18,16 +18,13 @@
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/value_type.hpp>
-#include <boost/variant/apply_visitor.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/variant_fwd.hpp>
-
 #include <boost/geometry/algorithms/detail/convert_point_to_point.hpp>
 #include <boost/geometry/algorithms/detail/dummy_geometries.hpp>
 
 #include <boost/geometry/core/exception.hpp>
 #include <boost/geometry/core/static_assert.hpp>
 #include <boost/geometry/core/tags.hpp>
+#include <boost/geometry/core/visit.hpp>
 
 #include <boost/geometry/geometries/concepts/check.hpp>
 
@@ -182,52 +179,37 @@ namespace dispatch
 {
 
 
-template
-<
-    typename Geometry,
-    typename Pointlike,
-    typename Tag1 = tag_t<Geometry>,
-    typename Tag2 = tag_t<Pointlike>
->
-struct line_interpolate
+template <concepts::ConstGeometry Geometry,
+          concepts::MutableGeometry Pointlike,
+          typename Distance,
+          typename Strategies>
+    requires (concepts::ConstLinestring<Geometry>
+              || concepts::ConstSegment<Geometry>)
+          && (concepts::Point<Pointlike>
+              || concepts::MultiPoint<Pointlike>)
+inline void line_interpolate(Geometry const& geometry,
+                             Distance const& max_distance,
+                             Pointlike& pointlike,
+                             Strategies const& strategies)
 {
-    BOOST_GEOMETRY_STATIC_ASSERT_FALSE(
-        "Not implemented for this Geometry type.",
-        Geometry, Pointlike);
-};
-
-
-template <typename Geometry, typename Pointlike>
-struct line_interpolate<Geometry, Pointlike, linestring_tag, point_tag>
-    : detail::line_interpolate::interpolate_range
+    using policy = std::conditional_t
         <
-            detail::line_interpolate::convert_and_assign
-        >
-{};
-
-template <typename Geometry, typename Pointlike>
-struct line_interpolate<Geometry, Pointlike, linestring_tag, multi_point_tag>
-    : detail::line_interpolate::interpolate_range
-        <
+            concepts::Point<Pointlike>,
+            detail::line_interpolate::convert_and_assign,
             detail::line_interpolate::convert_and_push_back
-        >
-{};
+        >;
 
-template <typename Geometry, typename Pointlike>
-struct line_interpolate<Geometry, Pointlike, segment_tag, point_tag>
-    : detail::line_interpolate::interpolate_segment
-        <
-            detail::line_interpolate::convert_and_assign
-        >
-{};
-
-template <typename Geometry, typename Pointlike>
-struct line_interpolate<Geometry, Pointlike, segment_tag, multi_point_tag>
-    : detail::line_interpolate::interpolate_segment
-        <
-            detail::line_interpolate::convert_and_push_back
-        >
-{};
+    if constexpr (concepts::ConstLinestring<Geometry>)
+    {
+        detail::line_interpolate::interpolate_range<policy>::apply(
+            geometry, max_distance, pointlike, strategies);
+    }
+    else
+    {
+        detail::line_interpolate::interpolate_segment<policy>::apply(
+            geometry, max_distance, pointlike, strategies);
+    }
+}
 
 } // namespace dispatch
 #endif // DOXYGEN_NO_DISPATCH
@@ -235,125 +217,66 @@ struct line_interpolate<Geometry, Pointlike, segment_tag, multi_point_tag>
 
 namespace resolve_strategy {
 
-template
-<
-    typename Strategies,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategies>::value
->
-struct line_interpolate
-{
-    template <typename Geometry, typename Distance, typename Pointlike>
-    static inline void apply(Geometry const& geometry,
+template <concepts::ConstGeometry Geometry,
+          typename Distance,
+          concepts::MutableGeometry Pointlike,
+          typename Strategy>
+inline void line_interpolate(Geometry const& geometry,
                              Distance const& max_distance,
-                             Pointlike & pointlike,
-                             Strategies const& strategies)
-    {
-        dispatch::line_interpolate
-            <
-                Geometry, Pointlike
-            >::apply(geometry, max_distance, pointlike, strategies);
-    }
-};
-
-template <typename Strategy>
-struct line_interpolate<Strategy, false>
-{
-    template <typename Geometry, typename Distance, typename Pointlike>
-    static inline void apply(Geometry const& geometry,
-                             Distance const& max_distance,
-                             Pointlike & pointlike,
+                             Pointlike& pointlike,
                              Strategy const& strategy)
+{
+    if constexpr (std::same_as<Strategy, default_strategy>)
+    {
+        using strategy_type = typename strategies::line_interpolate::services
+            ::default_strategy<Geometry>::type;
+        dispatch::line_interpolate(
+            geometry, max_distance, pointlike, strategy_type());
+    }
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        dispatch::line_interpolate(
+            geometry, max_distance, pointlike, strategy);
+    }
+    else
     {
         using strategies::line_interpolate::services::strategy_converter;
-
-        dispatch::line_interpolate
-            <
-                Geometry, Pointlike
-            >::apply(geometry, max_distance, pointlike,
-                     strategy_converter<Strategy>::get(strategy));
+        dispatch::line_interpolate(
+            geometry, max_distance, pointlike,
+            strategy_converter<Strategy>::get(strategy));
     }
-};
-
-template <>
-struct line_interpolate<default_strategy, false>
-{
-    template <typename Geometry, typename Distance, typename Pointlike>
-    static inline void apply(Geometry const& geometry,
-                             Distance const& max_distance,
-                             Pointlike & pointlike,
-                             default_strategy)
-    {
-        typedef typename strategies::line_interpolate::services::default_strategy
-            <
-                Geometry
-            >::type strategy_type;
-
-        dispatch::line_interpolate
-            <
-                Geometry, Pointlike
-            >::apply(geometry, max_distance, pointlike, strategy_type());
-    }
-};
+}
 
 } // namespace resolve_strategy
 
 
-namespace resolve_variant {
+namespace resolve_dynamic {
 
-template <typename Geometry>
-struct line_interpolate
-{
-    template <typename Distance, typename Pointlike, typename Strategy>
-    static inline void apply(Geometry const& geometry,
+template <concepts::ConstGeometry Geometry,
+          typename Distance,
+          concepts::MutableGeometry Pointlike,
+          typename Strategy>
+inline void line_interpolate(Geometry const& geometry,
                              Distance const& max_distance,
-                             Pointlike & pointlike,
+                             Pointlike& pointlike,
                              Strategy const& strategy)
-    {
-        return resolve_strategy::line_interpolate
-                <
-                    Strategy
-                >::apply(geometry, max_distance, pointlike, strategy);
-    }
-};
-
-template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
-struct line_interpolate<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> >
 {
-    template <typename Pointlike, typename Strategy>
-    struct visitor: boost::static_visitor<void>
+    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
     {
-        Pointlike const& m_pointlike;
-        Strategy const& m_strategy;
-
-        visitor(Pointlike const& pointlike, Strategy const& strategy)
-            : m_pointlike(pointlike)
-            , m_strategy(strategy)
-        {}
-
-        template <typename Geometry, typename Distance>
-        void operator()(Geometry const& geometry, Distance const& max_distance) const
+        traits::visit<Geometry>::apply([&](auto const& g)
         {
-            line_interpolate<Geometry>::apply(geometry, max_distance,
-                                              m_pointlike, m_strategy);
-        }
-    };
-
-    template <typename Distance, typename Pointlike, typename Strategy>
-    static inline void
-    apply(boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> const& geometry,
-          Distance const& max_distance,
-          Pointlike & pointlike,
-          Strategy const& strategy)
-    {
-        boost::apply_visitor(
-            visitor<Pointlike, Strategy>(pointlike, strategy),
-            geometry,
-            max_distance
-        );
+            resolve_dynamic::line_interpolate(
+                g, max_distance, pointlike, strategy);
+        }, geometry);
     }
-};
+    else
+    {
+        resolve_strategy::line_interpolate(
+            geometry, max_distance, pointlike, strategy);
+    }
+}
 
-} // namespace resolve_variant
+} // namespace resolve_dynamic
 
 /*!
 \brief     Returns one or more points interpolated along a LineString \brief_strategy
@@ -388,24 +311,21 @@ points
 \* [link geometry.reference.algorithms.densify densify]
 }
  */
-template
-<
-    typename Geometry,
-    typename Distance,
-    typename Pointlike,
-    typename Strategy
->
+template <concepts::ConstGeometry Geometry,
+          typename Distance,
+          concepts::MutableGeometry Pointlike,
+          typename Strategy>
+    requires (concepts::Point<Pointlike>
+              || concepts::MultiPoint<Pointlike>)
 inline void line_interpolate(Geometry const& geometry,
                              Distance const& max_distance,
                              Pointlike & pointlike,
                              Strategy const& strategy)
 {
-    concepts::check<Geometry const>();
-
     // detail::throw_on_empty_input(geometry);
 
-    return resolve_variant::line_interpolate<Geometry>
-                          ::apply(geometry, max_distance, pointlike, strategy);
+    return resolve_dynamic::line_interpolate(
+        geometry, max_distance, pointlike, strategy);
 }
 
 
@@ -431,17 +351,19 @@ a MultiPoint (depending on the max_distance one or more points will be construct
 \* [link geometry.reference.algorithms.densify densify]
 }
  */
-template<typename Geometry, typename Distance, typename Pointlike>
+template <concepts::ConstGeometry Geometry,
+          typename Distance,
+          concepts::MutableGeometry Pointlike>
+    requires (concepts::Point<Pointlike>
+              || concepts::MultiPoint<Pointlike>)
 inline void line_interpolate(Geometry const& geometry,
                              Distance const& max_distance,
                              Pointlike & pointlike)
 {
-    concepts::check<Geometry const>();
-
     // detail::throw_on_empty_input(geometry);
 
-    return resolve_variant::line_interpolate<Geometry>
-                          ::apply(geometry, max_distance, pointlike, default_strategy());
+    return resolve_dynamic::line_interpolate(
+        geometry, max_distance, pointlike, default_strategy());
 }
 
 }} // namespace boost::geometry

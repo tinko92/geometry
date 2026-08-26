@@ -99,112 +99,6 @@ struct close_or_open_polygon
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct correct_closure: not_implemented<Tag>
-{};
-
-template <typename Point>
-struct correct_closure<Point, point_tag>
-    : detail::correct_closure::nop
-{};
-
-template <typename LineString>
-struct correct_closure<LineString, linestring_tag>
-    : detail::correct_closure::nop
-{};
-
-template <typename Segment>
-struct correct_closure<Segment, segment_tag>
-    : detail::correct_closure::nop
-{};
-
-
-template <typename Box>
-struct correct_closure<Box, box_tag>
-    : detail::correct_closure::nop
-{};
-
-template <typename Ring>
-struct correct_closure<Ring, ring_tag>
-    : detail::correct_closure::close_or_open_ring
-{};
-
-template <typename Polygon>
-struct correct_closure<Polygon, polygon_tag>
-    : detail::correct_closure::close_or_open_polygon
-{};
-
-
-template <typename MultiPoint>
-struct correct_closure<MultiPoint, multi_point_tag>
-    : detail::correct_closure::nop
-{};
-
-
-template <typename MultiLineString>
-struct correct_closure<MultiLineString, multi_linestring_tag>
-    : detail::correct_closure::nop
-{};
-
-
-template <typename Geometry>
-struct correct_closure<Geometry, multi_polygon_tag>
-    : detail::multi_modify
-        <
-            detail::correct_closure::close_or_open_polygon
-        >
-{};
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
-
-namespace resolve_variant
-{
-
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct correct_closure
-{
-    static inline void apply(Geometry& geometry)
-    {
-        concepts::check<Geometry const>();
-        dispatch::correct_closure<Geometry>::apply(geometry);
-    }
-};
-
-template <typename Geometry>
-struct correct_closure<Geometry, dynamic_geometry_tag>
-{
-    static void apply(Geometry& geometry)
-    {
-        traits::visit<Geometry>::apply([](auto & g)
-        {
-            correct_closure<util::remove_cref_t<decltype(g)>>::apply(g);
-        }, geometry);
-    }
-};
-
-template <typename Geometry>
-struct correct_closure<Geometry, geometry_collection_tag>
-{
-    static void apply(Geometry& geometry)
-    {
-        detail::visit_breadth_first([](auto & g)
-        {
-            correct_closure<util::remove_cref_t<decltype(g)>>::apply(g);
-            return true;
-        }, geometry);
-    }
-};
-
-} // namespace resolve_variant
-
-
 // TODO: This algorithm should use relate(pt, pt) strategy
 
 
@@ -217,10 +111,39 @@ struct correct_closure<Geometry, geometry_collection_tag>
 \tparam Geometry \tparam_geometry
 \param geometry \param_geometry which will be corrected if necessary
 */
-template <typename Geometry>
+template <concepts::MutableGeometry Geometry>
 inline void correct_closure(Geometry& geometry)
 {
-    resolve_variant::correct_closure<Geometry>::apply(geometry);
+    if constexpr (concepts::DynamicGeometry<Geometry>)
+    {
+        traits::visit<Geometry>::apply([](auto& g)
+        {
+            geometry::correct_closure(g);
+        }, geometry);
+    }
+    else if constexpr (concepts::GeometryCollection<Geometry>)
+    {
+        detail::visit_breadth_first([](auto& g)
+        {
+            geometry::correct_closure(g);
+            return true;
+        }, geometry);
+    }
+    else if constexpr (concepts::Ring<Geometry>)
+    {
+        detail::correct_closure::close_or_open_ring::apply(geometry);
+    }
+    else if constexpr (concepts::Polygon<Geometry>)
+    {
+        detail::correct_closure::close_or_open_polygon::apply(geometry);
+    }
+    else if constexpr (concepts::MultiPolygon<Geometry>)
+    {
+        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
+        {
+            detail::correct_closure::close_or_open_polygon::apply(*it);
+        }
+    }
 }
 
 

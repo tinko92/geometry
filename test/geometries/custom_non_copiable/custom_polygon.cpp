@@ -34,7 +34,7 @@ void test_const()
 
     boost::ignore_unused<point_t>();
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstPolygon<polygon_t>) );
+    static_assert(bg::concepts::ConstPolygon<polygon_t>);
 
     polygon_t geo;
     geo.custom_int().custom_resize(2);
@@ -120,7 +120,7 @@ void test_mutable()
 
     boost::ignore_unused<point_t>();
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::Polygon<polygon_t>) );
+    static_assert(bg::concepts::Polygon<polygon_t>);
 
     polygon_t geo;
     // TODO: support WKT reading for polygons with non-copyable rings

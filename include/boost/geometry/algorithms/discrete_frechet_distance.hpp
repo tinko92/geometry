@@ -31,6 +31,7 @@
 #include <boost/geometry/core/tag.hpp>
 #include <boost/geometry/core/tags.hpp>
 #include <boost/geometry/core/point_type.hpp>
+#include <boost/geometry/geometries/concepts/check.hpp>
 #include <boost/geometry/strategies/detail.hpp>
 #include <boost/geometry/strategies/discrete_distance/cartesian.hpp>
 #include <boost/geometry/strategies/discrete_distance/geographic.hpp>
@@ -141,26 +142,16 @@ struct linestring_linestring
 #ifndef DOXYGEN_NO_DISPATCH
 namespace dispatch
 {
-template
-<
-    typename Geometry1,
-    typename Geometry2,
-    typename Tag1 = tag_t<Geometry1>,
-    typename Tag2 = tag_t<Geometry2>
->
-struct discrete_frechet_distance : not_implemented<Tag1, Tag2>
-{};
-
-template <typename Linestring1, typename Linestring2>
-struct discrete_frechet_distance
-    <
-        Linestring1,
-        Linestring2,
-        linestring_tag,
-        linestring_tag
-    >
-    : detail::discrete_frechet_distance::linestring_linestring
-{};
+template <concepts::ConstLinestring Linestring1,
+          concepts::ConstLinestring Linestring2,
+          typename Strategies>
+inline auto discrete_frechet_distance(Linestring1 const& linestring1,
+                                      Linestring2 const& linestring2,
+                                      Strategies const& strategies)
+{
+    return detail::discrete_frechet_distance::linestring_linestring::apply(
+        linestring1, linestring2, strategies);
+}
 
 } // namespace dispatch
 #endif // DOXYGEN_NO_DISPATCH
@@ -168,58 +159,33 @@ struct discrete_frechet_distance
 
 namespace resolve_strategy {
 
-template
-<
-    typename Strategies,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategies>::value
->
-struct discrete_frechet_distance
+template <concepts::ConstLinestring Linestring1,
+          concepts::ConstLinestring Linestring2,
+          typename Strategy>
+inline auto discrete_frechet_distance(Linestring1 const& linestring1,
+                                      Linestring2 const& linestring2,
+                                      Strategy const& strategy)
 {
-    template <typename Geometry1, typename Geometry2>
-    static inline auto apply(Geometry1 const& geometry1, Geometry2 const& geometry2,
-                             Strategies const& strategies)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
-        return dispatch::discrete_frechet_distance
-            <
-                Geometry1, Geometry2
-            >::apply(geometry1, geometry2, strategies);
+        using strategies_type = typename strategies::discrete_distance::services
+            ::default_strategy<Linestring1, Linestring2>::type;
+        return dispatch::discrete_frechet_distance(
+            linestring1, linestring2, strategies_type());
     }
-};
-
-template <typename Strategy>
-struct discrete_frechet_distance<Strategy, false>
-{
-    template <typename Geometry1, typename Geometry2>
-    static inline auto apply(Geometry1 const& geometry1, Geometry2 const& geometry2,
-                             Strategy const& strategy)
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        return dispatch::discrete_frechet_distance(
+            linestring1, linestring2, strategy);
+    }
+    else
     {
         using strategies::discrete_distance::services::strategy_converter;
-        return dispatch::discrete_frechet_distance
-            <
-                Geometry1, Geometry2
-            >::apply(geometry1, geometry2,
-                     strategy_converter<Strategy>::get(strategy));
+        return dispatch::discrete_frechet_distance(
+            linestring1, linestring2,
+            strategy_converter<Strategy>::get(strategy));
     }
-};
-
-template <>
-struct discrete_frechet_distance<default_strategy, false>
-{
-    template <typename Geometry1, typename Geometry2>
-    static inline auto apply(Geometry1 const& geometry1, Geometry2 const& geometry2,
-                             default_strategy const&)
-    {
-        typedef typename strategies::discrete_distance::services::default_strategy
-            <
-                Geometry1, Geometry2
-            >::type strategies_type;
-
-        return dispatch::discrete_frechet_distance
-            <
-                Geometry1, Geometry2
-            >::apply(geometry1, geometry2, strategies_type());
-    }
-};
+}
 
 } // namespace resolve_strategy
 
@@ -250,15 +216,15 @@ struct discrete_frechet_distance<default_strategy, false>
 [discrete_frechet_distance_strategy_output]
 }
 */
-template <typename Geometry1, typename Geometry2, typename Strategy>
-inline auto discrete_frechet_distance(Geometry1 const& geometry1,
-                                      Geometry2 const& geometry2,
+template <concepts::ConstLinestring Linestring1,
+          concepts::ConstLinestring Linestring2,
+          typename Strategy>
+inline auto discrete_frechet_distance(Linestring1 const& geometry1,
+                                      Linestring2 const& geometry2,
                                       Strategy const& strategy)
 {
-    return resolve_strategy::discrete_frechet_distance
-            <
-                Strategy
-            >::apply(geometry1, geometry2, strategy);
+    return resolve_strategy::discrete_frechet_distance(
+        geometry1, geometry2, strategy);
 }
 
 // Algorithm overload using default Pt-Pt distance strategy
@@ -280,14 +246,13 @@ inline auto discrete_frechet_distance(Geometry1 const& geometry1,
 [discrete_frechet_distance_output]
 }
 */
-template <typename Geometry1, typename Geometry2>
-inline auto discrete_frechet_distance(Geometry1 const& geometry1,
-                                      Geometry2 const& geometry2)
+template <concepts::ConstLinestring Linestring1,
+          concepts::ConstLinestring Linestring2>
+inline auto discrete_frechet_distance(Linestring1 const& geometry1,
+                                      Linestring2 const& geometry2)
 {
-    return resolve_strategy::discrete_frechet_distance
-            <
-                default_strategy
-            >::apply(geometry1, geometry2, default_strategy());
+    return resolve_strategy::discrete_frechet_distance(
+        geometry1, geometry2, default_strategy());
 }
 
 }} // namespace boost::geometry

@@ -390,85 +390,39 @@ struct centroid_pointlike
 namespace dispatch
 {
 
-template
-<
-    typename Geometry,
-    typename Tag = tag_t<Geometry>
->
-struct centroid: not_implemented<Tag>
-{};
-
-template <typename Geometry>
-struct centroid<Geometry, point_tag>
-    : detail::centroid::centroid_point
-{};
-
-template <typename Box>
-struct centroid<Box, box_tag>
-    : detail::centroid::centroid_indexed
-{};
-
-template <typename Segment>
-struct centroid<Segment, segment_tag>
-    : detail::centroid::centroid_indexed
-{};
-
-template <typename Ring>
-struct centroid<Ring, ring_tag>
-    : detail::centroid::centroid_linear_areal
-        <
-            detail::centroid::centroid_range
-        >
-{};
-
-template <typename Linestring>
-struct centroid<Linestring, linestring_tag>
-    : detail::centroid::centroid_linear_areal
-        <
-            detail::centroid::centroid_range
-        >
-{};
-
-template <typename Polygon>
-struct centroid<Polygon, polygon_tag>
-    : detail::centroid::centroid_linear_areal
-        <
-            detail::centroid::centroid_polygon
-        >
-{};
-
-template <typename MultiLinestring>
-struct centroid<MultiLinestring, multi_linestring_tag>
-    : detail::centroid::centroid_linear_areal
-        <
-            detail::centroid::centroid_multi
-            <
-                detail::centroid::centroid_range_state
-            >
-        >
-{};
-
-template <typename MultiPolygon>
-struct centroid<MultiPolygon, multi_polygon_tag>
-    : detail::centroid::centroid_linear_areal
-        <
-            detail::centroid::centroid_multi
-            <
-                detail::centroid::centroid_polygon_state
-            >
-        >
-{};
-
-template <typename MultiPoint>
-struct centroid<MultiPoint, multi_point_tag>
-    : detail::centroid::centroid_pointlike
-        <
-            detail::centroid::centroid_multi
-            <
-                detail::centroid::centroid_multi_point_state
-            >
-        >
-{};
+template <concepts::ConstGeometry Geometry, concepts::Point Point,
+          typename Strategies>
+inline void centroid(Geometry const& geometry, Point& out,
+                     Strategies const& strategies)
+{
+    if constexpr (concepts::ConstPoint<Geometry>)
+        detail::centroid::centroid_point::apply(geometry, out, strategies);
+    else if constexpr (concepts::ConstBox<Geometry>
+                    || concepts::ConstSegment<Geometry>)
+        detail::centroid::centroid_indexed::apply(geometry, out, strategies);
+    else if constexpr (concepts::ConstRing<Geometry>
+                    || concepts::ConstLinestring<Geometry>)
+        detail::centroid::centroid_linear_areal
+            <detail::centroid::centroid_range>::apply(geometry, out, strategies);
+    else if constexpr (concepts::ConstPolygon<Geometry>)
+        detail::centroid::centroid_linear_areal
+            <detail::centroid::centroid_polygon>::apply(geometry, out, strategies);
+    else if constexpr (concepts::ConstMultiLinestring<Geometry>)
+        detail::centroid::centroid_linear_areal
+            <detail::centroid::centroid_multi
+                <detail::centroid::centroid_range_state>>::apply(
+                    geometry, out, strategies);
+    else if constexpr (concepts::ConstMultiPolygon<Geometry>)
+        detail::centroid::centroid_linear_areal
+            <detail::centroid::centroid_multi
+                <detail::centroid::centroid_polygon_state>>::apply(
+                    geometry, out, strategies);
+    else if constexpr (concepts::ConstMultiPoint<Geometry>)
+        detail::centroid::centroid_pointlike
+            <detail::centroid::centroid_multi
+                <detail::centroid::centroid_multi_point_state>>::apply(
+                    geometry, out, strategies);
+}
 
 
 } // namespace dispatch
@@ -477,79 +431,52 @@ struct centroid<MultiPoint, multi_point_tag>
 
 namespace resolve_strategy {
 
-template
-<
-    typename Strategies,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategies>::value
->
-struct centroid
+template <concepts::ConstGeometry Geometry, concepts::Point Point,
+          typename Strategy>
+inline void centroid(Geometry const& geometry, Point& out,
+                     Strategy const& strategy)
 {
-    template <typename Geometry, typename Point>
-    static inline void apply(Geometry const& geometry, Point& out, Strategies const& strategies)
-    {
-        dispatch::centroid<Geometry>::apply(geometry, out, strategies);
-    }
-};
-
-template <typename Strategy>
-struct centroid<Strategy, false>
-{
-    template <typename Geometry, typename Point>
-    static inline void apply(Geometry const& geometry, Point& out, Strategy const& strategy)
-    {
-        using strategies::centroid::services::strategy_converter;
-        dispatch::centroid
-            <
-                Geometry
-            >::apply(geometry, out, strategy_converter<Strategy>::get(strategy));
-    }
-};
-
-template <>
-struct centroid<default_strategy, false>
-{
-    template <typename Geometry, typename Point>
-    static inline void apply(Geometry const& geometry, Point& out, default_strategy)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
         using strategies_type = typename strategies::centroid::services::default_strategy
-            <
-                Geometry
-            >::type;
-
-        dispatch::centroid<Geometry>::apply(geometry, out, strategies_type());
+            <Geometry>::type;
+        dispatch::centroid(geometry, out, strategies_type());
     }
-};
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        dispatch::centroid(geometry, out, strategy);
+    }
+    else
+    {
+        using strategies::centroid::services::strategy_converter;
+        dispatch::centroid(
+            geometry, out, strategy_converter<Strategy>::get(strategy));
+    }
+}
 
 } // namespace resolve_strategy
 
 
 namespace resolve_dynamic {
 
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct centroid
+template <concepts::ConstGeometry Geometry, concepts::Point Point,
+          typename Strategy>
+inline void centroid(Geometry const& geometry, Point& out,
+                     Strategy const& strategy)
 {
-    template <typename Point, typename Strategy>
-    static inline void apply(Geometry const& geometry, Point& out, Strategy const& strategy)
-    {
-        concepts::check_concepts_and_equal_dimensions<Point, Geometry const>();
-        resolve_strategy::centroid<Strategy>::apply(geometry, out, strategy);
-    }
-};
-
-template <typename Geometry>
-struct centroid<Geometry, dynamic_geometry_tag>
-{
-    template <typename Point, typename Strategy>
-    static inline void apply(Geometry const& geometry,
-                             Point& out,
-                             Strategy const& strategy)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
     {
         traits::visit<Geometry>::apply([&](auto const& g)
         {
-            centroid<util::remove_cref_t<decltype(g)>>::apply(g, out, strategy);
+            resolve_dynamic::centroid(g, out, strategy);
         }, geometry);
     }
-};
+    else
+    {
+        assert_dimension_equal<Point, Geometry>();
+        resolve_strategy::centroid(geometry, out, strategy);
+    }
+}
 
 } // namespace resolve_dynamic
 
@@ -571,10 +498,11 @@ struct centroid<Geometry, dynamic_geometry_tag>
 }
 
 */
-template<typename Geometry, typename Point, typename Strategy>
+template<concepts::ConstGeometry Geometry, concepts::Point Point,
+         typename Strategy>
 inline void centroid(Geometry const& geometry, Point& c, Strategy const& strategy)
 {
-    resolve_dynamic::centroid<Geometry>::apply(geometry, c, strategy);
+    resolve_dynamic::centroid(geometry, c, strategy);
 }
 
 
@@ -594,7 +522,7 @@ inline void centroid(Geometry const& geometry, Point& c, Strategy const& strateg
 [centroid_output]
 }
  */
-template<typename Geometry, typename Point>
+template<concepts::ConstGeometry Geometry, concepts::Point Point>
 inline void centroid(Geometry const& geometry, Point& c)
 {
     geometry::centroid(geometry, c, default_strategy());
@@ -612,7 +540,7 @@ inline void centroid(Geometry const& geometry, Point& c)
 
 \qbk{[include reference/algorithms/centroid.qbk]}
  */
-template<typename Point, typename Geometry>
+template<concepts::Point Point, concepts::ConstGeometry Geometry>
 inline Point return_centroid(Geometry const& geometry)
 {
     Point c;
@@ -635,7 +563,8 @@ inline Point return_centroid(Geometry const& geometry)
 \qbk{[include reference/algorithms/centroid.qbk]}
 \qbk{[include reference/algorithms/centroid_strategies.qbk]}
  */
-template<typename Point, typename Geometry, typename Strategy>
+template<concepts::Point Point, concepts::ConstGeometry Geometry,
+         typename Strategy>
 inline Point return_centroid(Geometry const& geometry, Strategy const& strategy)
 {
     Point c;

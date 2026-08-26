@@ -78,110 +78,71 @@ struct range_count
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-template
-<
-    typename Geometry,
-    bool AddForOpen,
-    typename Tag = tag_cast_t<tag_t<Geometry>, multi_tag>
->
-struct num_points: not_implemented<Tag>
-{};
-
-template <typename Geometry, bool AddForOpen>
-struct num_points<Geometry, AddForOpen, point_tag>
-    : detail::counting::other_count<1>
-{};
-
-template <typename Geometry, bool AddForOpen>
-struct num_points<Geometry, AddForOpen, box_tag>
-    : detail::counting::other_count<(1 << geometry::dimension<Geometry>::value)>
-{};
-
-template <typename Geometry, bool AddForOpen>
-struct num_points<Geometry, AddForOpen, segment_tag>
-    : detail::counting::other_count<2>
-{};
-
-template <typename Geometry, bool AddForOpen>
-struct num_points<Geometry, AddForOpen, linestring_tag>
-    : detail::num_points::range_count<AddForOpen>
-{};
-
-template <typename Geometry, bool AddForOpen>
-struct num_points<Geometry, AddForOpen, ring_tag>
-    : detail::num_points::range_count<AddForOpen>
-{};
-
-template <typename Geometry, bool AddForOpen>
-struct num_points<Geometry, AddForOpen, polygon_tag>
-    : detail::counting::polygon_count
-        <
-            detail::num_points::range_count<AddForOpen>
-        >
-{};
-
-template <typename Geometry, bool AddForOpen>
-struct num_points<Geometry, AddForOpen, multi_tag>
-    : detail::counting::multi_count
-        <
-            num_points<typename boost::range_value<Geometry>::type, AddForOpen>
-        >
-{};
-
-} // namespace dispatch
-#endif
-
-
 namespace resolve_dynamic
 {
 
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct num_points
+template <concepts::ConstGeometry Geometry>
+inline std::size_t num_points(Geometry const& geometry, bool add_for_open)
 {
-    static inline std::size_t apply(Geometry const& geometry, bool add_for_open)
-    {
-        concepts::check<Geometry const>();
-
-        return add_for_open
-             ? dispatch::num_points<Geometry, true>::apply(geometry)
-             : dispatch::num_points<Geometry, false>::apply(geometry);
-    }
-};
-
-template <typename Geometry>
-struct num_points<Geometry, dynamic_geometry_tag>
-{
-    static inline std::size_t apply(Geometry const& geometry, bool add_for_open)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
     {
         std::size_t result = 0;
         traits::visit<Geometry>::apply([&](auto const& g)
         {
-            result = num_points<util::remove_cref_t<decltype(g)>>::apply(g, add_for_open);
+            result = resolve_dynamic::num_points(g, add_for_open);
         }, geometry);
         return result;
     }
-};
-
-
-template <typename Geometry>
-struct num_points<Geometry, geometry_collection_tag>
-{
-    static inline std::size_t apply(Geometry const& geometry, bool add_for_open)
+    else if constexpr (concepts::ConstGeometryCollection<Geometry>)
     {
         std::size_t result = 0;
         detail::visit_breadth_first([&](auto const& g)
         {
-            result += num_points<util::remove_cref_t<decltype(g)>>::apply(g, add_for_open);
+            result += resolve_dynamic::num_points(g, add_for_open);
             return true;
         }, geometry);
         return result;
     }
-};
-
+    else if constexpr (concepts::ConstPoint<Geometry>)
+    {
+        return 1;
+    }
+    else if constexpr (concepts::ConstBox<Geometry>)
+    {
+        return 1 << geometry::dimension<Geometry>::value;
+    }
+    else if constexpr (concepts::ConstSegment<Geometry>)
+    {
+        return 2;
+    }
+    else if constexpr (concepts::ConstLinestring<Geometry>
+                    || concepts::ConstRing<Geometry>)
+    {
+        return add_for_open
+             ? detail::num_points::range_count<true>::apply(geometry)
+             : detail::num_points::range_count<false>::apply(geometry);
+    }
+    else if constexpr (concepts::ConstPolygon<Geometry>)
+    {
+        std::size_t result = resolve_dynamic::num_points(
+            exterior_ring(geometry), add_for_open);
+        auto const& rings = interior_rings(geometry);
+        for (auto it = boost::begin(rings); it != boost::end(rings); ++it)
+        {
+            result += resolve_dynamic::num_points(*it, add_for_open);
+        }
+        return result;
+    }
+    else
+    {
+        std::size_t result = 0;
+        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
+        {
+            result += resolve_dynamic::num_points(*it, add_for_open);
+        }
+        return result;
+    }
+}
 
 } // namespace resolve_dynamic
 
@@ -197,10 +158,10 @@ struct num_points<Geometry, geometry_collection_tag>
 
 \qbk{[include reference/algorithms/num_points.qbk]}
 */
-template <typename Geometry>
+template <concepts::ConstGeometry Geometry>
 inline std::size_t num_points(Geometry const& geometry, bool add_for_open = false)
 {
-    return resolve_dynamic::num_points<Geometry>::apply(geometry, add_for_open);
+    return resolve_dynamic::num_points(geometry, add_for_open);
 }
 
 #if defined(_MSC_VER)

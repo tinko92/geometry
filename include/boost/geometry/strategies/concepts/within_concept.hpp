@@ -119,15 +119,9 @@ class WithinStrategyPolygonal
                 >::type segment_point_type;
 
             // CHECK: apply-arguments should both fulfill point concept
-            BOOST_CONCEPT_ASSERT
-                (
-                    (concepts::ConstPoint<point_type>)
-                );
+            static_assert(concepts::ConstPoint<point_type>);
 
-            BOOST_CONCEPT_ASSERT
-                (
-                    (concepts::ConstPoint<segment_point_type>)
-                );
+            static_assert(concepts::ConstPoint<segment_point_type>);
 
             // CHECK: return types (result: int, apply: bool)
             BOOST_GEOMETRY_STATIC_ASSERT
@@ -199,15 +193,9 @@ class WithinStrategyPointBox
                 >::type box_type;
 
             // CHECK: apply-arguments should fulfill point/box concept
-            BOOST_CONCEPT_ASSERT
-                (
-                    (concepts::ConstPoint<point_type>)
-                );
+            static_assert(concepts::ConstPoint<point_type>);
 
-            BOOST_CONCEPT_ASSERT
-                (
-                    (concepts::ConstBox<box_type>)
-                );
+            static_assert(concepts::ConstBox<box_type>);
 
             // CHECK: return types (apply: bool)
             BOOST_GEOMETRY_STATIC_ASSERT
@@ -268,15 +256,9 @@ class WithinStrategyBoxBox
                 >::type box_type2;
 
             // CHECK: apply-arguments should both fulfill box concept
-            BOOST_CONCEPT_ASSERT
-                (
-                    (concepts::ConstBox<box_type1>)
-                );
+            static_assert(concepts::ConstBox<box_type1>);
 
-            BOOST_CONCEPT_ASSERT
-                (
-                    (concepts::ConstBox<box_type2>)
-                );
+            static_assert(concepts::ConstBox<box_type2>);
 
             // CHECK: return types (apply: bool)
             BOOST_GEOMETRY_STATIC_ASSERT

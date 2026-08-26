@@ -43,35 +43,25 @@ namespace detail
 namespace dispatch
 {
 
-template
-<
-    typename Geometry1, typename Geometry2,
-    typename Tag1 = tag_t<Geometry1>,
-    typename Tag2 = tag_t<Geometry2>
->
-struct azimuth : not_implemented<Tag1, Tag2>
-{};
-
-template <typename Point1, typename Point2>
-struct azimuth<Point1, Point2, point_tag, point_tag>
+template <concepts::ConstPoint Point1, concepts::ConstPoint Point2,
+          typename Strategy>
+inline auto azimuth(Point1 const& p1, Point2 const& p2,
+                    Strategy const& strategy)
 {
-    template <typename Strategy>
-    static auto apply(Point1 const& p1, Point2 const& p2, Strategy const& strategy)
-    {
-        auto azimuth_strategy = strategy.azimuth();
-        using calc_t = typename decltype(azimuth_strategy)::template result_type
-            <
-                coordinate_type_t<Point1>,
-                coordinate_type_t<Point2>
-            >::type;
+    auto azimuth_strategy = strategy.azimuth();
+    using calc_t = typename decltype(azimuth_strategy)::template result_type
+        <
+            coordinate_type_t<Point1>,
+            coordinate_type_t<Point2>
+        >::type;
 
-        calc_t result = 0;
-        calc_t const x1 = geometry::get_as_radian<0>(p1);
-        calc_t const y1 = geometry::get_as_radian<1>(p1);
-        calc_t const x2 = geometry::get_as_radian<0>(p2);
-        calc_t const y2 = geometry::get_as_radian<1>(p2);
+    calc_t result = 0;
+    calc_t const x1 = geometry::get_as_radian<0>(p1);
+    calc_t const y1 = geometry::get_as_radian<1>(p1);
+    calc_t const x2 = geometry::get_as_radian<0>(p2);
+    calc_t const y2 = geometry::get_as_radian<1>(p2);
 
-        azimuth_strategy.apply(x1, y1, x2, y2, result);
+    azimuth_strategy.apply(x1, y1, x2, y2, result);
 
         // NOTE: It is not clear which units we should use for the result.
         //   For now radians are always returned but a user could expect
@@ -93,9 +83,8 @@ struct azimuth<Point1, Point2, point_tag, point_tag>
         }
         */
 
-        return result;
-    }
-};
+    return result;
+}
 
 } // namespace dispatch
 #endif // DOXYGEN_NO_DISPATCH
@@ -104,48 +93,28 @@ struct azimuth<Point1, Point2, point_tag, point_tag>
 namespace resolve_strategy
 {
 
-template
-<
-    typename Strategy,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategy>::value
->
-struct azimuth
+template <concepts::ConstPoint Point1, concepts::ConstPoint Point2,
+          typename Strategy>
+inline auto azimuth(Point1 const& point1, Point2 const& point2,
+                    Strategy const& strategy)
 {
-    template <typename P1, typename P2>
-    static auto apply(P1 const& p1, P2 const& p2, Strategy const& strategy)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
-        return dispatch::azimuth<P1, P2>::apply(p1, p2, strategy);
+        using strategy_type = typename strategies::azimuth::services
+            ::default_strategy<Point1, Point2>::type;
+        return dispatch::azimuth(point1, point2, strategy_type());
     }
-};
-
-template <typename Strategy>
-struct azimuth<Strategy, false>
-{
-    template <typename P1, typename P2>
-    static auto apply(P1 const& p1, P2 const& p2, Strategy const& strategy)
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        return dispatch::azimuth(point1, point2, strategy);
+    }
+    else
     {
         using strategies::azimuth::services::strategy_converter;
-        return dispatch::azimuth
-            <
-                P1, P2
-            >::apply(p1, p2, strategy_converter<Strategy>::get(strategy));
+        return dispatch::azimuth(point1, point2,
+            strategy_converter<Strategy>::get(strategy));
     }
-};
-
-template <>
-struct azimuth<default_strategy, false>
-{
-    template <typename P1, typename P2>
-    static auto apply(P1 const& p1, P2 const& p2, default_strategy)
-    {
-        typedef typename strategies::azimuth::services::default_strategy
-            <
-                P1, P2
-            >::type strategy_type;
-
-        return dispatch::azimuth<P1, P2>::apply(p1, p2, strategy_type());
-    }
-};
+}
 
 
 } // namespace resolve_strategy
@@ -173,16 +142,10 @@ namespace resolve_variant
 [azimuth_output]
 }
 */
-template <typename Point1, typename Point2>
+template <concepts::ConstPoint Point1, concepts::ConstPoint Point2>
 inline auto azimuth(Point1 const& point1, Point2 const& point2)
 {
-    concepts::check<Point1 const>();
-    concepts::check<Point2 const>();
-
-    return resolve_strategy::azimuth
-            <
-                default_strategy
-            >::apply(point1, point2, default_strategy());
+    return resolve_strategy::azimuth(point1, point2, default_strategy());
 }
 
 
@@ -206,13 +169,11 @@ inline auto azimuth(Point1 const& point1, Point2 const& point2)
 [azimuth_strategy_output]
 }
 */
-template <typename Point1, typename Point2, typename Strategy>
+template <concepts::ConstPoint Point1, concepts::ConstPoint Point2,
+          typename Strategy>
 inline auto azimuth(Point1 const& point1, Point2 const& point2, Strategy const& strategy)
 {
-    concepts::check<Point1 const>();
-    concepts::check<Point2 const>();
-
-    return resolve_strategy::azimuth<Strategy>::apply(point1, point2, strategy);
+    return resolve_strategy::azimuth(point1, point2, strategy);
 }
 
 

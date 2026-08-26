@@ -59,8 +59,8 @@ inline ReturnType determinant(U const& ux, U const& uy
 template <typename ReturnType, typename U, typename V>
 inline ReturnType determinant(U const& u, V const& v)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<U>) );
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<V>) );
+    static_assert(concepts::ConstPoint<U>);
+    static_assert(concepts::ConstPoint<V>);
 
     return calculate_determinant
         <

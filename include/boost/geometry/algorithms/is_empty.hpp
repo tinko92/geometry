@@ -90,105 +90,57 @@ struct multi_is_empty
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-template <typename Geometry, typename Tag =  tag_t<Geometry>>
-struct is_empty : not_implemented<Tag>
-{};
-
-template <typename Geometry>
-struct is_empty<Geometry, point_tag>
-    : detail::is_empty::always_not_empty
-{};
-
-template <typename Geometry>
-struct is_empty<Geometry, box_tag>
-    : detail::is_empty::always_not_empty
-{};
-
-template <typename Geometry>
-struct is_empty<Geometry, segment_tag>
-    : detail::is_empty::always_not_empty
-{};
-
-template <typename Geometry>
-struct is_empty<Geometry, linestring_tag>
-    : detail::is_empty::range_is_empty
-{};
-
-template <typename Geometry>
-struct is_empty<Geometry, ring_tag>
-    : detail::is_empty::range_is_empty
-{};
-
-template <typename Geometry>
-struct is_empty<Geometry, polygon_tag>
-    : detail::is_empty::polygon_is_empty
-{};
-
-template <typename Geometry>
-struct is_empty<Geometry, multi_point_tag>
-    : detail::is_empty::range_is_empty
-{};
-
-template <typename Geometry>
-struct is_empty<Geometry, multi_linestring_tag>
-    : detail::is_empty::multi_is_empty<>
-{};
-
-template <typename Geometry>
-struct is_empty<Geometry, multi_polygon_tag>
-    : detail::is_empty::multi_is_empty<detail::is_empty::polygon_is_empty>
-{};
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
-
 namespace resolve_dynamic
 {
 
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct is_empty
+template <concepts::ConstGeometry Geometry>
+inline bool is_empty(Geometry const& geometry)
 {
-    static inline bool apply(Geometry const& geometry)
-    {
-        concepts::check<Geometry const>();
-
-        return dispatch::is_empty<Geometry>::apply(geometry);
-    }
-};
-
-template <typename Geometry>
-struct is_empty<Geometry, dynamic_geometry_tag>
-{
-    static inline bool apply(Geometry const& geometry)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
     {
         bool result = true;
         traits::visit<Geometry>::apply([&](auto const& g)
         {
-            result = is_empty<util::remove_cref_t<decltype(g)>>::apply(g);
+            result = resolve_dynamic::is_empty(g);
         }, geometry);
         return result;
     }
-};
-
-template <typename Geometry>
-struct is_empty<Geometry, geometry_collection_tag>
-{
-    static inline bool apply(Geometry const& geometry)
+    else if constexpr (concepts::ConstGeometryCollection<Geometry>)
     {
         bool result = true;
         detail::visit_breadth_first([&](auto const& g)
         {
-            result = is_empty<util::remove_cref_t<decltype(g)>>::apply(g);
+            result = resolve_dynamic::is_empty(g);
             return result;
         }, geometry);
         return result;
     }
-};
+    else if constexpr (concepts::ConstPoint<Geometry>
+                    || concepts::ConstBox<Geometry>
+                    || concepts::ConstSegment<Geometry>)
+    {
+        return false;
+    }
+    else if constexpr (concepts::ConstLinestring<Geometry>
+                    || concepts::ConstRing<Geometry>
+                    || concepts::ConstMultiPoint<Geometry>)
+    {
+        return boost::empty(geometry);
+    }
+    else if constexpr (concepts::ConstPolygon<Geometry>)
+    {
+        return detail::is_empty::polygon_is_empty::apply(geometry);
+    }
+    else if constexpr (concepts::ConstMultiPolygon<Geometry>)
+    {
+        return detail::is_empty::multi_is_empty
+            <detail::is_empty::polygon_is_empty>::apply(geometry);
+    }
+    else
+    {
+        return detail::is_empty::multi_is_empty<>::apply(geometry);
+    }
+}
 
 } // namespace resolve_dynamic
 
@@ -202,10 +154,10 @@ struct is_empty<Geometry, geometry_collection_tag>
 
 \qbk{[include reference/algorithms/is_empty.qbk]}
 */
-template <typename Geometry>
+template <concepts::ConstGeometry Geometry>
 inline bool is_empty(Geometry const& geometry)
 {
-    return resolve_dynamic::is_empty<Geometry>::apply(geometry);
+    return resolve_dynamic::is_empty(geometry);
 }
 
 

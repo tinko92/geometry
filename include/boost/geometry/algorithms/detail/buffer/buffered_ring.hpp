@@ -88,10 +88,8 @@ namespace concepts
 
 template <typename Geometry>
 struct concept_type<Geometry, geometry::detail::buffer::buffered_ring_collection_tag>
-{
-    struct dummy {};
-    using type = dummy;
-};
+    : std::true_type
+{};
 
 }
 
@@ -243,12 +241,6 @@ struct within
         return detail::within::point_in_geometry(point, multi, strategy) == 1;
     }
 };
-
-
-template <typename Geometry>
-struct is_empty<Geometry, detail::buffer::buffered_ring_collection_tag>
-    : detail::is_empty::multi_is_empty<detail::is_empty::range_is_empty>
-{};
 
 
 template <typename Geometry>

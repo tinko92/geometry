@@ -18,11 +18,8 @@
 #ifndef BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_POLYGON_CONCEPT_HPP
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_POLYGON_CONCEPT_HPP
 
+#include <concepts>
 #include <type_traits>
-
-#include <boost/concept_check.hpp>
-#include <boost/core/ignore_unused.hpp>
-#include <boost/range/concepts.hpp>
 
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/exterior_ring.hpp>
@@ -42,108 +39,44 @@ namespace boost { namespace geometry { namespace concepts
 \brief Checks polygon concept
 \ingroup concepts
 */
-template <typename PolygonType>
-class Polygon
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    typedef typename std::remove_const<PolygonType>::type polygon_type;
-
-    typedef typename traits::ring_const_type<polygon_type>::type ring_const_type;
-    typedef typename traits::ring_mutable_type<polygon_type>::type ring_mutable_type;
-    typedef typename traits::interior_const_type<polygon_type>::type interior_const_type;
-    typedef typename traits::interior_mutable_type<polygon_type>::type interior_mutable_type;
-
-    using point_type = point_type_t<PolygonType>;
-    using ring_type = ring_type_t<PolygonType>;
-
-    BOOST_CONCEPT_ASSERT( (concepts::Point<point_type>) );
-    BOOST_CONCEPT_ASSERT( (concepts::Ring<ring_type>) );
-
-    //BOOST_CONCEPT_ASSERT( (boost::RandomAccessRangeConcept<interior_type>) );
-
-    struct checker
+template <typename Geometry>
+concept ConstPolygon =
+    std::same_as<tag_t<geometry_type_t<Geometry>>, polygon_tag>
+    && ConstPoint<point_type_t<geometry_type_t<Geometry>>>
+    && ConstRing<ring_type_t<geometry_type_t<Geometry>>>
+    && requires(geometry_type_t<Geometry> const& polygon)
     {
-        static inline void apply()
-        {
-            polygon_type* poly = 0;
-            polygon_type const* cpoly = poly;
-
-            ring_mutable_type e = traits::exterior_ring<PolygonType>::get(*poly);
-            interior_mutable_type i = traits::interior_rings<PolygonType>::get(*poly);
-            ring_const_type ce = traits::exterior_ring<PolygonType>::get(*cpoly);
-            interior_const_type ci = traits::interior_rings<PolygonType>::get(*cpoly);
-
-            boost::ignore_unused(poly, cpoly);
-            boost::ignore_unused(e, i, ce, ci);
-        }
+        { traits::exterior_ring<geometry_type_t<Geometry>>::get(polygon) }
+            -> std::convertible_to<typename traits::ring_const_type<geometry_type_t<Geometry>>::type>;
+        { traits::interior_rings<geometry_type_t<Geometry>>::get(polygon) }
+            -> std::convertible_to<typename traits::interior_const_type<geometry_type_t<Geometry>>::type>;
     };
 
-public:
 
-    BOOST_CONCEPT_USAGE(Polygon)
+template <typename Geometry>
+concept Polygon =
+    ! std::is_const_v<std::remove_reference_t<Geometry>>
+    && ConstPolygon<Geometry>
+    && Point<point_type_t<geometry_type_t<Geometry>>>
+    && Ring<ring_type_t<geometry_type_t<Geometry>>>
+    && requires(geometry_type_t<Geometry>& polygon)
     {
-        checker::apply();
-    }
-#endif
-};
-
-
-/*!
-\brief Checks polygon concept (const version)
-\ingroup const_concepts
-*/
-template <typename PolygonType>
-class ConstPolygon
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-
-    typedef typename std::remove_const<PolygonType>::type const_polygon_type;
-
-    typedef typename traits::ring_const_type<const_polygon_type>::type ring_const_type;
-    typedef typename traits::interior_const_type<const_polygon_type>::type interior_const_type;
-
-    using point_type = point_type_t<const_polygon_type>;
-    using ring_type = ring_type_t<const_polygon_type>;
-
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<point_type>) );
-    BOOST_CONCEPT_ASSERT( (concepts::ConstRing<ring_type>) );
-
-    ////BOOST_CONCEPT_ASSERT( (boost::RandomAccessRangeConcept<interior_type>) );
-
-    struct checker
-    {
-        static inline void apply()
-        {
-            const_polygon_type const* cpoly = 0;
-
-            ring_const_type ce = traits::exterior_ring<const_polygon_type>::get(*cpoly);
-            interior_const_type ci = traits::interior_rings<const_polygon_type>::get(*cpoly);
-
-            boost::ignore_unused(ce, ci, cpoly);
-        }
+        { traits::exterior_ring<geometry_type_t<Geometry>>::get(polygon) }
+            -> std::convertible_to<typename traits::ring_mutable_type<geometry_type_t<Geometry>>::type>;
+        { traits::interior_rings<geometry_type_t<Geometry>>::get(polygon) }
+            -> std::convertible_to<typename traits::interior_mutable_type<geometry_type_t<Geometry>>::type>;
     };
-
-public:
-
-    BOOST_CONCEPT_USAGE(ConstPolygon)
-    {
-        checker::apply();
-    }
-#endif
-};
 
 
 template <typename Geometry>
 struct concept_type<Geometry, polygon_tag>
-{
-    using type = Polygon<Geometry>;
-};
+    : std::bool_constant<Polygon<Geometry>>
+{};
 
 template <typename Geometry>
 struct concept_type<Geometry const, polygon_tag>
-{
-    using type = ConstPolygon<Geometry>;
-};
+    : std::bool_constant<ConstPolygon<Geometry>>
+{};
 
 
 }}} // namespace boost::geometry::concepts

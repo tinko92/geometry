@@ -93,8 +93,8 @@ void test_concept()
 {
     typedef bg::model::polygon<P> PL;
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstPolygon<PL>) );
-    BOOST_CONCEPT_ASSERT( (bg::concepts::Polygon<PL>) );
+    static_assert(bg::concepts::ConstPolygon<PL>);
+    static_assert(bg::concepts::Polygon<PL>);
 
     typedef typename bg::coordinate_type<PL>::type T;
     typedef typename bg::point_type<PL>::type PPL;

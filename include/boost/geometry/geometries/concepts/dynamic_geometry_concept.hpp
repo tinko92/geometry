@@ -11,9 +11,9 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_DYNAMIC_GEOMETRY_CONCEPT_HPP
 
 
+#include <concepts>
+#include <type_traits>
 #include <utility>
-
-#include <boost/concept_check.hpp>
 
 #include <boost/geometry/core/geometry_types.hpp>
 #include <boost/geometry/core/tags.hpp>
@@ -38,72 +38,69 @@ namespace boost { namespace geometry { namespace concepts
 namespace detail
 {
 
-template <typename Geometry, typename SubGeometry>
-struct GeometryType<Geometry, SubGeometry, dynamic_geometry_tag, false>
-    : concepts::concept_type<SubGeometry>::type
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    BOOST_CONCEPT_USAGE(GeometryType)
-    {
-        Geometry* dg = nullptr;
-        SubGeometry* sg = nullptr;
-        *dg = std::move(*sg);
-    }
-#endif // DOXYGEN_NO_CONCEPT_MEMBERS
-};
+template <typename DynamicGeometry, typename SubGeometry>
+concept MutableDynamicAlternative =
+    is_recursive_geometry_v<SubGeometry>
+    || (concepts::GeometryType<SubGeometry>
+        && requires(DynamicGeometry& dynamic, SubGeometry&& geometry)
+        {
+            dynamic = std::move(geometry);
+        });
 
-template <typename Geometry, typename SubGeometry>
-struct GeometryType<Geometry const, SubGeometry, dynamic_geometry_tag, false>
-    : concepts::concept_type<SubGeometry const>::type
+template <typename DynamicGeometry, typename Sequence>
+struct mutable_dynamic_alternatives : std::false_type
 {};
 
+template <typename DynamicGeometry, typename... SubGeometries>
+struct mutable_dynamic_alternatives
+    <DynamicGeometry, util::type_sequence<SubGeometries...>>
+    : std::bool_constant
+        <(MutableDynamicAlternative<DynamicGeometry, SubGeometries> && ...)>
+{};
 
 } // namespace detail
 
 
 template <typename Geometry>
-struct DynamicGeometry
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    using sequence_t = typename traits::geometry_types<Geometry>::type;
-    BOOST_CONCEPT_ASSERT((detail::GeometryTypes<Geometry, sequence_t>));
-
-    BOOST_CONCEPT_USAGE(DynamicGeometry)
+concept ConstDynamicGeometry =
+    std::same_as<tag_t<geometry_type_t<Geometry>>, dynamic_geometry_tag>
+    && requires
     {
-        Geometry* dg = nullptr;
-        traits::visit<Geometry>::apply([](auto &&) {}, *dg);
+        typename traits::geometry_types<geometry_type_t<Geometry>>::type;
+        requires detail::const_collection_alternatives
+            <typename traits::geometry_types<geometry_type_t<Geometry>>::type>::value;
     }
-#endif // DOXYGEN_NO_CONCEPT_MEMBERS
-};
+    && requires(geometry_type_t<Geometry> const& dynamic)
+    {
+        traits::visit<geometry_type_t<Geometry>>::apply([](auto&&) {}, dynamic);
+    };
 
 
 template <typename Geometry>
-struct ConstDynamicGeometry
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    using sequence_t = typename traits::geometry_types<Geometry>::type;
-    BOOST_CONCEPT_ASSERT((detail::GeometryTypes<Geometry const, sequence_t>));
-
-    BOOST_CONCEPT_USAGE(ConstDynamicGeometry)
+concept DynamicGeometry =
+    ! std::is_const_v<std::remove_reference_t<Geometry>>
+    && ConstDynamicGeometry<Geometry>
+    && requires
     {
-        Geometry const* dg = nullptr;
-        traits::visit<Geometry>::apply([](auto &&) {}, *dg);
+        requires detail::mutable_dynamic_alternatives
+            <geometry_type_t<Geometry>,
+             typename traits::geometry_types<geometry_type_t<Geometry>>::type>::value;
     }
-#endif // DOXYGEN_NO_CONCEPT_MEMBERS
-};
+    && requires(geometry_type_t<Geometry>& dynamic)
+    {
+        traits::visit<geometry_type_t<Geometry>>::apply([](auto&&) {}, dynamic);
+    };
 
 
 template <typename Geometry>
 struct concept_type<Geometry, dynamic_geometry_tag>
-{
-    using type = DynamicGeometry<Geometry>;
-};
+    : std::bool_constant<DynamicGeometry<Geometry>>
+{};
 
 template <typename Geometry>
 struct concept_type<Geometry const, dynamic_geometry_tag>
-{
-    using type = ConstDynamicGeometry<Geometry>;
-};
+    : std::bool_constant<ConstDynamicGeometry<Geometry>>
+{};
 
 
 }}} // namespace boost::geometry::concepts

@@ -680,87 +680,82 @@ struct static_geometry_type
 namespace dispatch
 {
 
-template
-<
-    typename GeometryIn,
-    typename GeometryOut,
-    typename TagIn = tag_t<GeometryIn>,
-    typename TagOut = tag_t<GeometryOut>
->
-struct simplify: not_implemented<TagIn, TagOut>
-{};
-
-template <typename PointIn, typename PointOut>
-struct simplify<PointIn, PointOut, point_tag, point_tag>
+template <concepts::ConstGeometry GeometryIn,
+          concepts::MutableGeometry GeometryOut,
+          typename Distance,
+          typename Impl,
+          typename Strategies>
+    requires (concepts::ConstPoint<GeometryIn> && concepts::Point<GeometryOut>)
+          || (concepts::ConstSegment<GeometryIn> && concepts::Segment<GeometryOut>)
+          || (concepts::ConstBox<GeometryIn> && concepts::Box<GeometryOut>)
+          || (concepts::ConstLinestring<GeometryIn> && concepts::Linestring<GeometryOut>)
+          || (concepts::ConstRing<GeometryIn> && concepts::Ring<GeometryOut>)
+          || (concepts::ConstPolygon<GeometryIn> && concepts::Polygon<GeometryOut>)
+          || (concepts::ConstMultiPoint<GeometryIn> && concepts::MultiPoint<GeometryOut>)
+          || (concepts::ConstMultiLinestring<GeometryIn> && concepts::MultiLinestring<GeometryOut>)
+          || (concepts::ConstMultiPolygon<GeometryIn> && concepts::MultiPolygon<GeometryOut>)
+inline void simplify(GeometryIn const& geometry, GeometryOut& out,
+                     Distance const& max_distance, Impl const& impl,
+                     Strategies const& strategies)
 {
-    template <typename Distance, typename Impl, typename Strategy>
-    static inline void apply(PointIn const& point, PointOut& out, Distance const& ,
-                             Impl const& , Strategy const& )
+    if constexpr (concepts::ConstPoint<GeometryIn>)
     {
-        geometry::convert(point, out);
+        geometry::convert(geometry, out);
     }
-};
+    else if constexpr (concepts::ConstSegment<GeometryIn>
+                       || concepts::ConstBox<GeometryIn>)
+    {
+        detail::simplify::simplify_copy_assign::apply(
+            geometry, out, max_distance, impl, strategies);
+    }
+    else if constexpr (concepts::ConstLinestring<GeometryIn>)
+    {
+        detail::simplify::simplify_range<2>::apply(
+            geometry, out, max_distance, impl, strategies);
+    }
+    else if constexpr (concepts::ConstRing<GeometryIn>)
+    {
+        detail::simplify::simplify_ring::apply(
+            geometry, out, max_distance, impl, strategies);
+    }
+    else if constexpr (concepts::ConstPolygon<GeometryIn>)
+    {
+        detail::simplify::simplify_polygon::apply(
+            geometry, out, max_distance, impl, strategies);
+    }
+    else if constexpr (concepts::ConstMultiPoint<GeometryIn>)
+    {
+        detail::simplify::simplify_copy::apply(
+            geometry, out, max_distance, impl, strategies);
+    }
+    else if constexpr (concepts::ConstMultiLinestring<GeometryIn>)
+    {
+        detail::simplify::simplify_multi
+            <detail::simplify::simplify_range<2>>::apply(
+                geometry, out, max_distance, impl, strategies);
+    }
+    else
+    {
+        detail::simplify::simplify_multi
+            <detail::simplify::simplify_polygon>::apply(
+                geometry, out, max_distance, impl, strategies);
+    }
+}
 
-template <typename SegmentIn, typename SegmentOut>
-struct simplify<SegmentIn, SegmentOut, segment_tag, segment_tag>
-    : detail::simplify::simplify_copy_assign
-{};
-
-template <typename BoxIn, typename BoxOut>
-struct simplify<BoxIn, BoxOut, box_tag, box_tag>
-    : detail::simplify::simplify_copy_assign
-{};
-
-// Linestring, keep 2 points (unless those points are the same)
-template <typename LinestringIn, typename LinestringOut>
-struct simplify<LinestringIn, LinestringOut, linestring_tag, linestring_tag>
-    : detail::simplify::simplify_range<2>
-{};
-
-template <typename RingIn, typename RingOut>
-struct simplify<RingIn, RingOut, ring_tag, ring_tag>
-    : detail::simplify::simplify_ring
-{};
-
-template <typename PolygonIn, typename PolygonOut>
-struct simplify<PolygonIn, PolygonOut, polygon_tag, polygon_tag>
-    : detail::simplify::simplify_polygon
-{};
-
-template <typename MultiPointIn, typename MultiPointOut>
-struct simplify<MultiPointIn, MultiPointOut, multi_point_tag, multi_point_tag>
-    : detail::simplify::simplify_copy
-{};
-
-template <typename MultiLinestringIn, typename MultiLinestringOut>
-struct simplify<MultiLinestringIn, MultiLinestringOut, multi_linestring_tag, multi_linestring_tag>
-    : detail::simplify::simplify_multi<detail::simplify::simplify_range<2> >
-{};
-
-template <typename MultiPolygonIn, typename MultiPolygonOut>
-struct simplify<MultiPolygonIn, MultiPolygonOut, multi_polygon_tag, multi_polygon_tag>
-    : detail::simplify::simplify_multi<detail::simplify::simplify_polygon>
-{};
-
-
-template
-<
-    typename Geometry,
-    typename Tag = tag_t<Geometry>
->
-struct simplify_insert: not_implemented<Tag>
-{};
-
-
-template <typename Linestring>
-struct simplify_insert<Linestring, linestring_tag>
-    : detail::simplify::simplify_range_insert
-{};
-
-template <typename Ring>
-struct simplify_insert<Ring, ring_tag>
-    : detail::simplify::simplify_range_insert
-{};
+template <concepts::ConstGeometry Geometry,
+          typename OutputIterator,
+          typename Distance,
+          typename Impl,
+          typename Strategies>
+    requires concepts::ConstLinestring<Geometry>
+          || concepts::ConstRing<Geometry>
+inline void simplify_insert(Geometry const& geometry, OutputIterator& out,
+                            Distance const& max_distance, Impl const& impl,
+                            Strategies const& strategies)
+{
+    detail::simplify::simplify_range_insert::apply(
+        geometry, out, max_distance, impl, strategies);
+}
 
 
 } // namespace dispatch
@@ -770,203 +765,118 @@ struct simplify_insert<Ring, ring_tag>
 namespace resolve_strategy
 {
 
-template
-<
-    typename Strategies,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategies>::value
->
-struct simplify
+template <concepts::ConstGeometry GeometryIn,
+          concepts::MutableGeometry GeometryOut,
+          typename Distance,
+          typename Strategy>
+inline void simplify(GeometryIn const& geometry, GeometryOut& out,
+                     Distance const& max_distance, Strategy const& strategy)
 {
-    template <typename GeometryIn, typename GeometryOut, typename Distance>
-    static inline void apply(GeometryIn const& geometry,
-                             GeometryOut& out,
-                             Distance const& max_distance,
-                             Strategies const& strategies)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
-        dispatch::simplify
-            <
-                GeometryIn, GeometryOut
-            >::apply(geometry, out, max_distance,
-                     detail::simplify::douglas_peucker(),
-                     strategies);
+        static_assert(std::same_as<cs_tag_t<GeometryIn>, cs_tag_t<GeometryOut>>,
+                      "Incompatible coordinate systems");
+        using strategy_type = typename strategies::simplify::services
+            ::default_strategy<GeometryIn>::type;
+        dispatch::simplify(geometry, out, max_distance,
+                           detail::simplify::douglas_peucker(),
+                           strategy_type());
     }
-};
-
-template <typename Strategy>
-struct simplify<Strategy, false>
-{
-    template <typename GeometryIn, typename GeometryOut, typename Distance>
-    static inline void apply(GeometryIn const& geometry,
-                             GeometryOut& out,
-                             Distance const& max_distance,
-                             Strategy const& strategy)
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        dispatch::simplify(geometry, out, max_distance,
+                           detail::simplify::douglas_peucker(), strategy);
+    }
+    else
     {
         using strategies::simplify::services::strategy_converter;
-
-        simplify
-            <
-                decltype(strategy_converter<Strategy>::get(strategy))
-            >::apply(geometry, out, max_distance,
-                     strategy_converter<Strategy>::get(strategy));
+        auto const converted = strategy_converter<Strategy>::get(strategy);
+        dispatch::simplify(geometry, out, max_distance,
+                           detail::simplify::douglas_peucker(), converted);
     }
-};
+}
 
-template <>
-struct simplify<default_strategy, false>
+template <concepts::ConstGeometry Geometry,
+          typename OutputIterator,
+          typename Distance,
+          typename Strategy>
+    requires concepts::ConstLinestring<Geometry>
+          || concepts::ConstRing<Geometry>
+inline void simplify_insert(Geometry const& geometry, OutputIterator& out,
+                            Distance const& max_distance,
+                            Strategy const& strategy)
 {
-    template <typename GeometryIn, typename GeometryOut, typename Distance>
-    static inline void apply(GeometryIn const& geometry,
-                             GeometryOut& out,
-                             Distance const& max_distance,
-                             default_strategy)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
-        // NOTE: Alternatively take two geometry types in default_strategy
-        using cs_tag1_t = geometry::cs_tag_t<GeometryIn>;
-        using cs_tag2_t = geometry::cs_tag_t<GeometryOut>;
-        BOOST_GEOMETRY_STATIC_ASSERT(
-            (std::is_same<cs_tag1_t, cs_tag2_t>::value),
-            "Incompatible coordinate systems",
-            cs_tag1_t, cs_tag2_t);
-
-        typedef typename strategies::simplify::services::default_strategy
-            <
-                GeometryIn
-            >::type strategy_type;
-
-        simplify
-            <
-                strategy_type
-            >::apply(geometry, out, max_distance, strategy_type());
+        using strategy_type = typename strategies::simplify::services
+            ::default_strategy<Geometry>::type;
+        dispatch::simplify_insert(geometry, out, max_distance,
+                                  detail::simplify::douglas_peucker(),
+                                  strategy_type());
     }
-};
-
-template
-<
-    typename Strategies,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategies>::value
->
-struct simplify_insert
-{
-    template<typename Geometry, typename OutputIterator, typename Distance>
-    static inline void apply(Geometry const& geometry,
-                             OutputIterator& out,
-                             Distance const& max_distance,
-                             Strategies const& strategies)
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
     {
-        dispatch::simplify_insert
-            <
-                Geometry
-            >::apply(geometry, out, max_distance,
-                     detail::simplify::douglas_peucker(),
-                     strategies);
+        dispatch::simplify_insert(geometry, out, max_distance,
+                                  detail::simplify::douglas_peucker(), strategy);
     }
-};
-
-template <typename Strategy>
-struct simplify_insert<Strategy, false>
-{
-    template<typename Geometry, typename OutputIterator, typename Distance>
-    static inline void apply(Geometry const& geometry,
-                             OutputIterator& out,
-                             Distance const& max_distance,
-                             Strategy const& strategy)
+    else
     {
         using strategies::simplify::services::strategy_converter;
-
-        simplify_insert
-            <
-                decltype(strategy_converter<Strategy>::get(strategy))
-            >::apply(geometry, out, max_distance,
-                     strategy_converter<Strategy>::get(strategy));
+        auto const converted = strategy_converter<Strategy>::get(strategy);
+        dispatch::simplify_insert(geometry, out, max_distance,
+                                  detail::simplify::douglas_peucker(), converted);
     }
-};
-
-template <>
-struct simplify_insert<default_strategy, false>
-{
-    template <typename Geometry, typename OutputIterator, typename Distance>
-    static inline void apply(Geometry const& geometry,
-                             OutputIterator& out,
-                             Distance const& max_distance,
-                             default_strategy)
-    {
-        typedef typename strategies::simplify::services::default_strategy
-            <
-                Geometry
-            >::type strategy_type;
-
-        simplify_insert
-            <
-                strategy_type
-            >::apply(geometry, out, max_distance, strategy_type());
-    }
-};
+}
 
 } // namespace resolve_strategy
 
 
 namespace resolve_dynamic {
 
-template
-<
-    typename GeometryIn, typename GeometryOut,
-    typename TagIn = tag_t<GeometryIn>,
-    typename TagOut = tag_t<GeometryOut>
->
-struct simplify
+template <concepts::ConstGeometry GeometryIn,
+          concepts::MutableGeometry GeometryOut,
+          typename Distance,
+          typename Strategy>
+inline void simplify(GeometryIn const& geometry, GeometryOut& out,
+                     Distance const& max_distance, Strategy const& strategy)
 {
-    template <typename Distance, typename Strategy>
-    static inline void apply(GeometryIn const& geometry,
-                             GeometryOut& out,
-                             Distance const& max_distance,
-                             Strategy const& strategy)
-    {
-        resolve_strategy::simplify<Strategy>::apply(geometry, out, max_distance, strategy);
-    }
-};
-
-template <typename GeometryIn, typename GeometryOut>
-struct simplify<GeometryIn, GeometryOut, dynamic_geometry_tag, dynamic_geometry_tag>
-{
-    template <typename Distance, typename Strategy>
-    static inline void apply(GeometryIn const& geometry,
-                             GeometryOut& out,
-                             Distance const& max_distance,
-                             Strategy const& strategy)
+    if constexpr (concepts::ConstDynamicGeometry<GeometryIn>
+                  && concepts::DynamicGeometry<GeometryOut>)
     {
         traits::visit<GeometryIn>::apply([&](auto const& g)
         {
-            using geom_t = util::remove_cref_t<decltype(g)>;
+            using geometry_type = util::remove_cref_t<decltype(g)>;
             using detail::simplify::static_geometry_type;
-            using geom_out_t = typename static_geometry_type<geom_t, GeometryOut>::type;
-            geom_out_t o;
-            simplify<geom_t, geom_out_t>::apply(g, o, max_distance, strategy);
-            out = std::move(o);
+            using output_type = typename static_geometry_type
+                <geometry_type, GeometryOut>::type;
+            output_type result;
+            resolve_dynamic::simplify(
+                g, result, max_distance, strategy);
+            out = std::move(result);
         }, geometry);
     }
-};
-
-template <typename GeometryIn, typename GeometryOut>
-struct simplify<GeometryIn, GeometryOut, geometry_collection_tag, geometry_collection_tag>
-{
-    template <typename Distance, typename Strategy>
-    static inline void apply(GeometryIn const& geometry,
-                             GeometryOut& out,
-                             Distance const& max_distance,
-                             Strategy const& strategy)
+    else if constexpr (concepts::ConstGeometryCollection<GeometryIn>
+                       && concepts::GeometryCollection<GeometryOut>)
     {
         detail::visit_breadth_first([&](auto const& g)
         {
-            using geom_t = util::remove_cref_t<decltype(g)>;
+            using geometry_type = util::remove_cref_t<decltype(g)>;
             using detail::simplify::static_geometry_type;
-            using geom_out_t = typename static_geometry_type<geom_t, GeometryOut>::type;
-            geom_out_t o;
-            simplify<geom_t, geom_out_t>::apply(g, o, max_distance, strategy);
-            traits::emplace_back<GeometryOut>::apply(out, std::move(o));
+            using output_type = typename static_geometry_type
+                <geometry_type, GeometryOut>::type;
+            output_type result;
+            resolve_dynamic::simplify(
+                g, result, max_distance, strategy);
+            traits::emplace_back<GeometryOut>::apply(out, std::move(result));
             return true;
         }, geometry);
     }
-};
+    else
+    {
+        resolve_strategy::simplify(
+            geometry, out, max_distance, strategy);
+    }
+}
 
 } // namespace resolve_dynamic
 
@@ -988,16 +898,16 @@ struct simplify<GeometryIn, GeometryOut, geometry_collection_tag, geometry_colle
 \image html svg_simplify_country.png "The image below presents the simplified country"
 \qbk{distinguish,with strategy}
 */
-template<typename Geometry, typename GeometryOut, typename Distance, typename Strategy>
+template <concepts::ConstGeometry Geometry,
+          concepts::MutableGeometry GeometryOut,
+          typename Distance,
+          typename Strategy>
 inline void simplify(Geometry const& geometry, GeometryOut& out,
                      Distance const& max_distance, Strategy const& strategy)
 {
-    concepts::check<Geometry const>();
-    concepts::check<GeometryOut>();
-
     geometry::clear(out);
 
-    resolve_dynamic::simplify<Geometry, GeometryOut>::apply(geometry, out, max_distance, strategy);
+    resolve_dynamic::simplify(geometry, out, max_distance, strategy);
 }
 
 
@@ -1017,13 +927,12 @@ inline void simplify(Geometry const& geometry, GeometryOut& out,
 
 \qbk{[include reference/algorithms/simplify.qbk]}
  */
-template<typename Geometry, typename GeometryOut, typename Distance>
+template <concepts::ConstGeometry Geometry,
+          concepts::MutableGeometry GeometryOut,
+          typename Distance>
 inline void simplify(Geometry const& geometry, GeometryOut& out,
                      Distance const& max_distance)
 {
-    concepts::check<Geometry const>();
-    concepts::check<GeometryOut>();
-
     geometry::simplify(geometry, out, max_distance, default_strategy());
 }
 
@@ -1047,13 +956,17 @@ namespace detail { namespace simplify
 \qbk{distinguish,with strategy}
 \qbk{[include reference/algorithms/simplify.qbk]}
 */
-template<typename Geometry, typename OutputIterator, typename Distance, typename Strategy>
+template <concepts::ConstGeometry Geometry,
+          typename OutputIterator,
+          typename Distance,
+          typename Strategy>
+    requires concepts::ConstLinestring<Geometry>
+          || concepts::ConstRing<Geometry>
 inline void simplify_insert(Geometry const& geometry, OutputIterator out,
                             Distance const& max_distance, Strategy const& strategy)
 {
-    concepts::check<Geometry const>();
-
-    resolve_strategy::simplify_insert<Strategy>::apply(geometry, out, max_distance, strategy);
+    resolve_strategy::simplify_insert(
+        geometry, out, max_distance, strategy);
 }
 
 /*!
@@ -1067,14 +980,15 @@ inline void simplify_insert(Geometry const& geometry, OutputIterator out,
 
 \qbk{[include reference/algorithms/simplify_insert.qbk]}
  */
-template<typename Geometry, typename OutputIterator, typename Distance>
+template <concepts::ConstGeometry Geometry,
+          typename OutputIterator,
+          typename Distance>
+    requires concepts::ConstLinestring<Geometry>
+          || concepts::ConstRing<Geometry>
 inline void simplify_insert(Geometry const& geometry, OutputIterator out,
                             Distance const& max_distance)
 {
     // Concept: output point type = point type of input geometry
-    concepts::check<Geometry const>();
-    concepts::check<point_type_t<Geometry>>();
-
     simplify_insert(geometry, out, max_distance, default_strategy());
 }
 

@@ -160,8 +160,8 @@ struct ecef_segments
         typedef typename UniqueSubRange1::point_type point1_type;
         typedef typename UniqueSubRange2::point_type point2_type;
 
-        BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<point1_type>) );
-        BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<point2_type>) );
+        static_assert(concepts::ConstPoint<point1_type>);
+        static_assert(concepts::ConstPoint<point2_type>);
 
         point1_type const& a1 = range_p.at(0);
         point1_type const& a2 = range_p.at(1);

@@ -53,7 +53,7 @@ template
 >
 class polyhedral_surface : public Container<Polygon, Allocator<Polygon> >
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Polygon<Polygon>) );
+    static_assert(concepts::Polygon<Polygon>);
 
 public :
     using polygon_type = Polygon;

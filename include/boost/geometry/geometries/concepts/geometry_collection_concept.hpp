@@ -11,10 +11,11 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_GEOMETRY_COLLECTION_CONCEPT_HPP
 
 
+#include <concepts>
+#include <type_traits>
 #include <utility>
 
-#include <boost/concept_check.hpp>
-#include <boost/range/concepts.hpp>
+#include <boost/range/begin.hpp>
 
 #include <boost/geometry/core/geometry_types.hpp>
 #include <boost/geometry/core/mutable_range.hpp>
@@ -43,60 +44,44 @@ namespace boost { namespace geometry { namespace concepts
 namespace detail
 {
 
-template
-<
-    typename Geometry,
-    typename SubGeometry,
-    typename Tag = tag_t<Geometry>,
-    bool IsSubDynamicOrCollection = util::is_dynamic_geometry<SubGeometry>::value
-                                 || util::is_geometry_collection<SubGeometry>::value
->
-struct GeometryType;
+template <typename Geometry>
+inline constexpr bool is_recursive_geometry_v =
+    util::is_dynamic_geometry<Geometry>::value
+    || util::is_geometry_collection<Geometry>::value;
 
-// Prevent recursive concept checking
-template <typename Geometry, typename SubGeometry, typename Tag>
-struct GeometryType<Geometry, SubGeometry, Tag, true> {};
+template <typename Collection, typename SubGeometry>
+concept MutableCollectionAlternative =
+    is_recursive_geometry_v<SubGeometry>
+    || (concepts::GeometryType<SubGeometry>
+        && requires(Collection& collection, SubGeometry&& geometry)
+        {
+            traits::emplace_back<Collection>::apply(
+                collection, std::move(geometry));
+        });
 
-template <typename Geometry, typename SubGeometry, typename Tag>
-struct GeometryType<Geometry const, SubGeometry, Tag, true> {};
+template <typename SubGeometry>
+concept ConstCollectionAlternative =
+    is_recursive_geometry_v<SubGeometry>
+    || concepts::GeometryType<SubGeometry const>;
 
-
-template <typename Geometry, typename SubGeometry>
-struct GeometryType<Geometry, SubGeometry, geometry_collection_tag, false>
-    : concepts::concept_type<SubGeometry>::type
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    BOOST_CONCEPT_USAGE(GeometryType)
-    {
-        Geometry* gc = nullptr;
-        SubGeometry* sg = nullptr;
-        traits::emplace_back<Geometry>::apply(*gc, std::move(*sg));
-    }
-#endif // DOXYGEN_NO_CONCEPT_MEMBERS
-};
-
-template <typename Geometry, typename SubGeometry>
-struct GeometryType<Geometry const, SubGeometry, geometry_collection_tag, false>
-    : concepts::concept_type<SubGeometry const>::type
+template <typename Collection, typename Sequence>
+struct mutable_collection_alternatives : std::false_type
 {};
 
-
-template <typename Geometry, typename ...SubGeometries>
-struct GeometryTypesPack {};
-
-template <typename Geometry, typename SubGeometry, typename ...SubGeometries>
-struct GeometryTypesPack<Geometry, SubGeometry, SubGeometries...>
-    : GeometryTypesPack<Geometry, SubGeometries...>
-    , GeometryType<Geometry, SubGeometry>
+template <typename Collection, typename... SubGeometries>
+struct mutable_collection_alternatives
+    <Collection, util::type_sequence<SubGeometries...>>
+    : std::bool_constant
+        <(MutableCollectionAlternative<Collection, SubGeometries> && ...)>
 {};
 
+template <typename Sequence>
+struct const_collection_alternatives : std::false_type
+{};
 
-template <typename Geometry, typename SubGeometriesSequence>
-struct GeometryTypes;
-
-template <typename Geometry, typename ...SubGeometries>
-struct GeometryTypes<Geometry, util::type_sequence<SubGeometries...>>
-    : GeometryTypesPack<Geometry, SubGeometries...>
+template <typename... SubGeometries>
+struct const_collection_alternatives<util::type_sequence<SubGeometries...>>
+    : std::bool_constant<(ConstCollectionAlternative<SubGeometries> && ...)>
 {};
 
 
@@ -104,51 +89,49 @@ struct GeometryTypes<Geometry, util::type_sequence<SubGeometries...>>
 
 
 template <typename Geometry>
-struct GeometryCollection
-    : boost::ForwardRangeConcept<Geometry>
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    using sequence_t = typename traits::geometry_types<Geometry>::type;
-    BOOST_CONCEPT_ASSERT( (detail::GeometryTypes<Geometry, sequence_t>) );
-
-    BOOST_CONCEPT_USAGE(GeometryCollection)
+concept ConstGeometryCollection =
+    std::same_as<tag_t<geometry_type_t<Geometry>>, geometry_collection_tag>
+    && detail::ConstForwardRange<geometry_type_t<Geometry>>
+    && requires
     {
-        Geometry* gc = nullptr;
-        traits::clear<Geometry>::apply(*gc);
-        traits::iter_visit<Geometry>::apply([](auto &&) {}, boost::begin(*gc));
+        typename traits::geometry_types<geometry_type_t<Geometry>>::type;
+        requires detail::const_collection_alternatives
+            <typename traits::geometry_types<geometry_type_t<Geometry>>::type>::value;
     }
-#endif // DOXYGEN_NO_CONCEPT_MEMBERS
-};
+    && requires(geometry_type_t<Geometry> const& collection)
+    {
+        traits::iter_visit<geometry_type_t<Geometry>>::apply(
+            [](auto&&) {}, boost::begin(collection));
+    };
 
 
 template <typename Geometry>
-struct ConstGeometryCollection
-    : boost::ForwardRangeConcept<Geometry>
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    using sequence_t = typename traits::geometry_types<Geometry>::type;
-    BOOST_CONCEPT_ASSERT( (detail::GeometryTypes<Geometry const, sequence_t>) );
-
-    BOOST_CONCEPT_USAGE(ConstGeometryCollection)
+concept GeometryCollection =
+    ! std::is_const_v<std::remove_reference_t<Geometry>>
+    && ConstGeometryCollection<Geometry>
+    && requires
     {
-        Geometry const* gc = nullptr;
-        traits::iter_visit<Geometry>::apply([](auto &&) {}, boost::begin(*gc));
+        requires detail::mutable_collection_alternatives
+            <geometry_type_t<Geometry>,
+             typename traits::geometry_types<geometry_type_t<Geometry>>::type>::value;
     }
-#endif // DOXYGEN_NO_CONCEPT_MEMBERS
-};
+    && requires(geometry_type_t<Geometry>& collection)
+    {
+        traits::clear<geometry_type_t<Geometry>>::apply(collection);
+        traits::iter_visit<geometry_type_t<Geometry>>::apply(
+            [](auto&&) {}, boost::begin(collection));
+    };
 
 
 template <typename Geometry>
 struct concept_type<Geometry, geometry_collection_tag>
-{
-    using type = GeometryCollection<Geometry>;
-};
+    : std::bool_constant<GeometryCollection<Geometry>>
+{};
 
 template <typename Geometry>
 struct concept_type<Geometry const, geometry_collection_tag>
-{
-    using type = ConstGeometryCollection<Geometry>;
-};
+    : std::bool_constant<ConstGeometryCollection<Geometry>>
+{};
 
 
 }}} // namespace boost::geometry::concepts

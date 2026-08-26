@@ -34,6 +34,7 @@
 #include <boost/geometry/core/point_type.hpp>
 #include <boost/geometry/core/tag.hpp>
 #include <boost/geometry/core/tags.hpp>
+#include <boost/geometry/geometries/concepts/check.hpp>
 #include <boost/geometry/strategies/detail.hpp>
 #include <boost/geometry/strategies/discrete_distance/cartesian.hpp>
 #include <boost/geometry/strategies/discrete_distance/geographic.hpp>
@@ -211,45 +212,42 @@ struct multi_range_multi_range
 #ifndef DOXYGEN_NO_DISPATCH
 namespace dispatch
 {
-template
-<
-    typename Geometry1,
-    typename Geometry2,
-    typename Tag1 = tag_t<Geometry1>,
-    typename Tag2 = tag_t<Geometry2>
->
-struct discrete_hausdorff_distance : not_implemented<Tag1, Tag2>
-{};
-
-// Specialization for point and multi_point
-template <typename Point, typename MultiPoint>
-struct discrete_hausdorff_distance<Point, MultiPoint, point_tag, multi_point_tag>
-    : detail::discrete_hausdorff_distance::point_range
-{};
-
-// Specialization for linestrings
-template <typename Linestring1, typename Linestring2>
-struct discrete_hausdorff_distance<Linestring1, Linestring2, linestring_tag, linestring_tag>
-    : detail::discrete_hausdorff_distance::range_range
-{};
-
-// Specialization for multi_point-multi_point
-template <typename MultiPoint1, typename MultiPoint2>
-struct discrete_hausdorff_distance<MultiPoint1, MultiPoint2, multi_point_tag, multi_point_tag>
-    : detail::discrete_hausdorff_distance::range_range
-{};
-
-// Specialization for Linestring and MultiLinestring
-template <typename Linestring, typename MultiLinestring>
-struct discrete_hausdorff_distance<Linestring, MultiLinestring, linestring_tag, multi_linestring_tag>
-    : detail::discrete_hausdorff_distance::range_multi_range
-{};
-
-// Specialization for MultiLinestring and MultiLinestring
-template <typename MultiLinestring1, typename MultiLinestring2>
-struct discrete_hausdorff_distance<MultiLinestring1, MultiLinestring2, multi_linestring_tag, multi_linestring_tag>
-    : detail::discrete_hausdorff_distance::multi_range_multi_range
-{};
+template <concepts::ConstGeometry Geometry1,
+          concepts::ConstGeometry Geometry2,
+          typename Strategies>
+    requires (concepts::ConstPoint<Geometry1> && concepts::ConstMultiPoint<Geometry2>)
+          || (concepts::ConstLinestring<Geometry1> && concepts::ConstLinestring<Geometry2>)
+          || (concepts::ConstMultiPoint<Geometry1> && concepts::ConstMultiPoint<Geometry2>)
+          || (concepts::ConstLinestring<Geometry1> && concepts::ConstMultiLinestring<Geometry2>)
+          || (concepts::ConstMultiLinestring<Geometry1> && concepts::ConstMultiLinestring<Geometry2>)
+inline auto discrete_hausdorff_distance(Geometry1 const& geometry1,
+                                        Geometry2 const& geometry2,
+                                        Strategies const& strategies)
+{
+    if constexpr (concepts::ConstPoint<Geometry1>)
+    {
+        return detail::discrete_hausdorff_distance::point_range::apply(
+            geometry1, geometry2, strategies);
+    }
+    else if constexpr ((concepts::ConstLinestring<Geometry1>
+                        && concepts::ConstLinestring<Geometry2>)
+                       || concepts::ConstMultiPoint<Geometry1>)
+    {
+        return detail::discrete_hausdorff_distance::range_range::apply(
+            geometry1, geometry2, strategies);
+    }
+    else if constexpr (concepts::ConstLinestring<Geometry1>)
+    {
+        return detail::discrete_hausdorff_distance::range_multi_range::apply(
+            geometry1, geometry2, strategies);
+    }
+    else
+    {
+        return detail::discrete_hausdorff_distance
+            ::multi_range_multi_range::apply(
+                geometry1, geometry2, strategies);
+    }
+}
 
 } // namespace dispatch
 #endif // DOXYGEN_NO_DISPATCH
@@ -257,58 +255,33 @@ struct discrete_hausdorff_distance<MultiLinestring1, MultiLinestring2, multi_lin
 
 namespace resolve_strategy {
 
-template
-<
-    typename Strategies,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategies>::value
->
-struct discrete_hausdorff_distance
+template <concepts::ConstGeometry Geometry1,
+          concepts::ConstGeometry Geometry2,
+          typename Strategy>
+inline auto discrete_hausdorff_distance(Geometry1 const& geometry1,
+                                        Geometry2 const& geometry2,
+                                        Strategy const& strategy)
 {
-    template <typename Geometry1, typename Geometry2>
-    static inline auto apply(Geometry1 const& geometry1, Geometry2 const& geometry2,
-                             Strategies const& strategies)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
-        return dispatch::discrete_hausdorff_distance
-            <
-                Geometry1, Geometry2
-            >::apply(geometry1, geometry2, strategies);
+        using strategies_type = typename strategies::discrete_distance::services
+            ::default_strategy<Geometry1, Geometry2>::type;
+        return dispatch::discrete_hausdorff_distance(
+            geometry1, geometry2, strategies_type());
     }
-};
-
-template <typename Strategy>
-struct discrete_hausdorff_distance<Strategy, false>
-{
-    template <typename Geometry1, typename Geometry2>
-    static inline auto apply(Geometry1 const& geometry1, Geometry2 const& geometry2,
-                             Strategy const& strategy)
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        return dispatch::discrete_hausdorff_distance(
+            geometry1, geometry2, strategy);
+    }
+    else
     {
         using strategies::discrete_distance::services::strategy_converter;
-        return dispatch::discrete_hausdorff_distance
-            <
-                Geometry1, Geometry2
-            >::apply(geometry1, geometry2,
-                     strategy_converter<Strategy>::get(strategy));
+        return dispatch::discrete_hausdorff_distance(
+            geometry1, geometry2,
+            strategy_converter<Strategy>::get(strategy));
     }
-};
-
-template <>
-struct discrete_hausdorff_distance<default_strategy, false>
-{
-    template <typename Geometry1, typename Geometry2>
-    static inline auto apply(Geometry1 const& geometry1, Geometry2 const& geometry2,
-                             default_strategy const&)
-    {
-        typedef typename strategies::discrete_distance::services::default_strategy
-            <
-                Geometry1, Geometry2
-            >::type strategies_type;
-
-        return dispatch::discrete_hausdorff_distance
-            <
-                Geometry1, Geometry2
-            >::apply(geometry1, geometry2, strategies_type());
-    }
-};
+}
 
 } // namespace resolve_strategy
 
@@ -338,15 +311,15 @@ struct discrete_hausdorff_distance<default_strategy, false>
 [discrete_hausdorff_distance_strategy_output]
 }
 */
-template <typename Geometry1, typename Geometry2, typename Strategy>
+template <concepts::ConstGeometry Geometry1,
+          concepts::ConstGeometry Geometry2,
+          typename Strategy>
 inline auto discrete_hausdorff_distance(Geometry1 const& geometry1,
                                         Geometry2 const& geometry2,
                                         Strategy const& strategy)
 {
-    return resolve_strategy::discrete_hausdorff_distance
-        <
-            Strategy
-        >::apply(geometry1, geometry2, strategy);
+    return resolve_strategy::discrete_hausdorff_distance(
+        geometry1, geometry2, strategy);
 }
 
 /*!
@@ -366,14 +339,13 @@ inline auto discrete_hausdorff_distance(Geometry1 const& geometry1,
 [discrete_hausdorff_distance_output]
 }
 */
-template <typename Geometry1, typename Geometry2>
+template <concepts::ConstGeometry Geometry1,
+          concepts::ConstGeometry Geometry2>
 inline auto discrete_hausdorff_distance(Geometry1 const& geometry1,
                                         Geometry2 const& geometry2)
 {
-    return resolve_strategy::discrete_hausdorff_distance
-        <
-            default_strategy
-        >::apply(geometry1, geometry2, default_strategy());
+    return resolve_strategy::discrete_hausdorff_distance(
+        geometry1, geometry2, default_strategy());
 }
 
 }} // namespace boost::geometry

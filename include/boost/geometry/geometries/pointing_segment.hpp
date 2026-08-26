@@ -38,17 +38,12 @@ namespace model
 //
 // this class is used by the segment_iterator as its value type
 template <typename ConstOrNonConstPoint>
+    requires ((std::is_const_v<ConstOrNonConstPoint>
+                && concepts::ConstPoint<ConstOrNonConstPoint>)
+            || (! std::is_const_v<ConstOrNonConstPoint>
+                && concepts::Point<ConstOrNonConstPoint>))
 class pointing_segment
 {
-    BOOST_CONCEPT_ASSERT( (
-        typename std::conditional
-            <
-                std::is_const<ConstOrNonConstPoint>::value,
-                concepts::Point<ConstOrNonConstPoint>,
-                concepts::ConstPoint<ConstOrNonConstPoint>
-            >
-    ) );
-
     typedef ConstOrNonConstPoint point_type;
 
 public:

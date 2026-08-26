@@ -128,63 +128,40 @@ struct ring_area
 namespace dispatch
 {
 
-template
-<
-    typename Geometry,
-    typename Tag = tag_t<Geometry>
->
-struct area : detail::calculate_null
+template <concepts::ConstGeometry Geometry, typename Strategy>
+inline auto area(Geometry const& geometry, Strategy const& strategy)
 {
-    template <typename Strategy>
-    static inline auto apply(Geometry const& geometry, Strategy const& strategy)
+    if constexpr (concepts::ConstBox<Geometry>)
     {
-        return calculate_null::apply
+        return detail::area::box_area::apply(geometry, strategy);
+    }
+    else if constexpr (concepts::ConstRing<Geometry>)
+    {
+        return detail::area::ring_area::apply(geometry, strategy);
+    }
+    else if constexpr (concepts::ConstPolygon<Geometry>)
+    {
+        return detail::calculate_polygon_sum::apply
             <
-                typename area_result<Geometry, Strategy>::type
+                typename area_result<Geometry, Strategy>::type,
+                detail::area::ring_area
             >(geometry, strategy);
     }
-};
-
-
-template <typename Geometry>
-struct area<Geometry, box_tag> : detail::area::box_area
-{};
-
-
-template <typename Ring>
-struct area<Ring, ring_tag>
-    : detail::area::ring_area
-{};
-
-
-template <typename Polygon>
-struct area<Polygon, polygon_tag> : detail::calculate_polygon_sum
-{
-    template <typename Strategy>
-    static inline auto apply(Polygon const& polygon, Strategy const& strategy)
+    else if constexpr (concepts::ConstMultiPolygon<Geometry>)
     {
-        return calculate_polygon_sum::apply
-            <
-                typename area_result<Polygon, Strategy>::type,
-                detail::area::ring_area
-            >(polygon, strategy);
+        typename area_result<Geometry, Strategy>::type result = 0;
+        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
+        {
+            result += dispatch::area(*it, strategy);
+        }
+        return result;
     }
-};
-
-
-template <typename MultiGeometry>
-struct area<MultiGeometry, multi_polygon_tag> : detail::multi_sum
-{
-    template <typename Strategy>
-    static inline auto apply(MultiGeometry const& multi, Strategy const& strategy)
+    else
     {
-        return multi_sum::apply
-               <
-                   typename area_result<MultiGeometry, Strategy>::type,
-                   area<typename boost::range_value<MultiGeometry>::type>
-               >(multi, strategy);
+        return detail::calculate_null::apply
+            <typename area_result<Geometry, Strategy>::type>(geometry, strategy);
     }
-};
+}
 
 
 } // namespace dispatch
@@ -194,48 +171,26 @@ struct area<MultiGeometry, multi_polygon_tag> : detail::multi_sum
 namespace resolve_strategy
 {
 
-template
-<
-    typename Strategy,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategy>::value
->
-struct area
+template <concepts::ConstGeometry Geometry, typename Strategy>
+inline auto area(Geometry const& geometry, Strategy const& strategy)
 {
-    template <typename Geometry>
-    static inline auto apply(Geometry const& geometry, Strategy const& strategy)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
-        return dispatch::area<Geometry>::apply(geometry, strategy);
+        using strategy_type = typename strategies::area::services::default_strategy
+            <Geometry>::type;
+        return dispatch::area(geometry, strategy_type());
     }
-};
-
-template <typename Strategy>
-struct area<Strategy, false>
-{
-    template <typename Geometry>
-    static auto apply(Geometry const& geometry, Strategy const& strategy)
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        return dispatch::area(geometry, strategy);
+    }
+    else
     {
         using strategies::area::services::strategy_converter;
-        return dispatch::area
-            <
-                Geometry
-            >::apply(geometry, strategy_converter<Strategy>::get(strategy));
+        return dispatch::area(geometry,
+            strategy_converter<Strategy>::get(strategy));
     }
-};
-
-template <>
-struct area<default_strategy, false>
-{
-    template <typename Geometry>
-    static inline auto apply(Geometry const& geometry, default_strategy)
-    {
-        typedef typename strategies::area::services::default_strategy
-            <
-                Geometry
-            >::type strategy_type;
-
-        return dispatch::area<Geometry>::apply(geometry, strategy_type());
-    }
-};
+}
 
 
 } // namespace resolve_strategy
@@ -244,46 +199,33 @@ struct area<default_strategy, false>
 namespace resolve_dynamic
 {
 
-template <typename Geometry, typename Tag = geometry::tag_t<Geometry>>
-struct area
+template <concepts::ConstGeometry Geometry, typename Strategy>
+inline auto area(Geometry const& geometry, Strategy const& strategy)
 {
-    template <typename Strategy>
-    static inline auto apply(Geometry const& geometry, Strategy const& strategy)
-    {
-        return resolve_strategy::area<Strategy>::apply(geometry, strategy);
-    }
-};
-
-template <typename Geometry>
-struct area<Geometry, dynamic_geometry_tag>
-{
-    template <typename Strategy>
-    static inline auto apply(Geometry const& geometry, Strategy const& strategy)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
     {
         typename area_result<Geometry, Strategy>::type result = 0;
         traits::visit<Geometry>::apply([&](auto const& g)
         {
-            result = area<util::remove_cref_t<decltype(g)>>::apply(g, strategy);
+            result = resolve_dynamic::area(g, strategy);
         }, geometry);
         return result;
     }
-};
-
-template <typename Geometry>
-struct area<Geometry, geometry_collection_tag>
-{
-    template <typename Strategy>
-    static inline auto apply(Geometry const& geometry, Strategy const& strategy)
+    else if constexpr (concepts::ConstGeometryCollection<Geometry>)
     {
         typename area_result<Geometry, Strategy>::type result = 0;
         detail::visit_breadth_first([&](auto const& g)
         {
-            result += area<util::remove_cref_t<decltype(g)>>::apply(g, strategy);
+            result += resolve_dynamic::area(g, strategy);
             return true;
         }, geometry);
         return result;
     }
-};
+    else
+    {
+        return resolve_strategy::area(geometry, strategy);
+    }
+}
 
 } // namespace resolve_dynamic
 
@@ -309,14 +251,12 @@ and Geographic as well.
 \qbk{[heading Examples]}
 \qbk{[area] [area_output]}
 */
-template <typename Geometry>
+template <concepts::ConstGeometry Geometry>
 inline auto area(Geometry const& geometry)
 {
-    concepts::check<Geometry const>();
-
     // detail::throw_on_empty_input(geometry);
 
-    return resolve_dynamic::area<Geometry>::apply(geometry, default_strategy());
+    return resolve_dynamic::area(geometry, default_strategy());
 }
 
 /*!
@@ -344,14 +284,12 @@ inline auto area(Geometry const& geometry)
 [area_with_strategy_output]
 }
  */
-template <typename Geometry, typename Strategy>
+template <concepts::ConstGeometry Geometry, typename Strategy>
 inline auto area(Geometry const& geometry, Strategy const& strategy)
 {
-    concepts::check<Geometry const>();
-
     // detail::throw_on_empty_input(geometry);
 
-    return resolve_dynamic::area<Geometry>::apply(geometry, strategy);
+    return resolve_dynamic::area(geometry, strategy);
 }
 
 

@@ -144,8 +144,8 @@ struct geographic_segments
         typedef model::referring_segment<point1_type const> segment_type1;
         typedef model::referring_segment<point2_type const> segment_type2;
 
-        BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<point1_type>) );
-        BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<point2_type>) );
+        static_assert(concepts::ConstPoint<point1_type>);
+        static_assert(concepts::ConstPoint<point2_type>);
 
         /*
         coordinate_type_t<Point1>
@@ -191,8 +191,8 @@ private:
                                               Point2 const& b1, Point2 const& b2,
                                               bool is_a_reversed, bool is_b_reversed) const
     {
-        BOOST_CONCEPT_ASSERT( (concepts::ConstSegment<Segment1>) );
-        BOOST_CONCEPT_ASSERT( (concepts::ConstSegment<Segment2>) );
+        static_assert(concepts::ConstSegment<Segment1>);
+        static_assert(concepts::ConstSegment<Segment2>);
 
         typedef typename select_calculation_type
             <Segment1, Segment2, CalculationType>::type calc_t;

@@ -115,54 +115,35 @@ struct range_length
 namespace dispatch
 {
 
-
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct length : detail::calculate_null
+template <concepts::ConstGeometry Geometry, typename Strategy>
+inline typename default_length_result<Geometry>::type
+length(Geometry const& geometry, Strategy const& strategy)
 {
-    typedef typename default_length_result<Geometry>::type return_type;
-
-    template <typename Strategy>
-    static inline return_type apply(Geometry const& geometry, Strategy const& strategy)
+    if constexpr (concepts::ConstLinestring<Geometry>)
     {
-        return calculate_null::apply<return_type>(geometry, strategy);
+        return detail::length::range_length<Geometry, closed>::apply(
+            geometry, strategy);
     }
-};
-
-
-template <typename Geometry>
-struct length<Geometry, linestring_tag>
-    : detail::length::range_length<Geometry, closed>
-{};
-
-
-// RING: length is currently 0; it might be argued that it is the "perimeter"
-
-
-template <typename Geometry>
-struct length<Geometry, segment_tag>
-    : detail::length::segment_length<Geometry>
-{};
-
-
-template <typename MultiLinestring>
-struct length<MultiLinestring, multi_linestring_tag> : detail::multi_sum
-{
-    template <typename Strategy>
-    static inline typename default_length_result<MultiLinestring>::type
-    apply(MultiLinestring const& multi, Strategy const& strategy)
+    else if constexpr (concepts::ConstSegment<Geometry>)
     {
-        return multi_sum::apply
-               <
-                   typename default_length_result<MultiLinestring>::type,
-                   detail::length::range_length
-                   <
-                       typename boost::range_value<MultiLinestring>::type,
-                       closed // no need to close it explicitly
-                   >
-               >(multi, strategy);
-
+        return detail::length::segment_length<Geometry>::apply(
+            geometry, strategy);
     }
-};
+    else if constexpr (concepts::ConstMultiLinestring<Geometry>)
+    {
+        typename default_length_result<Geometry>::type result = 0;
+        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
+        {
+            result += dispatch::length(*it, strategy);
+        }
+        return result;
+    }
+    else
+    {
+        return detail::calculate_null::apply
+            <typename default_length_result<Geometry>::type>(geometry, strategy);
+    }
+}
 
 
 } // namespace dispatch
@@ -171,98 +152,61 @@ struct length<MultiLinestring, multi_linestring_tag> : detail::multi_sum
 
 namespace resolve_strategy {
 
-template
-<
-    typename Strategies,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategies>::value
->
-struct length
+template <concepts::ConstGeometry Geometry, typename Strategy>
+inline typename default_length_result<Geometry>::type
+length(Geometry const& geometry, Strategy const& strategy)
 {
-    template <typename Geometry>
-    static inline typename default_length_result<Geometry>::type
-    apply(Geometry const& geometry, Strategies const& strategies)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
-        return dispatch::length<Geometry>::apply(geometry, strategies);
+        using strategies_type = typename strategies::length::services::default_strategy
+            <Geometry>::type;
+        return dispatch::length(geometry, strategies_type());
     }
-};
-
-template <typename Strategy>
-struct length<Strategy, false>
-{
-    template <typename Geometry>
-    static inline typename default_length_result<Geometry>::type
-    apply(Geometry const& geometry, Strategy const& strategy)
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        return dispatch::length(geometry, strategy);
+    }
+    else
     {
         using strategies::length::services::strategy_converter;
-        return dispatch::length<Geometry>::apply(
-                geometry, strategy_converter<Strategy>::get(strategy));
+        return dispatch::length(
+            geometry, strategy_converter<Strategy>::get(strategy));
     }
-};
-
-template <>
-struct length<default_strategy, false>
-{
-    template <typename Geometry>
-    static inline typename default_length_result<Geometry>::type
-    apply(Geometry const& geometry, default_strategy const&)
-    {
-        typedef typename strategies::length::services::default_strategy
-            <
-                Geometry
-            >::type strategies_type;
-
-        return dispatch::length<Geometry>::apply(geometry, strategies_type());
-    }
-};
+}
 
 } // namespace resolve_strategy
 
 
 namespace resolve_dynamic {
 
-template <typename Geometry, typename Tag = geometry::tag_t<Geometry>>
-struct length
+template <concepts::ConstGeometry Geometry, typename Strategy>
+inline typename default_length_result<Geometry>::type
+length(Geometry const& geometry, Strategy const& strategy)
 {
-    template <typename Strategy>
-    static inline typename default_length_result<Geometry>::type
-    apply(Geometry const& geometry, Strategy const& strategy)
-    {
-        return resolve_strategy::length<Strategy>::apply(geometry, strategy);
-    }
-};
-
-template <typename Geometry>
-struct length<Geometry, dynamic_geometry_tag>
-{
-    template <typename Strategy>
-    static inline typename default_length_result<Geometry>::type
-        apply(Geometry const& geometry, Strategy const& strategy)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
     {
         typename default_length_result<Geometry>::type result = 0;
         traits::visit<Geometry>::apply([&](auto const& g)
         {
-            result = length<util::remove_cref_t<decltype(g)>>::apply(g, strategy);
+            result = resolve_dynamic::length(g, strategy);
         }, geometry);
         return result;
     }
-};
-
-template <typename Geometry>
-struct length<Geometry, geometry_collection_tag>
-{
-    template <typename Strategy>
-    static inline typename default_length_result<Geometry>::type
-        apply(Geometry const& geometry, Strategy const& strategy)
+    else if constexpr (concepts::ConstGeometryCollection<Geometry>)
     {
         typename default_length_result<Geometry>::type result = 0;
         detail::visit_breadth_first([&](auto const& g)
         {
-            result += length<util::remove_cref_t<decltype(g)>>::apply(g, strategy);
+            result += resolve_dynamic::length(g, strategy);
             return true;
         }, geometry);
         return result;
     }
-};
+    else
+    {
+        return resolve_strategy::length(geometry, strategy);
+    }
+}
 
 } // namespace resolve_dynamic
 
@@ -278,15 +222,13 @@ struct length<Geometry, geometry_collection_tag>
 \qbk{[include reference/algorithms/length.qbk]}
 \qbk{[length] [length_output]}
  */
-template<typename Geometry>
+template<concepts::ConstGeometry Geometry>
 inline typename default_length_result<Geometry>::type
 length(Geometry const& geometry)
 {
-    concepts::check<Geometry const>();
-
     // detail::throw_on_empty_input(geometry);
 
-    return resolve_dynamic::length<Geometry>::apply(geometry, default_strategy());
+    return resolve_dynamic::length(geometry, default_strategy());
 }
 
 
@@ -304,15 +246,13 @@ length(Geometry const& geometry)
 \qbk{[include reference/algorithms/length.qbk]}
 \qbk{[length_with_strategy] [length_with_strategy_output]}
  */
-template<typename Geometry, typename Strategy>
+template<concepts::ConstGeometry Geometry, typename Strategy>
 inline typename default_length_result<Geometry>::type
 length(Geometry const& geometry, Strategy const& strategy)
 {
-    concepts::check<Geometry const>();
-
     // detail::throw_on_empty_input(geometry);
 
-    return resolve_dynamic::length<Geometry>::apply(geometry, strategy);
+    return resolve_dynamic::length(geometry, strategy);
 }
 
 

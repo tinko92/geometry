@@ -165,126 +165,78 @@ namespace dispatch
 {
 
 
-template
-<
-    typename Geometry,
-    typename GeometryOut,
-    typename Tag1 = tag_t<Geometry>,
-    typename Tag2 = tag_t<GeometryOut>
->
-struct densify
-    : not_implemented<Tag1, Tag2>
-{};
-
-template <typename Geometry, typename GeometryOut>
-struct densify<Geometry, GeometryOut, point_tag, point_tag>
-    : geometry::detail::densify::densify_convert
-{};
-
-template <typename Geometry, typename GeometryOut>
-struct densify<Geometry, GeometryOut, segment_tag, segment_tag>
-    : geometry::detail::densify::densify_convert
-{};
-
-template <typename Geometry, typename GeometryOut>
-struct densify<Geometry, GeometryOut, box_tag, box_tag>
-    : geometry::detail::densify::densify_convert
-{};
-
-template <typename Geometry, typename GeometryOut>
-struct densify<Geometry, GeometryOut, multi_point_tag, multi_point_tag>
-    : geometry::detail::densify::densify_convert
-{};
-
-template <typename Geometry, typename GeometryOut>
-struct densify<Geometry, GeometryOut, linestring_tag, linestring_tag>
-    : geometry::detail::densify::densify_range<>
-{};
-
-template <typename Geometry, typename GeometryOut>
-struct densify<Geometry, GeometryOut, multi_linestring_tag, multi_linestring_tag>
+template <concepts::ConstGeometry Geometry,
+          concepts::MutableGeometry GeometryOut,
+          typename T,
+          typename Strategies>
+    requires (concepts::ConstPoint<Geometry> && concepts::Point<GeometryOut>)
+          || (concepts::ConstSegment<Geometry> && concepts::Segment<GeometryOut>)
+          || (concepts::ConstBox<Geometry> && concepts::Box<GeometryOut>)
+          || (concepts::ConstMultiPoint<Geometry> && concepts::MultiPoint<GeometryOut>)
+          || (concepts::ConstLinestring<Geometry> && concepts::Linestring<GeometryOut>)
+          || (concepts::ConstMultiLinestring<Geometry> && concepts::MultiLinestring<GeometryOut>)
+          || (concepts::ConstRing<Geometry> && concepts::Ring<GeometryOut>)
+          || (concepts::ConstPolygon<Geometry> && concepts::Polygon<GeometryOut>)
+          || (concepts::ConstMultiPolygon<Geometry> && concepts::MultiPolygon<GeometryOut>)
+inline void densify(Geometry const& geometry, GeometryOut& out,
+                    T const& len, Strategies const& strategies)
 {
-    template <typename T, typename Strategy>
-    static void apply(Geometry const& mls, GeometryOut & mls_out,
-                      T const& len, Strategy const& strategy)
+    if constexpr (concepts::ConstPoint<Geometry>
+                  || concepts::ConstSegment<Geometry>
+                  || concepts::ConstBox<Geometry>
+                  || concepts::ConstMultiPoint<Geometry>)
     {
-        std::size_t count = boost::size(mls);
-        range::resize(mls_out, count);
-
-        for (std::size_t i = 0 ; i < count ; ++i)
+        geometry::detail::densify::densify_convert::apply(
+            geometry, out, len, strategies);
+    }
+    else if constexpr (concepts::ConstLinestring<Geometry>)
+    {
+        geometry::detail::densify::densify_range<>::apply(
+            geometry, out, len, strategies);
+    }
+    else if constexpr (concepts::ConstMultiLinestring<Geometry>)
+    {
+        std::size_t const count = boost::size(geometry);
+        range::resize(out, count);
+        for (std::size_t i = 0; i < count; ++i)
         {
-            geometry::detail::densify::densify_range<>
-                ::apply(range::at(mls, i), range::at(mls_out, i),
-                        len, strategy);
+            geometry::detail::densify::densify_range<>::apply(
+                range::at(geometry, i), range::at(out, i), len, strategies);
         }
     }
-};
-
-template <typename Geometry, typename GeometryOut>
-struct densify<Geometry, GeometryOut, ring_tag, ring_tag>
-    : geometry::detail::densify::densify_ring
-        <
-            geometry::closure<Geometry>::value != geometry::open,
-            geometry::closure<GeometryOut>::value != geometry::open
-        >
-{};
-
-template <typename Geometry, typename GeometryOut>
-struct densify<Geometry, GeometryOut, polygon_tag, polygon_tag>
-{
-    template <typename T, typename Strategy>
-    static void apply(Geometry const& poly, GeometryOut & poly_out,
-                      T const& len, Strategy const& strategy)
+    else if constexpr (concepts::ConstRing<Geometry>)
     {
-        apply_ring(exterior_ring(poly), exterior_ring(poly_out),
-                   len, strategy);
+        geometry::detail::densify::densify_ring
+            <
+                geometry::closure<Geometry>::value != geometry::open,
+                geometry::closure<GeometryOut>::value != geometry::open
+            >::apply(geometry, out, len, strategies);
+    }
+    else if constexpr (concepts::ConstPolygon<Geometry>)
+    {
+        dispatch::densify(exterior_ring(geometry), exterior_ring(out),
+                          len, strategies);
 
-        std::size_t count = boost::size(interior_rings(poly));
-        range::resize(interior_rings(poly_out), count);
-
-        for (std::size_t i = 0 ; i < count ; ++i)
+        std::size_t const count = boost::size(interior_rings(geometry));
+        range::resize(interior_rings(out), count);
+        for (std::size_t i = 0; i < count; ++i)
         {
-            apply_ring(range::at(interior_rings(poly), i),
-                       range::at(interior_rings(poly_out), i),
-                       len, strategy);
+            dispatch::densify(range::at(interior_rings(geometry), i),
+                              range::at(interior_rings(out), i),
+                              len, strategies);
         }
     }
-
-    template <typename Ring, typename RingOut, typename T, typename Strategy>
-    static void apply_ring(Ring const& ring, RingOut & ring_out,
-                           T const& len, Strategy const& strategy)
+    else
     {
-        densify<Ring, RingOut, ring_tag, ring_tag>
-            ::apply(ring, ring_out, len, strategy);
-    }
-};
-
-template <typename Geometry, typename GeometryOut>
-struct densify<Geometry, GeometryOut, multi_polygon_tag, multi_polygon_tag>
-{
-    template <typename T, typename Strategy>
-    static void apply(Geometry const& mpoly, GeometryOut & mpoly_out,
-                      T const& len, Strategy const& strategy)
-    {
-        std::size_t count = boost::size(mpoly);
-        range::resize(mpoly_out, count);
-
-        for (std::size_t i = 0 ; i < count ; ++i)
+        std::size_t const count = boost::size(geometry);
+        range::resize(out, count);
+        for (std::size_t i = 0; i < count; ++i)
         {
-            apply_poly(range::at(mpoly, i),
-                       range::at(mpoly_out, i),
-                       len, strategy);
+            dispatch::densify(range::at(geometry, i), range::at(out, i),
+                              len, strategies);
         }
     }
-
-    template <typename Poly, typename PolyOut, typename T, typename Strategy>
-    static void apply_poly(Poly const& poly, PolyOut & poly_out,
-                           T const& len, Strategy const& strategy)
-    {
-        densify<Poly, PolyOut, polygon_tag, polygon_tag>::
-            apply(poly, poly_out, len, strategy);
-    }
-};
+}
 
 
 } // namespace dispatch
@@ -294,127 +246,71 @@ struct densify<Geometry, GeometryOut, multi_polygon_tag, multi_polygon_tag>
 namespace resolve_strategy
 {
 
-template
-<
-    typename Strategies,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategies>::value
->
-struct densify
+template <concepts::ConstGeometry Geometry,
+          concepts::MutableGeometry GeometryOut,
+          typename Distance,
+          typename Strategy>
+inline void densify(Geometry const& geometry, GeometryOut& out,
+                    Distance const& max_distance, Strategy const& strategy)
 {
-    template <typename Geometry, typename Distance>
-    static inline void apply(Geometry const& geometry,
-                             Geometry& out,
-                             Distance const& max_distance,
-                             Strategies const& strategies)
+    if constexpr (std::same_as<Strategy, default_strategy>)
     {
-        dispatch::densify
-            <
-                Geometry, Geometry
-            >::apply(geometry, out, max_distance, strategies);
+        using strategies_type = typename strategies::densify::services
+            ::default_strategy<Geometry>::type;
+        dispatch::densify(geometry, out, max_distance, strategies_type());
     }
-};
-
-template <typename Strategy>
-struct densify<Strategy, false>
-{
-    template <typename Geometry, typename Distance>
-    static inline void apply(Geometry const& geometry,
-                             Geometry& out,
-                             Distance const& max_distance,
-                             Strategy const& strategy)
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        dispatch::densify(geometry, out, max_distance, strategy);
+    }
+    else
     {
         using strategies::densify::services::strategy_converter;
-
-        dispatch::densify
-            <
-                Geometry, Geometry
-            >::apply(geometry, out, max_distance,
-                     strategy_converter<Strategy>::get(strategy));
+        dispatch::densify(geometry, out, max_distance,
+                          strategy_converter<Strategy>::get(strategy));
     }
-};
-
-template <>
-struct densify<default_strategy, false>
-{
-    template <typename Geometry, typename Distance>
-    static inline void apply(Geometry const& geometry,
-                             Geometry& out,
-                             Distance const& max_distance,
-                             default_strategy const&)
-    {
-        typedef typename strategies::densify::services::default_strategy
-            <
-                Geometry
-            >::type strategies_type;
-
-        dispatch::densify
-            <
-                Geometry, Geometry
-            >::apply(geometry, out, max_distance, strategies_type());
-    }
-};
+}
 
 } // namespace resolve_strategy
 
 
 namespace resolve_dynamic {
 
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct densify
+template <concepts::MutableGeometry Geometry,
+          typename Distance,
+          typename Strategy>
+inline void densify(Geometry const& geometry, Geometry& out,
+                    Distance const& max_distance, Strategy const& strategy)
 {
-    template <typename Distance, typename Strategy>
-    static inline void apply(Geometry const& geometry,
-                             Geometry& out,
-                             Distance const& max_distance,
-                             Strategy const& strategy)
-    {
-        resolve_strategy::densify
-            <
-                Strategy
-            >::apply(geometry, out, max_distance, strategy);
-    }
-};
-
-template <typename Geometry>
-struct densify<Geometry, dynamic_geometry_tag>
-{
-    template <typename Distance, typename Strategy>
-    static inline void
-    apply(Geometry const& geometry,
-          Geometry& out,
-          Distance const& max_distance,
-          Strategy const& strategy)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
     {
         traits::visit<Geometry>::apply([&](auto const& g)
         {
-            using geom_t = util::remove_cref_t<decltype(g)>;
-            geom_t o;
-            densify<geom_t>::apply(g, o, max_distance, strategy);
-            out = std::move(o);
+            using geometry_type = util::remove_cref_t<decltype(g)>;
+            geometry_type result;
+            resolve_dynamic::densify(
+                g, result, max_distance, strategy);
+            out = std::move(result);
         }, geometry);
     }
-};
-
-template <typename Geometry>
-struct densify<Geometry, geometry_collection_tag>
-{
-    template <typename Distance, typename Strategy>
-    static inline void
-    apply(Geometry const& geometry,
-          Geometry& out,
-          Distance const& max_distance,
-          Strategy const& strategy)
+    else if constexpr (concepts::ConstGeometryCollection<Geometry>)
     {
         detail::visit_breadth_first([&](auto const& g)
         {
-            using geom_t = util::remove_cref_t<decltype(g)>;
-            geom_t o;
-            densify<geom_t>::apply(g, o, max_distance, strategy);
-            traits::emplace_back<Geometry>::apply(out, std::move(o));
+            using geometry_type = util::remove_cref_t<decltype(g)>;
+            geometry_type result;
+            resolve_dynamic::densify(
+                g, result, max_distance, strategy);
+            traits::emplace_back<Geometry>::apply(out, std::move(result));
             return true;
         }, geometry);
     }
-};
+    else
+    {
+        resolve_strategy::densify(
+            geometry, out, max_distance, strategy);
+    }
+}
 
 } // namespace resolve_dynamic
 
@@ -447,14 +343,14 @@ struct densify<Geometry, geometry_collection_tag>
 \* [link geometry.reference.algorithms.line_interpolate line_interpolate]
 }
 */
-template <typename Geometry, typename Distance, typename Strategy>
+template <concepts::MutableGeometry Geometry,
+          typename Distance,
+          typename Strategy>
 inline void densify(Geometry const& geometry,
                     Geometry& out,
                     Distance const& max_distance,
                     Strategy const& strategy)
 {
-    concepts::check<Geometry>();
-
     if (max_distance <= Distance(0))
     {
         BOOST_THROW_EXCEPTION(geometry::invalid_input_exception());
@@ -462,10 +358,7 @@ inline void densify(Geometry const& geometry,
 
     geometry::clear(out);
 
-    resolve_dynamic::densify
-        <
-            Geometry
-        >::apply(geometry, out, max_distance, strategy);
+    resolve_dynamic::densify(geometry, out, max_distance, strategy);
 }
 
 
@@ -489,7 +382,7 @@ inline void densify(Geometry const& geometry,
 \* [link geometry.reference.algorithms.line_interpolate line_interpolate]
 }
 */
-template <typename Geometry, typename Distance>
+template <concepts::MutableGeometry Geometry, typename Distance>
 inline void densify(Geometry const& geometry,
                     Geometry& out,
                     Distance const& max_distance)

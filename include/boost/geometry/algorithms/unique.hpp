@@ -94,64 +94,6 @@ struct multi_unique
 
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-
-template
-<
-    typename Geometry,
-    typename Tag = tag_t<Geometry>
->
-struct unique
-{
-    template <typename ComparePolicy>
-    static inline void apply(Geometry&, ComparePolicy const& )
-    {}
-};
-
-
-template <typename Ring>
-struct unique<Ring, ring_tag>
-    : detail::unique::range_unique
-{};
-
-
-template <typename LineString>
-struct unique<LineString, linestring_tag>
-    : detail::unique::range_unique
-{};
-
-
-template <typename Polygon>
-struct unique<Polygon, polygon_tag>
-    : detail::unique::polygon_unique
-{};
-
-
-// For points, unique is not applicable and does nothing
-// (Note that it is not "spatially unique" but that it removes duplicate coordinates,
-//  like std::unique does). Spatially unique is "dissolve" which can (or will be)
-//  possible for multi-points as well, removing points at the same location.
-
-
-template <typename MultiLineString>
-struct unique<MultiLineString, multi_linestring_tag>
-    : detail::unique::multi_unique<detail::unique::range_unique>
-{};
-
-
-template <typename MultiPolygon>
-struct unique<MultiPolygon, multi_polygon_tag>
-    : detail::unique::multi_unique<detail::unique::polygon_unique>
-{};
-
-
-} // namespace dispatch
-#endif
-
-
 /*!
 \brief \brief_calc{minimal set}
 \ingroup unique
@@ -161,11 +103,9 @@ struct unique<MultiPolygon, multi_polygon_tag>
 
 \qbk{[include reference/algorithms/unique.qbk]}
 */
-template <typename Geometry>
+template <concepts::MutableGeometry Geometry>
 inline void unique(Geometry& geometry)
 {
-    concepts::check<Geometry>();
-
     // Default strategy is the default point-comparison policy
     using policy = geometry::equal_to
         <
@@ -173,7 +113,25 @@ inline void unique(Geometry& geometry)
         >;
 
 
-    dispatch::unique<Geometry>::apply(geometry, policy());
+    if constexpr (concepts::Ring<Geometry>
+                || concepts::Linestring<Geometry>)
+    {
+        detail::unique::range_unique::apply(geometry, policy());
+    }
+    else if constexpr (concepts::Polygon<Geometry>)
+    {
+        detail::unique::polygon_unique::apply(geometry, policy());
+    }
+    else if constexpr (concepts::MultiLinestring<Geometry>)
+    {
+        detail::unique::multi_unique<detail::unique::range_unique>::apply(
+            geometry, policy());
+    }
+    else if constexpr (concepts::MultiPolygon<Geometry>)
+    {
+        detail::unique::multi_unique<detail::unique::polygon_unique>::apply(
+            geometry, policy());
+    }
 }
 
 }} // namespace boost::geometry

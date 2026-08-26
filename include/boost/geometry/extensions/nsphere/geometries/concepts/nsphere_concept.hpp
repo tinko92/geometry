@@ -18,8 +18,8 @@
 #ifndef BOOST_GEOMETRY_EXTENSIONS_NSPHERE_GEOMETRIES_CONCEPTS_NSPHERE_CONCEPT_HPP
 #define BOOST_GEOMETRY_EXTENSIONS_NSPHERE_GEOMETRIES_CONCEPTS_NSPHERE_CONCEPT_HPP
 
-#include <boost/concept_check.hpp>
-#include <boost/core/ignore_unused.hpp>
+#include <concepts>
+#include <utility>
 
 #include <boost/geometry/core/coordinate_dimension.hpp>
 #include <boost/geometry/core/access.hpp>
@@ -34,104 +34,70 @@ namespace boost { namespace geometry { namespace concepts {
     \details The ConstNsphere concept check the same as the Nsphere concept,
     but does not check write access.
 */
-template <typename Geometry>
-class ConstNsphere
+template <typename Geometry, std::size_t Dimension>
+concept ConstNsphereCoordinate = requires(Geometry const& geometry)
 {
-    typedef typename point_type<Geometry>::type point_type;
-    typedef typename radius_type<Geometry>::type radius_type;
-
-
-    template <size_t Dimension, size_t DimensionCount>
-    struct dimension_checker
-    {
-        static void apply()
-        {
-            typedef typename coordinate_type<Geometry>::type coordinate_type;
-            const Geometry* s = 0;
-            coordinate_type coord(geometry::get<Dimension>(*s));
-            boost::ignore_unused(coord);
-            dimension_checker<Dimension + 1, DimensionCount>::apply();
-        }
-    };
-
-    template <size_t DimensionCount>
-    struct dimension_checker<DimensionCount, DimensionCount>
-    {
-        static void apply() {}
-    };
-
-public :
-
-    BOOST_CONCEPT_USAGE(ConstNsphere)
-    {
-        static const size_t n = dimension<Geometry>::value;
-        dimension_checker<0, n>::apply();
-        dimension_checker<0, n>::apply();
-
-        // Check radius access
-        Geometry const* s = 0;
-        radius_type coord(geometry::get_radius<0>(*s));
-        boost::ignore_unused(coord);
-    }
+    { geometry::get<Dimension>(geometry) }
+        -> std::convertible_to<coordinate_type_t<Geometry>>;
 };
+
+template <typename Geometry, std::size_t... Dimensions>
+constexpr bool const_nsphere_coordinates(std::index_sequence<Dimensions...>)
+{
+    return (ConstNsphereCoordinate<Geometry, Dimensions> && ...);
+}
+
+template <typename Geometry>
+concept ConstNsphere =
+    std::same_as<tag_t<Geometry>, nsphere_tag>
+    && concepts::ConstPoint<point_type_t<Geometry>>
+    && const_nsphere_coordinates<Geometry>(
+        std::make_index_sequence<dimension<Geometry>::value>{})
+    && requires(Geometry const& geometry)
+    {
+        { geometry::get_radius<0>(geometry) }
+            -> std::convertible_to<radius_type_t<Geometry>>;
+    };
 
 
 /*!
     \brief Checks nsphere concept
     \ingroup concepts
 */
-template <typename Geometry>
-class Nsphere
+template <typename Geometry, std::size_t Dimension>
+concept MutableNsphereCoordinate = requires(
+    Geometry& geometry, coordinate_type_t<Geometry> value)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::ConstNsphere<Geometry>) );
-
-    typedef typename point_type<Geometry>::type point_type;
-    typedef typename radius_type<Geometry>::type radius_type;
-
-
-    template <size_t Dimension, size_t DimensionCount>
-    struct dimension_checker
-    {
-        static void apply()
-        {
-            Geometry* s;
-            geometry::set<Dimension>(*s, geometry::get<Dimension>(*s));
-            dimension_checker<Dimension + 1, DimensionCount>::apply();
-        }
-    };
-
-    template <size_t DimensionCount>
-    struct dimension_checker<DimensionCount, DimensionCount>
-    {
-        static void apply() {}
-    };
-
-public :
-
-    BOOST_CONCEPT_USAGE(Nsphere)
-    {
-        static const size_t n = dimension<Geometry>::type::value;
-        dimension_checker<0, n>::apply();
-        dimension_checker<0, n>::apply();
-
-        // Check radius access
-        Geometry* s = 0;
-        set_radius<0>(*s, get_radius<0>(*s));
-    }
+    geometry::set<Dimension>(geometry, value);
 };
+
+template <typename Geometry, std::size_t... Dimensions>
+constexpr bool mutable_nsphere_coordinates(std::index_sequence<Dimensions...>)
+{
+    return (MutableNsphereCoordinate<Geometry, Dimensions> && ...);
+}
+
+template <typename Geometry>
+concept Nsphere =
+    ConstNsphere<Geometry>
+    && concepts::Point<point_type_t<Geometry>>
+    && mutable_nsphere_coordinates<Geometry>(
+        std::make_index_sequence<dimension<Geometry>::value>{})
+    && requires(Geometry& geometry, radius_type_t<Geometry> radius)
+    {
+        geometry::set_radius<0>(geometry, radius);
+    };
 
 
 template <typename Geometry>
 struct concept_type<Geometry, nsphere_tag>
-{
-    using type = Nsphere<Geometry>;
-};
+    : std::bool_constant<Nsphere<Geometry>>
+{};
 
 template <typename Geometry>
 struct concept_type<Geometry const, nsphere_tag>
-{
-    using type = ConstNsphere<Geometry>;
-};
+    : std::bool_constant<ConstNsphere<Geometry>>
+{};
 
 
 }}} // namespace boost::geometry::concepts

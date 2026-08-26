@@ -75,7 +75,7 @@ template
 >
 class polygon
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point>) );
+    static_assert(concepts::Point<Point>);
 
 public:
 

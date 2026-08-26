@@ -69,8 +69,8 @@ void test_concept()
     typedef bg::model::point<T, 3, CS> P;
 
     // Compilation tests, all things should compile.
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstPoint<P>) );
-    BOOST_CONCEPT_ASSERT( (bg::concepts::Point<P>) );
+    static_assert(bg::concepts::ConstPoint<P>);
+    static_assert(bg::concepts::Point<P>);
 
     typedef typename bg::coordinate_type<P>::type T1;
     boost::ignore_unused<T1>();

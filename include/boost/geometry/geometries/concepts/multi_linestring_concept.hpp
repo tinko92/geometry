@@ -20,11 +20,10 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_MULTI_LINESTRING_CONCEPT_HPP
 
 
-#include <boost/concept_check.hpp>
-#include <boost/range/concepts.hpp>
 #include <boost/range/value_type.hpp>
 
 #include <boost/geometry/geometries/concepts/concept_type.hpp>
+#include <boost/geometry/geometries/concepts/detail/mutable_range.hpp>
 #include <boost/geometry/geometries/concepts/linestring_concept.hpp>
 
 
@@ -32,63 +31,31 @@ namespace boost { namespace geometry { namespace concepts
 {
 
 template <typename Geometry>
-class MultiLinestring
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    typedef typename boost::range_value<Geometry>::type linestring_type;
-
-    BOOST_CONCEPT_ASSERT( (concepts::Linestring<linestring_type>) );
-    BOOST_CONCEPT_ASSERT( (boost::RandomAccessRangeConcept<Geometry>) );
+concept ConstMultiLinestring =
+    std::same_as<tag_t<geometry_type_t<Geometry>>, multi_linestring_tag>
+    && detail::ConstRandomAccessRange<geometry_type_t<Geometry>>
+    && ConstLinestring<typename boost::range_value<geometry_type_t<Geometry>>::type>;
 
 
-public :
-
-    BOOST_CONCEPT_USAGE(MultiLinestring)
-    {
-        Geometry* mls = 0;
-        traits::clear<Geometry>::apply(*mls);
-        traits::resize<Geometry>::apply(*mls, 0);
-        linestring_type* ls = 0;
-        traits::push_back<Geometry>::apply(*mls, std::move(*ls));
-    }
-#endif
-};
-
-
-/*!
-\brief concept for multi-linestring (const version)
-\ingroup const_concepts
-*/
 template <typename Geometry>
-class ConstMultiLinestring
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    typedef typename boost::range_value<Geometry>::type linestring_type;
-
-    BOOST_CONCEPT_ASSERT( (concepts::ConstLinestring<linestring_type>) );
-    BOOST_CONCEPT_ASSERT( (boost::RandomAccessRangeConcept<Geometry>) );
-
-
-public :
-
-    BOOST_CONCEPT_USAGE(ConstMultiLinestring)
-    {
-    }
-#endif
-};
+concept MultiLinestring =
+    ! std::is_const_v<std::remove_reference_t<Geometry>>
+    && ConstMultiLinestring<Geometry>
+    && Linestring<typename boost::range_value<geometry_type_t<Geometry>>::type>
+    && detail::MutableRange
+        <geometry_type_t<Geometry>,
+         typename boost::range_value<geometry_type_t<Geometry>>::type>;
 
 
 template <typename Geometry>
 struct concept_type<Geometry, multi_linestring_tag>
-{
-    using type = MultiLinestring<Geometry>;
-};
+    : std::bool_constant<MultiLinestring<Geometry>>
+{};
 
 template <typename Geometry>
 struct concept_type<Geometry const, multi_linestring_tag>
-{
-    using type = ConstMultiLinestring<Geometry>;
-};
+    : std::bool_constant<ConstMultiLinestring<Geometry>>
+{};
 
 
 }}} // namespace boost::geometry::concepts

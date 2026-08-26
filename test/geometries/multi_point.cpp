@@ -79,8 +79,8 @@ void test_concept()
 {
     typedef bg::model::multi_point<P> MP;
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstMultiPoint<MP>) );
-    BOOST_CONCEPT_ASSERT( (bg::concepts::MultiPoint<MP>) );
+    static_assert(bg::concepts::ConstMultiPoint<MP>);
+    static_assert(bg::concepts::MultiPoint<MP>);
 
     typedef typename bg::coordinate_type<MP>::type T;
     typedef typename bg::point_type<MP>::type MPP;

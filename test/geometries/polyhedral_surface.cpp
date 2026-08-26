@@ -81,8 +81,8 @@ int test_main(int, char* [])
     BOOST_CHECK_EQUAL(boost::size(ps1), 1u);
 
     // Test concepts
-    BOOST_CONCEPT_ASSERT( (bg::concepts::PolyhedralSurface<polyhedral_t>) );
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstPolyhedralSurface<const_polyhedral_t>) );
+    static_assert(bg::concepts::PolyhedralSurface<polyhedral_t>);
+    static_assert(bg::concepts::ConstPolyhedralSurface<const_polyhedral_t>);
 
     /* The following tests should fail
     // Define a 2-dimensional polyhedral surface
@@ -95,8 +95,8 @@ int test_main(int, char* [])
     using polygon_geo_t = bg::model::polygon<point_geo_t>;
     using polyhedral_geo_t = bg::model::polyhedral_surface<polygon_geo_t>;
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::PolyhedralSurface<polyhedral2_t>) );
-    BOOST_CONCEPT_ASSERT( (bg::concepts::PolyhedralSurface<polyhedral_geo_t>) );
+    static_assert(bg::concepts::PolyhedralSurface<polyhedral2_t>);
+    static_assert(bg::concepts::PolyhedralSurface<polyhedral_geo_t>);
     */
     return 0;
 }

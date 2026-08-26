@@ -157,78 +157,82 @@ namespace dispatch
 template
 <
     typename Geometry,
-    typename RangeOrPoint,
-    typename Tag = geometry::tag_t<Geometry>,
-    typename OtherTag = geometry::tag_t<RangeOrPoint>
+    typename RangeOrPoint
 >
 struct append
     : detail::append::append_no_action
 {};
 
-template <typename Geometry, typename Point>
-struct append<Geometry, Point, linestring_tag, point_tag>
+template <concepts::Linestring Geometry, concepts::ConstPoint Point>
+struct append<Geometry, Point>
     : detail::append::to_range_point
 {};
 
-template <typename Geometry, typename Point>
-struct append<Geometry, Point, ring_tag, point_tag>
+template <concepts::Ring Geometry, concepts::ConstPoint Point>
+struct append<Geometry, Point>
     : detail::append::to_range_point
 {};
 
-template <typename Polygon, typename Point>
-struct append<Polygon, Point, polygon_tag, point_tag>
+template <concepts::Polygon Polygon, concepts::ConstPoint Point>
+struct append<Polygon, Point>
         : detail::append::to_polygon_point
 {};
 
-template <typename Geometry, typename Range, typename RangeTag>
-struct append<Geometry, Range, linestring_tag, RangeTag>
+template <concepts::Linestring Geometry, typename Range>
+    requires (! concepts::ConstPoint<Range>)
+struct append<Geometry, Range>
     : detail::append::to_range_range
 {};
 
-template <typename Geometry, typename Range, typename RangeTag>
-struct append<Geometry, Range, ring_tag, RangeTag>
+template <concepts::Ring Geometry, typename Range>
+    requires (! concepts::ConstPoint<Range>)
+struct append<Geometry, Range>
     : detail::append::to_range_range
 {};
 
-template <typename Polygon, typename Range, typename RangeTag>
-struct append<Polygon, Range, polygon_tag, RangeTag>
+template <concepts::Polygon Polygon, typename Range>
+    requires (! concepts::ConstPoint<Range>)
+struct append<Polygon, Range>
         : detail::append::to_polygon_range
 {};
 
 
-template <typename Geometry, typename Point>
-struct append<Geometry, Point, multi_point_tag, point_tag>
+template <concepts::MultiPoint Geometry, concepts::ConstPoint Point>
+struct append<Geometry, Point>
     : detail::append::to_range_point
 {};
 
-template <typename Geometry, typename Range, typename RangeTag>
-struct append<Geometry, Range, multi_point_tag, RangeTag>
+template <concepts::MultiPoint Geometry, typename Range>
+    requires (! concepts::ConstPoint<Range>)
+struct append<Geometry, Range>
     : detail::append::to_range_range
 {};
 
-template <typename MultiGeometry, typename Point>
-struct append<MultiGeometry, Point, multi_linestring_tag, point_tag>
+template <concepts::MultiLinestring MultiGeometry, concepts::ConstPoint Point>
+struct append<MultiGeometry, Point>
     : detail::append::to_multigeometry<detail::append::to_range_point>
 {};
 
-template <typename MultiGeometry, typename Range, typename RangeTag>
-struct append<MultiGeometry, Range, multi_linestring_tag, RangeTag>
+template <concepts::MultiLinestring MultiGeometry, typename Range>
+    requires (! concepts::ConstPoint<Range>)
+struct append<MultiGeometry, Range>
     : detail::append::to_multigeometry<detail::append::to_range_range>
 {};
 
-template <typename MultiGeometry, typename Point>
-struct append<MultiGeometry, Point, multi_polygon_tag, point_tag>
+template <concepts::MultiPolygon MultiGeometry, concepts::ConstPoint Point>
+struct append<MultiGeometry, Point>
     : detail::append::to_multigeometry<detail::append::to_polygon_point>
 {};
 
-template <typename MultiGeometry, typename Range, typename RangeTag>
-struct append<MultiGeometry, Range, multi_polygon_tag, RangeTag>
+template <concepts::MultiPolygon MultiGeometry, typename Range>
+    requires (! concepts::ConstPoint<Range>)
+struct append<MultiGeometry, Range>
     : detail::append::to_multigeometry<detail::append::to_polygon_range>
 {};
 
 
-template <typename Geometry, typename RangeOrPoint, typename OtherTag>
-struct append<Geometry, RangeOrPoint, dynamic_geometry_tag, OtherTag>
+template <concepts::DynamicGeometry Geometry, typename RangeOrPoint>
+struct append<Geometry, RangeOrPoint>
 {
     static inline void apply(Geometry& geometry,
                              RangeOrPoint const& range_or_point,
@@ -265,12 +269,10 @@ struct append<Geometry, RangeOrPoint, dynamic_geometry_tag, OtherTag>
 \qbk{[include reference/algorithms/append.qbk]}
 }
  */
-template <typename Geometry, typename RangeOrPoint>
+template <concepts::MutableGeometry Geometry, typename RangeOrPoint>
 inline void append(Geometry& geometry, RangeOrPoint const& range_or_point,
                    signed_size_type ring_index = -1, signed_size_type multi_index = 0)
 {
-    concepts::check<Geometry>();
-
     dispatch::append
         <
             Geometry, RangeOrPoint

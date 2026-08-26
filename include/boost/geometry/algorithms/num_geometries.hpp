@@ -29,10 +29,12 @@
 #include <boost/variant/variant_fwd.hpp>
 
 #include <boost/geometry/algorithms/not_implemented.hpp>
+#include <boost/geometry/algorithms/detail/visit.hpp>
 
 #include <boost/geometry/core/tag.hpp>
 #include <boost/geometry/core/tags.hpp>
 #include <boost/geometry/core/tag_cast.hpp>
+#include <boost/geometry/core/visit.hpp>
 
 #include <boost/geometry/geometries/concepts/check.hpp>
 
@@ -41,76 +43,6 @@
 
 namespace boost { namespace geometry
 {
-
-
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-
-template
-<
-    typename Geometry,
-    typename Tag = tag_cast_t<tag_t<Geometry>, single_tag, multi_tag>
->
-struct num_geometries: not_implemented<Tag>
-{};
-
-
-template <typename Geometry>
-struct num_geometries<Geometry, single_tag>
-    : detail::counting::other_count<1>
-{};
-
-
-template <typename MultiGeometry>
-struct num_geometries<MultiGeometry, multi_tag>
-{
-    static inline std::size_t apply(MultiGeometry const& multi_geometry)
-    {
-        return boost::size(multi_geometry);
-    }
-};
-
-
-} // namespace dispatch
-#endif // DOXYGEN_NO_DISPATCH
-
-
-namespace resolve_variant
-{
-
-template <typename Geometry>
-struct num_geometries
-{
-    static inline std::size_t apply(Geometry const& geometry)
-    {
-        concepts::check<Geometry const>();
-
-        return dispatch::num_geometries<Geometry>::apply(geometry);
-    }
-};
-
-template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
-struct num_geometries<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> >
-{
-    struct visitor: boost::static_visitor<std::size_t>
-    {
-        template <typename Geometry>
-        inline std::size_t operator()(Geometry const& geometry) const
-        {
-            return num_geometries<Geometry>::apply(geometry);
-        }
-    };
-
-    static inline std::size_t
-    apply(boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> const& geometry)
-    {
-        return boost::apply_visitor(visitor(), geometry);
-    }
-};
-
-} // namespace resolve_variant
 
 
 /*!
@@ -123,10 +55,30 @@ struct num_geometries<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> >
 
 \qbk{[include reference/algorithms/num_geometries.qbk]}
 */
-template <typename Geometry>
+template <concepts::ConstGeometry Geometry>
 inline std::size_t num_geometries(Geometry const& geometry)
 {
-    return resolve_variant::num_geometries<Geometry>::apply(geometry);
+    if constexpr (concepts::ConstDynamicGeometry<Geometry>)
+    {
+        std::size_t result = 0;
+        traits::visit<Geometry>::apply([&](auto const& g)
+        {
+            result = geometry::num_geometries(g);
+        }, geometry);
+        return result;
+    }
+    else if constexpr (concepts::ConstMultiPoint<Geometry>
+                    || concepts::ConstMultiLinestring<Geometry>
+                    || concepts::ConstMultiPolygon<Geometry>
+                    || concepts::ConstPolyhedralSurface<Geometry>
+                    || concepts::ConstGeometryCollection<Geometry>)
+    {
+        return boost::size(geometry);
+    }
+    else
+    {
+        return 1;
+    }
 }
 
 

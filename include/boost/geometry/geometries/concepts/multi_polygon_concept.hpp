@@ -20,11 +20,10 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_MULTI_POLYGON_CONCEPT_HPP
 
 
-#include <boost/concept_check.hpp>
-#include <boost/range/concepts.hpp>
 #include <boost/range/value_type.hpp>
 
 #include <boost/geometry/geometries/concepts/concept_type.hpp>
+#include <boost/geometry/geometries/concepts/detail/mutable_range.hpp>
 #include <boost/geometry/geometries/concepts/polygon_concept.hpp>
 
 
@@ -32,64 +31,31 @@ namespace boost { namespace geometry { namespace concepts
 {
 
 template <typename Geometry>
-class MultiPolygon
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    typedef typename boost::range_value<Geometry>::type polygon_type;
-
-    BOOST_CONCEPT_ASSERT( (concepts::Polygon<polygon_type>) );
-    BOOST_CONCEPT_ASSERT( (boost::RandomAccessRangeConcept<Geometry>) );
+concept ConstMultiPolygon =
+    std::same_as<tag_t<geometry_type_t<Geometry>>, multi_polygon_tag>
+    && detail::ConstRandomAccessRange<geometry_type_t<Geometry>>
+    && ConstPolygon<typename boost::range_value<geometry_type_t<Geometry>>::type>;
 
 
-public :
-
-    BOOST_CONCEPT_USAGE(MultiPolygon)
-    {
-        Geometry* mp = 0;
-        traits::clear<Geometry>::apply(*mp);
-        traits::resize<Geometry>::apply(*mp, 0);
-        // The concept should support the second version of push_back, using &&
-        polygon_type* poly = 0;
-        traits::push_back<Geometry>::apply(*mp, std::move(*poly));
-    }
-#endif
-};
-
-
-/*!
-\brief concept for multi-polygon (const version)
-\ingroup const_concepts
-*/
 template <typename Geometry>
-class ConstMultiPolygon
-{
-#ifndef DOXYGEN_NO_CONCEPT_MEMBERS
-    typedef typename boost::range_value<Geometry>::type polygon_type;
-
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPolygon<polygon_type>) );
-    BOOST_CONCEPT_ASSERT( (boost::RandomAccessRangeConcept<Geometry>) );
-
-
-public :
-
-    BOOST_CONCEPT_USAGE(ConstMultiPolygon)
-    {
-    }
-#endif
-};
+concept MultiPolygon =
+    ! std::is_const_v<std::remove_reference_t<Geometry>>
+    && ConstMultiPolygon<Geometry>
+    && Polygon<typename boost::range_value<geometry_type_t<Geometry>>::type>
+    && detail::MutableRange
+        <geometry_type_t<Geometry>,
+         typename boost::range_value<geometry_type_t<Geometry>>::type>;
 
 
 template <typename Geometry>
 struct concept_type<Geometry, multi_polygon_tag>
-{
-    using type = MultiPolygon<Geometry>;
-};
+    : std::bool_constant<MultiPolygon<Geometry>>
+{};
 
 template <typename Geometry>
 struct concept_type<Geometry const, multi_polygon_tag>
-{
-    using type = ConstMultiPolygon<Geometry>;
-};
+    : std::bool_constant<ConstMultiPolygon<Geometry>>
+{};
 
 
 }}} // namespace boost::geometry::concepts

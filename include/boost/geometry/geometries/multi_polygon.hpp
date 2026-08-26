@@ -54,7 +54,7 @@ template
 >
 class multi_polygon : public Container<Polygon, Allocator<Polygon> >
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Polygon<Polygon>) );
+    static_assert(concepts::Polygon<Polygon>);
 
     // default constructor and base_type definitions are required only
     // if the constructor taking std::initializer_list is defined

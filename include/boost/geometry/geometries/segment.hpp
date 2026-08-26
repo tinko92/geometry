@@ -55,7 +55,7 @@ namespace model
 template<typename Point>
 class segment : public std::pair<Point, Point>
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point>) );
+    static_assert(concepts::Point<Point>);
 
 public :
 
@@ -85,17 +85,12 @@ reference assignments.
 \tparam ConstOrNonConstPoint point type of the segment, maybe a point or a const point
 */
 template<typename ConstOrNonConstPoint>
+    requires ((std::is_const_v<ConstOrNonConstPoint>
+                && concepts::ConstPoint<ConstOrNonConstPoint>)
+            || (! std::is_const_v<ConstOrNonConstPoint>
+                && concepts::Point<ConstOrNonConstPoint>))
 class referring_segment
 {
-    BOOST_CONCEPT_ASSERT( (
-        typename std::conditional
-            <
-                std::is_const<ConstOrNonConstPoint>::value,
-                concepts::Point<ConstOrNonConstPoint>,
-                concepts::ConstPoint<ConstOrNonConstPoint>
-            >
-    ) );
-
     typedef ConstOrNonConstPoint point_type;
 
 public:

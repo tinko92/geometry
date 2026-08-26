@@ -74,95 +74,6 @@ struct polygon_reverse: private range_reverse
 #endif // DOXYGEN_NO_DETAIL
 
 
-#ifndef DOXYGEN_NO_DISPATCH
-namespace dispatch
-{
-
-
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct reverse
-{
-    static inline void apply(Geometry&)
-    {}
-};
-
-
-template <typename Ring>
-struct reverse<Ring, ring_tag>
-    : detail::reverse::range_reverse
-{};
-
-
-template <typename LineString>
-struct reverse<LineString, linestring_tag>
-    : detail::reverse::range_reverse
-{};
-
-
-template <typename Polygon>
-struct reverse<Polygon, polygon_tag>
-    : detail::reverse::polygon_reverse
-{};
-
-
-template <typename Geometry>
-struct reverse<Geometry, multi_linestring_tag>
-    : detail::multi_modify<detail::reverse::range_reverse>
-{};
-
-
-template <typename Geometry>
-struct reverse<Geometry, multi_polygon_tag>
-    : detail::multi_modify<detail::reverse::polygon_reverse>
-{};
-
-
-
-} // namespace dispatch
-#endif
-
-
-namespace resolve_dynamic
-{
-
-template <typename Geometry, typename Tag = tag_t<Geometry>>
-struct reverse
-{
-    static void apply(Geometry& geometry)
-    {
-        concepts::check<Geometry>();
-        dispatch::reverse<Geometry>::apply(geometry);
-    }
-};
-
-template <typename Geometry>
-struct reverse<Geometry, dynamic_geometry_tag>
-{
-    static void apply(Geometry& geometry)
-    {
-        traits::visit<Geometry>::apply([](auto & g)
-        {
-            reverse<util::remove_cref_t<decltype(g)>>::apply(g);
-        }, geometry);
-    }
-};
-
-template <typename Geometry>
-struct reverse<Geometry, geometry_collection_tag>
-{
-    static void apply(Geometry& geometry)
-    {
-        detail::visit_breadth_first([](auto & g)
-        {
-            reverse<util::remove_cref_t<decltype(g)>>::apply(g);
-            return true;
-        }, geometry);
-    }
-};
-
-} // namespace resolve_dynamic
-
-
 /*!
 \brief Reverses the points within a geometry
 \details Generic function to reverse a geometry. It resembles the std::reverse
@@ -174,10 +85,41 @@ struct reverse<Geometry, geometry_collection_tag>
 
 \qbk{[include reference/algorithms/reverse.qbk]}
 */
-template <typename Geometry>
+template <concepts::MutableGeometry Geometry>
 inline void reverse(Geometry& geometry)
 {
-    resolve_dynamic::reverse<Geometry>::apply(geometry);
+    if constexpr (concepts::DynamicGeometry<Geometry>)
+    {
+        traits::visit<Geometry>::apply([](auto& g)
+        {
+            geometry::reverse(g);
+        }, geometry);
+    }
+    else if constexpr (concepts::GeometryCollection<Geometry>)
+    {
+        detail::visit_breadth_first([](auto& g)
+        {
+            geometry::reverse(g);
+            return true;
+        }, geometry);
+    }
+    else if constexpr (concepts::Ring<Geometry>
+                    || concepts::Linestring<Geometry>)
+    {
+        detail::reverse::range_reverse::apply(geometry);
+    }
+    else if constexpr (concepts::Polygon<Geometry>)
+    {
+        detail::reverse::polygon_reverse::apply(geometry);
+    }
+    else if constexpr (concepts::MultiLinestring<Geometry>
+                    || concepts::MultiPolygon<Geometry>)
+    {
+        for (auto it = boost::begin(geometry); it != boost::end(geometry); ++it)
+        {
+            geometry::reverse(*it);
+        }
+    }
 }
 
 }} // namespace boost::geometry

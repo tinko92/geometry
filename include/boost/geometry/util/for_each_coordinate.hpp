@@ -64,7 +64,7 @@ struct coordinates_scanner<Point, DimensionCount, DimensionCount>
 template <typename Point, typename Op>
 inline void for_each_coordinate(Point& point, Op operation)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::Point<Point>) );
+    static_assert(concepts::Point<Point>);
 
     detail::coordinates_scanner<Point>::apply(point, operation);
 }
@@ -72,7 +72,7 @@ inline void for_each_coordinate(Point& point, Op operation)
 template <typename Point, typename Op>
 inline Op for_each_coordinate(Point const& point, Op operation)
 {
-    BOOST_CONCEPT_ASSERT( (concepts::ConstPoint<Point>) );
+    static_assert(concepts::ConstPoint<Point>);
 
     return detail::coordinates_scanner<Point const>::apply(point, operation);
 }

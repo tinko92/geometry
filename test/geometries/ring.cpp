@@ -100,8 +100,8 @@ void test_concept()
 {
     typedef bg::model::ring<P> R;
 
-    BOOST_CONCEPT_ASSERT( (bg::concepts::ConstRing<R>) );
-    BOOST_CONCEPT_ASSERT( (bg::concepts::Ring<R>) );
+    static_assert(bg::concepts::ConstRing<R>);
+    static_assert(bg::concepts::Ring<R>);
 
     typedef typename bg::coordinate_type<R>::type T;
     typedef typename bg::point_type<R>::type PR;
