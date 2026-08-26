@@ -15,11 +15,11 @@ import config : requires ;
 project boost-geometry-doc-src-example
     : requirements
         <library>/boost/geometry//boost_geometry
-        <cxxstd>17
+        <cxxstd>20
         [ requires
-            cxx17_fold_expressions
-            cxx17_hdr_variant
-            cxx17_if_constexpr
+            cxx20_hdr_concepts
+            cxx20_hdr_ranges
+            cxx20_hdr_span
         ]
     ;
 

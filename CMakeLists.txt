@@ -13,7 +13,7 @@ add_library(boost_geometry INTERFACE)
 add_library(Boost::geometry ALIAS boost_geometry)
 
 target_include_directories(boost_geometry INTERFACE include)
-target_compile_features(boost_geometry INTERFACE cxx_std_17)
+target_compile_features(boost_geometry INTERFACE cxx_std_20)
 
 target_link_libraries(boost_geometry
   INTERFACE

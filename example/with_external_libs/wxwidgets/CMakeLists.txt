@@ -12,7 +12,7 @@ cmake_minimum_required(VERSION 3.8...3.20)
 project(wx_widgets_world_mapper)
 
 add_executable(${PROJECT_NAME} wxwidgets_world_mapper.cpp)
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
 # Link the wxWidgets libraries to our executable
 # Assuming it can be found by CMake in /usr/local
