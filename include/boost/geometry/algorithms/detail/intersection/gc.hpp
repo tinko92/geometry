@@ -201,29 +201,22 @@ private:
         return false;
     }
 
-    template <typename Out, typename Strategy, std::enable_if_t<! util::is_pointlike<Out>::value, int> = 0>
+    template <typename Out, typename Strategy>
     static void merge_two(Out const& g1, Out const& g2, Out& out, Strategy const& strategy)
     {
-        geometry::dispatch::intersection_insert
-            <
-                Out, Out, typename boost::range_value<Out>::type,
-                overlay_union
-            >::apply(g1,
-                     g2,
-                     geometry::range::back_inserter(out),
-                     strategy);
-    }
-
-    template <typename Out, typename Strategy, std::enable_if_t<util::is_pointlike<Out>::value, int> = 0>
-    static void merge_two(Out const& g1, Out const& g2, Out& out, Strategy const& strategy)
-    {
-        detail::overlay::union_pointlike_pointlike_point
-            <
-                Out, Out, typename boost::range_value<Out>::type
-            >::apply(g1,
-                     g2,
-                     geometry::range::back_inserter(out),
-                     strategy);
+        if constexpr (util::is_pointlike<Out>::value)
+        {
+            detail::overlay::union_pointlike_pointlike_point
+                <Out, Out, typename boost::range_value<Out>::type>::apply(
+                    g1, g2, geometry::range::back_inserter(out), strategy);
+        }
+        else
+        {
+            geometry::dispatch::intersection_insert
+                <Out, Out, typename boost::range_value<Out>::type,
+                 overlay_union>::apply(
+                    g1, g2, geometry::range::back_inserter(out), strategy);
+        }
     }
 };
 

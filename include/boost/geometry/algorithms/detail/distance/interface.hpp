@@ -117,43 +117,26 @@ struct is_strategy_converter_specialized
 template <typename Strategy>
 struct distance<Strategy, false>
 {
-    template
-    <
-        typename Geometry1, typename Geometry2, typename S,
-        std::enable_if_t<is_strategy_converter_specialized<S>::value, int> = 0
-    >
+    template <typename Geometry1, typename Geometry2, typename S>
     static inline auto apply(Geometry1 const& geometry1,
                              Geometry2 const& geometry2,
                              S const& strategy)
     {
-        typedef strategies::distance::services::strategy_converter<Strategy> converter;
-        typedef decltype(converter::get(strategy)) strategy_type;
-
-        return dispatch::distance
-            <
-                Geometry1, Geometry2, strategy_type
-            >::apply(geometry1, geometry2, converter::get(strategy));
-    }
-
-    template
-    <
-        typename Geometry1, typename Geometry2, typename S,
-        std::enable_if_t<! is_strategy_converter_specialized<S>::value, int> = 0
-    >
-    static inline auto apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             S const& strategy)
-    {
-        typedef strategies::distance::services::custom_strategy_converter
-            <
-                Geometry1, Geometry2, Strategy
-            > converter;
-        typedef decltype(converter::get(strategy)) strategy_type;
-
-        return dispatch::distance
-            <
-                Geometry1, Geometry2, strategy_type
-            >::apply(geometry1, geometry2, converter::get(strategy));
+        if constexpr (is_strategy_converter_specialized<S>::value)
+        {
+            using converter = strategies::distance::services::strategy_converter<Strategy>;
+            using strategy_type = decltype(converter::get(strategy));
+            return dispatch::distance<Geometry1, Geometry2, strategy_type>::apply(
+                geometry1, geometry2, converter::get(strategy));
+        }
+        else
+        {
+            using converter = strategies::distance::services::custom_strategy_converter
+                <Geometry1, Geometry2, Strategy>;
+            using strategy_type = decltype(converter::get(strategy));
+            return dispatch::distance<Geometry1, Geometry2, strategy_type>::apply(
+                geometry1, geometry2, converter::get(strategy));
+        }
     }
 };
 

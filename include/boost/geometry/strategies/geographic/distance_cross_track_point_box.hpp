@@ -82,18 +82,6 @@ public:
     inline typename return_type<Point, Box>::type
     apply(Point const& point, Box const& box) const
     {
-/*
-#if !defined(BOOST_MSVC)
-        BOOST_CONCEPT_ASSERT
-            (
-                (concepts::PointSegmentDistanceStrategy
-                    <
-                        Strategy, Point, point_type_t<Box>
-                    >)
-            );
-#endif
-*/
-
         typedef typename return_type<Point, Box>::type return_type;
 
         return details::cross_track_point_box_generic

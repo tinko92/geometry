@@ -113,15 +113,7 @@ public:
     // It could be dispatched by (linear || polygonal || non-geometry point range).
     // For now implement as 0-parameter, special case relate.
 
-    //template <typename Geometry1, typename Geometry2>
-    static auto relate(/*Geometry1 const&, Geometry2 const&,
-                       std::enable_if_t
-                            <
-                                ( util::is_linear<Geometry1>::value
-                               || util::is_polygonal<Geometry1>::value )
-                             && ( util::is_linear<Geometry2>::value
-                               || util::is_polygonal<Geometry2>::value )
-                            > * = nullptr*/)
+    static auto relate()
     {
         return strategy::intersection::cartesian_segments<CalculationType>();
     }

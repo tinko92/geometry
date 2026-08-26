@@ -415,25 +415,16 @@ private:
         }
     }
 
-    template
-    <
-        typename MultiOut, typename G2, typename Strategy,
-        std::enable_if_t<detail::difference::is_subtractable_t<MultiOut, G2>::value, int> = 0
-    >
+    template <typename MultiOut, typename G2, typename Strategy>
     static void multi_out_minus_g2(MultiOut& out, G2 const& g2, Strategy const& strategy)
     {
-        MultiOut result;
-        difference<MultiOut, G2, MultiOut>::apply(out, g2, result, strategy);
-        out = std::move(result);
+        if constexpr (detail::difference::is_subtractable_t<MultiOut, G2>::value)
+        {
+            MultiOut result;
+            difference<MultiOut, G2, MultiOut>::apply(out, g2, result, strategy);
+            out = std::move(result);
+        }
     }
-
-    template
-    <
-        typename MultiOut, typename G2, typename Strategy,
-        std::enable_if_t<(! detail::difference::is_subtractable_t<MultiOut, G2>::value), int> = 0
-    >
-    static void multi_out_minus_g2(MultiOut& , G2 const& , Strategy const& )
-    {}
 };
 
 

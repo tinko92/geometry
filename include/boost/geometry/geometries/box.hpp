@@ -89,16 +89,8 @@ public:
     /*!
         \brief Constructor taking the minimum corner point and the maximum corner point
     */
-    template
-    <
-        typename P = Point,
-        std::enable_if_t
-            <
-                ! std::is_copy_constructible<P>::value,
-                int
-            > = 0
-    >
     box(Point const& min_corner, Point const& max_corner)
+        requires (! std::is_copy_constructible_v<Point>)
     {
         geometry::convert(min_corner, m_min_corner);
         geometry::convert(max_corner, m_max_corner);
@@ -111,19 +103,11 @@ public:
     /*!
         \brief Constructor taking the minimum corner point and the maximum corner point
     */
-    template
-    <
-        typename P = Point,
-        std::enable_if_t
-            <
-                std::is_copy_constructible<P>::value,
-                int
-            > = 0
-    >
 #if ! defined(BOOST_GEOMETRY_ENABLE_ACCESS_DEBUGGING)
     constexpr
 #endif
     box(Point const& min_corner, Point const& max_corner)
+        requires std::is_copy_constructible_v<Point>
         : m_min_corner(min_corner)
         , m_max_corner(max_corner)
     {

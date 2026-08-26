@@ -40,25 +40,18 @@ namespace detail { namespace disjoint
     \note Is used from other algorithms, declared separately
         to avoid circular references
  */
-template
-<
-    typename Box1, typename Box2, typename Strategy,
-    std::enable_if_t<strategies::detail::is_umbrella_strategy<Strategy>::value, int> = 0
->
+template <typename Box1, typename Box2, typename Strategy>
 inline bool disjoint_box_box(Box1 const& box1, Box2 const& box2, Strategy const& strategy)
 {
-    typedef decltype(strategy.disjoint(box1, box2)) strategy_type;
-    return strategy_type::apply(box1, box2);
-}
-
-template
-<
-    typename Box1, typename Box2, typename Strategy,
-    std::enable_if_t<! strategies::detail::is_umbrella_strategy<Strategy>::value, int> = 0
->
-inline bool disjoint_box_box(Box1 const& box1, Box2 const& box2, Strategy const& )
-{
-    return Strategy::apply(box1, box2);
+    if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        using strategy_type = decltype(strategy.disjoint(box1, box2));
+        return strategy_type::apply(box1, box2);
+    }
+    else
+    {
+        return Strategy::apply(box1, box2);
+    }
 }
 
 
