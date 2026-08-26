@@ -649,68 +649,44 @@ struct union_
 } // namespace resolve_collection
 
 
-namespace resolve_strategy {
-
-template
-<
-    typename Strategy,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategy>::value
->
-struct union_
+namespace resolve_strategy
 {
-    template <typename Geometry1, typename Geometry2, typename Collection>
-    static inline void apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Collection & output_collection,
-                             Strategy const& strategy)
+
+template <typename Geometry1, typename Geometry2,
+          typename Collection, typename Strategy>
+inline void union_(Geometry1 const& geometry1,
+                   Geometry2 const& geometry2,
+                   Collection& output_collection,
+                   Strategy const& strategy)
+{
+    if constexpr (std::same_as<Strategy, default_strategy>)
+    {
+        using strategy_type = typename strategies::relate::services::default_strategy
+            <
+                Geometry1, Geometry2
+            >::type;
+        resolve_collection::union_
+            <
+                Geometry1, Geometry2, Collection
+            >::apply(geometry1, geometry2, output_collection, strategy_type());
+    }
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
     {
         resolve_collection::union_
             <
                 Geometry1, Geometry2, Collection
             >::apply(geometry1, geometry2, output_collection, strategy);
     }
-};
-
-template <typename Strategy>
-struct union_<Strategy, false>
-{
-    template <typename Geometry1, typename Geometry2, typename Collection>
-    static inline void apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Collection & output_collection,
-                             Strategy const& strategy)
+    else
     {
         using strategies::relate::services::strategy_converter;
-
-        union_
+        resolve_collection::union_
             <
-                decltype(strategy_converter<Strategy>::get(strategy))
+                Geometry1, Geometry2, Collection
             >::apply(geometry1, geometry2, output_collection,
                      strategy_converter<Strategy>::get(strategy));
     }
-};
-
-template <>
-struct union_<default_strategy, false>
-{
-    template <typename Geometry1, typename Geometry2, typename Collection>
-    static inline void apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Collection & output_collection,
-                             default_strategy)
-    {
-        using strategy_type = typename strategies::relate::services::default_strategy
-            <
-                Geometry1,
-                Geometry2
-            >::type;
-
-        union_
-            <
-                strategy_type
-            >::apply(geometry1, geometry2, output_collection, strategy_type());
-    }
-};
+}
 
 } // resolve_strategy
 
@@ -718,94 +694,50 @@ struct union_<default_strategy, false>
 namespace resolve_dynamic
 {
 
-template
-<
-    typename Geometry1, typename Geometry2,
-    typename Tag1 = geometry::tag_t<Geometry1>,
-    typename Tag2 = geometry::tag_t<Geometry2>
->
-struct union_
+template <concepts::ConstGeometry Geometry1,
+          concepts::ConstGeometry Geometry2,
+          typename Collection, typename Strategy>
+inline void union_(Geometry1 const& geometry1,
+                   Geometry2 const& geometry2,
+                   Collection& output_collection,
+                   Strategy const& strategy)
 {
-    template <typename Collection, typename Strategy>
-    static inline void apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Collection& output_collection,
-                             Strategy const& strategy)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry1>
+                  && concepts::ConstDynamicGeometry<Geometry2>)
     {
-        concepts::check<Geometry1 const>();
-        concepts::check<Geometry2 const>();
-        //concepts::check<typename boost::range_value<Collection>::type>();
-        geometry::detail::output_geometry_concept_check
-            <
-                typename geometry::detail::output_geometry_value
-                    <
-                        Collection
-                    >::type
-            >::apply();
-
-        resolve_strategy::union_
-            <
-                Strategy
-            >::apply(geometry1, geometry2, output_collection, strategy);
+        traits::visit<Geometry1, Geometry2>::apply(
+            [&](auto const& g1, auto const& g2)
+            {
+                resolve_strategy::union_(
+                    g1, g2, output_collection, strategy);
+            }, geometry1, geometry2);
     }
-};
-
-
-template <typename DynamicGeometry1, typename Geometry2, typename Tag2>
-struct union_<DynamicGeometry1, Geometry2, dynamic_geometry_tag, Tag2>
-{
-    template <typename Collection, typename Strategy>
-    static inline void apply(DynamicGeometry1 const& geometry1, Geometry2 const& geometry2,
-                             Collection& output_collection, Strategy const& strategy)
+    else if constexpr (concepts::ConstDynamicGeometry<Geometry1>)
     {
-        traits::visit<DynamicGeometry1>::apply([&](auto const& g1)
+        traits::visit<Geometry1>::apply([&](auto const& g1)
         {
-            union_
-                <
-                    util::remove_cref_t<decltype(g1)>,
-                    Geometry2
-                >::apply(g1, geometry2, output_collection, strategy);
+            resolve_strategy::union_(
+                g1, geometry2, output_collection, strategy);
         }, geometry1);
     }
-};
-
-
-template <typename Geometry1, typename DynamicGeometry2, typename Tag1>
-struct union_<Geometry1, DynamicGeometry2, Tag1, dynamic_geometry_tag>
-{
-    template <typename Collection, typename Strategy>
-    static inline void apply(Geometry1 const& geometry1, DynamicGeometry2 const& geometry2,
-                             Collection& output_collection, Strategy const& strategy)
+    else if constexpr (concepts::ConstDynamicGeometry<Geometry2>)
     {
-        traits::visit<DynamicGeometry2>::apply([&](auto const& g2)
+        traits::visit<Geometry2>::apply([&](auto const& g2)
         {
-            union_
-                <
-                    Geometry1,
-                    util::remove_cref_t<decltype(g2)>
-                >::apply(geometry1, g2, output_collection, strategy);
+            resolve_strategy::union_(
+                geometry1, g2, output_collection, strategy);
         }, geometry2);
     }
-};
-
-
-template <typename DynamicGeometry1, typename DynamicGeometry2>
-struct union_<DynamicGeometry1, DynamicGeometry2, dynamic_geometry_tag, dynamic_geometry_tag>
-{
-    template <typename Collection, typename Strategy>
-    static inline void apply(DynamicGeometry1 const& geometry1, DynamicGeometry2 const& geometry2,
-                             Collection& output_collection, Strategy const& strategy)
+    else
     {
-        traits::visit<DynamicGeometry1, DynamicGeometry2>::apply([&](auto const& g1, auto const& g2)
-        {
-            union_
-                <
-                    util::remove_cref_t<decltype(g1)>,
-                    util::remove_cref_t<decltype(g2)>
-                >::apply(g1, g2, output_collection, strategy);
-        }, geometry1, geometry2);
+        geometry::detail::output_geometry_concept_check
+            <
+                typename geometry::detail::output_geometry_value<Collection>::type
+            >::apply();
+        resolve_strategy::union_(
+            geometry1, geometry2, output_collection, strategy);
     }
-};
+}
 
 
 } // namespace resolve_dynamic
@@ -841,11 +773,8 @@ inline void union_(Geometry1 const& geometry1,
                    Collection& output_collection,
                    Strategy const& strategy)
 {
-    resolve_dynamic::union_
-        <
-            Geometry1,
-            Geometry2
-        >::apply(geometry1, geometry2, output_collection, strategy);
+    resolve_dynamic::union_(
+        geometry1, geometry2, output_collection, strategy);
 }
 
 
@@ -874,11 +803,8 @@ inline void union_(Geometry1 const& geometry1,
                    Geometry2 const& geometry2,
                    Collection& output_collection)
 {
-    resolve_dynamic::union_
-        <
-            Geometry1,
-            Geometry2
-        >::apply(geometry1, geometry2, output_collection, default_strategy());
+    resolve_dynamic::union_(
+        geometry1, geometry2, output_collection, default_strategy());
 }
 
 

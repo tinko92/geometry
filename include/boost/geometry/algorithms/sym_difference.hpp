@@ -611,65 +611,41 @@ struct sym_difference
 namespace resolve_strategy
 {
 
-template
-<
-    typename Strategy,
-    bool IsUmbrella = strategies::detail::is_umbrella_strategy<Strategy>::value
->
-struct sym_difference
+template <typename Geometry1, typename Geometry2,
+          typename Collection, typename Strategy>
+inline void sym_difference(Geometry1 const& geometry1,
+                           Geometry2 const& geometry2,
+                           Collection& output_collection,
+                           Strategy const& strategy)
 {
-    template <typename Geometry1, typename Geometry2, typename Collection>
-    static inline void apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Collection & output_collection,
-                             Strategy const& strategy)
+    if constexpr (std::same_as<Strategy, default_strategy>)
+    {
+        using strategy_type = typename strategies::relate::services::default_strategy
+            <
+                Geometry1, Geometry2
+            >::type;
+        resolve_collection::sym_difference
+            <
+                Geometry1, Geometry2, Collection
+            >::apply(geometry1, geometry2, output_collection, strategy_type());
+    }
+    else if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
     {
         resolve_collection::sym_difference
             <
                 Geometry1, Geometry2, Collection
             >::apply(geometry1, geometry2, output_collection, strategy);
     }
-};
-
-template <typename Strategy>
-struct sym_difference<Strategy, false>
-{
-    template <typename Geometry1, typename Geometry2, typename Collection>
-    static inline void apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Collection & output_collection,
-                             Strategy const& strategy)
+    else
     {
         using strategies::relate::services::strategy_converter;
-
-        sym_difference
+        resolve_collection::sym_difference
             <
-                decltype(strategy_converter<Strategy>::get(strategy))
+                Geometry1, Geometry2, Collection
             >::apply(geometry1, geometry2, output_collection,
                      strategy_converter<Strategy>::get(strategy));
     }
-};
-
-template <>
-struct sym_difference<default_strategy, false>
-{
-    template <typename Geometry1, typename Geometry2, typename Collection>
-    static inline void apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Collection & output_collection,
-                             default_strategy)
-    {
-        typedef typename strategies::relate::services::default_strategy
-            <
-                Geometry1, Geometry2
-            >::type strategy_type;
-
-        sym_difference
-            <
-                strategy_type
-            >::apply(geometry1, geometry2, output_collection, strategy_type());
-    }
-};
+}
 
 } // resolve_strategy
 
@@ -677,80 +653,46 @@ struct sym_difference<default_strategy, false>
 namespace resolve_dynamic
 {
 
-template
-<
-    typename Geometry1, typename Geometry2,
-    typename Tag1 = geometry::tag_t<Geometry1>,
-    typename Tag2 = geometry::tag_t<Geometry2>
->
-struct sym_difference
+template <concepts::ConstGeometry Geometry1,
+          concepts::ConstGeometry Geometry2,
+          typename Collection, typename Strategy>
+inline void sym_difference(Geometry1 const& geometry1,
+                           Geometry2 const& geometry2,
+                           Collection& output_collection,
+                           Strategy const& strategy)
 {
-    template <typename Collection, typename Strategy>
-    static inline void apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Collection& output_collection,
-                             Strategy const& strategy)
+    if constexpr (concepts::ConstDynamicGeometry<Geometry1>
+                  && concepts::ConstDynamicGeometry<Geometry2>)
     {
-        resolve_strategy::sym_difference
-            <
-                Strategy
-            >::apply(geometry1, geometry2, output_collection, strategy);
+        traits::visit<Geometry1, Geometry2>::apply(
+            [&](auto const& g1, auto const& g2)
+            {
+                resolve_strategy::sym_difference(
+                    g1, g2, output_collection, strategy);
+            }, geometry1, geometry2);
     }
-};
-
-
-template <typename DynamicGeometry1, typename Geometry2, typename Tag2>
-struct sym_difference<DynamicGeometry1, Geometry2, dynamic_geometry_tag, Tag2>
-{
-    template <typename Collection, typename Strategy>
-    static void apply(DynamicGeometry1 const& geometry1, Geometry2 const& geometry2,
-                      Collection& output_collection, Strategy const& strategy)
+    else if constexpr (concepts::ConstDynamicGeometry<Geometry1>)
     {
-        traits::visit<DynamicGeometry1>::apply([&](auto const& g1)
+        traits::visit<Geometry1>::apply([&](auto const& g1)
         {
-            resolve_strategy::sym_difference
-                <
-                    Strategy
-                >::apply(g1, geometry2, output_collection, strategy);
+            resolve_strategy::sym_difference(
+                g1, geometry2, output_collection, strategy);
         }, geometry1);
     }
-};
-
-
-template <typename Geometry1, typename DynamicGeometry2, typename Tag1>
-struct sym_difference<Geometry1, DynamicGeometry2, Tag1, dynamic_geometry_tag>
-{
-    template <typename Collection, typename Strategy>
-    static void apply(Geometry1 const& geometry1, DynamicGeometry2 const& geometry2,
-                      Collection& output_collection, Strategy const& strategy)
+    else if constexpr (concepts::ConstDynamicGeometry<Geometry2>)
     {
-        traits::visit<DynamicGeometry2>::apply([&](auto const& g2)
+        traits::visit<Geometry2>::apply([&](auto const& g2)
         {
-            resolve_strategy::sym_difference
-                <
-                    Strategy
-                >::apply(geometry1, g2, output_collection, strategy);
+            resolve_strategy::sym_difference(
+                geometry1, g2, output_collection, strategy);
         }, geometry2);
     }
-};
-
-
-template <typename DynamicGeometry1, typename DynamicGeometry2>
-struct sym_difference<DynamicGeometry1, DynamicGeometry2, dynamic_geometry_tag, dynamic_geometry_tag>
-{
-    template <typename Collection, typename Strategy>
-    static void apply(DynamicGeometry1 const& geometry1, DynamicGeometry2 const& geometry2,
-                      Collection& output_collection, Strategy const& strategy)
+    else
     {
-        traits::visit<DynamicGeometry1, DynamicGeometry2>::apply([&](auto const& g1, auto const& g2)
-        {
-            resolve_strategy::sym_difference
-                <
-                    Strategy
-                >::apply(g1, g2, output_collection, strategy);
-        }, geometry1, geometry2);
+        resolve_strategy::sym_difference(
+            geometry1, geometry2, output_collection, strategy);
     }
-};
+}
 
 } // namespace resolve_dynamic
 
@@ -784,11 +726,8 @@ inline void sym_difference(Geometry1 const& geometry1,
                            Collection& output_collection,
                            Strategy const& strategy)
 {
-    resolve_dynamic::sym_difference
-        <
-            Geometry1,
-            Geometry2
-        >::apply(geometry1, geometry2, output_collection, strategy);
+    resolve_dynamic::sym_difference(
+        geometry1, geometry2, output_collection, strategy);
 }
 
 
@@ -816,11 +755,8 @@ inline void sym_difference(Geometry1 const& geometry1,
                            Geometry2 const& geometry2,
                            Collection& output_collection)
 {
-    resolve_dynamic::sym_difference
-        <
-            Geometry1,
-            Geometry2
-        >::apply(geometry1, geometry2, output_collection, default_strategy());
+    resolve_dynamic::sym_difference(
+        geometry1, geometry2, output_collection, default_strategy());
 }
 
 
