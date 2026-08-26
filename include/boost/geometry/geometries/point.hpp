@@ -46,24 +46,6 @@ namespace boost { namespace geometry
 #pragma warning(disable : 4127)
 #endif
 
-namespace detail
-{
-
-template <typename Dummy, std::size_t N, std::size_t DimensionCount>
-struct is_coordinates_number_leq
-{
-    static const bool value = (N <= DimensionCount);
-};
-
-template <typename Dummy, std::size_t N, std::size_t DimensionCount>
-struct is_coordinates_number_eq
-{
-    static const bool value = (N == DimensionCount);
-};
-
-} // namespace detail
-
-
 namespace model
 {
 
@@ -129,15 +111,11 @@ public:
 #endif
 
     /// @brief Constructor to set one value
-    template
-    <
-        typename C = CoordinateType,
-        std::enable_if_t<geometry::detail::is_coordinates_number_leq<C, 1, DimensionCount>::value, int> = 0
-    >
 #if ! defined(BOOST_GEOMETRY_ENABLE_ACCESS_DEBUGGING)
     constexpr
 #endif
     explicit point(CoordinateType const& v0)
+        requires (DimensionCount >= 1)
         : m_values{v0}
     {
 #if defined(BOOST_GEOMETRY_ENABLE_ACCESS_DEBUGGING)
@@ -147,15 +125,11 @@ public:
     }
 
     /// @brief Constructor to set two values
-    template
-    <
-        typename C = CoordinateType,
-        std::enable_if_t<geometry::detail::is_coordinates_number_leq<C, 2, DimensionCount>::value, int> = 0
-    >
 #if ! defined(BOOST_GEOMETRY_ENABLE_ACCESS_DEBUGGING)
     constexpr
 #endif
     point(CoordinateType const& v0, CoordinateType const& v1)
+        requires (DimensionCount >= 2)
         : m_values{ v0, v1 }
     {
 #if defined(BOOST_GEOMETRY_ENABLE_ACCESS_DEBUGGING)
@@ -165,15 +139,11 @@ public:
     }
 
     /// @brief Constructor to set three values
-    template
-    <
-        typename C = CoordinateType,
-        std::enable_if_t<geometry::detail::is_coordinates_number_leq<C, 3, DimensionCount>::value, int> = 0
-    >
 #if ! defined(BOOST_GEOMETRY_ENABLE_ACCESS_DEBUGGING)
     constexpr
 #endif
     point(CoordinateType const& v0, CoordinateType const& v1, CoordinateType const& v2)
+        requires (DimensionCount >= 3)
         : m_values{ v0, v1, v2 }
     {
 #if defined(BOOST_GEOMETRY_ENABLE_ACCESS_DEBUGGING)
@@ -308,35 +278,23 @@ struct make<model::point<CoordinateType, DimensionCount, CoordinateSystem> >
 
     static const bool is_specialized = true;
 
-    template
-    <
-        typename C = CoordinateType,
-        std::enable_if_t<geometry::detail::is_coordinates_number_eq<C, 1, DimensionCount>::value, int> = 0
-    >
     static constexpr point_type apply(CoordinateType const& v0)
+        requires (DimensionCount == 1)
     {
         return point_type(v0);
     }
 
-    template
-    <
-        typename C = CoordinateType,
-        std::enable_if_t<geometry::detail::is_coordinates_number_eq<C, 2, DimensionCount>::value, int> = 0
-    >
     static constexpr point_type apply(CoordinateType const& v0,
                                       CoordinateType const& v1)
+        requires (DimensionCount == 2)
     {
         return point_type(v0, v1);
     }
 
-    template
-    <
-        typename C = CoordinateType,
-        std::enable_if_t<geometry::detail::is_coordinates_number_eq<C, 3, DimensionCount>::value, int> = 0
-    >
     static constexpr point_type apply(CoordinateType const& v0,
                                       CoordinateType const& v1,
                                       CoordinateType const& v2)
+        requires (DimensionCount == 3)
     {
         return point_type(v0, v1, v2);
     }

@@ -583,25 +583,18 @@ private:
         }
     }
 
-    template
-    <
-        typename Geometry, typename Strategy,
-        std::enable_if_t<util::is_linear<Geometry>::value, int> = 0
-    >
+    template <typename Geometry, typename Strategy>
     static inline bool has_linear_boundary(Geometry const& geometry, Strategy const& strategy)
     {
-        topology_check<Geometry, Strategy> tc(geometry, strategy);
-        return tc.has_boundary();
-    }
-
-    template
-    <
-        typename Geometry, typename Strategy,
-        std::enable_if_t<! util::is_linear<Geometry>::value, int> = 0
-    >
-    static inline bool has_linear_boundary(Geometry const& , Strategy const& )
-    {
-        return false;
+        if constexpr (util::is_linear<Geometry>::value)
+        {
+            topology_check<Geometry, Strategy> tc(geometry, strategy);
+            return tc.has_boundary();
+        }
+        else
+        {
+            return false;
+        }
     }
 
 

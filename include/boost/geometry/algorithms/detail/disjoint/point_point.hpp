@@ -49,29 +49,19 @@ namespace detail { namespace disjoint
     \brief Internal utility function to detect of points are disjoint
     \note To avoid circular references
  */
-template
-<
-    typename Point1, typename Point2, typename Strategy,
-    std::enable_if_t<strategies::detail::is_umbrella_strategy<Strategy>::value, int> = 0
->
+template <typename Point1, typename Point2, typename Strategy>
 inline bool disjoint_point_point(Point1 const& point1, Point2 const& point2,
                                  Strategy const& strategy)
 {
-    typedef decltype(strategy.relate(point1, point2)) strategy_type;
-    // ! within(point1, point2)
-    return ! strategy_type::apply(point1, point2);
-}
-
-template
-<
-    typename Point1, typename Point2, typename Strategy,
-    std::enable_if_t<! strategies::detail::is_umbrella_strategy<Strategy>::value, int> = 0
->
-inline bool disjoint_point_point(Point1 const& point1, Point2 const& point2,
-                                 Strategy const& )
-{
-    // ! within(point1, point2)
-    return ! Strategy::apply(point1, point2);
+    if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        using strategy_type = decltype(strategy.relate(point1, point2));
+        return ! strategy_type::apply(point1, point2);
+    }
+    else
+    {
+        return ! Strategy::apply(point1, point2);
+    }
 }
 
 

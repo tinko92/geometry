@@ -102,41 +102,22 @@ namespace traits
 
 // Boost Fusion Sequence, 2D or 3D
 template <typename Sequence>
-struct coordinate_type
-    <
-        Sequence,
-        std::enable_if_t
-            <
-                fusion_adapt_detail::is_fusion_sequence<Sequence>::value
-            >
-    >
+    requires fusion_adapt_detail::is_fusion_sequence<Sequence>::value
+struct coordinate_type<Sequence>
 {
     typedef typename boost::mpl::front<Sequence>::type type;
 };
 
 
 template <typename Sequence>
-struct dimension
-    <
-        Sequence,
-        std::enable_if_t
-            <
-                fusion_adapt_detail::is_fusion_sequence<Sequence>::value
-            >
-    > : boost::mpl::size<Sequence>
+    requires fusion_adapt_detail::is_fusion_sequence<Sequence>::value
+struct dimension<Sequence> : boost::mpl::size<Sequence>
 {};
 
 
 template <typename Sequence, std::size_t Dimension>
-struct access
-    <
-        Sequence,
-        Dimension,
-        std::enable_if_t
-            <
-                fusion_adapt_detail::is_fusion_sequence<Sequence>::value
-            >
-    >
+    requires fusion_adapt_detail::is_fusion_sequence<Sequence>::value
+struct access<Sequence, Dimension>
 {
     using ctype = coordinate_type_t<Sequence>;
 
@@ -154,14 +135,8 @@ struct access
 
 
 template <typename Sequence>
-struct tag
-    <
-        Sequence,
-        std::enable_if_t
-            <
-                fusion_adapt_detail::is_fusion_sequence<Sequence>::value
-            >
-    >
+    requires fusion_adapt_detail::is_fusion_sequence<Sequence>::value
+struct tag<Sequence>
 {
     using type = point_tag;
 };
@@ -179,14 +154,8 @@ struct tag
 #define BOOST_GEOMETRY_REGISTER_BOOST_FUSION_CS(CoordinateSystem) \
     namespace boost { namespace geometry { namespace traits { \
     template <typename Sequence> \
-    struct coordinate_system \
-               < \
-                   Sequence, \
-                   std::enable_if_t \
-                       < \
-                           fusion_adapt_detail::is_fusion_sequence<Sequence>::value \
-                       > \
-               > \
+        requires fusion_adapt_detail::is_fusion_sequence<Sequence>::value \
+    struct coordinate_system<Sequence> \
     { typedef CoordinateSystem type; }; \
     }}}
 

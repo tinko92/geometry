@@ -41,29 +41,19 @@ namespace detail { namespace disjoint
 /*!
     \brief Internal utility function to detect if point/box are disjoint
  */
-template
-<
-    typename Point, typename Box, typename Strategy,
-    std::enable_if_t<strategies::detail::is_umbrella_strategy<Strategy>::value, int> = 0
->
+template <typename Point, typename Box, typename Strategy>
 inline bool disjoint_point_box(Point const& point, Box const& box,
                                Strategy const& strategy)
 {
-    typedef decltype(strategy.covered_by(point, box)) strategy_type;
-    // ! covered_by(point, box)
-    return ! strategy_type::apply(point, box);
-}
-
-template
-<
-    typename Point, typename Box, typename Strategy,
-    std::enable_if_t<! strategies::detail::is_umbrella_strategy<Strategy>::value, int> = 0
->
-inline bool disjoint_point_box(Point const& point, Box const& box,
-                               Strategy const& )
-{
-    // ! covered_by(point, box)
-    return ! Strategy::apply(point, box);
+    if constexpr (strategies::detail::is_umbrella_strategy<Strategy>::value)
+    {
+        using strategy_type = decltype(strategy.covered_by(point, box));
+        return ! strategy_type::apply(point, box);
+    }
+    else
+    {
+        return ! Strategy::apply(point, box);
+    }
 }
 
 

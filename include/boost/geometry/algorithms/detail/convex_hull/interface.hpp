@@ -111,14 +111,14 @@ struct input_geometry_collection_proxy
     }
 
 private:
-    template <typename G, typename F, std::enable_if_t<! util::is_box<G>::value, int> = 0>
+    template <typename G, typename F>
     static inline void call_for_non_boxes(G const& g, F & f)
     {
-        geometry::detail::for_each_range(g, f);
+        if constexpr (! util::is_box<G>::value)
+        {
+            geometry::detail::for_each_range(g, f);
+        }
     }
-    template <typename G, typename F, std::enable_if_t<util::is_box<G>::value, int> = 0>
-    static inline void call_for_non_boxes(G const&, F &)
-    {}
 
     Geometry const& m_geometry;
     BoxRings const& m_box_rings;
@@ -280,26 +280,17 @@ struct convex_hull<GeometryCollection, geometry_collection_tag>
     }
 
 private:
-    template
-    <
-        typename Ring, typename SubGeometry, typename Strategy,
-        std::enable_if_t<util::is_box<SubGeometry>::value, int> = 0
-    >
+    template <typename Ring, typename SubGeometry, typename Strategy>
     static inline void add_ring_for_box(std::vector<Ring> & rings, SubGeometry const& box,
                                         Strategy const& strategy)
     {
-        Ring ring;
-        convex_hull<SubGeometry>::apply(box, ring, strategy);
-        rings.push_back(std::move(ring));
+        if constexpr (util::is_box<SubGeometry>::value)
+        {
+            Ring ring;
+            convex_hull<SubGeometry>::apply(box, ring, strategy);
+            rings.push_back(std::move(ring));
+        }
     }
-    template
-    <
-        typename Ring, typename SubGeometry, typename Strategy,
-        std::enable_if_t<! util::is_box<SubGeometry>::value, int> = 0
-    >
-    static inline void add_ring_for_box(std::vector<Ring> & , SubGeometry const& ,
-                                        Strategy const& )
-    {}
 };
 
 

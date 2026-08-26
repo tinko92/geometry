@@ -260,28 +260,21 @@ struct equals_by_collection_or_relate
             typename Strategy::cs_tag
         >;
 
-    template
-    <
-        typename Geometry1, typename Geometry2, typename Strategy,
-        std::enable_if_t<use_vectors<Strategy>::value, int> = 0
-    >
+    template <typename Geometry1, typename Geometry2, typename Strategy>
     static inline bool apply(Geometry1 const& geometry1,
                              Geometry2 const& geometry2,
                              Strategy const& strategy)
     {
-        return equals_by_collection<TrivialCheck>::apply(geometry1, geometry2, strategy);
-    }
-
-    template
-    <
-        typename Geometry1, typename Geometry2, typename Strategy,
-        std::enable_if_t<! use_vectors<Strategy>::value, int> = 0
-    >
-    static inline bool apply(Geometry1 const& geometry1,
-                             Geometry2 const& geometry2,
-                             Strategy const& strategy)
-    {
-        return equals_by_relate<Geometry1, Geometry2>::apply(geometry1, geometry2, strategy);
+        if constexpr (use_vectors<Strategy>::value)
+        {
+            return equals_by_collection<TrivialCheck>::apply(
+                geometry1, geometry2, strategy);
+        }
+        else
+        {
+            return equals_by_relate<Geometry1, Geometry2>::apply(
+                geometry1, geometry2, strategy);
+        }
     }
 };
 
@@ -466,4 +459,3 @@ struct equals<Geometry1, Geometry2, Tag1, Tag2, areal_tag, linear_tag, Dimension
 
 
 #endif // BOOST_GEOMETRY_ALGORITHMS_DETAIL_EQUALS_IMPLEMENTATION_HPP
-
