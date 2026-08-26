@@ -126,12 +126,11 @@
    <entry valign="top">
     <bridgehead renderas="sect3">0-dimensional (adapted)</bridgehead>
     <simplelist type="vert" columns="1">
-     <member><link linkend="geometry.reference.adapted.boost_array">Boost.Array</link></member>
      <member><link linkend="geometry.reference.adapted.boost_fusion">Boost.Fusion</link></member>
      <member><link linkend="geometry.reference.adapted.boost_polygon.point_data">Boost.Polygon's point_data</link></member>
-     <member><link linkend="geometry.reference.adapted.boost_tuple">Boost.Tuple</link></member>
      <member><link linkend="geometry.reference.adapted.c_array">C arrays</link></member>
      <member><link linkend="geometry.reference.adapted.std_array">C++11 array containers</link></member>
+     <member><link linkend="geometry.reference.adapted.std_tuple">C++11 tuples</link></member>
     </simplelist>
    </entry>
    <entry valign="top">

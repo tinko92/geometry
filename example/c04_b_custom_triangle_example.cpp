@@ -13,16 +13,16 @@
 #include <array>
 #include <iostream>
 
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 #include <boost/geometry/algorithms/area.hpp>
 #include <boost/geometry/algorithms/centroid.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/geometries/register/ring.hpp>
 #include <boost/geometry/strategies/strategies.hpp>
 #include <boost/geometry/io/dsv/write.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 
 template <typename P>
@@ -55,16 +55,16 @@ struct area<triangle<Point>, ring_tag>
 int main()
 {
     //triangle<boost::geometry::point_xy<double> > t;
-    triangle<boost::tuple<double, double> > t;
-    t[0] = boost::make_tuple(0, 0);
-    t[1] = boost::make_tuple(5, 0);
-    t[2] = boost::make_tuple(2.5, 2.5);
+    triangle<std::tuple<double, double> > t;
+    t[0] = std::make_tuple(0, 0);
+    t[1] = std::make_tuple(5, 0);
+    t[2] = std::make_tuple(2.5, 2.5);
 
     std::cout << "Triangle: " << boost::geometry::dsv(t) << std::endl;
     std::cout << "Area: " << boost::geometry::area(t) << std::endl;
 
     //boost::geometry::point_xy<double> c;
-    boost::tuple<double, double> c;
+    std::tuple<double, double> c;
     boost::geometry::centroid(t, c);
     std::cout << "Centroid: " << boost::geometry::dsv(c) << std::endl;
 

@@ -112,7 +112,7 @@ Below you can find features that will (or probably will) be added in the future 
 
 [heading Dependencies]
 
-R-tree depends on Boost.Container, Boost.Core, Boost.Move, Boost.MPL, Boost.Range, Boost.Tuple.
+R-tree depends on Boost.Container, Boost.Core, Boost.Move, Boost.MPL and Boost.Range.
 
 [heading Contributors]
 
@@ -123,4 +123,3 @@ The spatial index was originally started by Federico J. Fernandez during the Goo
 I'd like to thank Barend Gehrels, Bruno Lalande, Mateusz Łoskot, Lucanus J. Simonson for their support and ideas.
 
 [endsect]
-

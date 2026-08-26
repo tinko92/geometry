@@ -12,12 +12,12 @@
 
 #include <iostream>
 #include <boost/geometry.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/geometries/register/multi_point.hpp>
 
-using point_type = boost::tuple<float, float>;
+using point_type = std::tuple<float, float>;
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 BOOST_GEOMETRY_REGISTER_MULTI_POINT(std::deque< ::point_type >)
 
 int main()

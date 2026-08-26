@@ -15,13 +15,13 @@
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
 #include <boost/geometry/geometries/ring.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 int main()
 {
-    using point = boost::tuple<float, float>;
+    using point = std::tuple<float, float>;
     using polygon = boost::geometry::model::polygon<point>;
     using ring = boost::geometry::model::ring<point>;
 

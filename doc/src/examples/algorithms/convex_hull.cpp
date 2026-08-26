@@ -14,14 +14,14 @@
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 /*<-*/ #include "create_svg_two.hpp" /*->*/
 int main()
 {
-    using point = boost::tuple<double, double>;
+    using point = std::tuple<double, double>;
     using polygon = boost::geometry::model::polygon<point>;
 
     polygon poly;

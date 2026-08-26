@@ -40,9 +40,6 @@ The __boost_geometry__ makes use of the following __boost_cpp_lib__:
 * __boost_iterator__
 * __boost_smart_ptr__ (shared_ptr, in the extensions spatial index and projections)
 * __boost_ublas__
-* Adapted geometries:
-    * __boost_array__
-    * __boost_tuple__
 * IO and parsing
     * __boost_tokenizer__
     * __boost_conversion__ (lexical cast)

@@ -14,15 +14,15 @@
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/linestring.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/geometries/register/multi_linestring.hpp>
 
 using linestring_type = boost::geometry::model::linestring
     <
-        boost::tuple<float, float>
+        std::tuple<float, float>
     >;
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 BOOST_GEOMETRY_REGISTER_MULTI_LINESTRING(std::deque<linestring_type>)
 
 int main()

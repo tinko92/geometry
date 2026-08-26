@@ -14,15 +14,15 @@
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 int main()
 {
     using clockwise_closed_polygon = boost::geometry::model::polygon
         <
-            boost::tuple<int, int>
+            std::tuple<int, int>
         >;
 
     clockwise_closed_polygon cwcp;

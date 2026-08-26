@@ -14,15 +14,15 @@
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/geometries/register/multi_polygon.hpp>
 
 using polygon_type = boost::geometry::model::polygon
     <
-        boost::tuple<float, float>
+        std::tuple<float, float>
     >;
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 BOOST_GEOMETRY_REGISTER_MULTI_POLYGON(std::vector<polygon_type>)
 
 int main()

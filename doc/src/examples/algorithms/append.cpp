@@ -14,23 +14,23 @@
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 int main()
 {
     using boost::geometry::append;
 
-    using vector = std::vector<boost::tuple<int, int>>;
-    using polygon = boost::geometry::model::polygon<boost::tuple<int, int>>;
+    using vector = std::vector<std::tuple<int, int>>;
+    using polygon = boost::geometry::model::polygon<std::tuple<int, int>>;
 
     polygon poly;
 
     // Append a range
     append(poly, vector{{0, 0}, {0, 10}, {11, 11}, {10, 0}}); /*< vector models a range and can therefore be used in boost::geometry::append >*/
     // Append a point (in this case the closing point)
-    append(poly, boost::make_tuple(0, 0));
+    append(poly, std::make_tuple(0, 0));
 
     // Create an interior ring (append does not do this automatically)
     boost::geometry::interior_rings(poly).resize(1);
@@ -39,7 +39,7 @@ int main()
     append(poly, vector{{2, 2}, {2, 5}, {6, 6}, {5, 2}}, 0); /*< The last parameter ring_index 0 denotes the first interior ring >*/
 
     // Append a point to the first interior ring
-    append(poly, boost::make_tuple(2, 2), 0);
+    append(poly, std::make_tuple(2, 2), 0);
 
     std::cout << boost::geometry::dsv(poly) << std::endl;
 

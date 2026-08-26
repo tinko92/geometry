@@ -15,9 +15,9 @@
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
 #include <boost/geometry/geometries/multi_polygon.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 template <typename Tag> struct dispatch {};
 
@@ -76,8 +76,8 @@ inline void hello(Geometry const& geometry)
 
 int main()
 {
-    // Define polygon type (here: based on a Boost.Tuple)
-    using polygon_type = boost::geometry::model::polygon<boost::tuple<int, int>>;
+    // Define polygon type (here: based on std::tuple)
+    using polygon_type = boost::geometry::model::polygon<std::tuple<int, int>>;
 
     // Declare and fill a polygon and a multipolygon
     polygon_type poly;
@@ -87,7 +87,7 @@ int main()
     multi.push_back(poly);
 
     // Call "hello" for point, polygon, multipolygon
-    hello(boost::make_tuple(2, 3));
+    hello(std::make_tuple(2, 3));
     hello(poly);
     hello(multi);
 

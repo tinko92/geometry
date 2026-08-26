@@ -24,7 +24,7 @@
 #include <map>
 #include <iostream>
 #include <boost/foreach.hpp>
-#include <boost/variant.hpp>
+#include <variant>
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
@@ -34,7 +34,7 @@ typedef bg::model::box<point> box;
 typedef bg::model::polygon<point, false, false> polygon; // ccw, open polygon
 typedef bg::model::ring<point, false, false> ring; // ccw, open ring
 typedef bg::model::linestring<point> linestring;
-typedef boost::variant<polygon, ring, linestring> geometry;
+typedef std::variant<polygon, ring, linestring> geometry;
 
 typedef std::map<unsigned, geometry> map;
 typedef std::pair<box, map::iterator> value;
@@ -50,14 +50,14 @@ void fill(unsigned i, Container & container)
     }
 }
 
-struct print_visitor : public boost::static_visitor<>
+struct print_visitor
 {
     void operator()(polygon const& g) const { std::cout << bg::wkt<polygon>(g) << std::endl; }
     void operator()(ring const& g) const { std::cout << bg::wkt<ring>(g) << std::endl; }
     void operator()(linestring const& g) const { std::cout << bg::wkt<linestring>(g) << std::endl; }
 };
 
-struct envelope_visitor : public boost::static_visitor<box>
+struct envelope_visitor
 {
     box operator()(polygon const& g) const { return bg::return_envelope<box>(g); }
     box operator()(ring const& g) const { return bg::return_envelope<box>(g); }
@@ -101,7 +101,7 @@ int main()
     // display geometries
     std::cout << "generated geometries:" << std::endl;
     BOOST_FOREACH(map::value_type const& p, geometries)
-        boost::apply_visitor(print_visitor(), p.second);
+        std::visit(print_visitor(), p.second);
 
     // create the rtree using default constructor
     bgi::rtree< value, bgi::quadratic<16, 4> > rtree;
@@ -110,7 +110,7 @@ int main()
     for ( map::iterator it = geometries.begin() ; it != geometries.end() ; ++it )
     {
         // calculate polygon bounding box
-        box b = boost::apply_visitor(envelope_visitor(), it->second);
+        box b = std::visit(envelope_visitor(), it->second);
         // insert new value
         rtree.insert(std::make_pair(b, it));
     }
@@ -134,13 +134,13 @@ int main()
     std::cout << bg::wkt<box>(query_box) << std::endl;
     std::cout << "spatial query result:" << std::endl;
     BOOST_FOREACH(value const& v, result_s)
-        boost::apply_visitor(print_visitor(), v.second->second);
+        std::visit(print_visitor(), v.second->second);
 
     std::cout << "knn query point:" << std::endl;
     std::cout << bg::wkt<point>(point(0, 0)) << std::endl;
     std::cout << "knn query result:" << std::endl;
     BOOST_FOREACH(value const& v, result_n)
-        boost::apply_visitor(print_visitor(), v.second->second);
+        std::visit(print_visitor(), v.second->second);
 
     return 0;
 }

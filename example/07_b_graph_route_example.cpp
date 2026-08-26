@@ -25,7 +25,7 @@
 #include <boost/foreach.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 #include <boost/geometry/geometry.hpp>
 #include <boost/geometry/geometries/linestring.hpp>
@@ -70,7 +70,9 @@ void read_wkt(std::string const& filename, std::vector<Tuple>& tuples, Box& box)
                 Geometry geometry;
                 boost::geometry::read_wkt(line, geometry);
 
-                Tuple tuple(geometry, name);
+                Tuple tuple{};
+                std::get<0>(tuple) = geometry;
+                std::get<1>(tuple) = name;
 
                 tuples.push_back(tuple);
                 boost::geometry::expand(box, boost::geometry::return_envelope<Box>(geometry));
@@ -149,7 +151,7 @@ void add_roads_and_connect_cities(Graph& graph,
             CityTupleVector& cities)
 {
     typedef typename boost::range_value<RoadTupleVector>::type road_type;
-    typedef typename boost::tuples::element<0, road_type>::type line_type;
+    typedef typename std::tuple_element<0, road_type>::type line_type;
     typedef typename boost::geometry::point_type<line_type>::type point_type;
 
     typedef typename boost::graph_traits<Graph>::vertex_descriptor vertex_type;
@@ -163,7 +165,7 @@ void add_roads_and_connect_cities(Graph& graph,
     // Fill the graph
     BOOST_FOREACH(road_type const& road, roads)
     {
-        line_type const& line = road.template get<0>();
+        line_type const& line = std::get<0>(road);
         // Find or add begin/end point of these line
         vertex_type from = find_or_insert(map, line.front(), graph);
         vertex_type to = find_or_insert(map, line.back(), graph);
@@ -177,12 +179,12 @@ void add_roads_and_connect_cities(Graph& graph,
         double min_distance = 1e300;
         for(typename map_type::const_iterator it = map.begin(); it != map.end(); ++it)
         {
-            double dist = boost::geometry::distance(it->first, city.template get<0>());
+            double dist = boost::geometry::distance(it->first, std::get<0>(city));
             if (dist < min_distance)
             {
                 min_distance = dist;
                 // Set the vertex
-                city.template get<2>() = it->second;
+                std::get<2>(city) = it->second;
             }
         }
     }
@@ -273,12 +275,12 @@ int main()
     graph_type graph;
 
     // Read the cities
-    typedef boost::tuple<point_type, std::string, vertex_type> city_type;
+    typedef std::tuple<point_type, std::string, vertex_type> city_type;
     std::vector<city_type> cities;
     read_wkt<point_type>("data/cities.wkt", cities, box);
 
     // Read the road network
-    typedef boost::tuple<line_type, std::string> road_type;
+    typedef std::tuple<line_type, std::string> road_type;
     std::vector<road_type> roads;
     read_wkt<line_type>("data/roads.wkt", roads, box);
 
@@ -303,7 +305,7 @@ int main()
         std::vector<double> costs(n);
 
         // Call Dijkstra (without named-parameter to be compatible with all VC)
-        boost::dijkstra_shortest_paths(graph, city1.get<2>(),
+        boost::dijkstra_shortest_paths(graph, std::get<2>(city1),
                 &predecessors[0], &costs[0],
                 boost::get(&bg_edge_property<line_type>::length, graph),
                 boost::get(boost::vertex_index, graph),
@@ -313,16 +315,16 @@ int main()
 
         BOOST_FOREACH(city_type const& city2, cities)
         {
-            if (! boost::equals(city1.get<1>(), city2.get<1>()))
+            if (! boost::equals(std::get<1>(city1), std::get<1>(city2)))
             {
-                double distance = costs[city2.get<2>()] / km;
-                double acof = boost::geometry::distance(city1.get<0>(), city2.get<0>(), haversine) / km;
+                double distance = costs[std::get<2>(city2)] / km;
+                double acof = boost::geometry::distance(std::get<0>(city1), std::get<0>(city2), haversine) / km;
 
                 std::cout
                     << std::setiosflags (std::ios_base::left) << std::setw(15)
-                        << city1.get<1>() << " - "
+                        << std::get<1>(city1) << " - "
                     << std::setiosflags (std::ios_base::left) << std::setw(15)
-                        << city2.get<1>()
+                        << std::get<1>(city2)
                     << " -> through the air: " << std::setw(4) << acof
                     << " , over the road: " << std::setw(4) << distance
                     << std::endl;
@@ -330,7 +332,7 @@ int main()
                 if (first)
                 {
                     build_route(graph, predecessors,
-                            city1.get<2>(), city2.get<2>(),
+                            std::get<2>(city1), std::get<2>(city2),
                             route);
                     first = false;
                 }
@@ -346,12 +348,12 @@ int main()
     // Map roads
     BOOST_FOREACH(road_type const& road, roads)
     {
-        mapper.add(road.get<0>());
+        mapper.add(std::get<0>(road));
     }
 
     BOOST_FOREACH(road_type const& road, roads)
     {
-        mapper.map(road.get<0>(),
+        mapper.map(std::get<0>(road),
                 "stroke:rgb(128,128,128);stroke-width:1");
     }
 
@@ -361,9 +363,9 @@ int main()
     // Map cities
     BOOST_FOREACH(city_type const& city, cities)
     {
-        mapper.map(city.get<0>(),
+        mapper.map(std::get<0>(city),
                 "fill:rgb(255,255,0);stroke:rgb(0,0,0);stroke-width:1");
-        mapper.text(city.get<0>(), city.get<1>(),
+        mapper.text(std::get<0>(city), std::get<1>(city),
                 "fill:rgb(0,0,0);font-family:Arial;font-size:10px", 5, 5);
     }
 #endif

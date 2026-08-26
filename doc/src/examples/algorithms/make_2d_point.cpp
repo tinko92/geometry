@@ -15,9 +15,9 @@
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/register/point.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 struct mypoint { float _x, _y; };
 
@@ -40,7 +40,7 @@ int main()
 {
     construct_and_display<boost::geometry::model::d2::point_xy<double>>();
     construct_and_display<boost::geometry::model::d2::point_xy<int>>();
-    construct_and_display<boost::tuple<double, double>>();
+    construct_and_display<std::tuple<double, double>>();
     construct_and_display<mypoint>();
     return 0;
 }

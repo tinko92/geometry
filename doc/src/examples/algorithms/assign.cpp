@@ -16,9 +16,9 @@
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 int main()
 {
@@ -36,7 +36,7 @@ int main()
     boost::geometry::assign(p, b);
 
     // Assign a point to another point type (conversion of point-type)
-    boost::tuple<double, double> p2;
+    std::tuple<double, double> p2;
     boost::geometry::assign(p2, p1);
 
     using boost::geometry::dsv;

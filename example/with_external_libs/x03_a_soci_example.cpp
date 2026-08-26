@@ -7,7 +7,7 @@
 
 // SOCI example
 
-// a: using boost::tuple to retrieve points
+// a: using std::tuple to retrieve points
 
 // SOCI is a generic C++ template interface to access relational databases
 
@@ -25,7 +25,7 @@
 #include <boost/optional.hpp>
 #include <boost/timer.hpp>
 #include <boost/random.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 #include <iostream>
 #include <istream>
@@ -35,9 +35,9 @@
 #include <exception>
 
 #include <boost/geometry/geometry.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian);
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian);
 
 
 int main()
@@ -50,9 +50,9 @@ int main()
         sql << "select count(*) from cities", soci::into(count);
         std::cout << "# Capitals: " << count << std::endl;
 
-        typedef std::vector<boost::tuple<double, double> > V;
+        typedef std::vector<std::tuple<double, double> > V;
 
-        soci::rowset<boost::tuple<double, double> > rows
+        soci::rowset<std::tuple<double, double> > rows
             = sql.prepare << "select x(location),y(location) from cities";
         V vec;
         std::copy(rows.begin(), rows.end(), std::back_inserter(vec));

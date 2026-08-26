@@ -12,20 +12,20 @@
 
 #include <iostream>
 #include <boost/geometry.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/geometries/register/multi_point.hpp>
 
 
 BOOST_GEOMETRY_REGISTER_MULTI_POINT_TEMPLATED(std::deque)
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 int main()
 {
     // Normal usage of std::
-    std::deque<boost::tuple<float, float>> multi_point;
-    multi_point.push_back(boost::tuple<float, float>(1, 1));
-    multi_point.push_back(boost::tuple<float, float>(3, 2));
+    std::deque<std::tuple<float, float>> multi_point;
+    multi_point.push_back(std::tuple<float, float>(1, 1));
+    multi_point.push_back(std::tuple<float, float>(3, 2));
 
     // Usage of Boost.Geometry
     std::cout << "WKT: "  << boost::geometry::wkt(multi_point) << std::endl;

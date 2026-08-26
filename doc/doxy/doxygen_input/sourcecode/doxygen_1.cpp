@@ -10,7 +10,7 @@ OBSOLETE
 //
 // Doxygen Examples, referred to from the sources
 
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 #if defined(_MSC_VER)
 // We deliberately mix float/double's here so turn off warning

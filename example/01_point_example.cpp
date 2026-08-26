@@ -14,14 +14,14 @@
 
 #include <boost/geometry/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/geometries/adapted/c_array.hpp>
-#include <boost/geometry/geometries/adapted/boost_array.hpp>
+#include <boost/geometry/geometries/adapted/std_array.hpp>
 #include <boost/geometry/geometries/adapted/boost_polygon/point.hpp>
 
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_ARRAY_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_ARRAY_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 
 int main()
@@ -35,14 +35,14 @@ int main()
     // 2: its own type targetted to Cartesian (x,y) coordinates
     model::d2::point_xy<double> pt2;
 
-    // 3: it supports Boost tuple's
-    boost::tuple<double, double> pt3;
+    // 3: it supports standard tuples
+    std::tuple<double, double> pt3;
 
     // 4: it supports normal arrays
     double pt4[2];
 
-    // 5: it supports arrays-as-points from Boost.Array
-    boost::array<double, 2> pt5;
+    // 5: it supports std::array as a point
+    std::array<double, 2> pt5;
 
     // 6: it supports points from Boost.Polygon
     boost::polygon::point_data<double> pt6;
@@ -103,7 +103,7 @@ int main()
     // 5: for the d2::point_xy<...> type only: constructor with two values
     model::d2::point_xy<double> p5(1,1);
 
-    // 6: for boost tuples you can of course use make_tuple
+    // 6: for standard tuples you can of course use std::make_tuple
 
 
     // Some ways of getting point values
@@ -114,8 +114,8 @@ int main()
     // 2: for point_xy only
     std::cout << p2.x() << "," << p2.y() << std::endl;
 
-    // 3: using boost-tuples you of course can boost-tuple-methods
-    std::cout << pt3.get<0>() << "," << pt3.get<1>() << std::endl;
+    // 3: using standard tuples you can use std::get
+    std::cout << std::get<0>(pt3) << "," << std::get<1>(pt3) << std::endl;
 
     // 4: Boost.Geometry supports various output formats, e.g. DSV
     //    (delimiter separated values)

@@ -34,26 +34,26 @@ it from various types. Using one of its own types:
 [quickstart_distance]
 
 If the right headers are included and the types are bound to a coordinate
-system, various other types can be used as points: plain C array's, __boost_array__'s, 
-__boost_tuple__'s, __boost_fusion__ imported structs, your own classes...
+system, various other types can be used as points: plain C arrays,
+`std::array`s, `std::tuple`s, __boost_fusion__ imported structs, your own classes...
 
 Registering and using a C array:
 [quickstart_register_c_array]
 [quickstart_distance_c_array]
 
 Another often used algorithm is point-in-polygon. It is implemented in __boost_geometry__
-under the name `within`. We show its usage here checking a __boost_tuple__ (as a point)
+under the name `within`. We show its usage here checking a `std::tuple` (as a point)
 located within a polygon, filled with C Array point pairs.
 
-But it is first necessary to register a __boost_tuple__, like the C array: 
-[quickstart_register_boost_tuple]
+But it is first necessary to register a `std::tuple`, like the C array:
+[quickstart_register_std_tuple]
 [quickstart_point_in_polygon]
 
 We can calculate the area of a polygon:
 [quickstart_area]
 
 By the nature of a template library, it is possible to mix point types.
-We calculate distance again, now using a C array point and a __boost_tuple__ point:
+We calculate distance again, now using a C array point and a `std::tuple` point:
 [quickstart_distance_mixed]
 
 The snippets listed above generate the following output:

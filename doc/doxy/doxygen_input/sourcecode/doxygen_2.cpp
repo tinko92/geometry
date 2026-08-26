@@ -10,7 +10,7 @@ OBSOLETE
 //
 // Doxygen Examples, for main page
 
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 #if defined(_MSC_VER)
 // We deliberately mix float/double's here so turn off warning
@@ -94,7 +94,7 @@ void example_for_main_page()
     ring_2d poly;
     double points[][2] = {{2.0, 1.3}, {4.1, 3.0}, {5.3, 2.6}, {2.9, 0.7}, {2.0, 1.3}};
     append(poly, points);
-    boost::tuple<double, double> p = boost::make_tuple(3.7, 2.0);
+    std::tuple<double, double> p = std::make_tuple(3.7, 2.0);
     std::cout << "Point p is in polygon? " << (within(p, poly) ? "YES" : "NO")  << std::endl;
 
     std::cout << "Area: " << area(poly) << std::endl;

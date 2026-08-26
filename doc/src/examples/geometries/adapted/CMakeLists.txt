@@ -5,11 +5,10 @@
 # http://www.boost.org/LICENSE_1_0.txt)
 
 foreach(item IN ITEMS
-    boost_array
     boost_fusion
-    boost_tuple
     c_array
     std_array
+    std_tuple
   )
 
   boost_geometry_add_example("geometries_adapted" ${item})
@@ -17,4 +16,3 @@ foreach(item IN ITEMS
 endforeach()
 
 add_subdirectory(boost_range)
-

@@ -14,11 +14,11 @@
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/arithmetic/dot_product.hpp>
-#include <boost/geometry/geometries/adapted/boost_array.hpp>
+#include <boost/geometry/geometries/adapted/std_array.hpp>
 
 namespace bg = boost::geometry; /*< Convenient namespace alias >*/
 
-BOOST_GEOMETRY_REGISTER_BOOST_ARRAY_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_ARRAY_CS(cs::cartesian)
 
 
 int main()
@@ -40,8 +40,8 @@ int main()
 
      std::cout << "Dot Product 2: "<< dp2 << std::endl; 
 
-     boost::array<double, 2> a =  {1, 2};
-     boost::array<double, 2> b =  {2, 3};
+     std::array<double, 2> a =  {1, 2};
+     std::array<double, 2> b =  {2, 3};
 
      //Example 3
      dp3 = bg::dot_product(a, b);

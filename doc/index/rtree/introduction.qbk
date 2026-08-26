@@ -53,7 +53,7 @@ Key features of this implementation of the __rtree__ are:
 
 [heading Dependencies]
 
-R-tree depends on *Boost.Move*, *Boost.Container*, *Boost.Tuple*, *Boost.Utility*, *Boost.MPL*.
+R-tree depends on *Boost.Move*, *Boost.Container*, *Boost.Utility*, *Boost.MPL*.
 
 [heading Contributors]
 
@@ -64,5 +64,4 @@ The spatial index was originally started by Federico J. Fernandez during the Goo
 I'd like to thank Barend Gehrels, Bruno Lalande, Mateusz Łoskot, Lucanus J. Simonson for their support and ideas.
 
 [endsect]
-
 

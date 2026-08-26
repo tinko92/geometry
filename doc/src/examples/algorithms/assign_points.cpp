@@ -14,11 +14,11 @@
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/linestring.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
 #include <boost/geometry/geometries/adapted/boost_range/filtered.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 template <typename T>
 struct x_between
@@ -40,7 +40,7 @@ private :
 
 int main()
 {
-    using ls = boost::geometry::model::linestring<boost::tuple<int, int>>;
+    using ls = boost::geometry::model::linestring<std::tuple<int, int>>;
 
     ls line1, line2, line3;
 

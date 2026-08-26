@@ -39,10 +39,10 @@ using namespace boost::geometry;
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
 //]
 
-//[quickstart_register_boost_tuple
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+//[quickstart_register_std_tuple
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 //]
 
 // Small QRect simulations following http://doc.trolltech.com/4.4/qrect.html
@@ -121,7 +121,7 @@ int main(void)
     double points[][2] = {{2.0, 1.3}, {4.1, 3.0}, {5.3, 2.6}, {2.9, 0.7}, {2.0, 1.3}};
     model::polygon<model::d2::point_xy<double>> poly;
     append(poly, points);
-    boost::tuple<double, double> p = boost::make_tuple(3.7, 2.0);
+    std::tuple<double, double> p = std::make_tuple(3.7, 2.0);
     std::cout << "Point p is in polygon? " << std::boolalpha << within(p, poly) << std::endl;
     //]
 
@@ -166,4 +166,3 @@ int main(void)
 
     return 0;
 }
-

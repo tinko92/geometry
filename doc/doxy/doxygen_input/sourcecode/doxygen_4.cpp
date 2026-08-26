@@ -219,7 +219,7 @@ void svg_intersection_roads()
     typedef boost::geometry::point_xy<double> point_type;
     typedef boost::geometry::linestring<point_type> line_type;
 
-    typedef boost::tuple<line_type, std::string> road_type;
+    typedef std::tuple<line_type, std::string> road_type;
 
     boost::geometry::box<point_type> bbox;
     boost::geometry::assign_inverse(bbox);
@@ -234,7 +234,7 @@ void svg_intersection_roads()
     boost::geometry::assign(clip, -100, 25, -90, 50);
     for (size_t i = 0; i < roads.size(); i++)
     {
-        boost::geometry::intersection_inserter<line_type>(clip, roads[i].get<0>(), std::back_inserter(intersected));
+        boost::geometry::intersection_inserter<line_type>(clip, std::get<0>(roads[i]), std::back_inserter(intersected));
     }
 
     // create map
@@ -245,7 +245,7 @@ void svg_intersection_roads()
 
     for (size_t i = 0; i < roads.size(); i++)
     {
-        mapper.map(roads[i].get<0>(), "stroke:rgb(0,0,255);stroke-width:3");
+        mapper.map(std::get<0>(roads[i]), "stroke:rgb(0,0,255);stroke-width:3");
     }
 
     for (size_t i = 0; i < intersected.size(); i++)
@@ -267,7 +267,7 @@ void svg_intersection_countries()
     typedef boost::geometry::polygon<point_type> poly_type;
     typedef boost::geometry::multi_polygon<poly_type> mp_type;
 
-    typedef boost::tuple<mp_type, std::string> country_type;
+    typedef std::tuple<mp_type, std::string> country_type;
 
     boost::geometry::box<point_type> bbox;
     boost::geometry::assign_inverse(bbox);
@@ -282,7 +282,7 @@ void svg_intersection_countries()
     boost::geometry::assign(clip, -100, -50, 100, 50);
     for (size_t i = 0; i < countries.size(); i++)
     {
-        mp_type const& mp = countries[i].get<0>();
+        mp_type const& mp = std::get<0>(countries[i]);
         for (size_t j = 0; j < mp.size(); j++)
         {
             boost::geometry::intersection_inserter<poly_type>(clip, mp[j], std::back_inserter(intersected));
@@ -297,7 +297,7 @@ void svg_intersection_countries()
 
     for (size_t i = 0; i < countries.size(); i++)
     {
-        mapper.map(countries[i].get<0>().front(), "fill:rgb(0,0,255);stroke-width:1");
+        mapper.map(std::get<0>(countries[i]).front(), "fill:rgb(0,0,255);stroke-width:1");
     }
 
     for (size_t i = 0; i < intersected.size(); i++)

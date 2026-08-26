@@ -19,9 +19,9 @@
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
 #include <boost/geometry/geometries/ring.hpp>
-#include <boost/geometry/geometries/adapted/boost_array.hpp>
+#include <boost/geometry/geometries/adapted/std_array.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_ARRAY_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_ARRAY_CS(cs::cartesian)
 
 int main()
 {
@@ -30,7 +30,7 @@ int main()
     // because not supporting a random access iterator)
     using polygon = boost::geometry::model::polygon
         <
-            boost::array<short, 3>,
+            std::array<short, 3>,
             true, true,
             std::deque, std::list
         >;
@@ -46,7 +46,7 @@ int main()
 /*`
 Output (using MSVC) is a long story (part manually replaced with ellipsis):
 [pre
-class std::list<class boost::geometry::model::ring<class boost::array<short,3>,1,1,class std::deque,class std::allocator>,class std::allocator<...>>>
+class std::list<class boost::geometry::model::ring<class std::array<short,3>,1,1,class std::deque,class std::allocator>,class std::allocator<...>>>
 ]
 */
 //]

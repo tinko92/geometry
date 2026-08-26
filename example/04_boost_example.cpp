@@ -8,7 +8,7 @@
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //
-// Example combining Boost.Geometry with Boost.Assign and Boost.Range and Boost.Tuple
+// Example combining Boost.Geometry with Boost.Assign, Boost.Range and std::tuple
 
 #include <iostream>
 
@@ -16,11 +16,11 @@
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/linestring.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
 #include <boost/assign.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian);
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian);
 
 
 int main(void)
@@ -73,7 +73,7 @@ int main(void)
 
     {
         // It is convenient to combine Boost.Assign on a geometry (e.g. polygon) with tuples.
-        typedef model::polygon<boost::tuple<double,double> > polygon;
+        typedef model::polygon<std::tuple<double,double> > polygon;
 
         polygon p;
         exterior_ring(p) = tuple_list_of(0, 0)(0, 5)(5, 5)(5, 0)(0, 0);

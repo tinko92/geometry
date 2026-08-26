@@ -43,10 +43,9 @@ types which may be stored without defining any additional classes. By default th
 and tuples. In the case of those two collection types, the `__indexable__` must be the first stored type.
 
 * `__indexable__ = __point__ | __box__ | Segment`
-* `__value__ = Indexable | std::pair<__indexable__, T> | boost::tuple<__indexable__, ...> [ | std::tuple<__indexable__, ...> ]`
+* `__value__ = Indexable | std::pair<__indexable__, T> | std::tuple<__indexable__, ...>`
 
-By default `boost::tuple<...>` is supported on all compilers. If the compiler supports C++11 tuples and variadic templates
-then `std::tuple<...>` may be used "out of the box" as well.
+`std::tuple<...>` may be used out of the box.
 
 Examples of default `__value__` types:
 
@@ -55,7 +54,7 @@ Examples of default `__value__` types:
  geometry::model::box<...>
  geometry::model::segment<...>
  std::pair<geometry::model::box<...>, unsigned>
- boost::tuple<geometry::model::point<...>, int, float>
+ std::tuple<geometry::model::point<...>, int, float>
 
 The predefined `index::indexable<Value>` returns const reference to the `__indexable__` stored in the `__value__`.
 

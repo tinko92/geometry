@@ -54,7 +54,7 @@ For definition of point geometry, number of choices are possible:
 
 * user-defined class
 * C array of coordiantes
-* __boost_tuple__ or `std::pair` [/ TODO: confirm if std::pair is usable]
+* `std::tuple`
 
 Boost Geometry uses __boost_range__ library to access various sequences in unified manner
 and thus it is capable to iterate over elements of:
@@ -62,7 +62,6 @@ and thus it is capable to iterate over elements of:
 * C array
 * C++ standard sequences: `std::vector`, `std::deque`, `std::array`
 * a range specified by a pair of iterators
-* __boost_array__
 
 Boost Geometry specifies concepts for the following single geometries:
 
