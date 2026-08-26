@@ -77,12 +77,8 @@ public:
 
     // For equals()
     template <typename Geometry1, typename Geometry2>
-    static auto relate(Geometry1 const&, Geometry2 const&,
-                       std::enable_if_t
-                            <
-                                util::is_pointlike<Geometry1>::value
-                             && util::is_pointlike<Geometry2>::value
-                            > * = nullptr)
+        requires (util::pointlike<Geometry1> && util::pointlike<Geometry2>)
+    static auto relate(Geometry1 const&, Geometry2 const&)
     {
         return strategy::within::spherical_point_point();
     }

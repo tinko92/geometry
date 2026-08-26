@@ -40,19 +40,12 @@ private:
 public:
     inline point_reverse_iterator() = default;
 
-    template
-    <
-        typename OtherGeometry,
-        std::enable_if_t
+    template <typename OtherGeometry>
+        requires std::is_convertible_v
             <
-                std::is_convertible
-                    <
-                        std::reverse_iterator<point_iterator<OtherGeometry> >,
-                        std::reverse_iterator<point_iterator<Geometry> >
-                    >::value,
-                int
-            > = 0
-    >
+                std::reverse_iterator<point_iterator<OtherGeometry> >,
+                std::reverse_iterator<point_iterator<Geometry> >
+            >
     inline point_reverse_iterator(point_reverse_iterator<OtherGeometry> const& other)
         : base_type(other.base())
     {}

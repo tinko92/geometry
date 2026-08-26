@@ -41,6 +41,7 @@ struct cartesian
     : public strategies::relate::cartesian<CalculationType>
 {
     template <typename Geometry1, typename Geometry2>
+        requires detail::geometry_pair<Geometry1, Geometry2>
     static auto distance(Geometry1 const&, Geometry2 const&)
     {
         if constexpr (detail::is_pp_v<Geometry1, Geometry2>)
@@ -54,11 +55,7 @@ struct cartesian
             return strategy::distance::cartesian_segment_box
                 <CalculationType, strategy::distance::pythagoras<CalculationType>>();
         else
-        {
-            static_assert(detail::is_bb_v<Geometry1, Geometry2>,
-                          "Distance strategy not implemented for these geometries.");
             return strategy::distance::pythagoras_box_box<CalculationType>();
-        }
     }
 };
 

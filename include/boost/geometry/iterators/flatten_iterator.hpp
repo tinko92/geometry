@@ -78,14 +78,10 @@ public:
         typename OtherOuterIterator, typename OtherInnerIterator,
         typename OtherValue,
         typename OtherAccessInnerBegin, typename OtherAccessInnerEnd,
-        typename OtherReference,
-        std::enable_if_t
-            <
-                std::is_convertible<OtherOuterIterator, OuterIterator>::value
-                && std::is_convertible<OtherInnerIterator, InnerIterator>::value,
-                int
-            > = 0
+        typename OtherReference
     >
+        requires (std::is_convertible_v<OtherOuterIterator, OuterIterator>
+               && std::is_convertible_v<OtherInnerIterator, InnerIterator>)
     flatten_iterator(flatten_iterator
                      <
                          OtherOuterIterator,

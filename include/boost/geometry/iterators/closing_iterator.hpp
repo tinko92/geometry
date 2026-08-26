@@ -90,19 +90,12 @@ public:
         , m_index(0)
     {}
 
-    template
-    <
-        typename OtherRange,
-        std::enable_if_t
+    template <typename OtherRange>
+        requires std::is_convertible_v
             <
-                std::is_convertible
-                    <
-                        typename boost::range_iterator<OtherRange const>::type,
-                        typename boost::range_iterator<Range const>::type
-                    >::value,
-                int
-            > = 0
-    >
+                typename boost::range_iterator<OtherRange const>::type,
+                typename boost::range_iterator<Range const>::type
+            >
     inline closing_iterator(closing_iterator<OtherRange> const& other)
         : m_iterator(other.m_iterator)
         , m_begin(other.m_begin)

@@ -53,6 +53,7 @@ public:
     //area
 
     template <typename Geometry>
+        requires util::geometry_type<Geometry>
     static auto area(Geometry const&)
     {
         if constexpr (util::is_box<Geometry>::value)
@@ -64,33 +65,27 @@ public:
     // covered_by
 
     template <typename Geometry1, typename Geometry2>
+        requires ((util::pointlike<Geometry1> || util::box<Geometry1>)
+               && util::box<Geometry2>)
     static auto covered_by(Geometry1 const&, Geometry2 const&)
     {
-        static_assert(util::is_box<Geometry2>::value,
-                      "Covered-by strategy requires a box as second geometry.");
         if constexpr (util::is_pointlike<Geometry1>::value)
             return strategy::covered_by::cartesian_point_box();
         else
-        {
-            static_assert(util::is_box<Geometry1>::value,
-                          "Covered-by strategy not implemented for these geometries.");
             return strategy::covered_by::cartesian_box_box();
-        }
     }
 
     // disjoint
 
     template <typename Geometry1, typename Geometry2>
+        requires ((util::box<Geometry1> || util::segment<Geometry1>)
+               && util::box<Geometry2>)
     static auto disjoint(Geometry1 const&, Geometry2 const&)
     {
-        static_assert(util::is_box<Geometry2>::value,
-                      "Disjoint strategy requires a box as second geometry.");
         if constexpr (util::is_box<Geometry1>::value)
             return strategy::disjoint::cartesian_box_box();
         else
         {
-            static_assert(util::is_segment<Geometry1>::value,
-                          "Disjoint strategy not implemented for these geometries.");
             // NOTE: Inconsistent name.
             return strategy::disjoint::segment_box();
         }
@@ -99,19 +94,16 @@ public:
     // relate
 
     template <typename Geometry1, typename Geometry2>
+        requires (util::pointlike<Geometry1>
+               && (util::pointlike<Geometry2>
+                || util::linear<Geometry2>
+                || util::polygonal<Geometry2>))
     static auto relate(Geometry1 const&, Geometry2 const&)
     {
-        static_assert(util::is_pointlike<Geometry1>::value,
-                      "Relate strategy requires a pointlike first geometry.");
         if constexpr (util::is_pointlike<Geometry2>::value)
             return strategy::within::cartesian_point_point();
         else
-        {
-            static_assert(util::is_linear<Geometry2>::value
-                       || util::is_polygonal<Geometry2>::value,
-                          "Relate strategy not implemented for these geometries.");
             return strategy::within::cartesian_winding<void, void, CalculationType>();
-        }
     }
 
     // The problem is that this strategy is often used with non-geometry ranges.
@@ -135,8 +127,8 @@ public:
     }
 
     template <typename Geometry1, typename Geometry2>
-    static auto comparable_distance(Geometry1 const&, Geometry2 const&,
-                                    distance::detail::enable_if_pp_t<Geometry1, Geometry2> * = nullptr)
+        requires distance::detail::point_point<Geometry1, Geometry2>
+    static auto comparable_distance(Geometry1 const&, Geometry2 const&)
     {
         return strategy::distance::comparable::pythagoras<CalculationType>();
     }
@@ -154,18 +146,14 @@ public:
     // within
 
     template <typename Geometry1, typename Geometry2>
+        requires ((util::pointlike<Geometry1> || util::box<Geometry1>)
+               && util::box<Geometry2>)
     static auto within(Geometry1 const&, Geometry2 const&)
     {
-        static_assert(util::is_box<Geometry2>::value,
-                      "Within strategy requires a box as second geometry.");
         if constexpr (util::is_pointlike<Geometry1>::value)
             return strategy::within::cartesian_point_box();
         else
-        {
-            static_assert(util::is_box<Geometry1>::value,
-                          "Within strategy not implemented for these geometries.");
             return strategy::within::cartesian_box_box();
-        }
     }
 
     template <typename ComparePolicy, typename EqualsPolicy>
@@ -278,6 +266,8 @@ struct strategy_converter<strategy::within::cartesian_point_box_by_side<Calculat
         using base_t = strategies::relate::cartesian<CalculationType>;
 
         template <typename Geometry1, typename Geometry2>
+            requires ((util::pointlike<Geometry1> || util::box<Geometry1>)
+                   && util::box<Geometry2>)
         static auto covered_by(Geometry1 const& geometry1, Geometry2 const& geometry2)
         {
             if constexpr (util::is_pointlike<Geometry1>::value
@@ -288,6 +278,8 @@ struct strategy_converter<strategy::within::cartesian_point_box_by_side<Calculat
         }
 
         template <typename Geometry1, typename Geometry2>
+            requires ((util::pointlike<Geometry1> || util::box<Geometry1>)
+                   && util::box<Geometry2>)
         static auto within(Geometry1 const& geometry1, Geometry2 const& geometry2)
         {
             if constexpr (util::is_pointlike<Geometry1>::value
@@ -323,6 +315,10 @@ struct strategy_converter<strategy::within::franklin<P1, P2, CalculationType>>
         using base_t = strategies::relate::cartesian<CalculationType>;
 
         template <typename Geometry1, typename Geometry2>
+            requires (util::pointlike<Geometry1>
+                   && (util::pointlike<Geometry2>
+                    || util::linear<Geometry2>
+                    || util::polygonal<Geometry2>))
         static auto relate(Geometry1 const& geometry1, Geometry2 const& geometry2)
         {
             if constexpr (util::is_linear<Geometry2>::value
@@ -348,6 +344,10 @@ struct strategy_converter<strategy::within::crossings_multiply<P1, P2, Calculati
         using base_t = strategies::relate::cartesian<CalculationType>;
 
         template <typename Geometry1, typename Geometry2>
+            requires (util::pointlike<Geometry1>
+                   && (util::pointlike<Geometry2>
+                    || util::linear<Geometry2>
+                    || util::polygonal<Geometry2>))
         static auto relate(Geometry1 const& geometry1, Geometry2 const& geometry2)
         {
             if constexpr (util::is_linear<Geometry2>::value

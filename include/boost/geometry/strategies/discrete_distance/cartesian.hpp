@@ -32,8 +32,8 @@ struct cartesian
     : public strategies::detail::cartesian_base
 {
     template <typename Geometry1, typename Geometry2>
-    static auto distance(Geometry1 const&, Geometry2 const&,
-                         distance::detail::enable_if_pp_t<Geometry1, Geometry2> * = nullptr)
+        requires distance::detail::point_point<Geometry1, Geometry2>
+    static auto distance(Geometry1 const&, Geometry2 const&)
     {
         return strategy::distance::pythagoras<CalculationType>();
     }

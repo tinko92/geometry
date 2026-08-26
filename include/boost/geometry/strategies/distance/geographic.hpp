@@ -72,6 +72,7 @@ public:
     // distance
 
     template <typename Geometry1, typename Geometry2>
+        requires detail::geometry_pair<Geometry1, Geometry2>
     auto distance(Geometry1 const&, Geometry2 const&) const
     {
         if constexpr (detail::is_pp_v<Geometry1, Geometry2>)
@@ -87,22 +88,15 @@ public:
             return strategy::distance::geographic_segment_box
                 <FormulaPolicy, Spheroid, CalculationType>(base_t::m_spheroid);
         else
-        {
-            static_assert(detail::is_bb_v<Geometry1, Geometry2>,
-                          "Distance strategy not implemented for these geometries.");
             return strategy::distance::geographic_cross_track_box_box
                 <FormulaPolicy, Spheroid, CalculationType>(base_t::m_spheroid);
-        }
     }
 
     // normalize
 
     template <typename Geometry>
-    static auto normalize(Geometry const&,
-                          std::enable_if_t
-                            <
-                                util::is_point<Geometry>::value
-                            > * = nullptr)
+        requires util::point<Geometry>
+    static auto normalize(Geometry const&)
     {
         return strategy::normalize::spherical_point();
     }
@@ -206,6 +200,7 @@ struct strategy_converter<strategy::distance::detail::geographic_cross_track<FP,
         explicit altered_strategy(S const& s) : base_t(s) {}
 
         template <typename Geometry1, typename Geometry2>
+            requires detail::geometry_pair<Geometry1, Geometry2>
         auto distance(Geometry1 const& geometry1, Geometry2 const& geometry2) const
         {
             if constexpr (detail::is_ps_v<Geometry1, Geometry2>)

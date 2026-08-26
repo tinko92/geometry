@@ -75,11 +75,8 @@ struct ever_circling_iterator :
         this->base_reference() = start;
     }
 
-    template
-    <
-        typename OtherIterator,
-        std::enable_if_t<std::is_convertible<OtherIterator, Iterator>::value, int> = 0
-    >
+    template <typename OtherIterator>
+        requires std::is_convertible_v<OtherIterator, Iterator>
     inline ever_circling_iterator(ever_circling_iterator<OtherIterator> const& other)
         : m_begin(other.m_begin)
         , m_end(other.m_end)
@@ -157,19 +154,12 @@ public:
         , m_index(0)
     {}
 
-    template
-    <
-        typename OtherRange,
-        std::enable_if_t
+    template <typename OtherRange>
+        requires std::is_convertible_v
             <
-                std::is_convertible
-                    <
-                        typename boost::range_iterator<OtherRange const>::type,
-                        typename boost::range_iterator<Range const>::type
-                    >::value,
-                int
-            > = 0
-    >
+                typename boost::range_iterator<OtherRange const>::type,
+                typename boost::range_iterator<Range const>::type
+            >
     inline ever_circling_range_iterator(ever_circling_range_iterator<OtherRange> const& other)
         : m_begin(other.m_begin)
         , m_iterator(other.m_iterator)

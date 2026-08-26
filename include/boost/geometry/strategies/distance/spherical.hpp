@@ -65,6 +65,7 @@ public:
     // distance
 
     template <typename Geometry1, typename Geometry2>
+        requires detail::geometry_pair<Geometry1, Geometry2>
     auto distance(Geometry1 const&, Geometry2 const&) const
     {
         using point_strategy = strategy::distance::haversine
@@ -84,22 +85,15 @@ public:
             return strategy::distance::spherical_segment_box<CalculationType, point_strategy>
                 (base_t::radius());
         else
-        {
-            static_assert(detail::is_bb_v<Geometry1, Geometry2>,
-                          "Distance strategy not implemented for these geometries.");
             return strategy::distance::cross_track_box_box<CalculationType, point_strategy>
                 (base_t::radius());
-        }
     }
 
     // normalize
 
     template <typename Geometry>
-    static auto normalize(Geometry const&,
-                          std::enable_if_t
-                            <
-                                util::is_point<Geometry>::value
-                            > * = nullptr)
+        requires util::point<Geometry>
+    static auto normalize(Geometry const&)
     {
         return strategy::normalize::spherical_point();
     }

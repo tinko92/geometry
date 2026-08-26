@@ -65,14 +65,10 @@ public:
         typename OtherIt1,
         typename OtherIt2,
         typename OtherValue,
-        typename OtherReference,
-        std::enable_if_t
-            <
-                std::is_convertible<OtherIt1, Iterator1>::value
-                && std::is_convertible<OtherIt2, Iterator2>::value,
-                int
-            > = 0
+        typename OtherReference
     >
+        requires (std::is_convertible_v<OtherIt1, Iterator1>
+               && std::is_convertible_v<OtherIt2, Iterator2>)
     concatenate_iterator(concatenate_iterator
                          <
                              OtherIt1,
