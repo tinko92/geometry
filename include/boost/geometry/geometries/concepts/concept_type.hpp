@@ -11,9 +11,11 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_CONCEPT_TYPE_HPP
 
 
+#include <concepts>
 #include <type_traits>
 
 #include <boost/geometry/core/tag.hpp>
+#include <boost/geometry/core/tags.hpp>
 
 
 namespace boost { namespace geometry { namespace concepts
@@ -38,6 +40,14 @@ template <typename Geometry>
 concept MutableGeometry =
     ! std::is_const_v<std::remove_reference_t<Geometry>>
     && concept_type<geometry_type_t<Geometry>>::value;
+
+template <typename Geometry, typename Category>
+concept GeometryCategory =
+    ConstGeometry<Geometry>
+    && std::derived_from<tag_t<geometry_type_t<Geometry>>, Category>;
+
+template <typename Geometry>
+concept ArealGeometry = GeometryCategory<Geometry, areal_tag>;
 
 
 }}} // namespace boost::geometry::concepts

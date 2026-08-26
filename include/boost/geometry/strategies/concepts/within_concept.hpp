@@ -147,7 +147,8 @@ constexpr void check()
         static_assert(WithinStrategyBoxBox
             <Geometry1, Geometry2, Strategy>);
     }
-    else if constexpr (concepts::ConstPoint<Geometry1>)
+    else if constexpr (concepts::ConstPoint<Geometry1>
+                       && concepts::ArealGeometry<Geometry2>)
     {
         static_assert(WithinStrategyPolygonal
             <Geometry1, Geometry2, Strategy>);
