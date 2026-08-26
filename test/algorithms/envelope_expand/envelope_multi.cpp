@@ -18,11 +18,11 @@
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/adapted/c_array.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <test_common/test_point.hpp>
 
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 
 template <typename P>
@@ -47,11 +47,11 @@ void test_3d()
 
 int test_main( int , char* [] )
 {
-    test_2d<boost::tuple<float, float> >();
+    test_2d<std::tuple<float, float> >();
     test_2d<bg::model::d2::point_xy<float> >();
     test_2d<bg::model::d2::point_xy<double> >();
 
-    test_3d<boost::tuple<float, float, float> >();
+    test_3d<std::tuple<float, float, float> >();
     test_3d<bg::model::point<double, 3, bg::cs::cartesian> >();
 
     return 0;

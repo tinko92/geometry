@@ -21,14 +21,12 @@
 #define BOOST_GEOMETRY_ALGORITHMS_TRANSFORM_HPP
 
 #include <type_traits>
+#include <variant>
 
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
 #include <boost/range/value_type.hpp>
-
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/variant_fwd.hpp>
 
 #include <boost/geometry/algorithms/clear.hpp>
 #include "boost/geometry/algorithms/detail/assign_indexed_point.hpp"
@@ -383,39 +381,21 @@ struct transform
     }
 };
 
-template <BOOST_VARIANT_ENUM_PARAMS(typename T), typename Geometry2>
-struct transform<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>, Geometry2>
+template <typename ...Ts, typename Geometry2>
+struct transform<std::variant<Ts...>, Geometry2>
 {
     template <typename Strategy>
-    struct visitor: static_visitor<bool>
-    {
-        Geometry2& m_geometry2;
-        Strategy const& m_strategy;
-
-        visitor(Geometry2& geometry2, Strategy const& strategy)
-            : m_geometry2(geometry2)
-            , m_strategy(strategy)
-        {}
-
-        template <typename Geometry1>
-        inline bool operator()(Geometry1 const& geometry1) const
-        {
-            return transform<Geometry1, Geometry2>::apply(
-                geometry1,
-                m_geometry2,
-                m_strategy
-            );
-        }
-    };
-
-    template <typename Strategy>
     static inline bool apply(
-        boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> const& geometry1,
+        std::variant<Ts...> const& geometry1,
         Geometry2& geometry2,
         Strategy const& strategy
     )
     {
-        return boost::apply_visitor(visitor<Strategy>(geometry2, strategy), geometry1);
+        return std::visit([&](auto const& concrete)
+        {
+            return transform<std::decay_t<decltype(concrete)>, Geometry2>::apply(
+                concrete, geometry2, strategy);
+        }, geometry1);
     }
 };
 

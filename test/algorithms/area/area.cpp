@@ -27,8 +27,7 @@
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
 #include <boost/geometry/geometries/ring.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant2.hpp>
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 
 #include <boost/geometry/strategy/cartesian/precise_area.hpp>
 
@@ -281,19 +280,19 @@ void test_dynamic()
     auto apoly = bg::area(poly);
     auto abox = bg::area(box);
 
-    boost::variant<polygon_type, box_type> v;
+    std::variant<polygon_type, box_type> v;
     v = poly;
     BOOST_CHECK_CLOSE(bg::area(v), apoly, 0.0001);
     v = box;
     BOOST_CHECK_CLOSE(bg::area(v), abox, 0.0001);
 
-    boost::variant2::variant<polygon_type, box_type> v2;
+    std::variant<polygon_type, box_type> v2;
     v2 = poly;
     BOOST_CHECK_CLOSE(bg::area(v2), apoly, 0.0001);
     v2 = box;
     BOOST_CHECK_CLOSE(bg::area(v2), abox, 0.0001);
 
-    bg::model::geometry_collection<boost::variant<polygon_type, box_type> > gc;
+    bg::model::geometry_collection<std::variant<polygon_type, box_type> > gc;
     gc.push_back(poly);
     gc.push_back(box);
     BOOST_CHECK_CLOSE(bg::area(gc), apoly + abox, 0.0001);

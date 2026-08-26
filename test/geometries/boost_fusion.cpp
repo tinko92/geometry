@@ -15,12 +15,12 @@
 #include <boost/geometry/geometry.hpp>
 #include <boost/geometry/geometries/adapted/boost_fusion.hpp>
 #include <boost/geometry/geometries/adapted/c_array.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <iostream>
 
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
 BOOST_GEOMETRY_REGISTER_BOOST_FUSION_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 
 struct for_fusion_2d
@@ -40,7 +40,7 @@ void test_2d()
 {
     bg::model::point<double, 2, bg::cs::cartesian> p1(1, 2);
     double p2[2] = {3, 4};
-    boost::tuple<double, double> p3(5,6);
+    std::tuple<double, double> p3(5,6);
 
     for_fusion_2d pf = {7, 8};
 
@@ -53,7 +53,7 @@ void test_3d()
 {
     bg::model::point<double, 3, bg::cs::cartesian> p1(1, 2, 3);
     double p2[3] = {4, 5, 6};
-    boost::tuple<double, double, double> p3(7, 8, 9);
+    std::tuple<double, double, double> p3(7, 8, 9);
 
     for_fusion_3d pf = {10, 11, 12};
 

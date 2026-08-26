@@ -27,7 +27,7 @@
 #include <boost/geometry/core/tag.hpp>
 #include <boost/geometry/core/tags.hpp>
 #include <boost/geometry/core/visit.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant.hpp> // For backward compatibility
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/strategies/default_strategy.hpp>
 #include <boost/geometry/strategies/densify/cartesian.hpp>
 #include <boost/geometry/strategies/densify/geographic.hpp>

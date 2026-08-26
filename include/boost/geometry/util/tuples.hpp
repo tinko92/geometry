@@ -19,8 +19,6 @@
 
 #include <boost/geometry/core/config.hpp>
 
-#include <boost/tuple/tuple.hpp>
-
 namespace boost { namespace geometry { namespace tuples
 {
 
@@ -39,17 +37,6 @@ struct is_tuple<std::pair<F, S>>
     : std::integral_constant<bool, true>
 {};
 
-template <typename ...Ts>
-struct is_tuple<boost::tuples::tuple<Ts...>>
-    : std::integral_constant<bool, true>
-{};
-
-template <typename HT, typename TT>
-struct is_tuple<boost::tuples::cons<HT, TT>>
-    : std::integral_constant<bool, true>
-{};
-
-
 template <std::size_t I, typename Tuple>
 struct element;
 
@@ -63,25 +50,6 @@ struct element<I, std::pair<HT, TT>>
     : std::tuple_element<I, std::pair<HT, TT>>
 {};
 
-template <std::size_t I, typename ...Ts>
-struct element<I, boost::tuples::tuple<Ts...>>
-{
-    typedef typename boost::tuples::element
-        <
-            I, boost::tuples::tuple<Ts...>
-        >::type type;
-};
-
-template <std::size_t I, typename HT, typename TT>
-struct element<I, boost::tuples::cons<HT, TT>>
-{
-    typedef typename boost::tuples::element
-        <
-            I, boost::tuples::cons<HT, TT>
-        >::type type;
-};
-
-
 template <typename Tuple>
 struct size;
 
@@ -94,25 +62,6 @@ template <typename HT, typename TT>
 struct size<std::pair<HT, TT>>
     : std::tuple_size<std::pair<HT, TT>>
 {};
-
-template <typename ...Ts>
-struct size<boost::tuples::tuple<Ts...>>
-    : std::integral_constant
-        <
-            std::size_t,
-            boost::tuples::length<boost::tuples::tuple<Ts...>>::value
-        >
-{};
-
-template <typename HT, typename TT>
-struct size<boost::tuples::cons<HT, TT>>
-    : std::integral_constant
-        <
-            std::size_t,
-            boost::tuples::length<boost::tuples::cons<HT, TT>>::value
-        >
-{};
-
 
 template <std::size_t I, typename ...Ts>
 constexpr inline typename std::tuple_element<I, std::tuple<Ts...>>::type&
@@ -141,49 +90,6 @@ get(std::pair<HT, TT> const& t)
 {
     return std::get<I>(t);
 }
-
-template <std::size_t I, typename ...Ts>
-inline typename boost::tuples::access_traits
-    <
-        typename boost::tuples::element<I, boost::tuples::tuple<Ts...>>::type
-    >::non_const_type
-get(boost::tuples::tuple<Ts...> & t)
-{
-    return boost::tuples::get<I>(t);
-}
-
-template <std::size_t I, typename ...Ts>
-inline typename boost::tuples::access_traits
-    <
-        typename boost::tuples::element<I, boost::tuples::tuple<Ts...>>::type
-    >::const_type
-get(boost::tuples::tuple<Ts...> const& t)
-{
-    return boost::tuples::get<I>(t);
-}
-
-
-template <std::size_t I, typename HT, typename TT>
-inline typename boost::tuples::access_traits
-    <
-        typename boost::tuples::element<I, boost::tuples::cons<HT, TT> >::type
-    >::non_const_type
-get(boost::tuples::cons<HT, TT> & tup)
-{
-    return boost::tuples::get<I>(tup);
-}
-
-template <std::size_t I, typename HT, typename TT>
-inline typename boost::tuples::access_traits
-    <
-        typename boost::tuples::element<I, boost::tuples::cons<HT, TT> >::type
-    >::const_type
-get(boost::tuples::cons<HT, TT> const& tup)
-{
-    return boost::tuples::get<I>(tup);
-}
-
-
 
 // find_index_if
 // Searches for the index of an element for which UnaryPredicate returns true
@@ -290,43 +196,8 @@ struct exists_if
 // A utility used to create a type/object of a Tuple containing
 //   all types/objects stored in another Tuple plus additional one.
 
-template <typename Tuple,
-          typename T,
-          std::size_t I = 0,
-          std::size_t N = size<Tuple>::value>
-struct push_back_bt
-{
-    typedef
-    boost::tuples::cons<
-        typename element<I, Tuple>::type,
-        typename push_back_bt<Tuple, T, I+1, N>::type
-    > type;
-
-    static type apply(Tuple const& tup, T const& t)
-    {
-        return
-        type(
-            geometry::tuples::get<I>(tup),
-            push_back_bt<Tuple, T, I+1, N>::apply(tup, t)
-        );
-    }
-};
-
-template <typename Tuple, typename T, std::size_t N>
-struct push_back_bt<Tuple, T, N, N>
-{
-    typedef boost::tuples::cons<T, boost::tuples::null_type> type;
-
-    static type apply(Tuple const&, T const& t)
-    {
-        return type(t, boost::tuples::null_type());
-    }
-};
-
 template <typename Tuple, typename T>
-struct push_back
-    : push_back_bt<Tuple, T>
-{};
+struct push_back;
 
 template <typename F, typename S, typename T>
 struct push_back<std::pair<F, S>, T>

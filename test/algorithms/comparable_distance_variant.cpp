@@ -27,7 +27,7 @@
 #include <boost/geometry/strategies/strategies.hpp>
 #include <boost/geometry/util/type_traits.hpp>
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <type_traits>
 
@@ -41,7 +41,7 @@ struct test_variant_different_default_strategy
         typedef bg::model::point<T, 2, bg::cs::cartesian> point_type;
         typedef bg::model::segment<point_type> segment_type;
         typedef bg::model::box<point_type> box_type;
-        typedef boost::variant<point_type, segment_type, box_type> variant_type;
+        typedef std::variant<point_type, segment_type, box_type> variant_type;
 
         point_type point;
         bg::read_wkt("POINT(1 3)", point);
@@ -110,7 +110,7 @@ struct test_variant_same_default_strategy
         typedef bg::model::point<T, 2, bg::cs::cartesian> point_type;
         typedef bg::model::segment<point_type> segment_type;
         typedef bg::model::linestring<point_type> linestring_type;
-        typedef boost::variant
+        typedef std::variant
             <
                 point_type, segment_type, linestring_type
             > variant_type;
@@ -195,7 +195,7 @@ struct test_variant_with_strategy
             <
                 linestring_type
             > multi_linestring_type;
-        typedef boost::variant
+        typedef std::variant
             <
                 segment_type, linestring_type, multi_linestring_type
             > variant_type;
@@ -308,7 +308,7 @@ struct test_variant_boxes
     {
         typedef bg::model::point<T, 2, bg::cs::cartesian> point_type;
         typedef bg::model::box<point_type> box_type;
-        typedef boost::variant<box_type> variant_type;
+        typedef std::variant<box_type> variant_type;
 
         box_type box1, box2;
         bg::read_wkt("BOX(-1 -1,0 0)", box1);

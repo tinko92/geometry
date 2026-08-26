@@ -9,7 +9,7 @@
 // http://www.boost.org/users/license.html
 
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <geometry_test_common.hpp>
 
@@ -162,7 +162,7 @@ inline void test_geometry(std::string const& wkt, Check const& check)
 
         check_result(g, o, max_distance, def_s, check);
 
-        using variant_t = boost::variant<G, typename bg::point_type<G>::type>;
+        using variant_t = std::variant<G, typename bg::point_type<G>::type>;
         variant_t v = g, vo;
         bg::densify(v, vo, max_distance);
 

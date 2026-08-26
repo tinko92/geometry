@@ -21,12 +21,12 @@
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/adapted/c_array.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
 #include <test_geometries/all_custom_polygon.hpp>
 
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 template <typename Polygon>
 void test_polygon()
@@ -244,12 +244,12 @@ void test_large_doubles()
 int test_main(int, char* [])
 {
     test_2d<bg::model::d2::point_xy<double> >();
-    test_2d<boost::tuple<float, float> >();
+    test_2d<std::tuple<float, float> >();
     test_2d<bg::model::d2::point_xy<float> >();
 
-    test_3d<boost::tuple<double, double, double> >();
+    test_3d<std::tuple<double, double, double> >();
 
-    test_5d<boost::tuple<double, double, double, double, double> >();
+    test_5d<std::tuple<double, double, double, double, double> >();
 
 #ifndef NDEBUG
     // The test currently fails in release mode. TODO: fix this

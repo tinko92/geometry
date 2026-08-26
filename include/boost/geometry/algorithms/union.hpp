@@ -28,7 +28,7 @@
 #include <boost/geometry/core/primary_single_tag.hpp>
 #include <boost/geometry/core/reverse_dispatch.hpp>
 #include <boost/geometry/core/tag_cast.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant.hpp>
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 #include <boost/geometry/strategies/default_strategy.hpp>
 #include <boost/geometry/strategies/detail.hpp>

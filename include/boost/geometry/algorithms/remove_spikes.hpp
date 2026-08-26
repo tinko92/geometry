@@ -17,13 +17,12 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_REMOVE_SPIKES_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_REMOVE_SPIKES_HPP
 
+#include <type_traits>
+#include <variant>
+
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
-
-#include <boost/variant/apply_visitor.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/variant_fwd.hpp>
 
 #include <boost/geometry/core/closure.hpp>
 #include <boost/geometry/core/cs.hpp>
@@ -264,28 +263,18 @@ struct remove_spikes
     }
 };
 
-template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
-struct remove_spikes<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> >
+template <typename ...Ts>
+struct remove_spikes<std::variant<Ts...>>
 {
     template <typename Strategy>
-    struct visitor: boost::static_visitor<void>
-    {
-        Strategy const& m_strategy;
-
-        visitor(Strategy const& strategy) : m_strategy(strategy) {}
-
-        template <typename Geometry>
-        void operator()(Geometry& geometry) const
-        {
-            remove_spikes<Geometry>::apply(geometry, m_strategy);
-        }
-    };
-
-    template <typename Strategy>
-    static inline void apply(boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>& geometry,
+    static inline void apply(std::variant<Ts...>& geometry,
                              Strategy const& strategy)
     {
-        boost::apply_visitor(visitor<Strategy>(strategy), geometry);
+        std::visit([&strategy](auto& concrete)
+        {
+            remove_spikes<std::decay_t<decltype(concrete)>>::apply(
+                concrete, strategy);
+        }, geometry);
     }
 };
 

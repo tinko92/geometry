@@ -24,16 +24,16 @@
 
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/adapted/c_array.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <geometry_test_common.hpp>
 
 #include <test_common/test_point.hpp>
 
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 
 
@@ -63,7 +63,7 @@ void check(std::string const& wkt, std::string const& expected = "", int expecte
     bg::read_wkt(wkt, geometry1);
     std::string const& used_expected = expected.empty() ? wkt : expected;
     check<Geometry2>(geometry1, used_expected, expected_point_count);
-    check<Geometry2>(boost::variant<Geometry1>(geometry1), used_expected, expected_point_count);
+    check<Geometry2>(std::variant<Geometry1>(geometry1), used_expected, expected_point_count);
 }
 
 

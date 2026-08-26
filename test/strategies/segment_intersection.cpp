@@ -29,7 +29,7 @@
 
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/segment.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
 #include <boost/geometry/policies/relate/intersection_policy.hpp>
 
@@ -37,7 +37,7 @@
 #include <boost/geometry/strategies/relate/cartesian.hpp>
 
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian);
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian);
 
 
 template <typename P>
@@ -210,7 +210,7 @@ void test_all()
 int test_main(int, char* [])
 {
 #if !defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
-    test_all<boost::tuple<double, double> >();
+    test_all<std::tuple<double, double> >();
     test_all<bg::model::point<float, 2, bg::cs::cartesian> >();
 #endif
     test_all<bg::model::point<double, 2, bg::cs::cartesian> >();

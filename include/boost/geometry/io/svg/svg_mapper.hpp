@@ -21,6 +21,7 @@
 #include <cstdio>
 #include <memory>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 #include <boost/algorithm/string/classification.hpp>
@@ -192,42 +193,24 @@ struct devarianted_svg_map
     }
 };
 
-template <typename SvgPoint, BOOST_VARIANT_ENUM_PARAMS(typename T)>
-struct devarianted_svg_map<SvgPoint, variant<BOOST_VARIANT_ENUM_PARAMS(T)> >
+template <typename SvgPoint, typename ...Ts>
+struct devarianted_svg_map<SvgPoint, std::variant<Ts...>>
 {
-    template <typename TransformStrategy>
-    struct visitor: static_visitor<void>
-    {
-        std::ostream& m_os;
-        std::string const& m_style;
-        double m_size;
-        TransformStrategy const& m_strategy;
-
-        visitor(std::ostream& os,
-                std::string const& style,
-                double size,
-                TransformStrategy const& strategy)
-            : m_os(os)
-            , m_style(style)
-            , m_size(size)
-            , m_strategy(strategy)
-        {}
-
-        template <typename Geometry>
-        inline void operator()(Geometry const& geometry) const
-        {
-            devarianted_svg_map<SvgPoint, Geometry>::apply(m_os, m_style, m_size, geometry, m_strategy);
-        }
-    };
-
     template <typename TransformStrategy>
     static inline void apply(std::ostream& stream,
                              std::string const& style,
                              double size,
-                             variant<BOOST_VARIANT_ENUM_PARAMS(T)> const& geometry,
+                             std::variant<Ts...> const& geometry,
                              TransformStrategy const& strategy)
     {
-        boost::apply_visitor(visitor<TransformStrategy>(stream, style, size, strategy), geometry);
+        std::visit([&](auto const& concrete)
+        {
+            devarianted_svg_map
+                <
+                    SvgPoint,
+                    std::decay_t<decltype(concrete)>
+                >::apply(stream, style, size, concrete, strategy);
+        }, geometry);
     }
 };
 

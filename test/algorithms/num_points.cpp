@@ -71,8 +71,8 @@ int test_main(int, char* [])
     typedef bg::model::polygon<point, true, false> open_polygon;
     typedef bg::model::multi_polygon<open_polygon> open_multi_polygon;
 
-    using variant = boost::variant<linestring, polygon>;
-    using open_variant = boost::variant<linestring, open_polygon>;
+    using variant = std::variant<linestring, polygon>;
+    using open_variant = std::variant<linestring, open_polygon>;
 
     using geometry_collection = bg::model::geometry_collection<variant>;
     using open_geometry_collection = bg::model::geometry_collection<open_variant>;

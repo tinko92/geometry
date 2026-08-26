@@ -45,7 +45,7 @@ struct test_enrich_intersection_points
 
     template <typename G1, typename G2>
     static void apply(std::string const& id,
-            boost::tuple<int, std::string> const& expected_count_and_center,
+            std::tuple<int, std::string> const& expected_count_and_center,
             G1 const& g1, G2 const& g2, double precision)
     {
         //std::cout << "#" << id << std::endl;
@@ -104,7 +104,7 @@ struct test_enrich_intersection_points
 
 int test_main(int, char* [])
 {
-    std::vector<boost::tuple<int, std::string> > expected;
+    std::vector<std::tuple<int, std::string> > expected;
 
     /*
     TODO Will be refactored
@@ -114,73 +114,73 @@ int test_main(int, char* [])
 
 
     // 1-6
-    expected.push_back(boost::make_tuple(6, "RL,LR,LR,RL,RL,LR"));
-    expected.push_back(boost::make_tuple(8, "RL,LR,LR,RL,RL,LR,LR,RL"));
-    expected.push_back(boost::make_tuple(4, "RLRR,RRRL,RRRL,RRRL"));
-    expected.push_back(boost::make_tuple(12, "RL,LR,RL,LR,LR,RL,RL,LR,LR,RL,LR,RL"));
-    expected.push_back(boost::make_tuple(17, "LR,RL,LR,RRLR,RL,LR,RL,RL,LR,LR,RL,LR,RL,RL,LR,RL,LR"));
-    expected.push_back(boost::make_tuple(2, "--RR,LR"));
+    expected.push_back(std::make_tuple(6, "RL,LR,LR,RL,RL,LR"));
+    expected.push_back(std::make_tuple(8, "RL,LR,LR,RL,RL,LR,LR,RL"));
+    expected.push_back(std::make_tuple(4, "RLRR,RRRL,RRRL,RRRL"));
+    expected.push_back(std::make_tuple(12, "RL,LR,RL,LR,LR,RL,RL,LR,LR,RL,LR,RL"));
+    expected.push_back(std::make_tuple(17, "LR,RL,LR,RRLR,RL,LR,RL,RL,LR,LR,RL,LR,RL,RL,LR,RL,LR"));
+    expected.push_back(std::make_tuple(2, "--RR,LR"));
 
     // 7-12
-    expected.push_back(boost::make_tuple(2, "LL,LL"));
-    expected.push_back(boost::make_tuple(2, "RL--,LL--"));
-    expected.push_back(boost::make_tuple(1, "RLLL"));
-    expected.push_back(boost::make_tuple(2, "RL--,LL--"));
-    expected.push_back(boost::make_tuple(1, "RRLR"));
-    expected.push_back(boost::make_tuple(8, "RL,LR,RL,LR,RL,LR,RL,LR"));
+    expected.push_back(std::make_tuple(2, "LL,LL"));
+    expected.push_back(std::make_tuple(2, "RL--,LL--"));
+    expected.push_back(std::make_tuple(1, "RLLL"));
+    expected.push_back(std::make_tuple(2, "RL--,LL--"));
+    expected.push_back(std::make_tuple(1, "RRLR"));
+    expected.push_back(std::make_tuple(8, "RL,LR,RL,LR,RL,LR,RL,LR"));
 
     // 13-18
-    expected.push_back(boost::make_tuple(2, "LL--,LL--"));
-    expected.push_back(boost::make_tuple(2, "RL--,LL--"));
-    expected.push_back(boost::make_tuple(2, "RL--,LL--"));
-    expected.push_back(boost::make_tuple(2, "LL,--RL"));
-    expected.push_back(boost::make_tuple(2, "RR--,--LR"));
-    expected.push_back(boost::make_tuple(2, "RR--,--LR"));
+    expected.push_back(std::make_tuple(2, "LL--,LL--"));
+    expected.push_back(std::make_tuple(2, "RL--,LL--"));
+    expected.push_back(std::make_tuple(2, "RL--,LL--"));
+    expected.push_back(std::make_tuple(2, "LL,--RL"));
+    expected.push_back(std::make_tuple(2, "RR--,--LR"));
+    expected.push_back(std::make_tuple(2, "RR--,--LR"));
 
     // 19-24
-    expected.push_back(boost::make_tuple(2, "LL,LL"));
-    expected.push_back(boost::make_tuple(0, ""));
-    expected.push_back(boost::make_tuple(0, ""));
-    expected.push_back(boost::make_tuple(1, "RLLLRRLR"));
-    expected.push_back(boost::make_tuple(2, "RL,RLRRRRLR"));
-    expected.push_back(boost::make_tuple(1, "LRRRRRLR"));
+    expected.push_back(std::make_tuple(2, "LL,LL"));
+    expected.push_back(std::make_tuple(0, ""));
+    expected.push_back(std::make_tuple(0, ""));
+    expected.push_back(std::make_tuple(1, "RLLLRRLR"));
+    expected.push_back(std::make_tuple(2, "RL,RLRRRRLR"));
+    expected.push_back(std::make_tuple(1, "LRRRRRLR"));
 
     // 25-30
-    expected.push_back(boost::make_tuple(1, "LRRRLLRL"));
-    expected.push_back(boost::make_tuple(1, "LRLLLLLR"));
-    expected.push_back(boost::make_tuple(2, "LR,LRRRRRRL"));
-    expected.push_back(boost::make_tuple(2, "LR,LRLLRRLR"));
-    expected.push_back(boost::make_tuple(2, "RL,LRRRLLLR"));
-    expected.push_back(boost::make_tuple(2, "LR,LRLLLLRL"));
+    expected.push_back(std::make_tuple(1, "LRRRLLRL"));
+    expected.push_back(std::make_tuple(1, "LRLLLLLR"));
+    expected.push_back(std::make_tuple(2, "LR,LRRRRRRL"));
+    expected.push_back(std::make_tuple(2, "LR,LRLLRRLR"));
+    expected.push_back(std::make_tuple(2, "RL,LRRRLLLR"));
+    expected.push_back(std::make_tuple(2, "LR,LRLLLLRL"));
 
     // 31-36
-    expected.push_back(boost::make_tuple(1, "--LLLL--"));
-    expected.push_back(boost::make_tuple(1, "LR--LLRL"));
-    expected.push_back(boost::make_tuple(1, "LRLLLL--"));
-    expected.push_back(boost::make_tuple(2, "LR,LRLLRR--"));
-    expected.push_back(boost::make_tuple(1, "LRLLRRLR"));
-    expected.push_back(boost::make_tuple(3, "RL,LR,RLLLRRLR"));
+    expected.push_back(std::make_tuple(1, "--LLLL--"));
+    expected.push_back(std::make_tuple(1, "LR--LLRL"));
+    expected.push_back(std::make_tuple(1, "LRLLLL--"));
+    expected.push_back(std::make_tuple(2, "LR,LRLLRR--"));
+    expected.push_back(std::make_tuple(1, "LRLLRRLR"));
+    expected.push_back(std::make_tuple(3, "RL,LR,RLLLRRLR"));
 
     // 37-42
-    expected.push_back(boost::make_tuple(3, "LRRRRRLR,RL,LR"));
-    expected.push_back(boost::make_tuple(3, "LR--RRRL,LR,RL"));
-    expected.push_back(boost::make_tuple(3, "RL,LR,LRRRRRRL"));
+    expected.push_back(std::make_tuple(3, "LRRRRRLR,RL,LR"));
+    expected.push_back(std::make_tuple(3, "LR--RRRL,LR,RL"));
+    expected.push_back(std::make_tuple(3, "RL,LR,LRRRRRRL"));
 
     // 43-48
-    expected.push_back(boost::make_tuple(4, "LR,RL,RL,LR"));
+    expected.push_back(std::make_tuple(4, "LR,RL,RL,LR"));
 
     // 49
-    expected.push_back(boost::make_tuple(16, "--RL,RRLR,RRLR,RL,LLRL,RLLLRRLR,RR--,--LR,RLRR,--LL,RL--,RL,RRRL,RL,LR,RRRLRRRL"));
+    expected.push_back(std::make_tuple(16, "--RL,RRLR,RRLR,RL,LLRL,RLLLRRLR,RR--,--LR,RLRR,--LL,RL--,RL,RRRL,RL,LR,RRRLRRRL"));
 
     // 101
-    expected.push_back(boost::make_tuple(3, "RL,LR,RL"));
+    expected.push_back(std::make_tuple(3, "RL,LR,RL"));
 
     // ticket#17
-    expected.push_back(boost::make_tuple(6, "LR,RL,LR,RL,RL,LR"));
+    expected.push_back(std::make_tuple(6, "LR,RL,LR,RL,RL,LR"));
 
     //test_all<bg::model::d2::point_xy<float>, test_enrich_intersection_points>(expected);
     test_all<bg::model::d2::point_xy<double>, test_enrich_intersection_points>(expected);
-    //test_all<boost::tuple<double, double>, test_enrich_intersection_points>(expected);
+    //test_all<std::tuple<double, double>, test_enrich_intersection_points>(expected);
 
     */
     return 0;

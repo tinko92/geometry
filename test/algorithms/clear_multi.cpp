@@ -19,7 +19,7 @@
 
 #include <boost/geometry/io/wkt/wkt.hpp>
 
-#include <boost/geometry/geometries/adapted/boost_variant.hpp>
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/geometry_collection.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
@@ -30,8 +30,8 @@ void test_geometry(std::string const& wkt, std::size_t expected_before, std::siz
 {
     Geometry geometry;
     bg::read_wkt(wkt, geometry);
-    boost::variant<Geometry> variant_geometry(geometry);
-    bg::model::geometry_collection<boost::variant<Geometry>> gc{ variant_geometry };
+    std::variant<Geometry> variant_geometry(geometry);
+    bg::model::geometry_collection<std::variant<Geometry>> gc{ variant_geometry };
 
     BOOST_CHECK_EQUAL(bg::num_points(geometry), expected_before);
     bg::clear(geometry);

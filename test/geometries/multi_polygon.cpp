@@ -25,13 +25,13 @@
 #include <boost/geometry/geometries/multi_polygon.hpp>
 #include <boost/geometry/geometries/concepts/multi_polygon_concept.hpp>
 #include <boost/geometry/geometries/adapted/c_array.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/io/dsv/write.hpp>
 
 #include <test_common/test_point.hpp>
 
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 #include <initializer_list>
 

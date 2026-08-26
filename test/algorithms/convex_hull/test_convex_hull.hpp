@@ -25,7 +25,7 @@
 #include <boost/geometry/algorithms/num_points.hpp>
 #include <boost/geometry/algorithms/perimeter.hpp>
 
-#include <boost/geometry/geometries/adapted/boost_variant.hpp>
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/geometry_collection.hpp>
 #include <boost/geometry/geometries/linestring.hpp>
 
@@ -158,7 +158,7 @@ struct test_convex_hull
         bg::convex_hull(geometry, hull, Strategy());
 
         using point_t = typename bg::point_type<Hull>::type;
-        using var_t = boost::variant<Hull, bg::model::linestring<point_t>, point_t>;
+        using var_t = std::variant<Hull, bg::model::linestring<point_t>, point_t>;
         using gc_t = bg::model::geometry_collection<var_t>;
 
         var_t var;
@@ -167,14 +167,14 @@ struct test_convex_hull
         gc_t gc;
         bg::convex_hull(geometry, gc, Strategy());
 
-        BOOST_CHECK(var.which() == gc[0].which());
+        BOOST_CHECK(var.index() == gc[0].index());
 
         if (bg::detail::equals::equals_point_point(hull.outer()[0], hull.outer()[1], Strategy()))
-            BOOST_CHECK(gc[0].which() == 2); // GC stores point
+            BOOST_CHECK(gc[0].index() == 2); // GC stores point
         else if (bg::detail::equals::equals_point_point(hull.outer()[0], hull.outer()[2], Strategy()))
-            BOOST_CHECK(gc[0].which() == 1); // GC stores linestring
+            BOOST_CHECK(gc[0].index() == 1); // GC stores linestring
         else
-            BOOST_CHECK(gc[0].which() == 0); // GC stores polygon
+            BOOST_CHECK(gc[0].index() == 0); // GC stores polygon
     }
 };
 
@@ -274,7 +274,7 @@ void test_geometry_order(std::string const& wkt,
     test_convex_hull<hull_type, Strategy, AreaStrategy>::apply(geometry, size_original,
         size_hull_closed, expected_area, expected_perimeter, !Clockwise);
 
-    using variant_t = boost::variant<Geometry>;
+    using variant_t = std::variant<Geometry>;
 
     variant_t v(geometry);
     test_convex_hull<hull_type, Strategy, AreaStrategy>::apply(v, size_original,

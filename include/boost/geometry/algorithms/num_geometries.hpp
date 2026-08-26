@@ -21,12 +21,11 @@
 #define BOOST_GEOMETRY_ALGORITHMS_NUM_GEOMETRIES_HPP
 
 #include <cstddef>
+#include <type_traits>
+#include <variant>
 
 #include <boost/range/size.hpp>
 
-#include <boost/variant/apply_visitor.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/variant_fwd.hpp>
 
 #include <boost/geometry/algorithms/not_implemented.hpp>
 
@@ -91,22 +90,17 @@ struct num_geometries
     }
 };
 
-template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
-struct num_geometries<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> >
+template <typename ...Ts>
+struct num_geometries<std::variant<Ts...>>
 {
-    struct visitor: boost::static_visitor<std::size_t>
-    {
-        template <typename Geometry>
-        inline std::size_t operator()(Geometry const& geometry) const
-        {
-            return num_geometries<Geometry>::apply(geometry);
-        }
-    };
-
     static inline std::size_t
-    apply(boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> const& geometry)
+    apply(std::variant<Ts...> const& geometry)
     {
-        return boost::apply_visitor(visitor(), geometry);
+        return std::visit([](auto const& concrete)
+        {
+            return num_geometries<std::decay_t<decltype(concrete)>>::apply(
+                concrete);
+        }, geometry);
     }
 };
 

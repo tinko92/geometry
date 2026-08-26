@@ -17,7 +17,7 @@
 
 #include <cstddef>
 
-#include <boost/array.hpp>
+#include <array>
 #include <boost/range/iterator.hpp>
 
 #include <boost/geometry/core/mutable_range.hpp>
@@ -33,7 +33,7 @@ struct wrapped_boost_array
 {
     inline wrapped_boost_array() : size(0) {}
 
-    boost::array<Point, Count> array;
+    std::array<Point, Count> array;
     std::size_t size;
 };
 
@@ -48,12 +48,12 @@ namespace boost
 
     template <typename Point, std::size_t Count>
     struct range_mutable_iterator<wrapped_boost_array<Point, Count> >
-        : public range_mutable_iterator<boost::array<Point, Count> >
+        : public range_mutable_iterator<std::array<Point, Count> >
     {};
 
     template <typename Point, std::size_t Count>
     struct range_const_iterator<wrapped_boost_array<Point, Count> >
-        : public range_const_iterator<boost::array<Point, Count> >
+        : public range_const_iterator<std::array<Point, Count> >
     {};
 
 

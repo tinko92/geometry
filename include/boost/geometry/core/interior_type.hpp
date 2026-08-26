@@ -121,7 +121,7 @@ struct interior_type<polygon_tag, Polygon>
 \brief \brief_meta{type, interior_type (container type
     of inner rings), \meta_geometry_type}
 \details Interior rings should be organized as a container
-    (std::vector, std::deque, boost::array) with
+    (std::vector, std::deque, std::array) with
     Boost.Range support. This metafunction defines the type
     of the container.
 \tparam Geometry A type fullfilling the Polygon or MultiPolygon concept.

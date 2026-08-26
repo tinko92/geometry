@@ -25,7 +25,7 @@
 
 #include <boost/core/ignore_unused.hpp>
 #include <boost/test/included/unit_test.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 #include <boost/geometry/algorithms/comparable_distance.hpp>
 #include <boost/geometry/algorithms/equals.hpp>
@@ -41,17 +41,17 @@
 #include <boost/geometry/strategies/strategies.hpp>
 
 #include <boost/geometry/geometries/geometries.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/geometries/register/multi_point.hpp>
 
 
 namespace bg = ::boost::geometry;
 namespace services = bg::strategy::distance::services;
 
-typedef boost::tuple<double, double> tuple_point_type;
+typedef std::tuple<double, double> tuple_point_type;
 typedef std::vector<tuple_point_type> tuple_multi_point_type;
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 BOOST_GEOMETRY_REGISTER_MULTI_POINT(tuple_multi_point_type)
 BOOST_GEOMETRY_REGISTER_MULTI_POINT_TEMPLATED(std::vector)
 

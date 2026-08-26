@@ -16,7 +16,7 @@
 #include <boost/geometry/algorithms/length.hpp>
 #include <boost/geometry/algorithms/merge_elements.hpp>
 #include <boost/geometry/algorithms/perimeter.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant2.hpp>
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/io/wkt/wkt.hpp>
 
@@ -34,8 +34,8 @@ void test_all(std::size_t points_count, std::size_t linestrings_count, std::size
     using ring_t = bg::model::ring<pt_t>;
     using poly_t = bg::model::polygon<pt_t>;
     using mpoly_t = bg::model::multi_polygon<poly_t>;
-    using var_t = boost::variant<pt_t, mpt_t/*, seg_t*/, ls_t, mls_t, /*box_t,*/ ring_t, poly_t, mpoly_t>;
-    //using var_t = boost::variant2::variant<pt_t, mpt_t/*, seg_t*/, ls_t, mls_t, /*box_t,*/ ring_t, poly_t, mpoly_t>;
+    using var_t = std::variant<pt_t, mpt_t/*, seg_t*/, ls_t, mls_t, /*box_t,*/ ring_t, poly_t, mpoly_t>;
+    //using var_t = std::variant<pt_t, mpt_t/*, seg_t*/, ls_t, mls_t, /*box_t,*/ ring_t, poly_t, mpoly_t>;
     using gc_t = bg::model::geometry_collection<var_t>;
 
     gc_t gc{
@@ -52,9 +52,9 @@ void test_all(std::size_t points_count, std::size_t linestrings_count, std::size
     gc_t result;
     bg::merge_elements(gc, result);
 
-    BOOST_CHECK(boost::get<mpt_t>(result[0]).size() == points_count);
-    BOOST_CHECK(boost::get<mls_t>(result[1]).size() == linestrings_count);
-    BOOST_CHECK(boost::get<mpoly_t>(result[2]).size() == polygons_count);
+    BOOST_CHECK(std::get<mpt_t>(result[0]).size() == points_count);
+    BOOST_CHECK(std::get<mls_t>(result[1]).size() == linestrings_count);
+    BOOST_CHECK(std::get<mpoly_t>(result[2]).size() == polygons_count);
     auto l = bg::length(result);
     auto a = bg::area(result);
     auto p = bg::perimeter(result);

@@ -80,20 +80,9 @@ int test_main(int, char* [])
     BOOST_CHECK_EQUAL((bgd::is_tupled_output_element<linestring>::value), false);
     BOOST_CHECK_EQUAL((bgd::is_tupled_output_element<multi_point>::value), true);
 
-    test_all<boost::tuple<polygon, linestring>, boost::tuple<linestring, multi_point> >();
     test_all<std::pair<polygon, linestring>, std::pair<linestring, multi_point> >();
-
-    test_range_values<boost::tuple<multi_linestring, multi_point>,
-                      boost::tuples::cons<linestring,
-                        boost::tuples::cons<point,
-                            boost::tuples::null_type> > >();
     test_range_values<std::pair<multi_linestring, multi_point>,
                       std::pair<linestring, point> >();
-
-    test_back_inserters<boost::tuple<multi_linestring, multi_point>,
-                        boost::tuples::cons<bgr::back_insert_iterator<multi_linestring>,
-                            boost::tuples::cons<bgr::back_insert_iterator<multi_point>,
-                                boost::tuples::null_type> > >();
     test_back_inserters<std::pair<multi_linestring, multi_point>,
                         std::pair<bgr::back_insert_iterator<multi_linestring>,
                                   bgr::back_insert_iterator<multi_point> > >();

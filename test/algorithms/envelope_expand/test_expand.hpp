@@ -17,7 +17,7 @@
 #include <boost/geometry/io/wkt/read.hpp>
 #include <boost/geometry/algorithms/assign.hpp>
 #include <boost/geometry/io/dsv/write.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 
 template <typename Box>
@@ -42,7 +42,7 @@ void test_expand(Box& box,
     BOOST_CHECK_EQUAL(to_dsv(box), expected);
 
 #if !defined(BOOST_GEOMETRY_TEST_DEBUG)
-    bg::expand(box, boost::variant<Geometry>(geometry));
+    bg::expand(box, std::variant<Geometry>(geometry));
 
     BOOST_CHECK_EQUAL(to_dsv(box), expected);
 #endif
@@ -61,7 +61,7 @@ void test_expand_other_strategy(Box& box,
     BOOST_CHECK_EQUAL(to_dsv(box), expected);
 
 #if !defined(BOOST_GEOMETRY_TEST_DEBUG)
-    bg::expand(box, boost::variant<Geometry>(geometry));
+    bg::expand(box, std::variant<Geometry>(geometry));
 
     BOOST_CHECK_EQUAL(to_dsv(box), expected);
 #endif

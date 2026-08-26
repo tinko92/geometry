@@ -1489,7 +1489,7 @@ BOOST_AUTO_TEST_CASE( test_is_valid_variant )
 
     typedef bg::model::polygon<point_type> polygon_type; // cw, closed
 
-    typedef boost::variant
+    typedef std::variant
         <
             linestring_type, multi_linestring_type, polygon_type
         > variant_geometry;
@@ -1526,7 +1526,7 @@ BOOST_AUTO_TEST_CASE( test_is_valid_geometry_collection )
 #endif
 
     using polygon_type = bg::model::polygon<point_type>; // cw, closed
-    using variant_type = boost::variant
+    using variant_type = std::variant
         <
             linestring_type, multi_linestring_type, polygon_type
         >;

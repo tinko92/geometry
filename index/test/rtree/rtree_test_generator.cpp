@@ -15,28 +15,28 @@
 #include <vector>
 #include <string>
 #include <boost/assert.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 int main()
 {
-    typedef boost::tuple<std::string, std::string> CT;
+    typedef std::tuple<std::string, std::string> CT;
     std::vector<CT> coordinate_types;
-    coordinate_types.push_back(boost::make_tuple("double", "d"));
-    //coordinate_types.push_back(boost::make_tuple("int", "i"));
-    //coordinate_types.push_back(boost::make_tuple("float", "f"));
+    coordinate_types.push_back(std::make_tuple("double", "d"));
+    //coordinate_types.push_back(std::make_tuple("int", "i"));
+    //coordinate_types.push_back(std::make_tuple("float", "f"));
 
     std::vector<std::string> dimensions;
     dimensions.push_back("2");
     dimensions.push_back("3");
 
-    typedef boost::tuple<std::string, std::string> P;
+    typedef std::tuple<std::string, std::string> P;
     std::vector<P> parameters;
-    parameters.push_back(boost::make_tuple("bgi::linear<5, 2>()", "lin"));
-    parameters.push_back(boost::make_tuple("bgi::dynamic_linear(5, 2)", "dlin"));
-    parameters.push_back(boost::make_tuple("bgi::quadratic<5, 2>()", "qua"));
-    parameters.push_back(boost::make_tuple("bgi::dynamic_quadratic(5, 2)", "dqua"));
-    parameters.push_back(boost::make_tuple("bgi::rstar<5, 2>()", "rst"));
-    parameters.push_back(boost::make_tuple("bgi::dynamic_rstar(5, 2)","drst"));
+    parameters.push_back(std::make_tuple("bgi::linear<5, 2>()", "lin"));
+    parameters.push_back(std::make_tuple("bgi::dynamic_linear(5, 2)", "dlin"));
+    parameters.push_back(std::make_tuple("bgi::quadratic<5, 2>()", "qua"));
+    parameters.push_back(std::make_tuple("bgi::dynamic_quadratic(5, 2)", "dqua"));
+    parameters.push_back(std::make_tuple("bgi::rstar<5, 2>()", "rst"));
+    parameters.push_back(std::make_tuple("bgi::dynamic_rstar(5, 2)","drst"));
 
     std::vector<std::string> indexables;
     indexables.push_back("p");
@@ -66,7 +66,7 @@ int main()
                     for (CT const& c : coordinate_types)
                     {
                         std::string filename = std::string() +
-                            "rtree_" + boost::get<1>(p) + '_' + ts.second + '_' + i + d + boost::get<1>(c) + ".cpp";
+                            "rtree_" + std::get<1>(p) + '_' + ts.second + '_' + i + d + std::get<1>(c) + ".cpp";
 
                         std::ofstream f(filename.c_str(), std::ios::trunc);
 
@@ -86,7 +86,7 @@ int main()
                             "\n";
 
                         std::string indexable_type;
-                        std::string point_type = std::string("bg::model::point<") + boost::get<0>(c) + ", " + d + ", bg::cs::cartesian>";
+                        std::string point_type = std::string("bg::model::point<") + std::get<0>(c) + ", " + d + ", bg::cs::cartesian>";
                         if ( i == "p" )
                             indexable_type = point_type;
                         else if ( i == "b" )
@@ -100,7 +100,7 @@ int main()
                             "int test_main(int, char* [])\n" <<
                             "{\n" <<
                             "    typedef " << indexable_type << " Indexable;\n" <<
-                            "    " << ts.first << "<Indexable>(" << boost::get<0>(p) << ", std::allocator<int>());\n" <<
+                            "    " << ts.first << "<Indexable>(" << std::get<0>(p) << ", std::allocator<int>());\n" <<
                             "    return 0;\n" <<
                             "}\n";
                     }

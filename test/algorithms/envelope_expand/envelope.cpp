@@ -23,13 +23,13 @@
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/adapted/c_array.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/geometries/adapted/std_pair_as_segment.hpp>
 #include <boost/geometry/util/bounds.hpp>
 #include <test_common/test_point.hpp>
 
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 
 template <typename P>
@@ -207,20 +207,20 @@ int test_main(int, char* [])
     //test_2d<int[2]>();
     //test_2d<float[2]>();
     //test_2d<double[2]>();
-    test_2d<boost::tuple<float, float> >();
+    test_2d<std::tuple<float, float> >();
     test_2d<bg::model::d2::point_xy<int> >();
     test_2d<bg::model::d2::point_xy<float> >();
     test_2d<bg::model::d2::point_xy<double> >();
 
     test_3d<test::test_point>();
-    test_3d<boost::tuple<int, int, int> >();
+    test_3d<std::tuple<int, int, int> >();
 
-    test_empty<boost::tuple<float, float> >();
+    test_empty<std::tuple<float, float> >();
     test_empty<bg::model::d2::point_xy<int> >();
     test_empty<bg::model::d2::point_xy<float> >();
     test_empty<bg::model::d2::point_xy<double> >();
 
-    test_invalid<boost::tuple<float, float> >();
+    test_invalid<std::tuple<float, float> >();
     test_invalid<bg::model::d2::point_xy<int> >();
     test_invalid<bg::model::d2::point_xy<float> >();
     test_invalid<bg::model::d2::point_xy<double> >();

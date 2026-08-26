@@ -231,12 +231,12 @@ int test_main(int, char* [])
         >();
     test_mixed_types
         <
-            boost::tuple<float, float>,
+            std::tuple<float, float>,
             bg::model::point<float, 2, bg::cs::cartesian>
         >();
     test_mixed_types_3d
         <
-            boost::tuple<double, double, double>,
+            std::tuple<double, double, double>,
             bg::model::point<double, 3, bg::cs::cartesian>
         >();
 

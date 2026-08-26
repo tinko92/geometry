@@ -43,7 +43,7 @@
 #include <boost/geometry/algorithms/is_empty.hpp>
 #include <boost/geometry/algorithms/not_implemented.hpp>
 
-#include <boost/geometry/geometries/adapted/boost_variant.hpp> // For backward compatibility
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 
 #include <boost/geometry/strategies/centroid/cartesian.hpp>

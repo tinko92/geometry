@@ -11,9 +11,8 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_IS_SIMPLE_INTERFACE_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_IS_SIMPLE_INTERFACE_HPP
 
-#include <boost/variant/apply_visitor.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/variant_fwd.hpp>
+#include <type_traits>
+#include <variant>
 
 #include <boost/geometry/geometries/concepts/check.hpp>
 
@@ -94,31 +93,19 @@ struct is_simple
     }
 };
 
-template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
-struct is_simple<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> >
+template <typename ...Ts>
+struct is_simple<std::variant<Ts...>>
 {
     template <typename Strategy>
-    struct visitor : boost::static_visitor<bool>
-    {
-        Strategy const& m_strategy;
-
-        visitor(Strategy const& strategy)
-            : m_strategy(strategy)
-        {}
-
-        template <typename Geometry>
-        bool operator()(Geometry const& geometry) const
-        {
-            return is_simple<Geometry>::apply(geometry, m_strategy);
-        }
-    };
-
-    template <typename Strategy>
     static inline bool
-    apply(boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> const& geometry,
+    apply(std::variant<Ts...> const& geometry,
           Strategy const& strategy)
     {
-        return boost::apply_visitor(visitor<Strategy>(strategy), geometry);
+        return std::visit([&strategy](auto const& concrete)
+        {
+            return is_simple<std::decay_t<decltype(concrete)>>::apply(
+                concrete, strategy);
+        }, geometry);
     }
 };
 

@@ -26,7 +26,7 @@
 #include <boost/concept_check.hpp>
 #include <boost/core/ignore_unused.hpp>
 #include <boost/iterator/iterator_concepts.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 #include <boost/geometry/algorithms/convert.hpp>
 #include <boost/geometry/algorithms/equals.hpp>
@@ -35,7 +35,7 @@
 #include <boost/geometry/core/closure.hpp>
 
 #include <boost/geometry/geometries/geometries.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/geometries/register/linestring.hpp>
 #include <boost/geometry/geometries/register/multi_linestring.hpp>
 
@@ -65,11 +65,11 @@ typedef bgm::multi_polygon<polygon_cw_closed_type> multi_polygon_cw_closed_type;
 typedef bgm::multi_polygon<polygon_cw_open_type> multi_polygon_cw_open_type;
 
 // tuple-based geometries
-typedef boost::tuple<double, double> tuple_point_type;
+typedef std::tuple<double, double> tuple_point_type;
 typedef std::vector<tuple_point_type> tuple_linestring_type;
 typedef std::vector<tuple_linestring_type> tuple_multi_linestring_type;
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 BOOST_GEOMETRY_REGISTER_LINESTRING(tuple_linestring_type)
 BOOST_GEOMETRY_REGISTER_MULTI_LINESTRING(tuple_multi_linestring_type)
 

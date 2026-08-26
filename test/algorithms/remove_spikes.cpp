@@ -19,7 +19,7 @@
 // will avoid testing multi-geometries
 #define BOOST_GEOMETRY_UNIT_TEST_MULTI
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <geometry_test_common.hpp>
 
@@ -66,7 +66,7 @@ void test_geometry(std::string const& id, std::string const& wkt,
     Geometry geometry;
     bg::read_wkt(wkt, geometry);
     bg::correct(geometry);
-    boost::variant<Geometry> v(geometry);
+    std::variant<Geometry> v(geometry);
 
 #if defined(TEST_WITH_SVG)
     std::ostringstream filename;

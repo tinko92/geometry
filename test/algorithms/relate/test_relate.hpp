@@ -15,7 +15,7 @@
 
 #include <geometry_test_common.hpp>
 
-#include <boost/variant.hpp>
+#include <variant>
 
 #include <boost/geometry/algorithms/relate.hpp>
 #include <boost/geometry/algorithms/relation.hpp>
@@ -108,8 +108,8 @@ void check_geometry(Geometry1 const& geometry1,
                     std::string const& expected1,
                     std::string const& expected2 = std::string())
 {
-    boost::variant<Geometry1> variant1 = geometry1;
-    boost::variant<Geometry2> variant2 = geometry2;
+    std::variant<Geometry1> variant1 = geometry1;
+    std::variant<Geometry2> variant2 = geometry2;
 
     {
         std::string res_str = bg::relation(geometry1, geometry2).str();
@@ -128,8 +128,8 @@ void check_geometry(Geometry1 const& geometry1,
         BOOST_CHECK(res_str == res_str0);
 
         // test variants
-        boost::variant<Geometry1> v1 = geometry1;
-        boost::variant<Geometry2> v2 = geometry2;
+        std::variant<Geometry1> v1 = geometry1;
+        std::variant<Geometry2> v2 = geometry2;
         std::string res_str1 = bg::relation(geometry1, variant2).str();
         std::string res_str2 = bg::relation(variant1, geometry2).str();
         std::string res_str3 = bg::relation(variant1, variant2).str();

@@ -12,9 +12,6 @@
 #include <geometry_test_common.hpp>
 
 #include <boost/geometry/algorithms/detail/visit.hpp>
-#include <boost/geometry/geometries/adapted/boost_any.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant2.hpp>
 #include <boost/geometry/geometries/adapted/std_any.hpp>
 #include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
@@ -28,12 +25,6 @@ using polygon_t = bg::model::polygon<point_t>;
 
 namespace boost { namespace geometry { namespace traits
 {
-
-template <>
-struct geometry_types<boost::any>
-{
-    typedef util::type_sequence<point_t, linestring_t, polygon_t> type;
-};
 
 #ifndef BOOST_NO_CXX17_HDR_ANY
 
@@ -249,10 +240,6 @@ void test_all()
 
 int test_main(int, char* [])
 {
-    test_all<boost::any>();
-    test_all<boost::variant<point_t, linestring_t, polygon_t>>();
-    test_all<boost::variant2::variant<point_t, linestring_t, polygon_t>>();
-
 #ifndef BOOST_NO_CXX17_HDR_ANY
     test_all<std::any>();
 #endif

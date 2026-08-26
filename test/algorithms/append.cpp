@@ -33,7 +33,7 @@
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 #include <boost/geometry/geometries/register/linestring.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <test_common/test_point.hpp>
 #include <test_geometries/wrapped_boost_array.hpp>
@@ -115,7 +115,7 @@ template <typename G>
 void test_geometry_and_variant(bool check = true)
 {
     G geometry;
-    boost::variant<G> variant_geometry = G();
+    std::variant<G> variant_geometry = G();
     test_geometry<false, false>::apply(geometry, check);
     test_geometry<false, true>::apply(variant_geometry, check);
 }
@@ -131,7 +131,7 @@ void test_multigeometry_and_variant(bool check = true)
     bg::traits::push_back<MG>::apply(multigeometry, geometry);
     bg::traits::push_back<MG>::apply(multigeometry, geometry);
 
-    boost::variant<MG> variant_multigeometry = multigeometry;
+    std::variant<MG> variant_multigeometry = multigeometry;
     test_geometry<true, false>::apply(multigeometry, check);
     test_geometry<true, true>::apply(variant_multigeometry, check);
 }

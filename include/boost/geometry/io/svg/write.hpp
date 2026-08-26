@@ -20,15 +20,13 @@
 
 #include <ostream>
 #include <string>
+#include <type_traits>
+#include <variant>
 
 #include <boost/config.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/value_type.hpp>
-#include <boost/variant/apply_visitor.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/variant_fwd.hpp>
-
 #include <boost/geometry/core/exterior_ring.hpp>
 #include <boost/geometry/core/interior_rings.hpp>
 #include <boost/geometry/core/ring_type.hpp>
@@ -302,38 +300,22 @@ struct devarianted_svg
     }
 };
 
-template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
-struct devarianted_svg<variant<BOOST_VARIANT_ENUM_PARAMS(T)> >
+template <typename ...Ts>
+struct devarianted_svg<std::variant<Ts...>>
 {
-    template <typename OutputStream>
-    struct visitor: static_visitor<void>
-    {
-        OutputStream& m_os;
-        std::string const& m_style;
-        double m_size;
-
-        visitor(OutputStream& os, std::string const& style, double size)
-            : m_os(os)
-            , m_style(style)
-            , m_size(size)
-        {}
-
-        template <typename Geometry>
-        inline void operator()(Geometry const& geometry) const
-        {
-            devarianted_svg<Geometry>::apply(m_os, geometry, m_style, m_size);
-        }
-    };
-
     template <typename OutputStream>
     static inline void apply(
         OutputStream& os,
-        variant<BOOST_VARIANT_ENUM_PARAMS(T)> const& geometry,
+        std::variant<Ts...> const& geometry,
         std::string const& style,
         double size
     )
     {
-        boost::apply_visitor(visitor<OutputStream>(os, style, size), geometry);
+        std::visit([&](auto const& concrete)
+        {
+            devarianted_svg<std::decay_t<decltype(concrete)>>::apply(
+                os, concrete, style, size);
+        }, geometry);
     }
 };
 

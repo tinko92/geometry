@@ -37,7 +37,7 @@
 #include <boost/geometry/core/topological_dimension.hpp>
 #include <boost/geometry/io/wkt/read.hpp>
 #include <boost/geometry/io/wkt/write.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 template <typename G>
 void check_wkt(G const& geometry, std::string const& expected)
@@ -94,15 +94,15 @@ void test_wkt_read_write(std::string const& wkt, std::string const& expected,
 
     check_wkt(geometry, expected);
 
-    boost::variant<G> v;
+    std::variant<G> v;
     bg::read_wkt(wkt, v);
     check_wkt(v, expected);
 
-    bg::model::geometry_collection<boost::variant<G>> gc1{v};
+    bg::model::geometry_collection<std::variant<G>> gc1{v};
     bg::read_wkt(std::string("GEOMETRYCOLLECTION(") + wkt + ')', gc1);
     check_wkt(gc1, std::string("GEOMETRYCOLLECTION(") + expected + ')');
 
-    bg::model::geometry_collection<boost::variant<G>> gc2{v, v};
+    bg::model::geometry_collection<std::variant<G>> gc2{v, v};
     bg::read_wkt(std::string("GEOMETRYCOLLECTION(") + wkt + ',' + wkt + ')', gc2);
     check_wkt(gc2, std::string("GEOMETRYCOLLECTION(") + expected + ',' + expected + ')');
 }
@@ -134,7 +134,7 @@ void test_wkt_to_from(std::string const& wkt, std::string const& expected,
     }
 
     check_to_wkt(geometry, expected);
-    check_to_wkt(boost::variant<G>(geometry), expected);
+    check_to_wkt(std::variant<G>(geometry), expected);
 }
 
 template <typename G>

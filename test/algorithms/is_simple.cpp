@@ -298,7 +298,7 @@ BOOST_AUTO_TEST_CASE( test_is_simple_variant )
 #endif
 
     typedef bg::model::polygon<point_type> polygon_type; // cw, closed
-    typedef boost::variant
+    typedef std::variant
         <
             linestring_type, multi_linestring_type, polygon_type
         > variant_geometry;

@@ -19,7 +19,7 @@
 #include <iostream>
 #include <sstream>
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <geometry_test_common.hpp>
 
@@ -52,7 +52,7 @@ void test_transform_point(Value value)
     P1 p1;
     bg::set<0>(p1, 1);
     bg::set<1>(p1, 2);
-    boost::variant<P1> v(p1);
+    std::variant<P1> v(p1);
 
     P2 expected;
     bg::assign(expected, p1);
@@ -71,7 +71,7 @@ void test_transform_linestring(Value value)
     line1_type line1;
     line1.push_back(bg::make<P1>(1, 1));
     line1.push_back(bg::make<P1>(2, 2));
-    boost::variant<line1_type> v(line1);
+    std::variant<line1_type> v(line1);
 
     line2_type expected;
     for (auto it = line1.begin(); it != line1.end(); ++it)

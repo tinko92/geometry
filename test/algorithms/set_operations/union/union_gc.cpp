@@ -12,7 +12,7 @@
 
 #include <boost/geometry/algorithms/equals.hpp>
 #include <boost/geometry/algorithms/union.hpp>
-//#include <boost/geometry/geometries/adapted/boost_variant2.hpp>
+//#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/io/wkt/wkt.hpp>
 
@@ -23,8 +23,8 @@ using po_t = bg::model::polygon<pt_t>;
 using mpt_t = bg::model::multi_point<pt_t>;
 using mls_t = bg::model::multi_linestring<ls_t>;
 using mpo_t = bg::model::multi_polygon<po_t>;
-using var_t = boost::variant<pt_t, ls_t, po_t, mpt_t, mls_t, mpo_t>;
-//using var_t = boost::variant2::variant<pt_t, ls_t, po_t, mpt_t, mls_t, mpo_t>;
+using var_t = std::variant<pt_t, ls_t, po_t, mpt_t, mls_t, mpo_t>;
+//using var_t = std::variant<pt_t, ls_t, po_t, mpt_t, mls_t, mpo_t>;
 using gc_t = bg::model::geometry_collection<var_t>;
 
 template <typename GC1, typename GC2>

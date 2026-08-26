@@ -108,29 +108,6 @@ struct equals<T *, void>
     }
 };
 
-template <typename Tuple, size_t I, size_t N>
-struct tuple_equals
-{
-    template <typename Strategy>
-    inline static bool apply(Tuple const& t1, Tuple const& t2, Strategy const& strategy)
-    {
-        typedef typename boost::tuples::element<I, Tuple>::type T;
-
-        return equals<T>::apply(boost::get<I>(t1), boost::get<I>(t2), strategy)
-            && tuple_equals<Tuple, I + 1, N>::apply(t1, t2, strategy);
-    }
-};
-
-template <typename Tuple, size_t I>
-struct tuple_equals<Tuple, I, I>
-{
-    template <typename Strategy>
-    inline static bool apply(Tuple const&, Tuple const&, Strategy const&)
-    {
-        return true;
-    }
-};
-
 // TODO: Consider this: Since equal_to<> is using geometry::equals() it's possible that
 //       two compared Indexables are not exactly the same! They will be spatially equal
 //       but not strictly equal. Consider 2 Segments with reversed order of points.
@@ -142,7 +119,7 @@ struct tuple_equals<Tuple, I, I>
 
 It compares Geometries using geometry::equals() function. Other types are compared using operator==.
 The default version handles Values which are Indexables.
-This template is also specialized for std::pair<T1, T2> and boost::tuple<...>.
+This template is also specialized for std::pair<T1, T2> and std::tuple<...>.
 
 \tparam Value       The type of objects which are compared by this function object.
 \tparam IsIndexable If true, Values are compared using boost::geometry::equals() functions.
@@ -198,39 +175,6 @@ struct equal_to<std::pair<T1, T2>, false>
     {
         return detail::equals<T1>::apply(l.first, r.first, strategy)
             && detail::equals<T2>::apply(l.second, r.second, strategy);
-    }
-};
-
-/*!
-\brief The function object comparing Values.
-
-This specialization compares values of type boost::tuple<...>.
-It compares all members of the tuple from the first one to the last one.
-*/
-template <typename T0, typename T1, typename T2, typename T3, typename T4,
-          typename T5, typename T6, typename T7, typename T8, typename T9>
-struct equal_to<boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>, false>
-{
-    typedef boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> value_type;
-
-    /*! \brief The type of result returned by function object. */
-    typedef bool result_type;
-
-    /*!
-    \brief Compare values. If tuple<> Value member is a Geometry geometry::equals() function is used.
-
-    \param l First value.
-    \param r Second value.
-    \param strategy Strategy to be used.
-    \return true if values are equal.
-    */
-    template <typename Strategy>
-    inline bool operator()(value_type const& l, value_type const& r,
-                           Strategy const& strategy) const
-    {
-        return detail::tuple_equals<
-            value_type, 0, boost::tuples::length<value_type>::value
-        >::apply(l, r, strategy);
     }
 };
 
@@ -301,8 +245,8 @@ namespace boost { namespace geometry { namespace index {
 /*!
 \brief The function object comparing Values.
 
-The default version handles Values which are Indexables, std::pair<T1, T2>, boost::tuple<...>
-and std::tuple<...> if STD tuples and variadic templates are supported.
+The default version handles Values which are Indexables, std::pair<T1, T2>
+and std::tuple<...>.
 All members are compared from left to right, Geometries using boost::geometry::equals() function,
 other types using operator==.
 

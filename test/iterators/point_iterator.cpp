@@ -26,7 +26,7 @@
 #include <boost/concept_check.hpp>
 #include <boost/core/ignore_unused.hpp>
 #include <boost/iterator/iterator_concepts.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include <boost/optional.hpp>
 
 #include <boost/geometry/algorithms/equals.hpp>
@@ -36,7 +36,7 @@
 #include <boost/geometry/core/point_type.hpp>
 
 #include <boost/geometry/geometries/geometries.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/geometries/register/linestring.hpp>
 #include <boost/geometry/geometries/register/multi_point.hpp>
 
@@ -69,8 +69,8 @@ typedef bg::model::multi_point<point_type_3d> multi_point_type_3d;
 typedef bg::model::multi_linestring<linestring_type> multi_linestring_type;
 typedef bg::model::multi_polygon<polygon_type> multi_polygon_type;
 
-typedef boost::tuple<double, double> tuple_point_type;
-typedef boost::tuple<double, double, double> tuple_point_type_3d;
+typedef std::tuple<double, double> tuple_point_type;
+typedef std::tuple<double, double, double> tuple_point_type_3d;
 typedef std::vector<tuple_point_type> tuple_multi_point_type;
 typedef std::vector<tuple_point_type_3d> tuple_multi_point_type_3d;
 
@@ -80,7 +80,7 @@ struct vector_as_multipoint : std::vector<T> {};
 template <typename T>
 struct vector_as_linestring : std::vector<T> {};
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 BOOST_GEOMETRY_REGISTER_MULTI_POINT(tuple_multi_point_type)
 BOOST_GEOMETRY_REGISTER_MULTI_POINT(tuple_multi_point_type_3d)
 

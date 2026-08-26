@@ -29,7 +29,7 @@
 #include <boost/geometry/core/point_type.hpp>
 #include <boost/geometry/core/visit.hpp>
 
-#include <boost/geometry/geometries/adapted/boost_variant.hpp> // For backward compatibility
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 
 // TODO: move these to algorithms

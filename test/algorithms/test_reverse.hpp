@@ -14,7 +14,7 @@
 #include <geometry_test_common.hpp>
 #include <boost/geometry/algorithms/reverse.hpp>
 #include <boost/geometry/io/wkt/wkt.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 
 template <typename Geometry>
@@ -36,7 +36,7 @@ void test_geometry(std::string const& wkt, std::string const& expected)
 {
     Geometry geometry;
     bg::read_wkt(wkt, geometry);
-    boost::variant<Geometry> v(geometry);
+    std::variant<Geometry> v(geometry);
 
     check_geometry(geometry, wkt, expected);
     check_geometry(v, wkt, expected);

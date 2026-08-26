@@ -18,7 +18,7 @@
 
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/geometries/register/point.hpp>
 
 #include <boost/geometry/algorithms/num_points.hpp>
@@ -26,7 +26,7 @@
 
 typedef std::pair<float, float> pt_pair_t;
 BOOST_GEOMETRY_REGISTER_POINT_2D(pt_pair_t, float, bg::cs::cartesian, first, second)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 template <typename P>
 void test_default()
@@ -101,16 +101,15 @@ void test_boost_assign_pair_2d()
 
 void test_boost_assign_tuple_2d()
 {
-    typedef boost::tuple<float, float> pt;
+    typedef std::tuple<float, float> pt;
 
     test_boost_assign_2d<pt>();
 
     typedef bg::model::multi_point<pt> mpt;
 
-    // using Boost.Assign
-    mpt mpt2 = boost::assign::tuple_list_of(0, 0)(1, 0);
+    mpt mpt2 = {pt(0, 0), pt(1, 0)};
     BOOST_CHECK(bg::num_points(mpt2) == 2);
-    mpt2 = boost::assign::tuple_list_of(0, 0)(1, 0);
+    mpt2 = {pt(0, 0), pt(1, 0)};
     BOOST_CHECK(bg::num_points(mpt2) == 2);
 }
 
@@ -246,4 +245,3 @@ int test_main(int, char* [])
 
     return 0;
 }
-

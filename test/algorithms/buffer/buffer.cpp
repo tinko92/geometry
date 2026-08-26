@@ -17,7 +17,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include "geometry_test_common.hpp"
 
@@ -49,7 +49,7 @@ void test_all()
     box_type expected(P(-2, -2), P(4, 4));
     BOOST_CHECK(bg::equals(b2, expected));
 
-    boost::variant<box_type> v(b1);
+    std::variant<box_type> v(b1);
     bg::buffer(v, b2, coordinate_type(2));
 
     BOOST_CHECK(bg::equals(b2, expected));

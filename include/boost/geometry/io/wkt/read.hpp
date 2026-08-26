@@ -49,7 +49,7 @@
 #include <boost/geometry/core/tag.hpp>
 #include <boost/geometry/core/tags.hpp>
 
-#include <boost/geometry/geometries/adapted/boost_variant.hpp> // For consistency with other functions
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 
 #include <boost/geometry/io/wkt/detail/prefix.hpp>

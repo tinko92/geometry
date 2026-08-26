@@ -21,8 +21,8 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_ASSIGN_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_ASSIGN_HPP
 
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/variant_fwd.hpp>
+#include <type_traits>
+#include <variant>
 
 #include <boost/geometry/algorithms/append.hpp>
 #include <boost/geometry/algorithms/clear.hpp>
@@ -241,94 +241,53 @@ struct assign
 };
 
 
-template <BOOST_VARIANT_ENUM_PARAMS(typename T), typename Geometry2>
-struct assign<variant<BOOST_VARIANT_ENUM_PARAMS(T)>, Geometry2>
+template <typename ...Ts, typename Geometry2>
+struct assign<std::variant<Ts...>, Geometry2>
 {
-    struct visitor: static_visitor<void>
-    {
-        Geometry2 const& m_geometry2;
-
-        visitor(Geometry2 const& geometry2)
-        : m_geometry2(geometry2)
-        {}
-
-        template <typename Geometry1>
-        result_type operator()(Geometry1& geometry1) const
-        {
-            return assign
-            <
-                Geometry1,
-                Geometry2
-            >::apply
-            (geometry1, m_geometry2);
-        }
-    };
-
     static inline void
-    apply(variant<BOOST_VARIANT_ENUM_PARAMS(T)>& geometry1,
+    apply(std::variant<Ts...>& geometry1,
           Geometry2 const& geometry2)
     {
-        return boost::apply_visitor(visitor(geometry2), geometry1);
+        std::visit([&geometry2](auto& concrete)
+        {
+            assign<std::decay_t<decltype(concrete)>, Geometry2>::apply(
+                concrete, geometry2);
+        }, geometry1);
     }
 };
 
 
-template <typename Geometry1, BOOST_VARIANT_ENUM_PARAMS(typename T)>
-struct assign<Geometry1, variant<BOOST_VARIANT_ENUM_PARAMS(T)> >
+template <typename Geometry1, typename ...Ts>
+struct assign<Geometry1, std::variant<Ts...>>
 {
-    struct visitor: static_visitor<void>
-    {
-        Geometry1& m_geometry1;
-
-        visitor(Geometry1 const& geometry1)
-        : m_geometry1(geometry1)
-        {}
-
-        template <typename Geometry2>
-        result_type operator()(Geometry2 const& geometry2) const
-        {
-            return assign
-            <
-                Geometry1,
-                Geometry2
-            >::apply
-            (m_geometry1, geometry2);
-        }
-    };
-
     static inline void
     apply(Geometry1& geometry1,
-          variant<BOOST_VARIANT_ENUM_PARAMS(T)> const& geometry2)
+          std::variant<Ts...> const& geometry2)
     {
-        return boost::apply_visitor(visitor(geometry1), geometry2);
+        std::visit([&geometry1](auto const& concrete)
+        {
+            assign<Geometry1, std::decay_t<decltype(concrete)>>::apply(
+                geometry1, concrete);
+        }, geometry2);
     }
 };
 
 
-template <BOOST_VARIANT_ENUM_PARAMS(typename T1), BOOST_VARIANT_ENUM_PARAMS(typename T2)>
-struct assign<variant<BOOST_VARIANT_ENUM_PARAMS(T1)>, variant<BOOST_VARIANT_ENUM_PARAMS(T2)> >
+template <typename ...Ts1, typename ...Ts2>
+struct assign<std::variant<Ts1...>, std::variant<Ts2...>>
 {
-    struct visitor: static_visitor<void>
-    {
-        template <typename Geometry1, typename Geometry2>
-        result_type operator()(
-                                Geometry1& geometry1,
-                                Geometry2 const& geometry2) const
-        {
-            return assign
-            <
-                Geometry1,
-                Geometry2
-            >::apply
-            (geometry1, geometry2);
-        }
-    };
-
     static inline void
-    apply(variant<BOOST_VARIANT_ENUM_PARAMS(T1)>& geometry1,
-          variant<BOOST_VARIANT_ENUM_PARAMS(T2)> const& geometry2)
+    apply(std::variant<Ts1...>& geometry1,
+          std::variant<Ts2...> const& geometry2)
     {
-        return boost::apply_visitor(visitor(), geometry1, geometry2);
+        std::visit([](auto& concrete1, auto const& concrete2)
+        {
+            assign
+                <
+                    std::decay_t<decltype(concrete1)>,
+                    std::decay_t<decltype(concrete2)>
+                >::apply(concrete1, concrete2);
+        }, geometry1, geometry2);
     }
 };
 

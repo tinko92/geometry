@@ -17,7 +17,7 @@
 
 #include <geometry_test_common.hpp>
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <boost/geometry/algorithms/overlaps.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
@@ -87,8 +87,8 @@ void test_geometry(std::string const& wkt1,
 
     test_geometry(geometry1, geometry2, wkt1, wkt2, expected, strategy_type());
 
-    boost::variant<Geometry1> v1 = geometry1;
-    boost::variant<Geometry2> v2 = geometry2;
+    std::variant<Geometry1> v1 = geometry1;
+    std::variant<Geometry2> v2 = geometry2;
 
     test_geometry(v1, geometry2, wkt1, wkt2, expected, no_strategy());
     test_geometry(geometry1, v2, wkt1, wkt2, expected, no_strategy());

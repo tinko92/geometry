@@ -278,8 +278,8 @@ void test_different_types()
     BOOST_CHECK(boost::size(result) == 4);
     BOOST_CHECK_CLOSE(bg::area(result), 30.0, 0.00001);
 
-    using var_t = boost::variant<point_t, quad_t>;
-    using bg_var_t = boost::variant<point_t, bg_ring_t>;
+    using var_t = std::variant<point_t, quad_t>;
+    using bg_var_t = std::variant<point_t, bg_ring_t>;
     var_t var = quad;
     bg_var_t result_var;
     bg::simplify(var, result_var, 0.1);

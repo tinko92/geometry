@@ -17,7 +17,7 @@
 #include <boost/geometry/geometries/multi_linestring.hpp>
 #include <boost/geometry/geometries/multi_polygon.hpp>
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 
 template <typename Geometry>
@@ -36,7 +36,7 @@ void test_geometry(std::string const& wkt, int expected)
     Geometry geometry;
     bg::read_wkt(wkt, geometry);
     check_geometry(geometry, wkt, expected);
-    check_geometry(boost::variant<Geometry>(geometry), wkt, expected);
+    check_geometry(std::variant<Geometry>(geometry), wkt, expected);
 }
 
 

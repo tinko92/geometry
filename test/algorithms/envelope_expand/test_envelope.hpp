@@ -15,7 +15,7 @@
 #define BOOST_GEOMETRY_TEST_ENVELOPE_HPP
 
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <geometry_test_common.hpp>
 
@@ -93,12 +93,12 @@ void test_envelope(std::string const& wkt,
     check_result<box_type, bg::dimension<Geometry>::type::value>
             ::apply(b, x1, y1, z1, x2, y2, z2);
 
-    boost::variant<Geometry> v(geometry);
+    std::variant<Geometry> v(geometry);
     bg::envelope(v, b);
     check_result<box_type, bg::dimension<Geometry>::type::value>
             ::apply(b, x1, y1, z1, x2, y2, z2);
 
-    bg::model::geometry_collection<boost::variant<Geometry>> gc{v};
+    bg::model::geometry_collection<std::variant<Geometry>> gc{v};
     bg::envelope(gc, b);
     check_result<box_type, bg::dimension<Geometry>::type::value>
             ::apply(b, x1, y1, z1, x2, y2, z2);

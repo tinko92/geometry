@@ -16,7 +16,7 @@
 #include <boost/geometry/geometries/geometries.hpp>
 
 #include <boost/geometry/geometries/adapted/c_array.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
 #include <boost/geometry/geometries/register/linestring.hpp>
 
@@ -24,7 +24,7 @@
 #include <deque>
 
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 BOOST_GEOMETRY_REGISTER_LINESTRING_TEMPLATED(std::vector)
 BOOST_GEOMETRY_REGISTER_LINESTRING_TEMPLATED(std::deque)
@@ -62,8 +62,8 @@ int test_main(int, char* [])
     test_geometry<float[3], 1>();
     test_geometry<double[3], 1>();
 
-    test_geometry<boost::tuple<double, double>, 1>();
-    test_geometry<boost::tuple<double, double, double>, 1>();
+    test_geometry<std::tuple<double, double>, 1>();
+    test_geometry<std::tuple<double, double, double>, 1>();
 
     test_all<bg::model::point<int, 2, bg::cs::cartesian> >();
     test_all<bg::model::point<float, 2, bg::cs::cartesian> >();

@@ -23,13 +23,12 @@
 
 #include <cstddef>
 #include <type_traits>
+#include <variant>
 
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/size.hpp>
 #include <boost/range/value_type.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/variant_fwd.hpp>
 
 #include <boost/geometry/algorithms/clear.hpp>
 #include <boost/geometry/algorithms/num_points.hpp>
@@ -650,30 +649,19 @@ struct convert
     }
 };
 
-template <BOOST_VARIANT_ENUM_PARAMS(typename T), typename Geometry2>
-struct convert<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>, Geometry2>
+template <typename ...Ts, typename Geometry2>
+struct convert<std::variant<Ts...>, Geometry2>
 {
-    struct visitor: static_visitor<void>
-    {
-        Geometry2& m_geometry2;
-
-        visitor(Geometry2& geometry2)
-            : m_geometry2(geometry2)
-        {}
-
-        template <typename Geometry1>
-        inline void operator()(Geometry1 const& geometry1) const
-        {
-            convert<Geometry1, Geometry2>::apply(geometry1, m_geometry2);
-        }
-    };
-
     static inline void apply(
-        boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> const& geometry1,
+        std::variant<Ts...> const& geometry1,
         Geometry2& geometry2
     )
     {
-        boost::apply_visitor(visitor(geometry2), geometry1);
+        std::visit([&geometry2](auto const& concrete)
+        {
+            convert<std::decay_t<decltype(concrete)>, Geometry2>::apply(
+                concrete, geometry2);
+        }, geometry1);
     }
 };
 

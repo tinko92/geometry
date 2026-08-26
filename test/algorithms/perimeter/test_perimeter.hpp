@@ -15,7 +15,7 @@
 #define BOOST_GEOMETRY_TEST_PERIMETER_HPP
 
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <geometry_test_common.hpp>
 
@@ -44,12 +44,12 @@ void test_perimeter(Geometry const& geometry, long double expected_perimeter)
 
     BOOST_CHECK_CLOSE(perimeter, expected_perimeter, 0.0001);
 
-    boost::variant<Geometry> v(geometry);
+    std::variant<Geometry> v(geometry);
     perimeter = bg::perimeter(v);
 
     BOOST_CHECK_CLOSE(perimeter, expected_perimeter, 0.0001);
 
-    bg::model::geometry_collection<boost::variant<Geometry>> gc{v};
+    bg::model::geometry_collection<std::variant<Geometry>> gc{v};
     perimeter = bg::perimeter(gc);
 
     BOOST_CHECK_CLOSE(perimeter, expected_perimeter, 0.0001);
@@ -75,12 +75,12 @@ void test_perimeter(Geometry const& geometry, long double expected_perimeter, St
 
     BOOST_CHECK_CLOSE(perimeter, expected_perimeter, 0.0001);
 
-    boost::variant<Geometry> v(geometry);
+    std::variant<Geometry> v(geometry);
     perimeter = bg::perimeter(v, strategy);
 
     BOOST_CHECK_CLOSE(perimeter, expected_perimeter, 0.0001);
 
-    bg::model::geometry_collection<boost::variant<Geometry>> gc{v};
+    bg::model::geometry_collection<std::variant<Geometry>> gc{v};
     perimeter = bg::perimeter(gc, strategy);
 
     BOOST_CHECK_CLOSE(perimeter, expected_perimeter, 0.0001);
@@ -99,7 +99,7 @@ void test_geometry(std::string const& wkt, double expected_perimeter, Strategy s
 {
     Geometry geometry;
     bg::read_wkt(wkt, geometry);
-    boost::variant<Geometry> v(geometry);
+    std::variant<Geometry> v(geometry);
 
     test_perimeter(geometry, expected_perimeter, strategy);
 #if !defined(BOOST_GEOMETRY_TEST_DEBUG)

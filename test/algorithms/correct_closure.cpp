@@ -21,7 +21,7 @@
 #include <boost/geometry/io/wkt/read.hpp>
 #include <boost/geometry/io/wkt/write.hpp>
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 
 template <typename BaseGeometry, typename Geometry>
@@ -43,7 +43,7 @@ void test_geometry(std::string const& wkt, std::string const& expected)
     check_geometry<Geometry>(geometry, expected);
 
     // Test varianted type
-    boost::variant<Geometry> v(geometry);
+    std::variant<Geometry> v(geometry);
     bg::correct_closure(v);
     check_geometry<Geometry>(v, expected);
 }

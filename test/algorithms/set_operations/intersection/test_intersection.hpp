@@ -21,7 +21,7 @@
 
 #include <boost/core/ignore_unused.hpp>
 #include <boost/range/value_type.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <boost/geometry/algorithms/intersection.hpp>
 #include <boost/geometry/algorithms/area.hpp>
@@ -218,21 +218,21 @@ typename bg::default_area_result<G1>::type test_intersection(std::string const& 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
     // Check variant behaviour
     intersection_output.clear();
-    bg::intersection(boost::variant<G1>(g1), g2, intersection_output);
+    bg::intersection(std::variant<G1>(g1), g2, intersection_output);
 
     check_result(intersection_output, caseid, g1, g2, expected_count,
         expected_hole_count, expected_point_count, expected_length_or_area,
         settings);
 
     intersection_output.clear();
-    bg::intersection(g1, boost::variant<G2>(g2), intersection_output);
+    bg::intersection(g1, std::variant<G2>(g2), intersection_output);
 
     check_result(intersection_output, caseid, g1, g2, expected_count,
         expected_hole_count, expected_point_count, expected_length_or_area,
         settings);
 
     intersection_output.clear();
-    bg::intersection(boost::variant<G1>(g1), boost::variant<G2>(g2), intersection_output);
+    bg::intersection(std::variant<G1>(g1), std::variant<G2>(g2), intersection_output);
 
     check_result(intersection_output, caseid, g1, g2, expected_count,
         expected_hole_count, expected_point_count, expected_length_or_area,

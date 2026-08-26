@@ -28,19 +28,19 @@
 #include <boost/geometry/strategies/concepts/simplify_concept.hpp>
 #include <boost/geometry/strategies/strategies.hpp>
 #include <boost/geometry/io/wkt/wkt.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 
 template <typename Geometry, typename Tag = typename bg::tag<Geometry>::type>
 struct boost_variant_type
 {
-    using type = boost::variant<Geometry, typename bg::point_type<Geometry>::type>;
+    using type = std::variant<Geometry, typename bg::point_type<Geometry>::type>;
 };
 
 template <typename Geometry>
 struct boost_variant_type<Geometry, bg::point_tag>
 {
-    using type = boost::variant<Geometry>;
+    using type = std::variant<Geometry>;
 };
 
 template

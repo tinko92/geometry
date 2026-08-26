@@ -35,8 +35,6 @@ target_link_libraries(boost_geometry
     Boost::rational
     Boost::throw_exception
     Boost::tokenizer
-    Boost::tuple
-    Boost::variant
 )
 
 # Required for Boost.Geometry Index
@@ -50,11 +48,8 @@ target_link_libraries(boost_geometry
 if(BOOST_GEOMETRY_BUILD_OPTIONAL)
   target_link_libraries(boost_geometry
     INTERFACE
-      Boost::any
-      Boost::array
       Boost::fusion
       Boost::polygon
-      Boost::variant2
   )
 
   # Mentioned in SRS Shared_grids_boost (which is optional)

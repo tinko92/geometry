@@ -20,9 +20,9 @@
 #include <boost/geometry/io/dsv/write.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 
 
@@ -128,7 +128,7 @@ int test_main(int, char* [])
 
     test_all<bg::model::d2::point_xy<double> >();
     test_all<bg::model::point<int, 2, bg::cs::cartesian> >();
-    test_all<boost::tuple<double, double> >();
+    test_all<std::tuple<double, double> >();
 
     return 0;
 }

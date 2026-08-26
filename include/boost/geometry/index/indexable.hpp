@@ -13,8 +13,6 @@
 #ifndef BOOST_GEOMETRY_INDEX_INDEXABLE_HPP
 #define BOOST_GEOMETRY_INDEX_INDEXABLE_HPP
 
-#include <boost/tuple/tuple.hpp>
-
 #include <boost/geometry/core/static_assert.hpp>
 
 #include <boost/geometry/index/detail/is_indexable.hpp>
@@ -46,8 +44,8 @@ inline Indexable const& indexable_prevent_any_type(V const& )
 \brief The function object extracting Indexable from Value.
 
 It translates Value object to Indexable object. The default version handles Values which are Indexables.
-This template is also specialized for std::pair<Indexable, T2>, boost::tuple<Indexable, ...>
-and std::tuple<Indexable, ...>.
+This template is also specialized for std::pair<Indexable, T2> and
+std::tuple<Indexable, ...>.
 
 \tparam Value       The Value type which may be translated directly to the Indexable.
 \tparam IsIndexable If true, the const reference to Value is returned.
@@ -142,115 +140,6 @@ struct indexable<std::pair<Indexable, Second>, false>
     }
 };
 
-/*!
-\brief The function object extracting Indexable from Value.
-
-This specialization translates from boost::tuple<Indexable, ...>
-  or boost::tuples::cons<Indexable, ...>.
-
-\tparam Value       The Value type.
-\tparam Indexable   The Indexable type.
-*/
-template <typename Value, typename Indexable>
-struct indexable_boost_tuple
-{
-    typedef Value value_type;
-
-    BOOST_GEOMETRY_STATIC_ASSERT(
-        (detail::is_indexable<Indexable>::value),
-        "The first type of boost::tuple has to be an Indexable.",
-        Indexable);
-
-    /*! \brief The type of result returned by function object. */
-    typedef Indexable const& result_type;
-
-    /*!
-    \brief Return indexable extracted from the value.
-
-    \param v The value.
-    \return The indexable.
-    */
-    inline result_type operator()(value_type const& v) const
-    {
-        return boost::get<0>(v);
-    }
-
-    /*!
-    \brief Return indexable extracted from compatible type different than value_type.
-
-    \param v The value.
-    \return The indexable.
-    */
-    template <typename I, typename U1, typename U2, typename U3, typename U4,
-              typename U5, typename U6, typename U7, typename U8, typename U9>
-    inline result_type operator()(boost::tuple<I, U1, U2, U3, U4, U5, U6, U7, U8, U9> const& v) const
-    {
-        BOOST_GEOMETRY_STATIC_ASSERT(
-            (is_referenceable<I, result_type>::value),
-            "Unexpected type.",
-            boost::tuple<I, U1, U2, U3, U4, U5, U6, U7, U8, U9>);
-        return boost::get<0>(v);
-    }
-
-    /*!
-    \brief Return indexable extracted from compatible type different than value_type.
-
-    \param v The value.
-    \return The indexable.
-    */
-    template <typename I, typename T>
-    inline result_type operator()(boost::tuples::cons<I, T> const& v) const
-    {
-        BOOST_GEOMETRY_STATIC_ASSERT(
-            (is_referenceable<I, result_type>::value),
-            "Unexpected type.",
-            boost::tuples::cons<I, T>);
-        return boost::get<0>(v);
-    }
-
-    /*!
-    \brief Prevent reference to temporary for types convertible to Value.
-    */
-    template <typename V>
-    inline result_type operator()(V const& v) const
-    {
-        return indexable_prevent_any_type<Indexable>(v);
-    }
-};
-
-/*!
-\brief The function object extracting Indexable from Value.
-
-This specialization translates from boost::tuple<Indexable, ...>.
-
-\tparam Indexable   The Indexable type.
-*/
-template <typename Indexable, typename T1, typename T2, typename T3, typename T4,
-          typename T5, typename T6, typename T7, typename T8, typename T9>
-struct indexable<boost::tuple<Indexable, T1, T2, T3, T4, T5, T6, T7, T8, T9>, false>
-    : indexable_boost_tuple
-        <
-            boost::tuple<Indexable, T1, T2, T3, T4, T5, T6, T7, T8, T9>,
-            Indexable
-        >
-{};
-
-/*!
-\brief The function object extracting Indexable from Value.
-
-This specialization translates from boost::tuples::cons<Indexable, ...>.
-
-\tparam Indexable   The Indexable type.
-*/
-template <typename Indexable, typename Tail>
-struct indexable<boost::tuples::cons<Indexable, Tail>, false>
-    : indexable_boost_tuple
-        <
-            boost::tuples::cons<Indexable, Tail>,
-            Indexable
-        >
-{};
-
 }}}} // namespace boost::geometry::index::detail
 
 namespace boost { namespace geometry { namespace index { namespace detail {
@@ -322,8 +211,7 @@ namespace boost { namespace geometry { namespace index {
 \brief The function object extracting Indexable from Value.
 
 It translates Value object to Indexable object. By default, it can handle Values which are Indexables,
-std::pair<Indexable, T2>, boost::tuple<Indexable, ...> and std::tuple<Indexable, ...> if STD tuples
-and variadic templates are supported.
+std::pair<Indexable, T2> and std::tuple<Indexable, ...>.
 
 \tparam Value       The Value type which may be translated directly to the Indexable.
 */

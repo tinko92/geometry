@@ -11,7 +11,7 @@
 
 #include <geometry_test_common.hpp>
 
-#include <boost/variant.hpp>
+#include <variant>
 
 #include <boost/geometry/views/detail/random_access_view.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
@@ -19,12 +19,12 @@
 using point_t = bg::model::point<double, 2, bg::cs::cartesian>;
 using linestring_t = bg::model::linestring<point_t>;
 using polygon_t = bg::model::polygon<point_t>;
-using variant_t = boost::variant<point_t, linestring_t, polygon_t>;
+using variant_t = std::variant<point_t, linestring_t, polygon_t>;
 using gc_t = bg::model::geometry_collection<variant_t>;
 using nra_gc_t = bg::model::geometry_collection<variant_t, std::list>;
 
 struct rec_gc_t;
-using rec_var_t = boost::variant<point_t, linestring_t, polygon_t, rec_gc_t>;
+using rec_var_t = std::variant<point_t, linestring_t, polygon_t, rec_gc_t>;
 struct rec_gc_t : std::vector<rec_var_t>
 {
     rec_gc_t() = default;
@@ -32,7 +32,7 @@ struct rec_gc_t : std::vector<rec_var_t>
 };
 
 struct rec_nra_gc_t;
-using rec_nra_var_t = boost::variant<point_t, linestring_t, polygon_t, rec_nra_gc_t>;
+using rec_nra_var_t = std::variant<point_t, linestring_t, polygon_t, rec_nra_gc_t>;
 struct rec_nra_gc_t : std::list<rec_nra_var_t>
 {
     rec_nra_gc_t() = default;

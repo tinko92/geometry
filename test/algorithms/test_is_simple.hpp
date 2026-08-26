@@ -14,7 +14,7 @@
 #include <string>
 
 #include <boost/assert.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <boost/test/included/unit_test.hpp>
 
@@ -111,11 +111,11 @@ void test_simple(Geometry const& geometry,
     test_simple<cs_tag>(geometry, expected_result, check_validity);
 }
 
-template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
-void test_simple(boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> const& variant_geometry,
+template <typename ...Ts>
+void test_simple(std::variant<Ts...> const& variant_geometry,
                  bool expected_result,
                  bool check_validity = true)
 {
-    typedef typename bg::cs_tag<T0>::type cs_tag;
+    typedef typename bg::cs_tag<std::variant_alternative_t<0, std::variant<Ts...>>>::type cs_tag;
     test_simple<cs_tag>(variant_geometry, expected_result, check_validity);
 }

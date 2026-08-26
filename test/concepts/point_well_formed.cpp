@@ -12,15 +12,26 @@
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 #include <boost/geometry/core/cs.hpp>
 #include <boost/geometry/geometries/register/point.hpp>
 
 #include "function_requiring_a_point.hpp"
 
-struct point: public boost::tuple<float, float>
+struct point: public std::tuple<float, float>
 {
+    template <std::size_t I>
+    decltype(auto) get()
+    {
+        return std::get<I>(*this);
+    }
+
+    template <std::size_t I>
+    decltype(auto) get() const
+    {
+        return std::get<I>(*this);
+    }
 };
 
 BOOST_GEOMETRY_REGISTER_POINT_2D(point, float, cs::cartesian, get<0>(), get<1>())

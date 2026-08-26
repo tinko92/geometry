@@ -24,7 +24,7 @@
 #include <boost/geometry/geometries/point_xy.hpp>
 
 #include <boost/geometry/io/wkt/read.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 
 struct no_strategy {};
@@ -89,8 +89,8 @@ void test_touches(std::string const& wkt1,
     bg::read_wkt(wkt1, geometry1);
     bg::read_wkt(wkt2, geometry2);
 
-    boost::variant<Geometry1> v1(geometry1);
-    boost::variant<Geometry2> v2(geometry2);
+    std::variant<Geometry1> v1(geometry1);
+    std::variant<Geometry2> v2(geometry2);
 
     typedef typename bg::strategies::relate::services::default_strategy
         <
@@ -131,7 +131,7 @@ void test_self_touches(std::string const& wkt, bool expected)
 {
     Geometry geometry;
     bg::read_wkt(wkt, geometry);
-    boost::variant<Geometry> v(geometry);
+    std::variant<Geometry> v(geometry);
 
     check_self_touches(geometry, wkt, expected);
     check_self_touches(v, wkt, expected);

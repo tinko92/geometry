@@ -21,7 +21,7 @@
 #include <boost/geometry/algorithms/correct.hpp>
 #include <boost/geometry/io/wkt/wkt.hpp>
 #include <boost/geometry/strategies/strategies.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant.hpp>
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
 
 #include <boost/geometry/algorithms/is_valid.hpp>
@@ -55,7 +55,7 @@ void test_all()
     using ring_t = bg::model::ring<P>;
     using polygon_t = bg::model::polygon<P>;
     using mpolygon_t = bg::model::multi_polygon<polygon_t>;
-    using variant_t = boost::variant<polygon_t, mpolygon_t>;
+    using variant_t = std::variant<polygon_t, mpolygon_t>;
     using collection_t = bg::model::geometry_collection<variant_t>;
 
     test_one<ring_t>("triangle", triangle, true);

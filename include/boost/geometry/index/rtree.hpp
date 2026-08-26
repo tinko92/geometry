@@ -23,7 +23,6 @@
 
 // Boost
 #include <boost/container/new_allocator.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <boost/core/invoke_swap.hpp>
 
 // Boost.Geometry
@@ -142,8 +141,8 @@ r-tree requires it. This operation is done for each Value access.
 The Indexable should not be calculated each time since it could harm
 the performance. The default IndexableGetter can translate all types adapted
 to Point, Box or Segment concepts (called Indexables). Furthermore, it can
-handle <tt>std::pair<Indexable, T></tt>, <tt>std::tuple<Indexable, ...></tt>
-and <tt>boost::tuple<Indexable, ...></tt>. For example, for Value
+handle <tt>std::pair<Indexable, T></tt> and
+<tt>std::tuple<Indexable, ...></tt>. For example, for Value
 of type <tt>std::pair<Box, int></tt>, the default IndexableGetter translates
 from <tt>std::pair<Box, int> const&</tt> to <tt>Box const&</tt>.
 

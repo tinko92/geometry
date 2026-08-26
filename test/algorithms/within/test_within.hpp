@@ -17,7 +17,7 @@
 #define BOOST_GEOMETRY_TEST_WITHIN_HPP
 
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <geometry_test_common.hpp>
 
@@ -73,8 +73,8 @@ void test_geometry(std::string const& wkt1,
     Geometry2 geometry2;
     bg::read_wkt(wkt1, geometry1);
     bg::read_wkt(wkt2, geometry2);
-    boost::variant<Geometry1> v1(geometry1);
-    boost::variant<Geometry2> v2(geometry2);
+    std::variant<Geometry1> v1(geometry1);
+    std::variant<Geometry2> v2(geometry2);
 
     typedef typename bg::strategies::relate::services::default_strategy
         <

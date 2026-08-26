@@ -17,10 +17,10 @@
 
 
 #include <boost/geometry/extensions/nsphere/nsphere.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/geometries/adapted/c_array.hpp>
 #include <boost/geometry/geometries/point.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 
 
@@ -59,7 +59,7 @@ int test_main(int, char* [])
     test_get_set<double[2]>();
     test_get_set<double[3]>();
 
-    test_get_set<boost::tuple<double, double> >();
+    test_get_set<std::tuple<double, double> >();
 
     test_all<bg::model::point<int, 2, bg::cs::cartesian> >();
     test_all<bg::model::point<float, 2, bg::cs::cartesian> >();

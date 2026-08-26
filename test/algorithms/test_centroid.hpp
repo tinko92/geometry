@@ -17,14 +17,14 @@
 
 // Test-functionality, shared between single and multi tests
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <geometry_test_common.hpp>
 
 #include <boost/geometry/strategies/strategies.hpp>
 #include <boost/geometry/algorithms/centroid.hpp>
 #include <boost/geometry/algorithms/distance.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
 #include <boost/geometry/io/wkt/read.hpp>
 
@@ -71,9 +71,9 @@ void test_centroid(Geometry const& geometry, T const& d1, T const& d2, T const& 
     Point c1;
 
     bg::centroid(geometry, c1);
-    check_result<bg::dimension<Geometry>::type::value>::apply(c1, boost::make_tuple(d1, d2, d3, d4, d5));
+    check_result<bg::dimension<Geometry>::type::value>::apply(c1, std::make_tuple(d1, d2, d3, d4, d5));
 
-    boost::variant<Geometry> v(geometry);
+    std::variant<Geometry> v(geometry);
     bg::centroid(v, c1);
 
 #ifdef REPORT_RESULTS

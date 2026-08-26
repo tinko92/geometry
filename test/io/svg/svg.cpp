@@ -16,7 +16,7 @@
 #include <sstream>
 #include <string>
 
-#include <boost/variant.hpp>
+#include <variant>
 
 #include <geometry_test_common.hpp>
 
@@ -81,7 +81,7 @@ void test_all()
     multi_polygon m_po;
     m_po.push_back(po);
 
-    boost::variant<P, linestring, polygon> var;
+    std::variant<P, linestring, polygon> var;
     linestring lsv;
     push_back_square(lsv, 130, 140);
     var = lsv;

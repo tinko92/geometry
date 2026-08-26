@@ -44,7 +44,7 @@
 #include <boost/geometry/algorithms/area_result.hpp>
 #include <boost/geometry/algorithms/default_area_result.hpp>
 
-#include <boost/geometry/geometries/adapted/boost_variant.hpp> // For backward compatibility
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 
 #include <boost/geometry/strategies/area/services.hpp>

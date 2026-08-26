@@ -22,7 +22,7 @@
 #include <boost/geometry/algorithms/correct.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
 
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
 
 #include <boost/geometry/io/wkt/read.hpp>
@@ -33,7 +33,7 @@
 #  include <boost/geometry/io/svg/svg_mapper.hpp>
 #endif
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian);
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian);
 
 
 

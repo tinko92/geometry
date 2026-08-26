@@ -16,7 +16,7 @@
 
 #include <boost/test/included/unit_test.hpp>
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <boost/geometry/algorithms/is_empty.hpp>
 #include <boost/geometry/algorithms/num_points.hpp>
@@ -288,7 +288,7 @@ BOOST_AUTO_TEST_CASE( test_multipolygon )
 
 BOOST_AUTO_TEST_CASE( test_variant )
 {
-    typedef boost::variant
+    typedef std::variant
         <
             linestring, polygon_cw_open, polygon_cw_closed, multi_point
         > variant_geometry_type;

@@ -25,12 +25,12 @@
 #include <vector>
 
 #include <boost/program_options.hpp>
-#include <boost/variant2/variant.hpp>
+#include <variant>
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant2.hpp>
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/strategies/buffer.hpp>
 #include <boost/geometry/algorithms/merge_elements.hpp>
 
@@ -150,7 +150,7 @@ int test_confetti(confetti_settings const& settings, int seed, bool make_svg)
     // from the alternatives). We only ever store the (areal) ribbons in it.
     using multi_point = bg::model::multi_point<point_type>;
     using ring = bg::model::ring<point_type>;
-    using element_t = boost::variant2::variant
+    using element_t = std::variant
         <
             point_type, multi_point, linestring, multi_linestring, ring, polygon, multi_polygon
         >;

@@ -25,14 +25,14 @@
 
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/adapted/c_array.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
 #include <boost/geometry/strategies/transform/inverse_transformer.hpp>
 #include <boost/geometry/strategies/transform/map_transformer.hpp>
 #include <boost/geometry/strategies/transform/matrix_transformers.hpp>
 
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 
 template <typename P, typename T>
@@ -113,7 +113,7 @@ int test_main(int, char* [])
     //test_all<float[2]>();
     //test_all<double[2]>();
 
-    test_all<boost::tuple<float, float> >();
+    test_all<std::tuple<float, float> >();
 
     //test_all<point<int, 2, cs::cartesian> >();
     test_all<bg::model::point<float, 2, bg::cs::cartesian> >();

@@ -16,7 +16,7 @@
 #include <iostream>
 #include <string>
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <boost/test/included/unit_test.hpp>
 
@@ -954,7 +954,7 @@ BOOST_AUTO_TEST_CASE( test_failure_variant )
 
     typedef bg::model::polygon<point_type> polygon_type; // cw, closed
 
-    typedef boost::variant
+    typedef std::variant
         <
             linestring_type, multi_linestring_type, polygon_type
         > variant_geometry;

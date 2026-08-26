@@ -15,7 +15,7 @@
 #include <boost/geometry/algorithms/discrete_frechet_distance.hpp>
 #include <boost/geometry/io/wkt/wkt.hpp>
 #include <boost/geometry/strategies/strategies.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 template <typename Geometry1,typename Geometry2>
 void test_frechet_distance(Geometry1 const& geometry1,Geometry2 const& geometry2,
@@ -65,7 +65,7 @@ void test_geometry(std::string const& wkt1,std::string const& wkt2,
     bg::read_wkt(wkt2, geometry2);
     test_frechet_distance(geometry1,geometry2,expected_frechet_distance);
 #if defined(BOOST_GEOMETRY_TEST_DEBUG)
-    test_frechet_distance(boost::variant<Geometry1>(geometry1),boost::variant<Geometry2>(geometry2), expected_frechet_distance);
+    test_frechet_distance(std::variant<Geometry1>(geometry1),std::variant<Geometry2>(geometry2), expected_frechet_distance);
 #endif
 }
 
@@ -120,7 +120,7 @@ void test_geometry(std::string const& wkt1,std::string const& wkt2,Strategy stra
     bg::read_wkt(wkt2, geometry2);
     test_frechet_distance(geometry1,geometry2,strategy,expected_frechet_distance);
 #if defined(BOOST_GEOMETRY_TEST_DEBUG)
-    test_frechet_distance(boost::variant<Geometry1>(geometry1),boost::variant<Geometry2>(geometry2),strategy, expected_frechet_distance);
+    test_frechet_distance(std::variant<Geometry1>(geometry1),std::variant<Geometry2>(geometry2),strategy, expected_frechet_distance);
 #endif
 }
 

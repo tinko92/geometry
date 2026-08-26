@@ -19,7 +19,7 @@
 #include <boost/geometry/algorithms/discrete_hausdorff_distance.hpp>
 #include <boost/geometry/io/wkt/wkt.hpp>
 #include <boost/geometry/strategies/strategies.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 template <typename Geometry1, typename Geometry2, typename Expected>
 void test_hausdorff_distance(Geometry1 const& geometry1, Geometry2 const& geometry2,
@@ -64,8 +64,8 @@ void test_geometry(std::string const& wkt1, std::string const& wkt2,
     test_hausdorff_distance(geometry1, geometry2, expected_hausdorff_distance);
 
 #if defined(BOOST_GEOMETRY_TEST_DEBUG)
-    test_hausdorff_distance(boost::variant<Geometry1>(geometry1),
-                            boost::variant<Geometry2>(geometry2),
+    test_hausdorff_distance(std::variant<Geometry1>(geometry1),
+                            std::variant<Geometry2>(geometry2),
                             expected_hausdorff_distance);
 #endif
 }
@@ -114,8 +114,8 @@ void test_geometry(std::string const& wkt1, std::string const& wkt2,
     test_hausdorff_distance(geometry1, geometry2, strategy, expected_hausdorff_distance);
 
 #if defined(BOOST_GEOMETRY_TEST_DEBUG)
-    test_hausdorff_distance(boost::variant<Geometry1>(geometry1),
-                            boost::variant<Geometry2>(geometry2),
+    test_hausdorff_distance(std::variant<Geometry1>(geometry1),
+                            std::variant<Geometry2>(geometry2),
                             strategy, expected_hausdorff_distance);
 #endif
 }

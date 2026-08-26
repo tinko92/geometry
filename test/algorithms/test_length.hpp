@@ -19,8 +19,7 @@
 #include <boost/geometry/algorithms/length.hpp>
 
 #ifndef BOOST_GEOMETRY_TEST_DEBUG
-#include <boost/geometry/geometries/adapted/boost_variant.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant2.hpp>
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/geometry_collection.hpp>
 #endif
 
@@ -75,8 +74,8 @@ void test_geometry(std::string const& wkt, double expected_length)
     test_length(geometry, expected_length);
 
 #ifndef BOOST_GEOMETRY_TEST_DEBUG
-    using variant_t = boost::variant<Geometry>;
-    using variant2_t = boost::variant2::variant<Geometry>;
+    using variant_t = std::variant<Geometry>;
+    using variant2_t = std::variant<Geometry>;
     using gc_t = bg::model::geometry_collection<variant2_t>;
     test_length(variant_t(geometry), expected_length);
     test_length(variant2_t(geometry), expected_length);
@@ -92,8 +91,8 @@ void test_geometry(std::string const& wkt, double expected_length, Strategy stra
     test_length(geometry, expected_length, strategy);
 
 #ifndef BOOST_GEOMETRY_TEST_DEBUG
-    using variant_t = boost::variant<Geometry>;
-    using variant2_t = boost::variant2::variant<Geometry>;
+    using variant_t = std::variant<Geometry>;
+    using variant2_t = std::variant<Geometry>;
     using gc_t = bg::model::geometry_collection<variant2_t>;
     test_length(variant_t(geometry), expected_length, strategy);
     test_length(variant2_t(geometry), expected_length, strategy);

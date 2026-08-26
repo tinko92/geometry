@@ -26,16 +26,16 @@
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/adapted/c_array.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
 #include <test_common/test_point.hpp>
 #include <test_geometries/custom_segment.hpp>
 #include <test_geometries/wrapped_boost_array.hpp>
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 // Register boost array as a linestring
 namespace boost { namespace geometry { namespace traits
@@ -448,7 +448,7 @@ void test_variant()
     typedef bg::model::point<T, 2, bg::cs::cartesian> point_type;
     typedef bg::model::segment<point_type> segment_type;
     typedef bg::model::box<point_type> box_type;
-    typedef boost::variant<point_type, segment_type, box_type> variant_type;
+    typedef std::variant<point_type, segment_type, box_type> variant_type;
 
     point_type point;
     std::string const point_li = "POINT(1 3)";
@@ -496,7 +496,7 @@ void test_geometry_collection()
     using point_type = bg::model::point<T, 2, bg::cs::cartesian>;
     using segment_type = bg::model::segment<point_type>;
     using box_type = bg::model::box<point_type>;
-    using variant_type = boost::variant<point_type, segment_type, box_type>;
+    using variant_type = std::variant<point_type, segment_type, box_type>;
     using gc_type = bg::model::geometry_collection<variant_type>;
 
     point_type p1 {1, 3}, p2 {2, 3};
@@ -520,7 +520,7 @@ int test_main(int, char* [])
     test_large_integers();
 
     test_all<bg::model::d2::point_xy<int> >();
-    test_all<boost::tuple<float, float> >();
+    test_all<std::tuple<float, float> >();
     test_all<bg::model::d2::point_xy<float> >();
     test_all<bg::model::d2::point_xy<double> >();
 
@@ -528,11 +528,11 @@ int test_main(int, char* [])
 
     // below are the test cases moved here from the distance unit test
     // in test/multi/algorithms
-    test_2d<boost::tuple<float, float> >();
+    test_2d<std::tuple<float, float> >();
     test_2d<bg::model::d2::point_xy<float> >();
     test_2d<bg::model::d2::point_xy<double> >();
 
-    test_3d<boost::tuple<float, float, float> >();
+    test_3d<std::tuple<float, float, float> >();
     test_3d<bg::model::point<double, 3, bg::cs::cartesian> >();
 
     test_mixed<bg::model::d2::point_xy<float>, bg::model::d2::point_xy<double> >();

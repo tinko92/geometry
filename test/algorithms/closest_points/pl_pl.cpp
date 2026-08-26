@@ -100,7 +100,7 @@ void test_variant(Strategies const& strategies)
     using point_type = Point;
     using segment_type = bg::model::segment<point_type>;
     using mp_type = bg::model::multi_point<point_type>;
-    using variant_type = boost::variant<point_type, mp_type>;
+    using variant_type = std::variant<point_type, mp_type>;
 
     point_type point1;
     bg::read_wkt("POINT(1 3)", point1);

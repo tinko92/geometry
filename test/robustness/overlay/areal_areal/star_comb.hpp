@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include <boost/math/constants/constants.hpp>
 
 #include <test_overlay_p_q.hpp>
@@ -66,7 +66,7 @@ inline void make_star(Polygon& polygon, AddFunctor functor,
 template <typename Vector>
 void ccw_pushback(Vector& vector, double x, double y, int)
 {
-    vector.push_back(boost::make_tuple(x, y));
+    vector.push_back(std::make_tuple(x, y));
 }
 
 template <typename Polygon, typename AddFunctor>
@@ -79,7 +79,7 @@ inline void make_comb(Polygon& polygon, AddFunctor functor,
 
     if (! clockwise)
     {
-        typedef boost::tuple<double, double>  tup;
+        typedef std::tuple<double, double>  tup;
         typedef std::vector<tup> vector_type;
         vector_type vec;
 

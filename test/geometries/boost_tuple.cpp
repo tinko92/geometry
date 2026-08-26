@@ -10,14 +10,14 @@
 
 #include <geometry_test_common.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/algorithms/distance.hpp>
 #include <boost/geometry/strategies/strategies.hpp>
 
 #include <iostream>
 
 
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 
 template <typename P>
@@ -29,11 +29,11 @@ void test_all()
 
 int test_main(int, char* [])
 {
-    test_all<boost::tuple<float> >();
-    test_all<boost::tuple<int, int> >();
-    test_all<boost::tuple<double, double, double> >();
-    test_all<boost::tuple<float, float, float, float> >();
-    test_all<boost::tuple<float, float, float, float, float> >();
+    test_all<std::tuple<float> >();
+    test_all<std::tuple<int, int> >();
+    test_all<std::tuple<double, double, double> >();
+    test_all<std::tuple<float, float, float, float> >();
+    test_all<std::tuple<float, float, float, float, float> >();
 
     return 0;
 }

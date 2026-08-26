@@ -24,7 +24,7 @@
 
 #include <boost/geometry/algorithms/not_implemented.hpp>
 
-#include <boost/geometry/geometries/adapted/boost_variant.hpp>
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 
 #include <boost/geometry/algorithms/detail/relate/relate_impl.hpp>

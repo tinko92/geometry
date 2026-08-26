@@ -23,7 +23,7 @@
 #include <boost/geometry/algorithms/equals.hpp>
 #include <boost/geometry/strategies/strategies.hpp>
 #include <boost/geometry/io/wkt/read.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 
 struct no_strategy
@@ -105,9 +105,9 @@ void test_geometry(std::string const& caseid,
 
     check_geometry(geometry1, geometry2, caseid, wkt1, wkt2, expected, no_strategy());
     check_geometry(geometry1, geometry2, caseid, wkt1, wkt2, expected, strategy_type());
-    check_geometry(boost::variant<Geometry1>(geometry1), geometry2, caseid, wkt1, wkt2, expected, no_strategy());
-    check_geometry(geometry1, boost::variant<Geometry2>(geometry2), caseid, wkt1, wkt2, expected, no_strategy());
-    check_geometry(boost::variant<Geometry1>(geometry1), boost::variant<Geometry2>(geometry2), caseid, wkt1, wkt2, expected, no_strategy());
+    check_geometry(std::variant<Geometry1>(geometry1), geometry2, caseid, wkt1, wkt2, expected, no_strategy());
+    check_geometry(geometry1, std::variant<Geometry2>(geometry2), caseid, wkt1, wkt2, expected, no_strategy());
+    check_geometry(std::variant<Geometry1>(geometry1), std::variant<Geometry2>(geometry2), caseid, wkt1, wkt2, expected, no_strategy());
 }
 
 template <typename Geometry1, typename Geometry2>

@@ -12,8 +12,6 @@
 
 #include <tuple>
 
-#include <boost/tuple/tuple.hpp>
-
 #include <boost/geometry/algorithms/correct.hpp>
 #include <boost/geometry/algorithms/equals.hpp>
 #include <boost/geometry/algorithms/difference.hpp>
@@ -55,10 +53,10 @@ inline void check(std::string const& wkt1,
 template <int I>
 inline void check(std::string const& wkt1,
                   std::string const& wkt2,
-                  boost::tuple<MPt, MLs, MPo> const& tup,
+                  std::tuple<MPt, MLs, MPo> const& tup,
                   std::string const& out_str)
 {
-    check(wkt1, wkt2, boost::get<I>(tup), out_str);
+    check(wkt1, wkt2, std::get<I>(tup), out_str);
 }
 
 template <int I>
@@ -71,15 +69,6 @@ inline void check(std::string const& wkt1,
         check(wkt1, wkt2, pair.first, out_str);
     else
         check(wkt1, wkt2, pair.second, out_str);
-}
-
-template <int I>
-inline void check(std::string const& wkt1,
-                  std::string const& wkt2,
-                  std::tuple<MPt, MLs, MPo> const& tup,
-                  std::string const& out_str)
-{
-    check(wkt1, wkt2, std::get<I>(tup), out_str);
 }
 
 template <typename Geometry>
@@ -381,7 +370,6 @@ inline void test_tuple()
 int test_main(int, char* [])
 {
     test_pair<std::pair<MPt, MLs> >();
-    test_tuple<boost::tuple<MPt, MLs, MPo> >();
     test_tuple<std::tuple<MPt, MLs, MPo> >();
 
     return 0;

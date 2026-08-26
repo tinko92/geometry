@@ -21,13 +21,13 @@
 
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/adapted/c_array.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 #include <boost/geometry/io/wkt/wkt.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 #include <test_common/test_point.hpp>
 
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 
 template <typename Geometry>
@@ -45,7 +45,7 @@ void check_assign_points(Points const& points, std::string const& /*expected*/)
     bg::assign_points(geometry, points);
     check_geometry(geometry, "LINESTRING(1 2,3 4,5 6)");
 
-    boost::variant<Geometry> v;
+    std::variant<Geometry> v;
     bg::assign_points(v, points);
 }
 
@@ -66,10 +66,10 @@ void test_assign_linestring_2d()
     check_assign_points<bg::model::linestring<Point> >(points, "LINESTRING(1 2,3 4,5 6)");
 
     // Test assignment of array with different point-type (tuple adaption should be included)
-    boost::tuple<float, float> tuples[3];
-    tuples[0] = boost::make_tuple(1, 2);
-    tuples[1] = boost::make_tuple(3, 4);
-    tuples[2] = boost::make_tuple(5, 6);
+    std::tuple<float, float> tuples[3];
+    tuples[0] = std::make_tuple(1, 2);
+    tuples[1] = std::make_tuple(3, 4);
+    tuples[2] = std::make_tuple(5, 6);
     check_assign_points<bg::model::linestring<Point> >(tuples, "LINESTRING(1 2,3 4,5 6)");
 }
 
@@ -200,9 +200,9 @@ void test_assign_conversion_variant()
     P p;
     bg::assign_values(p, 1, 2);
 
-    box_type b;
-    boost::variant<box_type&> variant_b(b);
+    std::variant<box_type> variant_b;
     bg::assign(variant_b, p);
+    box_type& b = std::get<box_type>(variant_b);
 
     BOOST_CHECK_CLOSE((bg::get<0, 0>(b)), 1.0, 0.001);
     BOOST_CHECK_CLOSE((bg::get<0, 1>(b)), 2.0, 0.001);
@@ -215,9 +215,9 @@ void test_assign_conversion_variant()
     bg::set<bg::max_corner, 0>(b, 3);
     bg::set<bg::max_corner, 1>(b, 4);
 
-    ring_type ring;
-    boost::variant<ring_type&> variant_ring(ring);
-    bg::assign(variant_ring, boost::variant<box_type>(b));
+    std::variant<ring_type> variant_ring;
+    bg::assign(variant_ring, std::variant<box_type>(b));
+    ring_type& ring = std::get<ring_type>(variant_ring);
 
     {
         typedef bg::model::ring<P, false, false> ring_type_ccw;
@@ -245,15 +245,14 @@ void test_assign_conversion_variant()
     BOOST_CHECK_EQUAL(ring.size(), 5u);
 
 
-    polygon_type polygon;
-    boost::variant<polygon_type&> variant_polygon(polygon);
-
-    bg::assign(variant_polygon, boost::variant<ring_type>(ring));
+    std::variant<polygon_type> variant_polygon;
+    bg::assign(variant_polygon, std::variant<ring_type>(ring));
+    polygon_type& polygon = std::get<polygon_type>(variant_polygon);
     BOOST_CHECK_EQUAL(bg::num_points(polygon), 5u);
 
-    ring_type ring2;
-    boost::variant<ring_type&> variant_ring2(ring2);
-    bg::assign(variant_ring2, boost::variant<polygon_type>(polygon));
+    std::variant<ring_type> variant_ring2;
+    bg::assign(variant_ring2, std::variant<polygon_type>(polygon));
+    ring_type const& ring2 = std::get<ring_type>(variant_ring2);
     BOOST_CHECK_EQUAL(bg::num_points(ring2), 5u);
 }
 

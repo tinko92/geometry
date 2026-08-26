@@ -18,7 +18,7 @@
 #include <boost/geometry/strategies/cartesian/point_in_poly_winding.hpp>
 #include <boost/geometry/strategies/cartesian/point_in_point.hpp>
 
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 // TEMP
 #include <boost/geometry/strategies/cartesian.hpp>
@@ -33,8 +33,6 @@ typedef bg::model::ring<Pt> R;
 typedef bg::model::multi_point<Pt> MPt;
 typedef bg::model::multi_linestring<Ls> MLs;
 typedef bg::model::multi_polygon<Po> MPo;
-
-#include <tuple>
 
 template <typename G>
 inline void check(std::string const& wkt1,
@@ -60,14 +58,14 @@ inline void check(std::string const& wkt1,
 
 inline void check(std::string const& wkt1,
                   std::string const& wkt2,
-                  boost::tuple<MPt, MLs, MPo> const& tup,
+                  std::tuple<MPt, MLs, MPo> const& tup,
                   std::string const& out_p_str,
                   std::string const& out_l_str,
                   std::string const& out_a_str)
 {
-    check(wkt1, wkt2, boost::get<0>(tup), out_p_str);
-    check(wkt1, wkt2, boost::get<1>(tup), out_l_str);
-    check(wkt1, wkt2, boost::get<2>(tup), out_a_str);
+    check(wkt1, wkt2, std::get<0>(tup), out_p_str);
+    check(wkt1, wkt2, std::get<1>(tup), out_l_str);
+    check(wkt1, wkt2, std::get<2>(tup), out_a_str);
 }
 
 inline void check(std::string const& wkt1,
@@ -79,18 +77,6 @@ inline void check(std::string const& wkt1,
 {
     check(wkt1, wkt2, pair.first, out_p_str);
     check(wkt1, wkt2, pair.second, out_l_str);
-}
-
-inline void check(std::string const& wkt1,
-                  std::string const& wkt2,
-                  std::tuple<MPt, MLs, MPo> const& tup,
-                  std::string const& out_p_str,
-                  std::string const& out_l_str,
-                  std::string const& out_a_str)
-{
-    check(wkt1, wkt2, std::get<0>(tup), out_p_str);
-    check(wkt1, wkt2, std::get<1>(tup), out_l_str);
-    check(wkt1, wkt2, std::get<2>(tup), out_a_str);
 }
 
 template <typename In1, typename In2, typename Tup>
@@ -375,7 +361,6 @@ inline void test_tuple()
 int test_main(int, char* [])
 {
     test_pair<std::pair<MPt, MLs> >();
-    test_tuple<boost::tuple<MPt, MLs, MPo> >();
     test_tuple<std::tuple<MPt, MLs, MPo> >();
 
     return 0;

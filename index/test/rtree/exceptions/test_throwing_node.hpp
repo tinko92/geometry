@@ -16,8 +16,7 @@
 #include <boost/core/invoke_swap.hpp>
 #include <boost/move/core.hpp>
 #include <boost/move/utility_core.hpp>
-#include <boost/variant/variant.hpp>
-#include <boost/variant/static_visitor.hpp>
+#include <variant>
 #include <exception>
 #include <stddef.h>
 
@@ -150,7 +149,7 @@ private:
 template <typename Value, typename Parameters, typename Box, typename Allocators>
 struct node<Value, Parameters, Box, Allocators, node_throwing_static_tag>
 {
-    typedef boost::variant<
+    typedef std::variant<
         variant_leaf<Value, Parameters, Box, Allocators, node_throwing_static_tag>,
         variant_internal_node<Value, Parameters, Box, Allocators, node_throwing_static_tag>
     > type;
@@ -173,7 +172,7 @@ struct leaf<Value, Parameters, Box, Allocators, node_throwing_static_tag>
 template <typename Value, typename Parameters, typename Box, typename Allocators, bool IsVisitableConst>
 struct visitor<Value, Parameters, Box, Allocators, node_throwing_static_tag, IsVisitableConst>
 {
-    typedef static_visitor<> type;
+    struct type {};
 };
 
 // allocators

@@ -18,7 +18,7 @@
 #include <boost/geometry/algorithms/dispatch/is_valid.hpp>
 #include <boost/geometry/core/cs.hpp>
 #include <boost/geometry/core/visit.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant.hpp> // For backward compatibility
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 #include <boost/geometry/policies/is_valid/default_policy.hpp>
 #include <boost/geometry/policies/is_valid/failing_reason_policy.hpp>

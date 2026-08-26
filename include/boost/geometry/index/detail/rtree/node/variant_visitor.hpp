@@ -13,10 +13,6 @@
 
 #include <variant>
 
-#include <boost/variant/apply_visitor.hpp>
-#include <boost/variant/get.hpp>
-#include <boost/variant/variant.hpp>
-
 namespace boost { namespace geometry { namespace index {
 
 namespace detail { namespace rtree {
@@ -41,16 +37,6 @@ inline V & get(
     return std::get<V>(v);
 }
 
-template <typename V, typename Value, typename Parameters, typename Box, typename Allocators, typename Tag>
-inline V & get(
-    boost::variant<
-        variant_leaf<Value, Parameters, Box, Allocators, Tag>,
-        variant_internal_node<Value, Parameters, Box, Allocators, Tag>
-    > & v)
-{
-    return boost::get<V>(v);
-}
-
 // apply visitor
 
 template <typename Visitor, typename Value, typename Parameters, typename Box, typename Allocators, typename Tag>
@@ -65,32 +51,12 @@ inline void apply_visitor(Visitor & v,
 
 template <typename Visitor, typename Value, typename Parameters, typename Box, typename Allocators, typename Tag>
 inline void apply_visitor(Visitor & v,
-                          boost::variant<
-                              variant_leaf<Value, Parameters, Box, Allocators, Tag>,
-                              variant_internal_node<Value, Parameters, Box, Allocators, Tag>
-                          > & n)
-{
-    boost::apply_visitor(v, n);
-}
-
-template <typename Visitor, typename Value, typename Parameters, typename Box, typename Allocators, typename Tag>
-inline void apply_visitor(Visitor & v,
                           std::variant<
                               variant_leaf<Value, Parameters, Box, Allocators, Tag>,
                               variant_internal_node<Value, Parameters, Box, Allocators, Tag>
                           > const& n)
 {
     std::visit(v, n);
-}
-
-template <typename Visitor, typename Value, typename Parameters, typename Box, typename Allocators, typename Tag>
-inline void apply_visitor(Visitor & v,
-                          boost::variant<
-                              variant_leaf<Value, Parameters, Box, Allocators, Tag>,
-                              variant_internal_node<Value, Parameters, Box, Allocators, Tag>
-                          > const& n)
-{
-    boost::apply_visitor(v, n);
 }
 
 }} // namespace detail::rtree

@@ -24,7 +24,7 @@
 
 #include <boost/geometry/algorithms/detail/distance/interface.hpp>
 
-#include <boost/geometry/geometries/adapted/boost_variant.hpp> // For backward compatibility
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 
 #include <boost/geometry/strategies/comparable_distance_result.hpp>

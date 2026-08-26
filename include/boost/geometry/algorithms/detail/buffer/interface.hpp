@@ -22,7 +22,7 @@
 #include <boost/geometry/algorithms/not_implemented.hpp>
 #include <boost/geometry/core/visit.hpp>
 #include <boost/geometry/core/tag.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant.hpp>
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 #include <boost/geometry/strategies/buffer/services.hpp>
 #include <boost/geometry/util/type_traits_std.hpp>

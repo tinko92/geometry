@@ -24,12 +24,12 @@
 
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/adapted/c_array.hpp>
-#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
+#include <boost/geometry/geometries/adapted/std_tuple.hpp>
 
 #include <test_common/test_point.hpp>
 
 BOOST_GEOMETRY_REGISTER_C_ARRAY_CS(cs::cartesian)
-BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(cs::cartesian)
+BOOST_GEOMETRY_REGISTER_STD_TUPLE_CS(cs::cartesian)
 
 
 template <typename Container>
@@ -245,7 +245,7 @@ int test_main(int, char* [])
 
     test_2d_sort<bg::model::point<int, 2, bg::cs::cartesian> >();
     test_2d_sort<bg::model::point<float, 2, bg::cs::cartesian> >();
-    test_2d_sort<boost::tuple<double, double> >();
+    test_2d_sort<std::tuple<double, double> >();
     test_2d_sort<bg::model::point<double, 2, bg::cs::cartesian> >();
 
     test_spherical<bg::model::point<double, 2, bg::cs::spherical<bg::degree> > >();

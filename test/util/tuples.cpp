@@ -14,7 +14,6 @@
 
 #include <boost/geometry/util/tuples.hpp>
 
-namespace bt = boost::tuples;
 namespace bgt = boost::geometry::tuples;
 namespace bm = boost::mpl;
 
@@ -28,26 +27,6 @@ struct is_float
     : std::is_same<T, float>
 {};
 
-
-template <typename Tuple>
-struct is_boost_tuple
-    : std::integral_constant<bool, false>
-{};
-
-template <typename ...Ts>
-struct is_boost_tuple<boost::tuple<Ts...> >
-    : std::integral_constant<bool, true>
-{};
-
-template <typename Tuple>
-struct is_boost_tuples_cons
-    : std::integral_constant<bool, false>
-{};
-
-template <typename HT, typename TT>
-struct is_boost_tuples_cons<boost::tuples::cons<HT, TT> >
-    : std::integral_constant<bool, true>
-{};
 
 template <typename Tuple>
 struct is_std_pair
@@ -98,10 +77,7 @@ void test_all()
     BOOST_CHECK_EQUAL((bgt::find_index_if<tuple_idf, is_float>::value), 2u);
     BOOST_CHECK((std::is_same<typename bgt::find_if<tuple_idf, is_float>::type, float>::value));
 
-    BOOST_CHECK((
-        (is_boost_tuple<tuple_id>::value && is_boost_tuples_cons<tuple_idf>::value)
-     || (!is_boost_tuple<tuple_id>::value && is_std_tuple<tuple_idf>::value)
-        ));
+    BOOST_CHECK((is_std_tuple<tuple_idf>::value));
 
     tup_idf = bgt::push_back<tuple_id, float>::apply(std::move(tup_id), 3.0f);
 
@@ -112,9 +88,8 @@ void test_all()
 
 int test_main(int, char* [])
 {
-    test_all<std::tuple<int, double> >();
     test_all<std::pair<int, double> >();
-    test_all<boost::tuple<int, double> >();
+    test_all<std::tuple<int, double> >();
 
     return 0;
 }

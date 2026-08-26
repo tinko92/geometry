@@ -27,7 +27,7 @@
 #include <geometry_test_common.hpp>
 
 #include <boost/geometry/algorithms/correct.hpp>
-#include <boost/geometry/geometries/adapted/boost_variant.hpp>
+#include <boost/geometry/geometries/adapted/std_variant.hpp>
 #include <boost/geometry/geometries/geometry_collection.hpp>
 #include <boost/geometry/io/wkt/read.hpp>
 #include <boost/geometry/io/wkt/write.hpp>
@@ -50,14 +50,14 @@ void test_geometry(std::string const& wkt, std::string const& expected)
     bg::correct(geometry);
     check_geometry(geometry, expected);
 
-    boost::variant<Geometry> v(geometry);
+    std::variant<Geometry> v(geometry);
     
     bg::correct(v);
     check_geometry(v, expected);
 
     std::string const pref = "GEOMETRYCOLLECTION(";
     std::string const post = ")";
-    bg::model::geometry_collection<boost::variant<Geometry>> gc = { v };
+    bg::model::geometry_collection<std::variant<Geometry>> gc = { v };
 
     bg::correct(gc);
     check_geometry(gc, pref + expected + post);

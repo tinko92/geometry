@@ -23,7 +23,7 @@
 #include <boost/geometry/geometries/geometries.hpp>
 
 #include <boost/geometry/io/wkt/read.hpp>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 
 struct no_strategy {};
@@ -77,7 +77,7 @@ void test_geometry(std::string const& wkt1,
 
 #if !defined(BOOST_GEOMETRY_TEST_DEBUG)
     detected = bg::crosses(geometry1,
-                           boost::variant<Geometry2>(geometry2));
+                           std::variant<Geometry2>(geometry2));
 
     BOOST_CHECK_MESSAGE(detected == expected,
         "crosses: " << wkt1
@@ -85,7 +85,7 @@ void test_geometry(std::string const& wkt1,
         << " -> Expected: " << expected
         << " detected: " << detected);
 
-    detected = bg::crosses(boost::variant<Geometry1>(geometry1),
+    detected = bg::crosses(std::variant<Geometry1>(geometry1),
                            geometry2);
 
     BOOST_CHECK_MESSAGE(detected == expected,
@@ -94,8 +94,8 @@ void test_geometry(std::string const& wkt1,
         << " -> Expected: " << expected
         << " detected: " << detected);
 
-    detected = bg::crosses(boost::variant<Geometry1>(geometry1),
-                           boost::variant<Geometry2>(geometry2));
+    detected = bg::crosses(std::variant<Geometry1>(geometry1),
+                           std::variant<Geometry2>(geometry2));
 
     BOOST_CHECK_MESSAGE(detected == expected,
         "crosses: " << wkt1

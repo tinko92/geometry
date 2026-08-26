@@ -142,37 +142,37 @@ struct value< std::pair<bg::model::segment< bg::model::point<T, 2, C> >, int> >
 };
 
 template <typename T, typename C>
-struct value< boost::tuple<bg::model::point<T, 2, C>, int, int> >
+struct value< std::tuple<bg::model::point<T, 2, C>, int, int> >
 {
     typedef bg::model::point<T, 2, C> P;
-    typedef boost::tuple<P, int, int> R;
+    typedef std::tuple<P, int, int> R;
     static R apply(int x, int y)
     {
-        return boost::make_tuple(P(x, y), x + y * 100, 0);
+        return std::make_tuple(P(x, y), x + y * 100, 0);
     }
 };
 
 template <typename T, typename C>
-struct value< boost::tuple<bg::model::box< bg::model::point<T, 2, C> >, int, int> >
+struct value< std::tuple<bg::model::box< bg::model::point<T, 2, C> >, int, int> >
 {
     typedef bg::model::point<T, 2, C> P;
     typedef bg::model::box<P> B;
-    typedef boost::tuple<B, int, int> R;
+    typedef std::tuple<B, int, int> R;
     static R apply(int x, int y)
     {
-        return boost::make_tuple(B(P(x, y), P(x + 2, y + 3)), x + y * 100, 0);
+        return std::make_tuple(B(P(x, y), P(x + 2, y + 3)), x + y * 100, 0);
     }
 };
 
 template <typename T, typename C>
-struct value< boost::tuple<bg::model::segment< bg::model::point<T, 2, C> >, int, int> >
+struct value< std::tuple<bg::model::segment< bg::model::point<T, 2, C> >, int, int> >
 {
     typedef bg::model::point<T, 2, C> P;
     typedef bg::model::segment<P> S;
-    typedef boost::tuple<S, int, int> R;
+    typedef std::tuple<S, int, int> R;
     static R apply(int x, int y)
     {
-        return boost::make_tuple(S(P(x, y), P(x + 2, y + 3)), x + y * 100, 0);
+        return std::make_tuple(S(P(x, y), P(x + 2, y + 3)), x + y * 100, 0);
     }
 };
 
@@ -217,64 +217,6 @@ struct value< std::pair<bg::model::box< bg::model::point<T, 3, C> >, int> >
     static R apply(int x, int y, int z)
     {
         return std::make_pair(B(P(x, y, z), P(x + 2, y + 3, z + 4)), x + y * 100 + z * 10000);
-    }
-};
-
-template <typename T, typename C>
-struct value< boost::tuple<bg::model::point<T, 3, C>, int, int> >
-{
-    typedef bg::model::point<T, 3, C> P;
-    typedef boost::tuple<P, int, int> R;
-    static R apply(int x, int y, int z)
-    {
-        return boost::make_tuple(P(x, y, z), x + y * 100 + z * 10000, 0);
-    }
-};
-
-template <typename T, typename C>
-struct value< boost::tuple<bg::model::box< bg::model::point<T, 3, C> >, int, int> >
-{
-    typedef bg::model::point<T, 3, C> P;
-    typedef bg::model::box<P> B;
-    typedef boost::tuple<B, int, int> R;
-    static R apply(int x, int y, int z)
-    {
-        return boost::make_tuple(B(P(x, y, z), P(x + 2, y + 3, z + 4)), x + y * 100 + z * 10000, 0);
-    }
-};
-
-template <typename T, typename C>
-struct value< std::tuple<bg::model::point<T, 2, C>, int, int> >
-{
-    typedef bg::model::point<T, 2, C> P;
-    typedef std::tuple<P, int, int> R;
-    static R apply(int x, int y)
-    {
-        return std::make_tuple(P(x, y), x + y * 100, 0);
-    }
-};
-
-template <typename T, typename C>
-struct value< std::tuple<bg::model::box< bg::model::point<T, 2, C> >, int, int> >
-{
-    typedef bg::model::point<T, 2, C> P;
-    typedef bg::model::box<P> B;
-    typedef std::tuple<B, int, int> R;
-    static R apply(int x, int y)
-    {
-        return std::make_tuple(B(P(x, y), P(x + 2, y + 3)), x + y * 100, 0);
-    }
-};
-
-template <typename T, typename C>
-struct value< std::tuple<bg::model::segment< bg::model::point<T, 2, C> >, int, int> >
-{
-    typedef bg::model::point<T, 2, C> P;
-    typedef bg::model::segment<P> S;
-    typedef std::tuple<S, int, int> R;
-    static R apply(int x, int y)
-    {
-        return std::make_tuple(S(P(x, y), P(x + 2, y + 3)), x + y * 100, 0);
     }
 };
 
@@ -1954,7 +1896,7 @@ template<typename Point, typename Parameters, typename Allocator>
 void test_rtree_for_point(Parameters const& parameters, Allocator const& allocator)
 {
     typedef std::pair<Point, int> PairP;
-    typedef boost::tuple<Point, int, int> TupleP;
+    typedef std::tuple<Point, int, int> TupleP;
     typedef boost::shared_ptr< test_object<Point> > SharedPtrP;
     typedef value_no_dctor<Point> VNoDCtor;
 
@@ -1967,8 +1909,6 @@ void test_rtree_for_point(Parameters const& parameters, Allocator const& allocat
 
     test_rtree_additional<Point>(parameters, allocator);
 
-    typedef std::tuple<Point, int, int> StdTupleP;
-    test_rtree_by_value<StdTupleP, Parameters>(parameters, allocator);
 }
 
 template<typename Point, typename Parameters, typename Allocator>
@@ -1976,7 +1916,7 @@ void test_rtree_for_box(Parameters const& parameters, Allocator const& allocator
 {
     typedef bg::model::box<Point> Box;
     typedef std::pair<Box, int> PairB;
-    typedef boost::tuple<Box, int, int> TupleB;
+    typedef std::tuple<Box, int, int> TupleB;
     typedef value_no_dctor<Box> VNoDCtor;
 
     test_rtree_by_value<Box, Parameters>(parameters, allocator);
@@ -1987,8 +1927,6 @@ void test_rtree_for_box(Parameters const& parameters, Allocator const& allocator
 
     test_rtree_additional<Box>(parameters, allocator);
 
-    typedef std::tuple<Box, int, int> StdTupleB;
-    test_rtree_by_value<StdTupleB, Parameters>(parameters, allocator);
 }
 
 template<typename Point, typename Parameters>
@@ -2009,7 +1947,7 @@ template<typename Indexable, typename Parameters, typename Allocator>
 void modifiers(Parameters const& parameters, Allocator const& allocator)
 {
     typedef std::pair<Indexable, int> Pair;
-    typedef boost::tuple<Indexable, int, int> Tuple;
+    typedef std::tuple<Indexable, int, int> Tuple;
     typedef boost::shared_ptr< test_object<Indexable> > SharedPtr;
     typedef value_no_dctor<Indexable> VNoDCtor;
 
@@ -2020,15 +1958,13 @@ void modifiers(Parameters const& parameters, Allocator const& allocator)
     test_rtree_modifiers<SharedPtr>(parameters, allocator);
     test_rtree_modifiers<VNoDCtor>(parameters, allocator);
 
-    typedef std::tuple<Indexable, int, int> StdTuple;
-    test_rtree_modifiers<StdTuple>(parameters, allocator);
 }
 
 template<typename Indexable, typename Parameters, typename Allocator>
 void queries(Parameters const& parameters, Allocator const& allocator)
 {
     typedef std::pair<Indexable, int> Pair;
-    typedef boost::tuple<Indexable, int, int> Tuple;
+    typedef std::tuple<Indexable, int, int> Tuple;
     typedef boost::shared_ptr< test_object<Indexable> > SharedPtr;
     typedef value_no_dctor<Indexable> VNoDCtor;
 
@@ -2039,8 +1975,6 @@ void queries(Parameters const& parameters, Allocator const& allocator)
     test_rtree_queries<SharedPtr>(parameters, allocator);
     test_rtree_queries<VNoDCtor>(parameters, allocator);
 
-    typedef std::tuple<Indexable, int, int> StdTuple;
-    test_rtree_queries<StdTuple>(parameters, allocator);
 }
 
 template<typename Indexable, typename Parameters, typename Allocator>

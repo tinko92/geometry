@@ -17,7 +17,7 @@
 
 #include <boost/test/included/unit_test.hpp>
 
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <boost/geometry/algorithms/num_segments.hpp>
 
@@ -263,7 +263,7 @@ BOOST_AUTO_TEST_CASE( test_multipolygon )
 
 BOOST_AUTO_TEST_CASE( test_variant )
 {
-    typedef boost::variant
+    typedef std::variant
         <
             linestring, polygon_cw_open, polygon_cw_closed
         > variant_geometry_type;
@@ -293,7 +293,7 @@ BOOST_AUTO_TEST_CASE( test_variant )
 
 BOOST_AUTO_TEST_CASE( test_geometry_collection )
 {
-    using variant = boost::variant<linestring, polygon_cw_closed>;
+    using variant = std::variant<linestring, polygon_cw_closed>;
     using geometry_collection = bg::model::geometry_collection<variant>;
 
     using tester = test_num_segments<geometry_collection>;

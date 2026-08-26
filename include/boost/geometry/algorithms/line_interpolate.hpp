@@ -14,13 +14,11 @@
 #define BOOST_GEOMETRY_ALGORITHMS_LINE_INTERPOLATE_HPP
 
 #include <type_traits>
+#include <variant>
 
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/value_type.hpp>
-#include <boost/variant/apply_visitor.hpp>
-#include <boost/variant/static_visitor.hpp>
-#include <boost/variant/variant_fwd.hpp>
 
 #include <boost/geometry/algorithms/detail/convert_point_to_point.hpp>
 #include <boost/geometry/algorithms/detail/dummy_geometries.hpp>
@@ -316,40 +314,21 @@ struct line_interpolate
     }
 };
 
-template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
-struct line_interpolate<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> >
+template <typename ...Ts>
+struct line_interpolate<std::variant<Ts...>>
 {
-    template <typename Pointlike, typename Strategy>
-    struct visitor: boost::static_visitor<void>
-    {
-        Pointlike const& m_pointlike;
-        Strategy const& m_strategy;
-
-        visitor(Pointlike const& pointlike, Strategy const& strategy)
-            : m_pointlike(pointlike)
-            , m_strategy(strategy)
-        {}
-
-        template <typename Geometry, typename Distance>
-        void operator()(Geometry const& geometry, Distance const& max_distance) const
-        {
-            line_interpolate<Geometry>::apply(geometry, max_distance,
-                                              m_pointlike, m_strategy);
-        }
-    };
-
     template <typename Distance, typename Pointlike, typename Strategy>
     static inline void
-    apply(boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> const& geometry,
+    apply(std::variant<Ts...> const& geometry,
           Distance const& max_distance,
           Pointlike & pointlike,
           Strategy const& strategy)
     {
-        boost::apply_visitor(
-            visitor<Pointlike, Strategy>(pointlike, strategy),
-            geometry,
-            max_distance
-        );
+        std::visit([&](auto const& concrete)
+        {
+            line_interpolate<std::decay_t<decltype(concrete)>>::apply(
+                concrete, max_distance, pointlike, strategy);
+        }, geometry);
     }
 };
 

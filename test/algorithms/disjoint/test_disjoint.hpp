@@ -21,7 +21,7 @@
 
 #include <iostream>
 #include <string>
-#include <boost/variant/variant.hpp>
+#include <variant>
 
 #include <geometry_test_common.hpp>
 
@@ -84,11 +84,11 @@ void test_disjoint(std::string const& id,
     G2 g2;
     bg::read_wkt(wkt2, g2);
 
-    boost::variant<G1> v1(g1);
-    boost::variant<G2> v2(g2);
+    std::variant<G1> v1(g1);
+    std::variant<G2> v2(g2);
 
-    bg::model::geometry_collection<boost::variant<G1>> gc1{v1};
-    bg::model::geometry_collection<boost::variant<G2>> gc2{v2};
+    bg::model::geometry_collection<std::variant<G1>> gc1{v1};
+    bg::model::geometry_collection<std::variant<G2>> gc2{v2};
 
     using strategy_t = typename bg::strategy::disjoint::services::default_strategy<G1, G2>::type;
     using strategies_t = typename bg::strategies::relate::services::default_strategy<G1, G2>::type;

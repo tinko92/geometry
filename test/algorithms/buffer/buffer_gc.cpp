@@ -20,7 +20,7 @@ using po_t = bg::model::polygon<pt_t>;
 using mpt_t = bg::model::multi_point<pt_t>;
 using mls_t = bg::model::multi_linestring<ls_t>;
 using mpo_t = bg::model::multi_polygon<po_t>;
-using var_t = boost::variant<pt_t, ls_t, po_t, mpt_t, mls_t, mpo_t>;
+using var_t = std::variant<pt_t, ls_t, po_t, mpt_t, mls_t, mpo_t>;
 using gc_t = bg::model::geometry_collection<var_t>;
 
 void test_gc()
@@ -49,8 +49,8 @@ void test_gc()
     bg::buffer(gc, result_gc, distance, side, join, end, circle);
 
     BOOST_CHECK(result_gc.size() == 1);
-    BOOST_CHECK(boost::get<mpo_t>(result_gc[0]).size() == 2);
-    area = bg::area(boost::get<mpo_t>(result_gc[0]));
+    BOOST_CHECK(std::get<mpo_t>(result_gc[0]).size() == 2);
+    area = bg::area(std::get<mpo_t>(result_gc[0]));
     BOOST_CHECK_CLOSE(area, 62.548206613048151, 0.0001);
 }
 
