@@ -12,10 +12,9 @@
 
 
 #include <concepts>
+#include <ranges>
 #include <type_traits>
 #include <utility>
-
-#include <boost/range/begin.hpp>
 
 #include <boost/geometry/core/geometry_types.hpp>
 #include <boost/geometry/core/mutable_range.hpp>
@@ -101,7 +100,7 @@ concept ConstGeometryCollection =
     && requires(geometry_type_t<Geometry> const& collection)
     {
         traits::iter_visit<geometry_type_t<Geometry>>::apply(
-            [](auto&&) {}, boost::begin(collection));
+            [](auto&&) {}, std::ranges::begin(collection));
     };
 
 
@@ -119,7 +118,7 @@ concept GeometryCollection =
     {
         traits::clear<geometry_type_t<Geometry>>::apply(collection);
         traits::iter_visit<geometry_type_t<Geometry>>::apply(
-            [](auto&&) {}, boost::begin(collection));
+            [](auto&&) {}, std::ranges::begin(collection));
     };
 
 

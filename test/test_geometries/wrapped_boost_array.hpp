@@ -107,6 +107,30 @@ namespace test
         return it + ar.size;
     }
 
+    template <typename Point, std::size_t Count>
+    inline auto begin(wrapped_boost_array<Point, Count>& ar)
+    {
+        return ar.array.begin();
+    }
+
+    template <typename Point, std::size_t Count>
+    inline auto begin(wrapped_boost_array<Point, Count> const& ar)
+    {
+        return ar.array.begin();
+    }
+
+    template <typename Point, std::size_t Count>
+    inline auto end(wrapped_boost_array<Point, Count>& ar)
+    {
+        return ar.array.begin() + ar.size;
+    }
+
+    template <typename Point, std::size_t Count>
+    inline auto end(wrapped_boost_array<Point, Count> const& ar)
+    {
+        return ar.array.begin() + ar.size;
+    }
+
 }
 
 

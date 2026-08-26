@@ -8,12 +8,8 @@
 
 #include <concepts>
 #include <cstddef>
+#include <ranges>
 #include <utility>
-
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
-#include <boost/range/iterator.hpp>
-#include <boost/range/traversal.hpp>
 
 #include <boost/geometry/core/mutable_range.hpp>
 
@@ -22,24 +18,10 @@ namespace boost { namespace geometry { namespace concepts { namespace detail
 {
 
 template <typename Range>
-concept ConstForwardRange =
-    requires(Range const& range)
-    {
-        boost::begin(range);
-        boost::end(range);
-        typename boost::range_iterator<Range const>::type;
-        typename boost::range_traversal<Range const>::type;
-    }
-    && std::derived_from
-        <typename boost::range_traversal<Range const>::type,
-         boost::forward_traversal_tag>;
+concept ConstForwardRange = std::ranges::forward_range<Range const>;
 
 template <typename Range>
-concept ConstRandomAccessRange =
-    ConstForwardRange<Range>
-    && std::derived_from
-        <typename boost::range_traversal<Range const>::type,
-         boost::random_access_traversal_tag>;
+concept ConstRandomAccessRange = std::ranges::random_access_range<Range const>;
 
 template <typename Range, typename Value>
 concept MutableRange =

@@ -20,7 +20,7 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_MULTI_POINT_CONCEPT_HPP
 
 
-#include <boost/range/value_type.hpp>
+#include <ranges>
 
 #include <boost/geometry/core/mutable_range.hpp>
 
@@ -36,17 +36,17 @@ template <typename Geometry>
 concept ConstMultiPoint =
     std::same_as<tag_t<geometry_type_t<Geometry>>, multi_point_tag>
     && detail::ConstRandomAccessRange<geometry_type_t<Geometry>>
-    && ConstPoint<typename boost::range_value<geometry_type_t<Geometry>>::type>;
+    && ConstPoint<std::ranges::range_value_t<geometry_type_t<Geometry>>>;
 
 
 template <typename Geometry>
 concept MultiPoint =
     ! std::is_const_v<std::remove_reference_t<Geometry>>
     && ConstMultiPoint<Geometry>
-    && Point<typename boost::range_value<geometry_type_t<Geometry>>::type>
+    && Point<std::ranges::range_value_t<geometry_type_t<Geometry>>>
     && detail::MutableRange
         <geometry_type_t<Geometry>,
-         typename boost::range_value<geometry_type_t<Geometry>>::type>;
+         std::ranges::range_value_t<geometry_type_t<Geometry>>>;
 
 
 template <typename Geometry>

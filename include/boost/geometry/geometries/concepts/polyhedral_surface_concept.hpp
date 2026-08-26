@@ -12,9 +12,8 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_POLYHEDRAL_SURFACE_CONCEPT_HPP
 
 #include <concepts>
+#include <ranges>
 #include <type_traits>
-
-#include <boost/range/value_type.hpp>
 
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/cs.hpp>
@@ -30,7 +29,7 @@ template <typename Geometry>
 concept ConstPolyhedralSurface =
     std::same_as<tag_t<geometry_type_t<Geometry>>, polyhedral_surface_tag>
     && detail::ConstRandomAccessRange<geometry_type_t<Geometry>>
-    && ConstPolygon<typename boost::range_value<geometry_type_t<Geometry>>::type>
+    && ConstPolygon<std::ranges::range_value_t<geometry_type_t<Geometry>>>
     && dimension<geometry_type_t<Geometry>>::value == 3
     && std::same_as<cs_tag_t<geometry_type_t<Geometry>>, cartesian_tag>;
 
@@ -39,10 +38,10 @@ template <typename Geometry>
 concept PolyhedralSurface =
     ! std::is_const_v<std::remove_reference_t<Geometry>>
     && ConstPolyhedralSurface<Geometry>
-    && Polygon<typename boost::range_value<geometry_type_t<Geometry>>::type>
+    && Polygon<std::ranges::range_value_t<geometry_type_t<Geometry>>>
     && detail::MutableRange
         <geometry_type_t<Geometry>,
-         typename boost::range_value<geometry_type_t<Geometry>>::type>;
+         std::ranges::range_value_t<geometry_type_t<Geometry>>>;
 
 template <typename Geometry>
 struct concept_type<Geometry, polyhedral_surface_tag>

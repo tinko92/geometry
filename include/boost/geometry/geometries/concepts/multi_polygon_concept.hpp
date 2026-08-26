@@ -20,7 +20,7 @@
 #define BOOST_GEOMETRY_GEOMETRIES_CONCEPTS_MULTI_POLYGON_CONCEPT_HPP
 
 
-#include <boost/range/value_type.hpp>
+#include <ranges>
 
 #include <boost/geometry/geometries/concepts/concept_type.hpp>
 #include <boost/geometry/geometries/concepts/detail/mutable_range.hpp>
@@ -34,17 +34,17 @@ template <typename Geometry>
 concept ConstMultiPolygon =
     std::same_as<tag_t<geometry_type_t<Geometry>>, multi_polygon_tag>
     && detail::ConstRandomAccessRange<geometry_type_t<Geometry>>
-    && ConstPolygon<typename boost::range_value<geometry_type_t<Geometry>>::type>;
+    && ConstPolygon<std::ranges::range_value_t<geometry_type_t<Geometry>>>;
 
 
 template <typename Geometry>
 concept MultiPolygon =
     ! std::is_const_v<std::remove_reference_t<Geometry>>
     && ConstMultiPolygon<Geometry>
-    && Polygon<typename boost::range_value<geometry_type_t<Geometry>>::type>
+    && Polygon<std::ranges::range_value_t<geometry_type_t<Geometry>>>
     && detail::MutableRange
         <geometry_type_t<Geometry>,
-         typename boost::range_value<geometry_type_t<Geometry>>::type>;
+         std::ranges::range_value_t<geometry_type_t<Geometry>>>;
 
 
 template <typename Geometry>

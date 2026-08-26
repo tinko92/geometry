@@ -125,6 +125,34 @@ inline typename all_custom_linestring<Point>::custom_const_iterator_type
     return als.custom_end();
 }
 
+template<typename Point>
+inline typename all_custom_linestring<Point>::custom_iterator_type
+    begin(all_custom_linestring<Point>& als)
+{
+    return als.custom_begin();
+}
+
+template<typename Point>
+inline typename all_custom_linestring<Point>::custom_const_iterator_type
+    begin(all_custom_linestring<Point> const& als)
+{
+    return als.custom_begin();
+}
+
+template<typename Point>
+inline typename all_custom_linestring<Point>::custom_iterator_type
+    end(all_custom_linestring<Point>& als)
+{
+    return als.custom_end();
+}
+
+template<typename Point>
+inline typename all_custom_linestring<Point>::custom_const_iterator_type
+    end(all_custom_linestring<Point> const& als)
+{
+    return als.custom_end();
+}
+
 // (Optional)
 template<typename Point>
 inline std::size_t range_calculate_size(all_custom_linestring<Point> const& als)
