@@ -14,7 +14,9 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
+#include <limits>
 #include <type_traits>
 
 namespace bg = boost::geometry;
@@ -387,8 +389,31 @@ void test_legacy_selection()
     BOOST_TEST_EQ(bg::get<1>(destination), 4.0);
 }
 
+template <typename C>
+void native_search_limits()
+{
+    using p = bg::model::d2::point_xy<C>;
+    using ring = bg::model::ring<p>;
+    using root = ec::borrowed_root<C, bg::strategies::relate::approximate_output, ring, ring>;
+    using section = ec::borrowed_section<root>;
+    double const x = 0x1p53;
+    ec::search_box const limit(ec::search_point(x, -std::numeric_limits<double>::infinity()),
+                              ec::search_point(x, std::numeric_limits<double>::infinity()));
+    BOOST_TEST(!section::template preceding<0>(1, p(C(x), 0), limit, limit));
+    BOOST_TEST(!section::template preceding<1>(1, p(C(x), 0), limit, limit));
+    BOOST_TEST(!section::template preceding<1>(-1, p(C(x), 0), limit, limit));
+    BOOST_TEST(section::template preceding<0>(1, p(C(x) - 1, 0), limit, limit));
+    if constexpr (std::is_integral<C>::value)
+        // Rounding x+1 to binary64 here would erase strict order.
+        BOOST_TEST(section::template preceding<0>(-1, p(C(x) + 1, 0), limit, limit));
+    else
+        BOOST_TEST(section::template preceding<0>(-1, p(std::nextafter(x, x * 2), 0), limit, limit));
+}
+
 int main()
 {
+    native_search_limits<double>();
+    native_search_limits<std::int64_t>();
     test_on_demand_access();
     test_short_ranges();
     test_legacy_selection();
