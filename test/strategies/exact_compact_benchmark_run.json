@@ -1,0 +1,10 @@
+{
+  "mode": "case-interleaved",
+  "timing": {
+    "seconds": 0.2,
+    "repetitions": 6
+  },
+  "started": "2026-11-12T14:04:33.630Z",
+  "source_sha256": "f59a3ff3b10f9a656c6af32b9623b7aaade937e2d9988c1cd69968cd35de8f44",
+  "finished": "2026-11-12T14:10:09.711Z"
+}

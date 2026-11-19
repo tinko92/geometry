@@ -1,0 +1,14 @@
+--- a/boost/geometry/strategies/cartesian/exact/point.hpp
++++ b/boost/geometry/strategies/cartesian/exact/point.hpp
+@@ -277,6 +277,11 @@
+             represented = represented && point_detail::represented_by_double
+                 (input[i], values[i], std::is_integral<Coordinate>());
+         }
++        int side;
++        if (represented && orientation_detail::filtered_orientation(values, side))
++        {
++            return side == 0;
++        }
+         if (represented && orientation_detail::supported(values))
+         {
+             return orientation_detail::orientation(values) == 0;

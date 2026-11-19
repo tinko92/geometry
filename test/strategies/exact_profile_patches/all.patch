@@ -1,0 +1,72 @@
+--- a/boost/geometry/strategies/cartesian/exact/native_predicates.hpp
++++ b/boost/geometry/strategies/cartesian/exact/native_predicates.hpp
+@@ -72,7 +72,7 @@
+ private:
+     void validate(std::true_type) const {}
+ 
+-    void validate(std::false_type) const
++    BOOST_FORCEINLINE void validate(std::false_type) const
+     {
+         // Preserve make_point's finite-input precondition even when a comparison
+         // would otherwise short-circuit before inspecting both coordinates.
+@@ -192,6 +192,10 @@
+     {
+         return result;
+     }
++    if (orientation_detail::supported(values))
++    {
++        return orientation_detail::orientation(values);
++    }
+     auto const determinant = (b.approximation(0) - a.approximation(0))
+                            * (c.approximation(1) - a.approximation(1))
+                            - (b.approximation(1) - a.approximation(1))
+--- a/boost/geometry/strategies/cartesian/exact/point.hpp
++++ b/boost/geometry/strategies/cartesian/exact/point.hpp
+@@ -68,14 +68,14 @@
+ 
+ inline filter_result compare_approximations(interval const& a, interval const& b, bool native)
+ {
+-    if (native && std::fegetround() == FE_TONEAREST)
++    if (native)
+     {
+         int result;
+         if (forward_error::try_compare_scalars(a.approximate, a.error, b.approximate, b.error, result))
+         {
+             return {result, true};
+         }
+-        return {0, false};
++        if (std::fegetround() == FE_TONEAREST) return {0, false};
+     }
+     return exact_cartesian::compare(a, b);
+ }
+@@ -268,6 +268,7 @@
+     static bool line_contains(native_line const& line, Coordinate x, Coordinate y)
+     {
+         if (line[0] == line[2] && line[1] == line[3]) { return false; }
++        if ((line[0] == x && line[1] == y) || (line[2] == x && line[3] == y)) { return true; }
+         std::array<Coordinate, 6> const input{{line[0], line[1], line[2], line[3], x, y}};
+         std::array<double, 6> values;
+         bool represented = true;
+@@ -276,6 +277,11 @@
+             values[i] = static_cast<double>(input[i]);
+             represented = represented && point_detail::represented_by_double
+                 (input[i], values[i], std::is_integral<Coordinate>());
++        }
++        int side;
++        if (represented && orientation_detail::filtered_orientation(values, side))
++        {
++            return side == 0;
+         }
+         if (represented && orientation_detail::supported(values))
+         {
+@@ -879,9 +885,7 @@
+     {
+         return refined.value;
+     }
+-    auto const polynomial = exact_point<Coordinate>::compare_points(a, b, dimension);
+-    if (polynomial.certain) { return polynomial.value; }
+-    return fixed_coordinate_compare(a.precision_homogeneous(), b.precision_homogeneous(), dimension);
++    return exact_point<Coordinate>::compare_points(a, b, dimension).value;
+ }
+ 
+ template <typename Coordinate>

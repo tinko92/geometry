@@ -1,0 +1,41 @@
+{
+  "revisions": {
+    "before": "bc65c6d60fe2d891ed978d0c8cdf91bb678712b9",
+    "pr1491": "72b2d832fb9596a2a23c0c164a5426ae720d0cd6",
+    "develop": "0b4851a77d91633cf86c3a5e679e67d8c60200e9"
+  },
+  "flags": [
+    "-std=c++14",
+    "-O3",
+    "-DNDEBUG",
+    "-gline-tables-only",
+    "-fno-omit-frame-pointer",
+    "-ffp-contract=fast",
+    "-pthread",
+    "-DBOOST_GEOMETRY_DISABLE_DEPRECATED_14_WARNING"
+  ],
+  "boost": "/Users/tinko/dev/boost",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.4.1.1)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "optimized_revision": "7f20013906ade1080a104d3cf9a342eb2d63151f",
+  "optimized_header_status": "",
+  "host": {
+    "platform": "darwin",
+    "release": "25.6.0",
+    "cpu": "Apple M5",
+    "cores": 10
+  },
+  "source_sha256": "f59a3ff3b10f9a656c6af32b9623b7aaade937e2d9988c1cd69968cd35de8f44",
+  "headers": {
+    "develop-double": "43bd6b98b55e563eab74fa2f93ecffae5bbab19d2bcea8dbad12500275eef6bc",
+    "pr1491-double": "28b77e118b85c3c40986aebc9e3190e089c559d5585ce85a62933d3dc62bfa2c",
+    "before-double": "bb85810cb602e1b009d0410ac7ec1df66e71331cc010ad602b85285bf1e7a81c",
+    "optimized-double": "1ed76ed17f289d5012552b16e6f49696340966b180f9c2809beeed76c5d440a5",
+    "no-algopt-double": "1ed76ed17f289d5012552b16e6f49696340966b180f9c2809beeed76c5d440a5",
+    "develop-int64": "43bd6b98b55e563eab74fa2f93ecffae5bbab19d2bcea8dbad12500275eef6bc",
+    "pr1491-int64": "28b77e118b85c3c40986aebc9e3190e089c559d5585ce85a62933d3dc62bfa2c",
+    "before-int64": "bb85810cb602e1b009d0410ac7ec1df66e71331cc010ad602b85285bf1e7a81c",
+    "optimized-int64": "1ed76ed17f289d5012552b16e6f49696340966b180f9c2809beeed76c5d440a5",
+    "no-algopt-int64": "1ed76ed17f289d5012552b16e6f49696340966b180f9c2809beeed76c5d440a5",
+    "develop-robust-double": "43bd6b98b55e563eab74fa2f93ecffae5bbab19d2bcea8dbad12500275eef6bc"
+  }
+}

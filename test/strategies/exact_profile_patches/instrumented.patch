@@ -1,0 +1,151 @@
+--- a/boost/geometry/strategies/cartesian/exact/filter_statistics.hpp
++++ b/boost/geometry/strategies/cartesian/exact/filter_statistics.hpp
+@@ -12,6 +12,11 @@
+ 
+ struct filter_statistics
+ {
++    std::uint64_t views = 0, validations = 0, owned_points = 0;
++    std::uint64_t native_sides = 0, side_filter = 0, side_interval = 0, side_expansion = 0, side_fixed = 0;
++    std::uint64_t constructed = 0, construction_forward = 0, construction_secondary = 0;
++    std::uint64_t coordinate_native = 0, coordinate_filter = 0, coordinate_refine = 0, coordinate_polynomial = 0;
++    std::uint64_t cache_entries = 0, cache_expansions = 0;
+     std::uint64_t native_exact_values = 0;
+     std::uint64_t native_rationals = 0;
+     std::uint64_t lazy_exact_values = 0;
+--- a/boost/geometry/strategies/cartesian/exact/native_predicates.hpp
++++ b/boost/geometry/strategies/cartesian/exact/native_predicates.hpp
+@@ -54,6 +54,7 @@
+                                    cs::cartesian>::value, "Exact Cartesian input required");
+         static_assert(native_predicates_detail::native_inputs<Coordinate, Point>::value,
+                       "Native predicates require matching native coordinate types");
++        ++filtering_statistics().views;
+         validate(std::is_integral<Coordinate>());
+     }
+ 
+@@ -74,6 +75,7 @@
+ 
+     void validate(std::false_type) const
+     {
++        ++filtering_statistics().validations;
+         // Preserve make_point's finite-input precondition even when a comparison
+         // would otherwise short-circuit before inspecting both coordinates.
+         (void) approximation(0);
+@@ -136,6 +138,7 @@
+                        native_point_view<Coordinate> const& b,
+                        native_point_view<Coordinate> const& c, std::true_type)
+ {
++    ++filtering_statistics().native_sides;
+     std::array<Coordinate, 6> const values{{a.coordinate(0), a.coordinate(1),
+                                           b.coordinate(0), b.coordinate(1),
+                                           c.coordinate(0), c.coordinate(1)}};
+@@ -184,12 +187,14 @@
+                        native_point_view<Coordinate> const& b,
+                        native_point_view<Coordinate> const& c, std::false_type)
+ {
++    ++filtering_statistics().native_sides;
+     std::array<double, 6> const values{{double(a.coordinate(0)), double(a.coordinate(1)),
+                                        double(b.coordinate(0)), double(b.coordinate(1)),
+                                        double(c.coordinate(0)), double(c.coordinate(1))}};
+     int result;
+     if (orientation_detail::filtered_orientation(values, result))
+     {
++        ++filtering_statistics().side_filter;
+         return result;
+     }
+     auto const determinant = (b.approximation(0) - a.approximation(0))
+@@ -198,12 +203,15 @@
+                            * (c.approximation(0) - a.approximation(0));
+     if (point_detail::filtered_sign(determinant, result))
+     {
++        ++filtering_statistics().side_interval;
+         return result;
+     }
+     if (orientation_detail::supported(values))
+     {
++        ++filtering_statistics().side_expansion;
+         return orientation_detail::orientation(values);
+     }
++    ++filtering_statistics().side_fixed;
+     return fixed_orientation<Coordinate>({{a.coordinate(0), a.coordinate(1),
+                                            b.coordinate(0), b.coordinate(1),
+                                            c.coordinate(0), c.coordinate(1)}});
+--- a/boost/geometry/strategies/cartesian/exact/point.hpp
++++ b/boost/geometry/strategies/cartesian/exact/point.hpp
+@@ -340,13 +340,16 @@
+     static bounds_type native_intersection_bounds(std::array<Coordinate, 8> const& values,
+                                                  point_cache_detail::native_cache_handle& cache)
+     {
++        ++filtering_statistics().constructed;
+         forward_error::point_approximation approximation;
+         if (try_forward_intersection(values, approximation))
+         {
++            ++filtering_statistics().construction_forward;
+             return {{{approximation.value[0], approximation.error[0]},
+                      {approximation.value[1], approximation.error[1]}}};
+         }
+         bounds_type refined;
++        ++filtering_statistics().construction_secondary;
+         std::array<bool, 2> certified{{false, false}};
+         std::array<double, 8> represented;
+         if (represented_producers(values, represented))
+@@ -397,7 +400,7 @@
+         : m_values{{x, y}}
+         , m_bounds{{point_detail::input_interval(x, std::is_integral<Coordinate>()),
+                     point_detail::input_interval(y, std::is_integral<Coordinate>())}}
+-    {}
++    { ++filtering_statistics().owned_points; }
+ 
+     interval approximation(std::size_t dimension) const
+     {
+@@ -863,6 +866,7 @@
+     Coordinate first, second;
+     if (a.native_coordinate(dimension, first) && b.native_coordinate(dimension, second))
+     {
++        ++filtering_statistics().coordinate_native;
+         return first < second ? -1 : first > second ? 1 : 0;
+     }
+     if (a.shares_node(b))
+@@ -871,14 +875,16 @@
+     }
+     bool const native = a.has_fixed_representation() && b.has_fixed_representation();
+     auto const initial = compare_approximations(a.approximation(dimension), b.approximation(dimension), native);
+-    if (initial.certain) { return initial.value; }
++    if (initial.certain) { ++filtering_statistics().coordinate_filter; return initial.value; }
+     if (a.shares_construction(b)) { return 0; }
+     auto const refined = compare_approximations(a.refined_approximation(dimension),
+                                                 b.refined_approximation(dimension), native);
+     if (refined.certain)
+     {
++        ++filtering_statistics().coordinate_refine;
+         return refined.value;
+     }
++    ++filtering_statistics().coordinate_polynomial;
+     auto const polynomial = exact_point<Coordinate>::compare_points(a, b, dimension);
+     if (polynomial.certain) { return polynomial.value; }
+     return fixed_coordinate_compare(a.precision_homogeneous(), b.precision_homogeneous(), dimension);
+--- a/boost/geometry/strategies/cartesian/exact/point_cache.hpp
++++ b/boost/geometry/strategies/cartesian/exact/point_cache.hpp
+@@ -192,6 +192,7 @@
+         auto& result = item.expanded[dimension];
+         if (!result.attempted)
+         {
++            ++filtering_statistics().cache_expansions;
+             result.valid = construction_detail::homogeneous_coordinate
+                 (coordinates, dimension, result.numerator, result.denominator)
+                 && result.denominator.sign() != 0;
+@@ -210,6 +211,7 @@
+         {
+             if (cache.native.size() >= (std::numeric_limits<std::size_t>::max)() - cache.native_base)
+                 throw std::overflow_error("Exact Cartesian cache index exhausted");
++            ++filtering_statistics().cache_entries;
+             cache.native.emplace_back();
+             handle.m_index = cache.native_base + cache.native.size() - 1;
+         }
+@@ -218,6 +220,7 @@
+ 
+     static value_type evaluate(bool intersection, std::array<Coordinate, 8> const& coordinates)
+     {
++        if (intersection) ++filtering_statistics().native_exact_values;
+         value_type result;
+         if (intersection) { result = direct_native_homogeneous(coordinates); }
+         else

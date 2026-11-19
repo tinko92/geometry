@@ -1,0 +1,13 @@
+--- a/boost/geometry/strategies/cartesian/exact/native_predicates.hpp
++++ b/boost/geometry/strategies/cartesian/exact/native_predicates.hpp
+@@ -192,6 +192,10 @@
+     {
+         return result;
+     }
++    if (orientation_detail::supported(values))
++    {
++        return orientation_detail::orientation(values);
++    }
+     auto const determinant = (b.approximation(0) - a.approximation(0))
+                            * (c.approximation(1) - a.approximation(1))
+                            - (b.approximation(1) - a.approximation(1))

@@ -1,0 +1,42 @@
+{
+  "revisions": {
+    "before": "bc65c6d60fe2d891ed978d0c8cdf91bb678712b9",
+    "previous": "ffa469495fd0642859329df0ad298d6a6a06c6fa",
+    "pr1491": "72b2d832fb9596a2a23c0c164a5426ae720d0cd6",
+    "develop": "aaf0560e520041a833c11ad5d61017b684b46f9a"
+  },
+  "flags": [
+    "-std=c++14",
+    "-O3",
+    "-DNDEBUG",
+    "-gline-tables-only",
+    "-fno-omit-frame-pointer",
+    "-ffp-contract=fast",
+    "-pthread",
+    "-DBOOST_GEOMETRY_DISABLE_DEPRECATED_14_WARNING"
+  ],
+  "boost": "/Users/tinko/dev/boost",
+  "timing": {
+    "seconds": 0.2,
+    "repetitions": 6
+  },
+  "compiler": "Apple clang version 21.0.0 (clang-2100.4.1.1)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "optimized_revision": "ffa469495fd0642859329df0ad298d6a6a06c6fa",
+  "optimized_header_status": " M include/boost/geometry/strategies/cartesian/exact/fixed_arithmetic.hpp\n M include/boost/geometry/strategies/cartesian/exact/point.hpp\n M include/boost/geometry/strategies/cartesian/exact/point_cache.hpp\n M include/boost/geometry/strategies/cartesian/exact/point_precision_cache.hpp\n M include/boost/geometry/strategies/cartesian/exact/static_predicates.hpp\n",
+  "host": {
+    "platform": "darwin",
+    "release": "25.6.0",
+    "cpu": "Apple M5",
+    "cores": 10
+  },
+  "source_sha256": "f59a3ff3b10f9a656c6af32b9623b7aaade937e2d9988c1cd69968cd35de8f44",
+  "headers": {
+    "develop-double": "06ec727fc38c20af2b7424248f58391ea783eb1271e72bd2032014c62c656af5",
+    "previous-double": "d31a91032eea2240cbf55e9949190a5c7a086a6ae5805b5d78f7898bbddbac1f",
+    "optimized-double": "85dc2ea18325ac8e85af439f72dbaed87fa00919e9b633790a7de4c63fbdddbd",
+    "develop-int64": "06ec727fc38c20af2b7424248f58391ea783eb1271e72bd2032014c62c656af5",
+    "previous-int64": "d31a91032eea2240cbf55e9949190a5c7a086a6ae5805b5d78f7898bbddbac1f",
+    "optimized-int64": "85dc2ea18325ac8e85af439f72dbaed87fa00919e9b633790a7de4c63fbdddbd"
+  },
+  "runner_sha256": "3527f45ab2a67375ae88c60b86c5744ac8595785b5a95fa28524743809a2ed03"
+}

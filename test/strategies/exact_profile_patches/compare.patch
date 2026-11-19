@@ -1,0 +1,13 @@
+--- a/boost/geometry/strategies/cartesian/exact/point.hpp
++++ b/boost/geometry/strategies/cartesian/exact/point.hpp
+@@ -879,9 +879,7 @@
+     {
+         return refined.value;
+     }
+-    auto const polynomial = exact_point<Coordinate>::compare_points(a, b, dimension);
+-    if (polynomial.certain) { return polynomial.value; }
+-    return fixed_coordinate_compare(a.precision_homogeneous(), b.precision_homogeneous(), dimension);
++    return exact_point<Coordinate>::compare_points(a, b, dimension).value;
+ }
+ 
+ template <typename Coordinate>

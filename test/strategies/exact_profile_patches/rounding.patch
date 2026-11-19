@@ -1,0 +1,19 @@
+--- a/boost/geometry/strategies/cartesian/exact/point.hpp
++++ b/boost/geometry/strategies/cartesian/exact/point.hpp
+@@ -68,14 +68,14 @@
+ 
+ inline filter_result compare_approximations(interval const& a, interval const& b, bool native)
+ {
+-    if (native && std::fegetround() == FE_TONEAREST)
++    if (native)
+     {
+         int result;
+         if (forward_error::try_compare_scalars(a.approximate, a.error, b.approximate, b.error, result))
+         {
+             return {result, true};
+         }
+-        return {0, false};
++        if (std::fegetround() == FE_TONEAREST) return {0, false};
+     }
+     return exact_cartesian::compare(a, b);
+ }

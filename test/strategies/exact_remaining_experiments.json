@@ -1,0 +1,1316 @@
+{
+  "manifest": {
+    "started": "2026-11-13T00:42:20.270Z",
+    "seconds": 0.2,
+    "repetitions": 3,
+    "source_revision": "ad5c0f0cb",
+    "runner_sha256": "535ed34ac5c7ef3cea24fe2218254596e631c03a4e854f7455c3327ace4afd77",
+    "binaries": {
+      "original-double": "268c03301ebc7cf3019cd71eb4b72c5b0ca8e69f976573237eaa875be0d4d43f",
+      "develop-double": "3084f691f67579dcb833126b68f329992d8cc430441f5b90de05a033b7ad5783",
+      "compare-double": "13b65e17d5dc75257baa5718e1be0308129fbf933015de85160423730eab8e5e",
+      "interval-double": "c18c018e0cfbda71996f32eeb68c3d0fb69f778bdcfbb0257a93d3bab114eb08",
+      "provenance-double": "bdb21deae9a32803617203a6a364d746b91617e4854c48609a696ff086d3c928",
+      "endpoints-double": "145ac2dcf13b2ef6f7cb1fb1e79e6f57066151ab5c7246348a4bf137f6737b1f",
+      "rounding-double": "02917c5a6701f002cbf37e4edbd128504c8b2b6d62db7d35e6d5c97f4a6763cb",
+      "all-double": "20ae57b14c9e056bf47f7233bf9db1f3e9d1e0b6c92a3ab868a25fb5f54efe87",
+      "original-int64": "e90ed24c105ec7abdbc915d0e337fb39f2ac76c784489cc26e0258059926915f",
+      "develop-int64": "fd7c95c9c95d4c7cc15f4dc4fa4bfd10b6c787887026108fa4ca1cac8692bfb2",
+      "compare-int64": "97763a0f495f659f8553bd3e1648c174b699036fb95b7d5fec52b0c0f670d738",
+      "interval-int64": "716dfd9ae0387db6554caea77f5dec15dd6bd14dd24b828636ea3bed0f7e4d84",
+      "provenance-int64": "0d6e2db8c55e16630de343fc3b2378cb7c00f3fe8db073870d6f8bb4fff3cd76",
+      "endpoints-int64": "59e0714808dc6261bcdda1ff1bc7db64a9f4784150373dcd7f9a166e37d01489",
+      "rounding-int64": "163ab47c03a8bbe9ef770ede273fb66f9ff8fa57d8591c0a7ff879ab268c0544",
+      "all-int64": "c984e12241256b571a57d7498ce09970c2bc91f833d51710c10683f1d3dac023"
+    },
+    "finished": "2026-11-13T00:43:42.760Z"
+  },
+  "groups": [
+    {
+      "variant": "original",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 18216.8726381,
+      "min": 18126.7348266,
+      "max": 18453.7607537,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 4840.54416602,
+      "min": 4833.36150019,
+      "max": 4902.05292418,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 17919.2336607,
+      "min": 17750.7209569,
+      "max": 17941.4472321,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 17954.4680357,
+      "min": 17949.6800893,
+      "max": 18033.9215158,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 18193.1170967,
+      "min": 18069.2399747,
+      "max": 18261.3705487,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 18249.2732558,
+      "min": 18199.9682049,
+      "max": 18870.1760166,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 18145.3479046,
+      "min": 18108.0879697,
+      "max": 20856.3127992,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "all",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 18008.6469109,
+      "min": 17940.9040179,
+      "max": 20547.8905897,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "original",
+      "coordinate": "double",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 12388.8854373,
+      "min": 12122.1233043,
+      "max": 12397.1689106,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 1307.26825204,
+      "min": 1289.10760309,
+      "max": 1309.53390108,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "double",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 11509.2486213,
+      "min": 11442.439838,
+      "max": 11823.3637972,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "double",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 12241.1499023,
+      "min": 12110.7198359,
+      "max": 12301.4348652,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "double",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 12279.8432598,
+      "min": 12169.5773954,
+      "max": 12407.9241071,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "double",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 12260.2175245,
+      "min": 12200.5739908,
+      "max": 12285.5621936,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "double",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 12344.3215428,
+      "min": 12182.5576362,
+      "max": 12359.380126,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "all",
+      "coordinate": "double",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 11776.2031837,
+      "min": 11685.9622785,
+      "max": 11797.2632075,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "original",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 8095.93588083,
+      "min": 8093.34960433,
+      "max": 8282.95510913,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 2465.03525483,
+      "min": 2424.25357316,
+      "max": 2489.91196009,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 7934.83633407,
+      "min": 7856.74791928,
+      "max": 7955.74407602,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 8021.47271635,
+      "min": 7967.88692748,
+      "max": 8061.31535921,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 8137.30215097,
+      "min": 8126.84995942,
+      "max": 8148.36629232,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 8093.23861434,
+      "min": 8092.46640827,
+      "max": 8144.56347656,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 8183.81871728,
+      "min": 8158.23872884,
+      "max": 8189.88943881,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "all",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 8033.32163462,
+      "min": 8014.24278846,
+      "max": 8127.83754058,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "original",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 35041.2109375,
+      "min": 34891.1314236,
+      "max": 35166.022823,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 6112.78533936,
+      "min": 6045.40794246,
+      "max": 6126.85882461,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 32799.1536458,
+      "min": 32661.7838542,
+      "max": 32998.1769737,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 35076.1789931,
+      "min": 34898.8064236,
+      "max": 35382.9954354,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 34983.2755208,
+      "min": 34727.228125,
+      "max": 35137.940309,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 35025.9548611,
+      "min": 34862.0152778,
+      "max": 35683.9636009,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 33533.6324801,
+      "min": 33243.0236842,
+      "max": 33742.8946573,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "all",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 30795.0240502,
+      "min": 30676.45144,
+      "max": 30852.9347426,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "original",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 291.500034978,
+      "min": 291.2474036,
+      "max": 292.460454976,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 151.890957641,
+      "min": 150.721892483,
+      "max": 153.400462338,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 291.677604944,
+      "min": 291.655487343,
+      "max": 292.121811612,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 291.088394188,
+      "min": 290.377953099,
+      "max": 304.73162177,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 294.108961804,
+      "min": 291.673715294,
+      "max": 295.220028221,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 292.548637603,
+      "min": 291.213527106,
+      "max": 292.826060603,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 293.195536049,
+      "min": 293.083839855,
+      "max": 293.522504872,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "all",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 308.679341787,
+      "min": 308.021697282,
+      "max": 308.771545549,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "original",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 59919.6178571,
+      "min": 59802.4501627,
+      "max": 63597.3576367,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 11583.5021412,
+      "min": 11361.1252831,
+      "max": 18104.6257225,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 58971.0417647,
+      "min": 58960.6741176,
+      "max": 59055.6617647,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 59652.3897059,
+      "min": 59303.2138421,
+      "max": 59935.0538302,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 59933.3334328,
+      "min": 59536.9605882,
+      "max": 60398.9846939,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 60546.5687275,
+      "min": 59809.8320024,
+      "max": 60689.5380435,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 60414.2537313,
+      "min": 59934.2880952,
+      "max": 61811.5297181,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "all",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 59137.4388235,
+      "min": 58823.2001756,
+      "max": 63142.7162247,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "original",
+      "coordinate": "double",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 6742150,
+      "min": 6732119.46667,
+      "max": 6812908.33333,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 580450.189655,
+      "min": 575313.334286,
+      "max": 585220.652174,
+      "digest": "13947526093612460847"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "double",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 6987584.7931,
+      "min": 6711022.23333,
+      "max": 8419927.08333,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "double",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 6796990.26667,
+      "min": 6743901.4,
+      "max": 6854976.36667,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "double",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 5372259.86842,
+      "min": 5315380.47368,
+      "max": 5533168.91892,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "double",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 4848664.69048,
+      "min": 4683686.04651,
+      "max": 5055819.775,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "double",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 6904116.37931,
+      "min": 6756808.33333,
+      "max": 7083787.34483,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "all",
+      "coordinate": "double",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 3135007.15625,
+      "min": 3088410.89231,
+      "max": 3270996.64516,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "original",
+      "coordinate": "double",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 109368.963508,
+      "min": 109053.097944,
+      "max": 110674.885714,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 5328.45440268,
+      "min": 5283.84316934,
+      "max": 5365.54593696,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "double",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 107788.893183,
+      "min": 107183.302239,
+      "max": 108195.831455,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "double",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 62160.5332298,
+      "min": 61675.1760563,
+      "max": 62288.6903727,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "double",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 109182.598039,
+      "min": 108801.261406,
+      "max": 109783.902492,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "double",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 109475.285948,
+      "min": 108961.718852,
+      "max": 109680.683099,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "double",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 108917.002147,
+      "min": 108763.904117,
+      "max": 108925.221018,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "all",
+      "coordinate": "double",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 60599.2906803,
+      "min": 59877.8979104,
+      "max": 61208.2955918,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "original",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 14379.3601634,
+      "min": 14244.9426136,
+      "max": 14477.0990307,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 4291.98638975,
+      "min": 4200.62584005,
+      "max": 4311.8812931,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 14268.1196733,
+      "min": 14054.643708,
+      "max": 14462.8456221,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 14406.9340438,
+      "min": 14376.3469037,
+      "max": 14463.3646313,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 14326.7872432,
+      "min": 14291.8152825,
+      "max": 14355.1820528,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 14372.3988675,
+      "min": 14303.6499715,
+      "max": 16492.7185855,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 14374.0442947,
+      "min": 14348.8180189,
+      "max": 15033.2062049,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "all",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "union",
+      "ns": 14164.8873727,
+      "min": 14034.5023122,
+      "max": 14179.2574236,
+      "digest": "15278645049945193200"
+    },
+    {
+      "variant": "original",
+      "coordinate": "int64",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 10316.9971638,
+      "min": 10158.3341619,
+      "max": 10360.0842301,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 1143.91238104,
+      "min": 1115.5996275,
+      "max": 1160.73645795,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "int64",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 9690.94064435,
+      "min": 9623.23120192,
+      "max": 9744.02501947,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "int64",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 10406.5874169,
+      "min": 10362.99881,
+      "max": 10830.6593317,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "int64",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 10360.4981892,
+      "min": 10263.3431352,
+      "max": 10389.8398567,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "int64",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 10306.4671567,
+      "min": 10277.9734631,
+      "max": 10477.814538,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "int64",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 10403.5484842,
+      "min": 10357.4800807,
+      "max": 10423.6197917,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "all",
+      "coordinate": "int64",
+      "workload": "disjoint",
+      "operation": "union",
+      "ns": 9679.10294118,
+      "min": 9673.50863233,
+      "max": 9712.94322593,
+      "digest": "17053590847823752192"
+    },
+    {
+      "variant": "original",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 5575.93165107,
+      "min": 5514.48710317,
+      "max": 5954.18401786,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 1981.38342641,
+      "min": 1980.64162508,
+      "max": 2011.83353443,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 5364.32984027,
+      "min": 5338.774984,
+      "max": 5471.1424552,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 5532.42762721,
+      "min": 5472.95156524,
+      "max": 5548.2798094,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 5527.26093198,
+      "min": 5505.25189811,
+      "max": 5532.18797013,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 5527.95569236,
+      "min": 5504.36358385,
+      "max": 5545.78532247,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 5495.4976384,
+      "min": 5476.97980517,
+      "max": 5594.39638305,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "all",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "ns": 5422.09391248,
+      "min": 5355.63706657,
+      "max": 5459.82970659,
+      "digest": "5868681785161084928"
+    },
+    {
+      "variant": "original",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 32183.4143814,
+      "min": 32074.4646046,
+      "max": 32769.6940104,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 4621.73326717,
+      "min": 4604.44951215,
+      "max": 4662.08995436,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 29339.7038551,
+      "min": 29126.6215278,
+      "max": 30013.9508929,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 32136.0478316,
+      "min": 32086.6350446,
+      "max": 34611.9290865,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 32168.1214923,
+      "min": 31599.7277462,
+      "max": 32336.4879188,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 32063.2174745,
+      "min": 32003.9993622,
+      "max": 32572.7335612,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 31636.7318497,
+      "min": 30434.4217233,
+      "max": 32367.7311534,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "all",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "ns": 28809.5792718,
+      "min": 28335.6970721,
+      "max": 29849.5540979,
+      "digest": "1405868291709349376"
+    },
+    {
+      "variant": "original",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 74.6468941841,
+      "min": 74.3599077803,
+      "max": 74.8283872686,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 54.3480298913,
+      "min": 54.2671821819,
+      "max": 54.4117711072,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 75.8677786865,
+      "min": 75.7808995193,
+      "max": 76.2833111605,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 74.5236914393,
+      "min": 74.519089729,
+      "max": 74.8704467794,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 75.0076319216,
+      "min": 74.7166392708,
+      "max": 75.2603726399,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 77.356329908,
+      "min": 75.1545176884,
+      "max": 78.9993589318,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 75.9890607903,
+      "min": 74.6449402096,
+      "max": 77.452578582,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "all",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "covered_by",
+      "ns": 77.3011288093,
+      "min": 76.2575364507,
+      "max": 79.0318518126,
+      "digest": "9227111886962543675"
+    },
+    {
+      "variant": "original",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 37814.8531627,
+      "min": 37692.8260542,
+      "max": 38152.3359375,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 8709.75874826,
+      "min": 8415.578083,
+      "max": 8734.63687151,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 37262.3854167,
+      "min": 37247.0083705,
+      "max": 37418.4415923,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 38023.5237199,
+      "min": 37895.7707078,
+      "max": 38081.9056852,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 37765.2326807,
+      "min": 37722.7818148,
+      "max": 37984.6417545,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 37823.0263554,
+      "min": 37624.7364211,
+      "max": 37924.996988,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 37853.4841867,
+      "min": 37690.3708584,
+      "max": 37912.1878765,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "all",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "clip",
+      "ns": 37308.8340774,
+      "min": 37160.5391544,
+      "max": 37596.8733259,
+      "digest": "4348417437228382144"
+    },
+    {
+      "variant": "original",
+      "coordinate": "int64",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 6382602.84375,
+      "min": 6355238.28125,
+      "max": 6386494.78125,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 469265.504651,
+      "min": 463926.50463,
+      "max": 473587.734742,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "int64",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 6394054.6875,
+      "min": 6276042.96875,
+      "max": 6442690.09375,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "int64",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 6385226.5625,
+      "min": 6332746.09375,
+      "max": 6386098.96875,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "int64",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 5045276.05,
+      "min": 5007030.225,
+      "max": 5054584.375,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "int64",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 4415771.73913,
+      "min": 4363560.69565,
+      "max": 4421345.1087,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "int64",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 6430571.59375,
+      "min": 6364701.8125,
+      "max": 6434791.65625,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "all",
+      "coordinate": "int64",
+      "workload": "star",
+      "operation": "sym_difference",
+      "ns": 2801422.45833,
+      "min": 2766291.09589,
+      "max": 2812728.59722,
+      "digest": "7725548822240121184"
+    },
+    {
+      "variant": "original",
+      "coordinate": "int64",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 17643.96796,
+      "min": 17536.5638094,
+      "max": 17712.780279,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 3667.68099722,
+      "min": 3666.11637236,
+      "max": 3674.50670167,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "compare",
+      "coordinate": "int64",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 16151.8705702,
+      "min": 16055.9395032,
+      "max": 16448.6259868,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "interval",
+      "coordinate": "int64",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 17713.902101,
+      "min": 17517.0726257,
+      "max": 17750.8055261,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "provenance",
+      "coordinate": "int64",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 17730.5901306,
+      "min": 17727.6401836,
+      "max": 17742.5957804,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "endpoints",
+      "coordinate": "int64",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 17697.55994,
+      "min": 17468.8082228,
+      "max": 17905.3832143,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "rounding",
+      "coordinate": "int64",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 17694.7534428,
+      "min": 17448.6039062,
+      "max": 18702.2065662,
+      "digest": "5699319642190617880"
+    },
+    {
+      "variant": "all",
+      "coordinate": "int64",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "ns": 16061.0176282,
+      "min": 16028.4988782,
+      "max": 16102.8745994,
+      "digest": "5699319642190617880"
+    }
+  ],
+  "verification": {
+    "point_suite": "No errors detected.",
+    "native_predicate_suite": "No errors detected.",
+    "full_algorithm_suite_and_issue_replay": false
+  },
+  "policy": "Isolated prototypes only, three serial rotated rounds at 0.2 seconds. Full production regressions were not run on prototypes. Exact variants must match original benchmark digests; develop may differ."
+}

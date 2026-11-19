@@ -1,0 +1,450 @@
+{
+  "summary": [
+    {
+      "coordinate": "double",
+      "group": "set_operations",
+      "cases": 20,
+      "speedup_previous": 1.0156925593054567,
+      "slowdown_develop": 5.786066708106384,
+      "max_min_ratio": 1.0304755862877588
+    },
+    {
+      "coordinate": "double",
+      "group": "relate",
+      "cases": 15,
+      "speedup_previous": 1.0360987229237715,
+      "slowdown_develop": 4.769002468863797,
+      "max_min_ratio": 1.033311033852386
+    },
+    {
+      "coordinate": "double",
+      "group": "covered_by",
+      "cases": 5,
+      "speedup_previous": 1.0184769228577992,
+      "slowdown_develop": 1.8399472921081983,
+      "max_min_ratio": 1.035742418671176
+    },
+    {
+      "coordinate": "double",
+      "group": "clip",
+      "cases": 5,
+      "speedup_previous": 1.027335327444023,
+      "slowdown_develop": 5.2558820989037365,
+      "max_min_ratio": 1.0277491280897066
+    },
+    {
+      "coordinate": "double",
+      "group": "all",
+      "cases": 45,
+      "speedup_previous": 1.0240566697610638,
+      "slowdown_develop": 4.725787114156517,
+      "max_min_ratio": 1.0317005369070213
+    },
+    {
+      "coordinate": "int64",
+      "group": "set_operations",
+      "cases": 20,
+      "speedup_previous": 1.0668040143202417,
+      "slowdown_develop": 4.244577875895859,
+      "max_min_ratio": 1.0437639566808559
+    },
+    {
+      "coordinate": "int64",
+      "group": "relate",
+      "cases": 15,
+      "speedup_previous": 1.0956385567146805,
+      "slowdown_develop": 4.205617257856095,
+      "max_min_ratio": 1.0541657244857516
+    },
+    {
+      "coordinate": "int64",
+      "group": "covered_by",
+      "cases": 5,
+      "speedup_previous": 0.980466060633318,
+      "slowdown_develop": 1.369749930625971,
+      "max_min_ratio": 1.0958739230371455
+    },
+    {
+      "coordinate": "int64",
+      "group": "clip",
+      "cases": 5,
+      "speedup_previous": 1.1074873949424693,
+      "slowdown_develop": 3.9811450955312098,
+      "max_min_ratio": 1.0151002536020812
+    },
+    {
+      "coordinate": "int64",
+      "group": "all",
+      "cases": 45,
+      "speedup_previous": 1.0707278369964401,
+      "slowdown_develop": 3.705362725988536,
+      "max_min_ratio": 1.0496512876079704
+    }
+  ],
+  "allocations": [
+    {
+      "workload": "disjoint",
+      "operation": "union",
+      "previous_allocations": 88,
+      "allocations": 88,
+      "previous_bytes": 180273,
+      "bytes": 171009
+    },
+    {
+      "workload": "disjoint",
+      "operation": "intersection",
+      "previous_allocations": 15,
+      "allocations": 15,
+      "previous_bytes": 8273,
+      "bytes": 8241
+    },
+    {
+      "workload": "disjoint",
+      "operation": "difference",
+      "previous_allocations": 34,
+      "allocations": 34,
+      "previous_bytes": 56321,
+      "bytes": 53713
+    },
+    {
+      "workload": "disjoint",
+      "operation": "sym_difference",
+      "previous_allocations": 126,
+      "allocations": 126,
+      "previous_bytes": 233075,
+      "bytes": 221635
+    },
+    {
+      "workload": "disjoint",
+      "operation": "relate_aa",
+      "previous_allocations": 10,
+      "allocations": 10,
+      "previous_bytes": 7440,
+      "bytes": 7440
+    },
+    {
+      "workload": "disjoint",
+      "operation": "relate_la",
+      "previous_allocations": 33,
+      "allocations": 33,
+      "previous_bytes": 16984,
+      "bytes": 16608
+    },
+    {
+      "workload": "disjoint",
+      "operation": "relate_ll",
+      "previous_allocations": 19,
+      "allocations": 19,
+      "previous_bytes": 42512,
+      "bytes": 41240
+    },
+    {
+      "workload": "disjoint",
+      "operation": "covered_by",
+      "previous_allocations": 0,
+      "allocations": 0,
+      "previous_bytes": 0,
+      "bytes": 0
+    },
+    {
+      "workload": "disjoint",
+      "operation": "clip",
+      "previous_allocations": 116,
+      "allocations": 116,
+      "previous_bytes": 72104,
+      "bytes": 70760
+    },
+    {
+      "workload": "convex",
+      "operation": "union",
+      "previous_allocations": 89,
+      "allocations": 89,
+      "previous_bytes": 96299,
+      "bytes": 92283
+    },
+    {
+      "workload": "convex",
+      "operation": "intersection",
+      "previous_allocations": 87,
+      "allocations": 87,
+      "previous_bytes": 70315,
+      "bytes": 67707
+    },
+    {
+      "workload": "convex",
+      "operation": "difference",
+      "previous_allocations": 89,
+      "allocations": 89,
+      "previous_bytes": 93035,
+      "bytes": 89211
+    },
+    {
+      "workload": "convex",
+      "operation": "sym_difference",
+      "previous_allocations": 328,
+      "allocations": 331,
+      "previous_bytes": 412033,
+      "bytes": 415833
+    },
+    {
+      "workload": "convex",
+      "operation": "relate_aa",
+      "previous_allocations": 16,
+      "allocations": 16,
+      "previous_bytes": 8432,
+      "bytes": 8408
+    },
+    {
+      "workload": "convex",
+      "operation": "relate_la",
+      "previous_allocations": 33,
+      "allocations": 33,
+      "previous_bytes": 16984,
+      "bytes": 16608
+    },
+    {
+      "workload": "convex",
+      "operation": "relate_ll",
+      "previous_allocations": 19,
+      "allocations": 19,
+      "previous_bytes": 42512,
+      "bytes": 41240
+    },
+    {
+      "workload": "convex",
+      "operation": "covered_by",
+      "previous_allocations": 0,
+      "allocations": 0,
+      "previous_bytes": 0,
+      "bytes": 0
+    },
+    {
+      "workload": "convex",
+      "operation": "clip",
+      "previous_allocations": 116,
+      "allocations": 116,
+      "previous_bytes": 72104,
+      "bytes": 70760
+    },
+    {
+      "workload": "star",
+      "operation": "union",
+      "previous_allocations": 3005,
+      "allocations": 3005,
+      "previous_bytes": 802155,
+      "bytes": 774267
+    },
+    {
+      "workload": "star",
+      "operation": "intersection",
+      "previous_allocations": 3006,
+      "allocations": 3006,
+      "previous_bytes": 723355,
+      "bytes": 699491
+    },
+    {
+      "workload": "star",
+      "operation": "difference",
+      "previous_allocations": 3189,
+      "allocations": 3189,
+      "previous_bytes": 741531,
+      "bytes": 717027
+    },
+    {
+      "workload": "star",
+      "operation": "sym_difference",
+      "previous_allocations": 14288,
+      "allocations": 14304,
+      "previous_bytes": 3168177,
+      "bytes": 6627329
+    },
+    {
+      "workload": "star",
+      "operation": "relate_aa",
+      "previous_allocations": 393,
+      "allocations": 393,
+      "previous_bytes": 184592,
+      "bytes": 180504
+    },
+    {
+      "workload": "star",
+      "operation": "relate_la",
+      "previous_allocations": 36,
+      "allocations": 36,
+      "previous_bytes": 37208,
+      "bytes": 36576
+    },
+    {
+      "workload": "star",
+      "operation": "relate_ll",
+      "previous_allocations": 19,
+      "allocations": 19,
+      "previous_bytes": 42512,
+      "bytes": 41240
+    },
+    {
+      "workload": "star",
+      "operation": "covered_by",
+      "previous_allocations": 0,
+      "allocations": 0,
+      "previous_bytes": 0,
+      "bytes": 0
+    },
+    {
+      "workload": "star",
+      "operation": "clip",
+      "previous_allocations": 149,
+      "allocations": 149,
+      "previous_bytes": 166088,
+      "bytes": 164680
+    },
+    {
+      "workload": "holes",
+      "operation": "union",
+      "previous_allocations": 101,
+      "allocations": 101,
+      "previous_bytes": 104539,
+      "bytes": 100491
+    },
+    {
+      "workload": "holes",
+      "operation": "intersection",
+      "previous_allocations": 201,
+      "allocations": 201,
+      "previous_bytes": 226811,
+      "bytes": 216491
+    },
+    {
+      "workload": "holes",
+      "operation": "difference",
+      "previous_allocations": 152,
+      "allocations": 152,
+      "previous_bytes": 185547,
+      "bytes": 177339
+    },
+    {
+      "workload": "holes",
+      "operation": "sym_difference",
+      "previous_allocations": 500,
+      "allocations": 503,
+      "previous_bytes": 662321,
+      "bytes": 654201
+    },
+    {
+      "workload": "holes",
+      "operation": "relate_aa",
+      "previous_allocations": 16,
+      "allocations": 16,
+      "previous_bytes": 8432,
+      "bytes": 8408
+    },
+    {
+      "workload": "holes",
+      "operation": "relate_la",
+      "previous_allocations": 34,
+      "allocations": 34,
+      "previous_bytes": 25688,
+      "bytes": 25056
+    },
+    {
+      "workload": "holes",
+      "operation": "relate_ll",
+      "previous_allocations": 19,
+      "allocations": 19,
+      "previous_bytes": 42512,
+      "bytes": 41240
+    },
+    {
+      "workload": "holes",
+      "operation": "covered_by",
+      "previous_allocations": 0,
+      "allocations": 0,
+      "previous_bytes": 0,
+      "bytes": 0
+    },
+    {
+      "workload": "holes",
+      "operation": "clip",
+      "previous_allocations": 149,
+      "allocations": 149,
+      "previous_bytes": 75368,
+      "bytes": 73896
+    },
+    {
+      "workload": "shared",
+      "operation": "union",
+      "previous_allocations": 566,
+      "allocations": 566,
+      "previous_bytes": 130043,
+      "bytes": 125979
+    },
+    {
+      "workload": "shared",
+      "operation": "intersection",
+      "previous_allocations": 562,
+      "allocations": 562,
+      "previous_bytes": 109211,
+      "bytes": 106267
+    },
+    {
+      "workload": "shared",
+      "operation": "difference",
+      "previous_allocations": 100,
+      "allocations": 100,
+      "previous_bytes": 87755,
+      "bytes": 84475
+    },
+    {
+      "workload": "shared",
+      "operation": "sym_difference",
+      "previous_allocations": 250,
+      "allocations": 250,
+      "previous_bytes": 216135,
+      "bytes": 207639
+    },
+    {
+      "workload": "shared",
+      "operation": "relate_aa",
+      "previous_allocations": 114,
+      "allocations": 114,
+      "previous_bytes": 24816,
+      "bytes": 24312
+    },
+    {
+      "workload": "shared",
+      "operation": "relate_la",
+      "previous_allocations": 32,
+      "allocations": 32,
+      "previous_bytes": 15064,
+      "bytes": 14688
+    },
+    {
+      "workload": "shared",
+      "operation": "relate_ll",
+      "previous_allocations": 19,
+      "allocations": 19,
+      "previous_bytes": 42512,
+      "bytes": 41240
+    },
+    {
+      "workload": "shared",
+      "operation": "covered_by",
+      "previous_allocations": 0,
+      "allocations": 0,
+      "previous_bytes": 0,
+      "bytes": 0
+    },
+    {
+      "workload": "shared",
+      "operation": "clip",
+      "previous_allocations": 100,
+      "allocations": 100,
+      "previous_bytes": 56424,
+      "bytes": 55080
+    }
+  ],
+  "case_summaries": 405,
+  "timed_records": 1620,
+  "allocation_records": 135,
+  "policy": "Upper median of six serial case-interleaved samples; geometric means across cases, not an application mix. Native integer-valued double inputs only."
+}

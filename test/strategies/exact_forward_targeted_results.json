@@ -1,0 +1,53 @@
+{
+  "geomean_slowdown": 1.4105805042927573,
+  "rows": [
+    {
+      "round": 0,
+      "previous_ns": 13221384.2593,
+      "optimized_ns": 31392222.8261,
+      "slowdown": 2.374352201738523
+    },
+    {
+      "round": 1,
+      "previous_ns": 21604128.7879,
+      "optimized_ns": 33384269.8095,
+      "slowdown": 1.5452726715921912
+    },
+    {
+      "round": 2,
+      "previous_ns": 23535494.4667,
+      "optimized_ns": 20893208.3235,
+      "slowdown": 0.8877318618931704
+    },
+    {
+      "round": 3,
+      "previous_ns": 15608702.7778,
+      "optimized_ns": 18928783.7838,
+      "slowdown": 1.2127070425559063
+    },
+    {
+      "round": 4,
+      "previous_ns": 19579234.9444,
+      "optimized_ns": 30014060.7917,
+      "slowdown": 1.5329537071766197
+    },
+    {
+      "round": 5,
+      "previous_ns": 17119400.3902,
+      "optimized_ns": 24621908.0345,
+      "slowdown": 1.4382459357977753
+    },
+    {
+      "round": 6,
+      "previous_ns": 13762150.3137,
+      "optimized_ns": 19337750,
+      "slowdown": 1.405140153188821
+    },
+    {
+      "round": 7,
+      "previous_ns": 18235735.0513,
+      "optimized_ns": 23358044.3548,
+      "slowdown": 1.2808940406893463
+    }
+  ]
+}

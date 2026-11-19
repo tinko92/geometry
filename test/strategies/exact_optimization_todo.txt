@@ -1,0 +1,352 @@
+Exact Cartesian optimization TODO
+================================
+
+Planned work only. Prioritize native double relate/set operations with stored
+approximation output. Preserve exact decisions, borrowed original supports,
+operation-scoped ownership and the agreed strict floating-point contract.
+
+Filtered predicate optimizations, in priority order:
+
+   1. Use monotonic rounding for scalar comparisons (coordinates and measures).
+      Given approximations a, b with certified absolute errors ea, eb, compute
+      d = RN(a-b) and s = RN(ea+eb) in the same round-to-nearest format.
+      If |d| > s, return sign(d). Proof: if |a-b| <= ea+eb, monotonicity
+      gives RN(|a-b|) <= RN(ea+eb), and symmetry gives RN(|a-b|) = |d|.
+      Thus strict separation proves |a-b| > ea+eb and the true operands
+      have the indicated order, even if the error sum rounded down. No
+      inflation is needed. A tie is inconclusive; retain the direct
+      comparison for two zero errors and the fallback for uncertain cases.
+
+   2. Avoid filtering a signed measure twice. In RootSignedMeasure::sign(),
+      use the stored determinant sign when its certified bound excludes zero;
+      respect negation. Otherwise use exact orientation. Where only a sign
+      is wanted, call orientation directly instead of constructing a measure.
+
+   3. Defer adaptive side tests during segment rejection. Keep the immediate
+      rejection when the first pair of signs certifies strict separation.
+      If a sign is inconclusive, try the reverse pair's cheap filters before
+      refining: strict separation there makes the missing sign irrelevant.
+      Retain certified signs and resolve only those the caller still needs.
+
+   4. Certify exact native subtractions from the input box. On each axis,
+      Sterbenz's lemma applies if all coordinates lie in [m, 2m] or its
+      negative reflection for some m > 0. If both axes qualify, orientation
+      compares two rounded products of exact differences. Distinct products
+      certify their order by monotonicity; on a tie compare exact product
+      residuals using FMA under the exponent-range contract, or fall back.
+      Do not apply this certificate to uncertain constructed coordinates.
+
+   5. Reduce orientation on a known common support. If a and b lie on the
+      original directed line s->t, side(a,b,p) is side(s,t,p) when a
+      precedes b along s->t, its negation in reverse order, and zero if a=b.
+      This holds even for p off the support. Use certified support and order
+      already available at the call site; avoid a general support search.
+
+High priority: explore and profile first-stage predicate filters.
+   Inventory every applicable predicate used by exact relate and set operations,
+   including orientation, coordinate order and equality, on-support tests,
+   along-segment order, and dot-product or squared-distance comparisons.
+   Use side_robust's first filter as the native orientation baseline.
+   Compare the current stored-error filters with two no-spacing-lookup
+   alternatives for eagerly bounded approximations: an axis-magnitude bound
+   and a Shewchuk-style expression-specific magnitude (absolute products and
+   sums with one static coefficient). Use the 100-ULP layout as one case;
+   keep its construction cost separate from predicate cost. Explore reuse of
+   rounded products and differences where the proof permits it, and tighter
+   displacement bounds when the cheap first stage is inconclusive.
+   Prove each coefficient, including rounding of the magnitude evaluation.
+   Handle certified exact operands, zeros, and exponent-range guards; leave
+   the exact fallback unchanged. Compare specialization by certified error
+   with an unconditional path when extra branching may cost more.
+   Measure first-stage cost and pass rate per predicate and operand mix,
+   refinement and exact-fallback rates, and end-to-end timings per operation.
+   Include general position, decimal inputs, shared boundaries, and nearly
+   degenerate and far-translated cases. Collect counters separately from timed
+   builds: a cheaper first stage is not a win if extra fallbacks erase it.
+
+   Side and dot: write the exact expression as P + s*Q, with s = -1 for
+   side and +1 for dot. P and Q are products of coordinate differences.
+   - Reuse certified factor signs from coordinate order or a prepared segment.
+     If P and s*Q have the same nonzero sign, return it without multiplying.
+     Drop a certified zero term; opposite signs can cancel. For uncertain
+     coordinates, item 1 above can certify a difference sign. Profile reuse
+     separately from computing four signs just for this shortcut.
+   - If all four differences are exact for the true points (e.g. item 4),
+     compare p = RN(P) directly with -s*q, q = RN(Q). Strict order proves
+     the sign by monotonicity; equality needs residuals or fallback. An
+     N-ULP guarantee alone does not certify exact differences.
+   - Given approximate products p,q with existing absolute error bounds Ep,Eq,
+     accept sign(d) for d = RN(p + s*q) if |d| > RN(Ep + Eq), by item 1.
+     This removes only the final rounding allowance. Do not build separate
+     product certificates solely for this test if a combined bound is cheaper.
+   - For eager points with |true - approx| <= eta*|approx| per coordinate,
+     form M by replacing each difference in P,Q by the sum of its absolute
+     input coordinates and adding the two resulting products. Accept when
+     |d| > RN(C*Mhat), where Mhat is M evaluated in binary64. With u=2^-53,
+     round C upward from (2*eta + eta^2 + ((1+u)^3-1))/(1-u)^3.
+     This covers input errors, rounded differences/products and rounding M;
+     monotonicity handles the final +/- in d. Compare with the precomputed
+     box threshold below on the same certified layout.
+   - Baselines: side_robust on native doubles for side; the existing dot
+     filter for dot; stored-error filters for uncertain points. Count eligible
+     calls as well as successful exits, especially rounded-product ties and
+     opposite-sign cancellation. As arithmetic references (adds including
+     subtracts / multiplies / abs), native side_robust's magnitude path is
+     6/3/3, three-point N-ULP magnitude is 10/5/7, and a prepared box
+     threshold is 5/2/1 excluding setup. Compare measured cost and fallback
+     rates, not just operation counts.
+
+High priority: profile global bounding-box filters for eager N-ULP points.
+   Make N a compile-time constant (include N = 100). For every applicable
+   predicate, derive a conservative threshold once per operation from the
+   input boxes and the uniform coordinate-error guarantee. Prove coverage
+   for exact operands and eagerly certified approximations, including those
+   just outside the boxes. Avoid per-call spacing lookups and error loads.
+   Compare global-then-semi-static filtering against semi-static alone on
+   the same eager layout. Measure bound preparation, first-stage cost and
+   pass rates, and end-to-end time, including widely separated components
+   that can make a global bound loose. Preserve exact fallback.
+
+1. Skip turn-support finalization on non-escaping paths.
+   Start with terminal relate: if no borrowed point survives the turn stage,
+   skip the pass that rewrites its operation IDs into original-edge IDs.
+   Where persistent support IDs are needed, assign or memoize them per source
+   ring instead of repeatedly looking them up in the linear range registry.
+   Preserve original supports and their lifetimes for escaping points.
+
+2. Prepare side tests in the strategy, starting with turn generation.
+   Prepare the fixed directed segment once per outer-loop iteration. Reuse
+   its decoded operands, coordinate differences and certified error or
+   magnitude terms for the inner-loop endpoint tests. Keep coordinate access
+   and the exact fallback in the strategy.
+   When consecutive candidate segments share an endpoint, reuse its certified
+   side result if it was already computed against the same directed segment.
+   Never reuse an inconclusive filter result or compute a sign speculatively
+   just to fill the cache. Keep early rejection for non-crossings.
+   For pairs known to be original native segments, also share endpoint loads,
+   differences and certified determinant terms with the crossing approximation.
+   Profile turn generation first; then consider overlay look-ahead and
+   traversal edge selection, including preparing rays for the angular sort.
+
+3. Node areal symmetric difference once.
+   Replace the two differences and their final union with one noding pass over
+   the original inputs. Select edges where the XOR of the two inside labels
+   changes across the edge. Establish label and ownership rules for coincident
+   edges before replacing the current traversal.
+
+4. Sort compact certified keys for clustering.
+   Extract a conservative x-range once per turn and sort the compact keys.
+   Disjoint ranges prove order and inequality. Use exact lexicographic order
+   and equality within connected groups of overlapping ranges; approximate
+   coordinate equality alone must never merge turns.
+
+5. Omit incoming edge-support vectors on terminal output paths.
+   Keep supports wherever a subsequent predicate or overlay can use them.
+   After parenting, emit untouched source rings from their source and
+   direction/closure metadata when no working ring is needed.
+
+6. Keep midpoint and coordinate-splice queries implicit.
+   Retain borrowed endpoint descriptors instead of materializing auxiliary
+   homogeneous coordinates in cache entries. Add expression-aware coordinate,
+   orientation and other required predicates, with forward-error filters and
+   bounded local exact scratch. References must survive temporary wrappers.
+   Reuse endpoint precision caches, not a separate cache entry per query.
+   Preserve the one-level construction restriction and prove scratch capacities.
+
+7. Specialize comparisons of certified exact coordinates.
+   Finite double values with certified zero error can use direct ordering,
+   whether they originate from inputs or constructions. Preserve infinity
+   handling and lossless mixed-type conversion; uncertain values still require
+   certified filtering and exact fallback.
+
+8. Replace numerical variant dispatch with certified-error classification.
+   Classify operands by certified coordinate errors, not input/construction
+   provenance. A zero-error coordinate is an exact native numerical operand;
+   both errors must be zero to classify an entire 2D point this way. Retain
+   construction information for uncertain coordinates needing exact fallback.
+   Keep overlay bookkeeping (segment IDs, ring membership, connectivity and
+   original edge supports) separate from numerical classification.
+   Share decoded access across X/Y comparisons and equality. For cheap
+   predicates, compare manual error-based branching with an unconditional
+   general fast filter; do not assume branching is faster. Preserve borrowed
+   source lifetimes and avoid unnecessary owning coordinate snapshots.
+
+9. Simplify ring parenting under valid-input and traversal invariants.
+   A narrow stored-original certificate and traversal audit are documented in
+   exact_ring_parenting.md. Generated walks and contact tests remain unchanged.
+   Scope this to Cartesian areal set operations with valid inputs respecting BG
+   orientation/closure traits, not buffer/dissolve's general intermediate walks.
+   For known-valid original rings, avoid residual reconstruction after a boundary
+   point-location result and all-vertices-against-all-edges normalization.
+   Use known ring role/orientation metadata or an exact extremal-vertex scan.
+   For generated rings, first establish simple, nondegenerate boundary cycles
+   and unique geometric-edge ownership, including across coincident operands.
+   Visited turn-operation IDs and biconnected components alone are not proofs.
+   Keep traversal's local duplicate/spike removal and closure handling. Fix
+   invariant violations upstream rather than silently repairing arbitrary walks
+   during parenting. Once justified, remove general signed-edge cancellation,
+   coincident-ring cancellation and their boundary/ray scratch from this path.
+   Parenting should then perform containment and nearest-container selection.
+   Preserve boundary-contact handling: investigate local incident-edge reasoning
+   or prove bidirectional vertex classification sufficient before removing edge
+   midpoint queries. If queries remain needed, use the implicit form in item 6.
+   Reuse remaining operation-local boundary/containment scratch and avoid repeated
+   normalization. Do not confuse algorithmic scratch with numerical caches or
+   assume these simplifications apply to every caller of the generic helpers.
+
+10. Review precision-cache growth and reservations.
+   Avoid unnecessary reallocations without eagerly creating worst-case entries
+   or allocating on successful initial filters. Keep caches operation-owned.
+
+11. Reduce common-path forward-bound computation.
+   Reuse operand extraction and common subexpressions; specialize proven native
+   and structural-zero cases. Do not replace certified bounds with heuristics.
+
+12. Review checked fixed-width fallback overhead.
+   Remove redundant internal checks only with capacity proofs covering every
+   intermediate. Retain admission checks and exact fallbacks. Continue touching
+   only active limbs/components rather than full-capacity scratch buffers.
+
+13. Separately optimize one-ULP and correctly rounded policies.
+   Initial certification is costly even when no coordinates are exported.
+   Improve filters without conflating these policies with ordinary approximate
+   output or weakening their guarantees.
+
+14. Add an opt-in bounded_ulp_output<N> policy with compile-time N >= 1.
+   Bound the output to N representable steps from the correctly rounded
+   destination value; topology decisions stay exact. Compare N = 1, 4, 100
+   against stored approximation and correctly rounded output on the same corpus.
+
+   Division-free certificate for native binary64, RN to nearest/even, no
+   overflow/underflow. For Z = a + (T/D)*U, let t = RN(n/d), h = RN(U),
+   y = a + t*h (mathematical only), z = fma(t,h,a) = RN(y), u = 2^-53.
+   Require |T-n| <= 8u*MT, |D-d| <= 8u*MD and a certified 0 < L <= |D|.
+   Choose a positive compile-time constant rounded DOWN from
+     c_N <= N*(1-2u)^(N+1)*(1-u)^4/(1+u).
+   Once per intersection compute:
+     v = fma(|t|,MD,MT);  w = fma(8,v,|n|);
+     H = fma(|t|,L,w);    B = RN(c_N*L).
+   Per axis accept z if RN(|h|*H) < RN(|z|*B). Strict order survives
+   unrounding the products. Since |T-t*D| <= u*(|n| + 8*(MT + |t|*MD)),
+   the three nonnegative FMAs give |Z-y| <= u*|h|*H/(L*(1-u)^4).
+   Bound |Z-y|, not |Z-z|: the final rounding is common to both results.
+   For RN(Z) to differ from z by N+1 or more steps, the path from y to Z
+   must span N entire intervening rounding cells. Each is at least
+   u*(1-2u)^(N+1)*|z| wide in the normal range, even across a binade
+   boundary. Acceptance puts |Z-y| strictly below their combined width.
+   At N=1 one full cell still intervenes (c_1 = 1-16u suffices); at N=0
+   none does. Correct rounding needs an exactness or rounding-boundary test.
+
+   Extra cost: 3 FMAs + 1 multiply shared, then 2 multiplies + 1 comparison
+   per axis (excluding abs). No bound division or spacing lookup. On a tie,
+   zero candidate or other miss, retain a passing axis; refine the failed
+   axis at emission, or before predicate use for an eager N-ULP layout.
+   A zero or uncertified denominator takes the construction fallback first.
+
+   Optional tighter stage: r = fma(-t,d,n) is the exact division residual
+   n-t*d for these rounded operands. Replace |n| in w by |r|/u (exact
+   power-of-two scaling). Direct cost: 4 FMAs + 2 multiplies shared, same
+   per-axis check. On retry reuse v and B: 3 FMAs + 1 scaling shared, then
+   recheck only failed axes. There is no universal crossover N: record how
+   often this stage rescues a miss. When 8*(MT + |t|*MD) dominates |n|,
+   even r=0 barely tightens H; prioritize tighter determinant certificates.
+
+   FMA determinant retries (costs per determinant unless stated otherwise):
+   - Keep the current head k = RN(p-q), p = RN(a*b), q = RN(c*d).
+     If a,b,c,d are exact endpoint differences, recover the exact product
+     tails ep = fma(a,b,-p), eq = fma(c,d,-q). If p-q is also exact
+     (e.g. by Sterbenz), ep == eq certifies k exactly: 2 FMAs + 1 compare.
+     Otherwise, with s = RN(ep-eq), use 2*|s| if p-q is known exact, or
+     2*fma(u,|k|,|s|) if not. The latter costs 3 FMAs + 1 subtraction
+     + 1 scaling. Tightening this bound changes neither k nor the candidate.
+   - Alternative initial head (Kahan): q = RN(c*d), e = fma(-c,d,q),
+     f = fma(a,b,-q), k_new = RN(f+e). For exact endpoint differences,
+     the relative error is <= 2u, so 4u*|k_new| is a certified bound even
+     after product cancellation. Both determinants and bounds together:
+     2 multiplies + 4 FMAs + 2 adds + 2 scalings, excluding differences.
+     Do not attach this bound to the old head. If replacing heads on retry,
+     recompute the quotient, its residual and the associated candidates.
+   - Rounded differences: Kahan certifies a*b-c*d for the stored factors,
+     not the determinant of the original edges. Given M = RN(|p|+|q|),
+     fma(4u,|k_new|,RN(3u*M)) also covers subtraction error: 1 multiply
+     + 1 FMA for this bound when M is available. For a tighter retry recover
+     the endpoint subtraction tails A=a+da, B=b+db, C=c+dc, D=d+dd.
+     TwoDiffTail costs 5 adds/subtracts per existing head, at most 30 for
+     the six distinct differences across both determinants; reuse shared
+     tails and skip known-exact differences. If any tails are nonzero,
+     also evaluate or bound a*db+b*da+da*db-c*dd-d*dc-dc*dd. That work
+     is additional to tail recovery; zero tails recover the exact-input case.
+   - Retry order: |T-t*D| <= |r| + ET + |t|*ED. Tighten the numerator
+     first if ET dominates, the denominator first if |t|*ED dominates.
+     Prioritize the denominator regardless if ED prevents a useful positive
+     lower bound L for |D|; update L and its dependent thresholds afterwards.
+
+15. Explore exponent-tagged expansions as a full-range exact fallback.
+   Cover the full finite exponent range of supported native binary inputs,
+   including subnormals. Use double components with a side array of exponent
+   blocks or offsets, aligned by exact powers of two. Prove that local
+   error-free transforms preserve both the leading result and its residual,
+   and that renormalization preserves nonoverlap in the scaled values.
+   Derive compile-time bounds on exponent offsets and component counts for
+   each intermediate from the input format, polynomial degree and term
+   bounds. Keep scratch statically sized; represent rational constructions
+   as separate dyadic numerators and denominators.
+   Compare exact decisions, fallback time, and scratch/cache footprint against
+   the bounded fixed-integer fallback on the same ordinary degeneracies and
+   exponent-extreme cases. Keep the ordinary expansion stages unchanged.
+
+Enrichment and traversal (implementation order)
+----------------------------------------------
+Scope: exact Cartesian straight-segment overlay on valid polygonal inputs.
+
+1. Reuse exact position order and record the successor copy decision together.
+   Keep a temporary ordinal for each distinct (x,y) from the exact cluster
+   sort, including singletons and any discarded blockers seen by enrichment.
+   Do not use cluster_id: cleanup can reset it. Lexicographic position is
+   strictly monotone along a nonzero straight segment, including verticals.
+   Order same-segment turns by ordinal in the directed segment's order;
+   keep the existing operation tie rules only at equal ordinals.
+   When enrich_assign selects the successor operation, record whether to
+   copy intervening ring vertices. Traversal then needs neither a scan of
+   both target operations nor a second segment_position predicate. Preserve
+   full round trips; equal position alone does not imply wraparound.
+   The read-only next_turn/next_operation helpers can also return references.
+
+2. Remove two proven redundancies in exact cluster processing.
+   - In the ray comparator, side(T,R,L) = -side(T,L,R). Evaluate only one
+     orientation and preserve the incoming/outgoing tie rule at zero.
+   - In handle_spikes, equal-ranked rays lie on the same line through T.
+     For an unshifted connection its opposite endpoint is on that support,
+     so side(current.opposite_point,current.point,next.point) cannot be
+     positive. Skip this repair on the exact path and omit opposite_point
+     where only the repair needs it. Keep general spike and closure handling.
+
+3. Make areal cluster zone counting linear after angular sorting.
+   Reverse-scan cyclic connections to find the same next outgoing connection
+   per source as the existing search. Add each covered half-open rank interval
+   to a difference array and prefix-sum once. Preserve equal-rank connection
+   order, split wrapping intervals, and count equal start/end ranks as empty.
+   This is a counting optimization, not a consequence of numerical exactness.
+
+4. Proof required before reusing ray ranks in edge selection.
+   At ambiguous clusters, retain incoming and outgoing ranks. Prove that
+   the stored incoming rank describes the actual arrival direction even
+   after collinear output simplification. Only then select among distinct
+   eligible rays by cyclic rank, after operation and component filtering.
+   Equal rays still require path/ownership selection: even a shared target
+   node need not mean the same ring path. Cover equal rays and distinct round
+   trips separately. Do not infer that component search, visited-path checks
+   or reversed-operation compensation can be removed.
+
+Measurement notes
+-----------------
+- The last detailed instruction profile predates volatile removal; its ranking
+  is a guide, not a current wall-time attribution. Refresh when budget permits.
+- Use paired GCC 13 runs with identical language mode, target, flags and corpus;
+  report factors against develop and keep incorrect simple outputs flagged.
+- Validate each future change at a scope appropriate to its risk; no new tests
+  or experiments were run to prepare this list.
+- Numerical volatile barriers are already removed, not pending work.
+- Blanket noinline adaptive splitting regressed the GCC 13/C++20 benchmark and
+  was reverted in f66ea07fa. Do not reintroduce it without targeted evidence.
+  See exact_adapt_performance.md and simple_cartesian_profile.md.

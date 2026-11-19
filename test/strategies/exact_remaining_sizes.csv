@@ -1,0 +1,3 @@
+coordinate,native_point,native_view,implicit_point,squared_distance,exact_traversal_turn,ordinary_traversal_turn,native_precision_entry
+double,16,16,128,280,984,376,3216
+int64,16,16,128,280,984,376,1040

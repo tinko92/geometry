@@ -1,0 +1,86 @@
+[
+  {
+    "key": "forward-double/intersection",
+    "median_us": 330.444389875,
+    "min_us": 309.086959877,
+    "max_us": 355.75615554,
+    "digest": "15390372009690933856"
+  },
+  {
+    "key": "forward-double/union",
+    "median_us": 330.28717357,
+    "min_us": 304.22702914399997,
+    "max_us": 347.137402624,
+    "digest": "4270674616643011440"
+  },
+  {
+    "key": "forward-int64/intersection",
+    "median_us": 129.03508603,
+    "min_us": 123.191533742,
+    "max_us": 137.577702577,
+    "digest": "15390372009690933856"
+  },
+  {
+    "key": "forward-int64/union",
+    "median_us": 132.048397527,
+    "min_us": 126.542329545,
+    "max_us": 148.949844075,
+    "digest": "4270674616643011440"
+  },
+  {
+    "key": "optimized-double/intersection",
+    "median_us": 186.235909598,
+    "min_us": 167.286288423,
+    "max_us": 209.10713541700002,
+    "digest": "15390372009690933856"
+  },
+  {
+    "key": "optimized-double/union",
+    "median_us": 196.63690463100002,
+    "min_us": 161.828394057,
+    "max_us": 205.88677499,
+    "digest": "4270674616643011440"
+  },
+  {
+    "key": "optimized-int64/intersection",
+    "median_us": 60.6272440527,
+    "min_us": 53.4253500266,
+    "max_us": 67.9252627165,
+    "digest": "15390372009690933856"
+  },
+  {
+    "key": "optimized-int64/union",
+    "median_us": 60.8549359815,
+    "min_us": 55.6717985091,
+    "max_us": 72.2805691819,
+    "digest": "4270674616643011440"
+  },
+  {
+    "key": "previous-double/intersection",
+    "median_us": 862.6688144330001,
+    "min_us": 800.3965964910001,
+    "max_us": 1096.7976052600002,
+    "digest": "15390372009690933856"
+  },
+  {
+    "key": "previous-double/union",
+    "median_us": 866.92335924,
+    "min_us": 820.280501634,
+    "max_us": 1060.62173517,
+    "digest": "4270674616643011440"
+  },
+  {
+    "key": "previous-int64/intersection",
+    "median_us": 171.68272606,
+    "min_us": 162.269297996,
+    "max_us": 179.545761478,
+    "digest": "15390372009690933856"
+  },
+  {
+    "key": "previous-int64/union",
+    "median_us": 171.26430157099998,
+    "min_us": 165.673541997,
+    "max_us": 175.76528862400002,
+    "digest": "4270674616643011440"
+  }
+]

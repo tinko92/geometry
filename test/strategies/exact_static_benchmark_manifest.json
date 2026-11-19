@@ -1,0 +1,41 @@
+{
+  "revisions": {
+    "before": "bc65c6d60fe2d891ed978d0c8cdf91bb678712b9",
+    "previous": "b518175cf8d7c676bb9fbcea538f3c71fd49595a",
+    "pr1491": "72b2d832fb9596a2a23c0c164a5426ae720d0cd6",
+    "develop": "aaf0560e520041a833c11ad5d61017b684b46f9a"
+  },
+  "flags": [
+    "-std=c++14",
+    "-O3",
+    "-DNDEBUG",
+    "-gline-tables-only",
+    "-fno-omit-frame-pointer",
+    "-ffp-contract=fast",
+    "-pthread",
+    "-DBOOST_GEOMETRY_DISABLE_DEPRECATED_14_WARNING"
+  ],
+  "boost": "/Users/tinko/dev/boost",
+  "timing": {
+    "seconds": 0.3,
+    "repetitions": 6
+  },
+  "compiler": "Apple clang version 21.0.0 (clang-2100.4.1.1)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "optimized_revision": "b518175cf8d7c676bb9fbcea538f3c71fd49595a",
+  "optimized_header_status": " M include/boost/geometry/algorithms/detail/covered_by/implementation.hpp\n M include/boost/geometry/algorithms/detail/disjoint/linear_areal.hpp\n M include/boost/geometry/algorithms/detail/equals/implementation.hpp\n M include/boost/geometry/algorithms/detail/is_simple/linear.hpp\n M include/boost/geometry/algorithms/detail/overlay/add_rings.hpp\n M include/boost/geometry/algorithms/detail/overlay/assign_parents.hpp\n M include/boost/geometry/algorithms/detail/overlay/enrich_intersection_points.hpp\n M include/boost/geometry/algorithms/detail/overlay/follow.hpp\n M include/boost/geometry/algorithms/detail/overlay/get_turn_info.hpp\n M include/boost/geometry/algorithms/detail/overlay/graph/assign_clustered_counts.hpp\n M include/boost/geometry/algorithms/detail/overlay/graph/traverse_graph.hpp\n M include/boost/geometry/algorithms/detail/overlay/less_by_segment_ratio.hpp\n M include/boost/geometry/algorithms/detail/overlay/linear_linear.hpp\n M include/boost/geometry/algorithms/detail/overlay/ring_properties.hpp\n M include/boost/geometry/algorithms/detail/overlay/stream_info.hpp\n M include/boost/geometry/algorithms/detail/overlay/turn_info.hpp\n M include/boost/geometry/algorithms/detail/relate/areal_areal.hpp\n M include/boost/geometry/algorithms/detail/relate/follow_helpers.hpp\n M include/boost/geometry/algorithms/detail/relate/linear_areal.hpp\n M include/boost/geometry/algorithms/detail/relate/linear_linear.hpp\n M include/boost/geometry/algorithms/detail/relate/turns.hpp\n M include/boost/geometry/algorithms/detail/sections/sectionalize.hpp\n M include/boost/geometry/algorithms/detail/turns/compare_turns.hpp\n M include/boost/geometry/algorithms/detail/turns/print_turns.hpp\n M include/boost/geometry/algorithms/detail/within/point_in_geometry.hpp\n D include/boost/geometry/strategies/cartesian/exact/filtered_box.hpp\n D include/boost/geometry/strategies/cartesian/exact/filtered_measure.hpp\n D include/boost/geometry/strategies/cartesian/exact/filtered_number.hpp\n D include/boost/geometry/strategies/cartesian/exact/filtered_predicates.hpp\n M include/boost/geometry/strategies/cartesian/exact/filtered_segment.hpp\n D include/boost/geometry/strategies/cartesian/exact/fixed_scalar.hpp\n D include/boost/geometry/strategies/cartesian/exact/indexed_storage.hpp\n M include/boost/geometry/strategies/cartesian/exact/native_predicates.hpp\n M include/boost/geometry/strategies/cartesian/exact/point.hpp\n D include/boost/geometry/strategies/cartesian/exact/ratio.hpp\n M include/boost/geometry/strategies/cartesian/exact/segment.hpp\n M include/boost/geometry/strategies/detail/partition.hpp\n M include/boost/geometry/strategies/detail/ring_properties.hpp\n M include/boost/geometry/strategies/detail/section.hpp\n M include/boost/geometry/strategies/detail/segment_as_subrange.hpp\n M include/boost/geometry/strategies/relate/cartesian_exact.hpp\n M include/boost/geometry/strategies/relate/intersection_types.hpp\n?? include/boost/geometry/strategies/cartesian/exact/point_precision_cache.hpp\n?? include/boost/geometry/strategies/cartesian/exact/segment_position.hpp\n?? include/boost/geometry/strategies/cartesian/exact/static_box.hpp\n?? include/boost/geometry/strategies/cartesian/exact/static_predicates.hpp\n?? include/boost/geometry/strategies/cartesian/exact/static_ring_topology.hpp\n",
+  "host": {
+    "platform": "darwin",
+    "release": "25.6.0",
+    "cpu": "Apple M5",
+    "cores": 10
+  },
+  "source_sha256": "f59a3ff3b10f9a656c6af32b9623b7aaade937e2d9988c1cd69968cd35de8f44",
+  "headers": {
+    "develop-double": "06ec727fc38c20af2b7424248f58391ea783eb1271e72bd2032014c62c656af5",
+    "previous-double": "0a3190d73ec28e8e8d751127f40d981a0f1a86ae2bfadc937c48db7d4bb14d60",
+    "optimized-double": "d31a91032eea2240cbf55e9949190a5c7a086a6ae5805b5d78f7898bbddbac1f",
+    "develop-int64": "06ec727fc38c20af2b7424248f58391ea783eb1271e72bd2032014c62c656af5",
+    "previous-int64": "0a3190d73ec28e8e8d751127f40d981a0f1a86ae2bfadc937c48db7d4bb14d60",
+    "optimized-int64": "d31a91032eea2240cbf55e9949190a5c7a086a6ae5805b5d78f7898bbddbac1f"
+  }
+}

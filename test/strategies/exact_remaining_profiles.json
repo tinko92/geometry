@@ -1,0 +1,1411 @@
+{
+  "benchmark": "/tmp/bg-operation-lazy-performance",
+  "benchmark_manifest_sha256": "a37155e4e45e8f46c21148758dd771cc8da9a063f4ffb48c3d989c6683fb2cd1",
+  "source_revision": "ad5c0f0cb",
+  "develop_revision": "aaf0560e520041a833c11ad5d61017b684b46f9a",
+  "duration": 3,
+  "interval_ms": 1,
+  "benchmark_seconds": 8,
+  "started": "2026-11-13T00:12:02.816Z",
+  "runs": [
+    {
+      "name": "optimized-double-convex-union",
+      "variant": "optimized",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "union",
+      "pid": 33929,
+      "binary_sha256": "268c03301ebc7cf3019cd71eb4b72c5b0ca8e69f976573237eaa875be0d4d43f",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "union",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2552,
+      "total_samples": 2552,
+      "groups": {
+        "native_orientation": 158,
+        "rounding_mode": 92,
+        "other": 1303,
+        "input_validation": 152,
+        "forward_filter": 7,
+        "cache": 1,
+        "allocation": 177,
+        "point_comparison": 158,
+        "memory_copy_clear": 179,
+        "working_point_setup": 95,
+        "coordinate_filter": 1,
+        "expansions_rounding": 229
+      },
+      "stages": {
+        "turn_generation": 963,
+        "sectionalize": 346,
+        "other": 592,
+        "ring_topology": 140,
+        "enrichment": 25,
+        "output_conversion": 486
+      },
+      "inclusive": {
+        "validation": 152,
+        "cache": 4,
+        "bgl": 118,
+        "ring_topology": 121,
+        "expansions": 404,
+        "output": 486
+      },
+      "profile_sha256": "587d630071265e913ae495e0ed15192be466c4b74aa262335926ec69c09483f8"
+    },
+    {
+      "name": "develop-double-convex-union",
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "union",
+      "pid": 33988,
+      "binary_sha256": "3084f691f67579dcb833126b68f329992d8cc430441f5b90de05a033b7ad5783",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "union",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2525,
+      "total_samples": 2525,
+      "groups": {
+        "other": 1879,
+        "allocation": 544,
+        "memory_copy_clear": 102
+      },
+      "stages": {
+        "turn_generation": 1344,
+        "other": 1043,
+        "enrichment": 89,
+        "ring_topology": 49
+      },
+      "inclusive": {
+        "bgl": 371,
+        "ring_topology": 49
+      },
+      "profile_sha256": "47ada4fa73ed716423a52eab8f34d2655bcaeff9be208ddf2c1077ad8952fb23"
+    },
+    {
+      "name": "optimized-double-disjoint-union",
+      "variant": "optimized",
+      "coordinate": "double",
+      "workload": "disjoint",
+      "operation": "union",
+      "pid": 34012,
+      "binary_sha256": "268c03301ebc7cf3019cd71eb4b72c5b0ca8e69f976573237eaa875be0d4d43f",
+      "args": [
+        "--workload",
+        "disjoint",
+        "--operation",
+        "union",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2568,
+      "total_samples": 2569,
+      "groups": {
+        "other": 1490,
+        "allocation": 236,
+        "memory_copy_clear": 59,
+        "working_point_setup": 261,
+        "point_comparison": 519,
+        "rounding_mode": 2,
+        "input_validation": 1
+      },
+      "stages": {
+        "ring_topology": 906,
+        "other": 820,
+        "sectionalize": 526,
+        "turn_generation": 101,
+        "enrichment": 1,
+        "output_conversion": 214
+      },
+      "inclusive": {
+        "ring_topology": 900,
+        "validation": 1,
+        "bgl": 17,
+        "output": 214
+      },
+      "profile_sha256": "9ea285ed5368ed81df43979f06bc253fa428d79e637ee2b0845c23a49d1a1e54"
+    },
+    {
+      "name": "develop-double-disjoint-union",
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "disjoint",
+      "operation": "union",
+      "pid": 34037,
+      "binary_sha256": "3084f691f67579dcb833126b68f329992d8cc430441f5b90de05a033b7ad5783",
+      "args": [
+        "--workload",
+        "disjoint",
+        "--operation",
+        "union",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2566,
+      "total_samples": 2570,
+      "groups": {
+        "other": 1829,
+        "allocation": 576,
+        "memory_copy_clear": 161
+      },
+      "stages": {
+        "turn_generation": 1024,
+        "other": 1272,
+        "ring_topology": 265,
+        "enrichment": 5
+      },
+      "inclusive": {
+        "ring_topology": 265,
+        "bgl": 150
+      },
+      "profile_sha256": "8a1f8c7875a7a745a0ec4b8f426565c2816aea26a4fd936c26af0866a5e20b3e"
+    },
+    {
+      "name": "optimized-double-convex-relate_aa",
+      "variant": "optimized",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "pid": 34076,
+      "binary_sha256": "268c03301ebc7cf3019cd71eb4b72c5b0ca8e69f976573237eaa875be0d4d43f",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "relate_aa",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2568,
+      "total_samples": 2568,
+      "groups": {
+        "native_orientation": 474,
+        "rounding_mode": 170,
+        "other": 1164,
+        "input_validation": 307,
+        "forward_filter": 7,
+        "cache": 4,
+        "working_point_setup": 68,
+        "allocation": 70,
+        "point_comparison": 285,
+        "memory_copy_clear": 19
+      },
+      "stages": {
+        "turn_generation": 1754,
+        "sectionalize": 751,
+        "other": 63
+      },
+      "inclusive": {
+        "validation": 307,
+        "cache": 20
+      },
+      "profile_sha256": "8240177ff88823353f0af79f55ff48b5a5150a2e2e70554f0d8b03e7abf2efb1"
+    },
+    {
+      "name": "develop-double-convex-relate_aa",
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "pid": 34088,
+      "binary_sha256": "3084f691f67579dcb833126b68f329992d8cc430441f5b90de05a033b7ad5783",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "relate_aa",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2567,
+      "total_samples": 2568,
+      "groups": {
+        "other": 2306,
+        "allocation": 207,
+        "memory_copy_clear": 54
+      },
+      "stages": {
+        "turn_generation": 2541,
+        "other": 26
+      },
+      "inclusive": {},
+      "profile_sha256": "054128d412b3b9f4e2c633498b9ba57d07e5e36625c4b13df019ec1ed376cba5"
+    },
+    {
+      "name": "optimized-double-convex-relate_ll",
+      "variant": "optimized",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "pid": 34118,
+      "binary_sha256": "268c03301ebc7cf3019cd71eb4b72c5b0ca8e69f976573237eaa875be0d4d43f",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "relate_ll",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2564,
+      "total_samples": 2564,
+      "groups": {
+        "forward_filter": 56,
+        "rounding_mode": 386,
+        "other": 901,
+        "cache": 13,
+        "native_orientation": 66,
+        "input_validation": 64,
+        "working_point_setup": 60,
+        "memory_copy_clear": 80,
+        "allocation": 36,
+        "coordinate_filter": 315,
+        "point_comparison": 587
+      },
+      "stages": {
+        "turn_generation": 1241,
+        "sectionalize": 48,
+        "other": 1275
+      },
+      "inclusive": {
+        "cache": 121,
+        "validation": 64
+      },
+      "profile_sha256": "8aeaf34d9d573bc8f6f115118367dfa35760baee50ef6e90e2210825dbb30e14"
+    },
+    {
+      "name": "develop-double-convex-relate_ll",
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "pid": 34129,
+      "binary_sha256": "3084f691f67579dcb833126b68f329992d8cc430441f5b90de05a033b7ad5783",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "relate_ll",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2576,
+      "total_samples": 2576,
+      "groups": {
+        "other": 2391,
+        "memory_copy_clear": 77,
+        "allocation": 108
+      },
+      "stages": {
+        "turn_generation": 1707,
+        "other": 869
+      },
+      "inclusive": {},
+      "profile_sha256": "9a743e8098b7b784e5fe4daadc0c4d97e272044612cb0b3885de4fa8d7691395"
+    },
+    {
+      "name": "optimized-double-convex-covered_by",
+      "variant": "optimized",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "covered_by",
+      "pid": 34141,
+      "binary_sha256": "268c03301ebc7cf3019cd71eb4b72c5b0ca8e69f976573237eaa875be0d4d43f",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "covered_by",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2559,
+      "total_samples": 2568,
+      "groups": {
+        "other": 841,
+        "input_validation": 1577,
+        "native_orientation": 103,
+        "rounding_mode": 38
+      },
+      "stages": {
+        "other": 2559
+      },
+      "inclusive": {
+        "validation": 1577
+      },
+      "profile_sha256": "62b94ac76536a52b5c0ff51451b942bbf56de578334afd9b846c630f6c5c4f90"
+    },
+    {
+      "name": "develop-double-convex-covered_by",
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "covered_by",
+      "pid": 34166,
+      "binary_sha256": "3084f691f67579dcb833126b68f329992d8cc430441f5b90de05a033b7ad5783",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "covered_by",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2567,
+      "total_samples": 2570,
+      "groups": {
+        "other": 2567
+      },
+      "stages": {
+        "other": 2567
+      },
+      "inclusive": {},
+      "profile_sha256": "6b65719c6da7b097db9141cd0fd3a30e50d056619e4d7c1ee4f4b2768de395aa"
+    },
+    {
+      "name": "optimized-double-convex-clip",
+      "variant": "optimized",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "clip",
+      "pid": 34179,
+      "binary_sha256": "268c03301ebc7cf3019cd71eb4b72c5b0ca8e69f976573237eaa875be0d4d43f",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "clip",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2568,
+      "total_samples": 2568,
+      "groups": {
+        "native_orientation": 243,
+        "rounding_mode": 100,
+        "other": 755,
+        "input_validation": 236,
+        "forward_filter": 9,
+        "cache": 1,
+        "working_point_setup": 36,
+        "allocation": 74,
+        "point_comparison": 150,
+        "memory_copy_clear": 439,
+        "expansions_rounding": 523,
+        "nextafter": 2
+      },
+      "stages": {
+        "turn_generation": 917,
+        "sectionalize": 463,
+        "other": 185,
+        "output_conversion": 1003
+      },
+      "inclusive": {
+        "validation": 236,
+        "cache": 18,
+        "expansions": 979,
+        "output": 1003
+      },
+      "profile_sha256": "fdf09a9b53c47c8946097b8defcae18396999246541a5dec3faff4056fe95231"
+    },
+    {
+      "name": "develop-double-convex-clip",
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "convex",
+      "operation": "clip",
+      "pid": 34187,
+      "binary_sha256": "3084f691f67579dcb833126b68f329992d8cc430441f5b90de05a033b7ad5783",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "clip",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2569,
+      "total_samples": 2569,
+      "groups": {
+        "other": 2239,
+        "allocation": 283,
+        "memory_copy_clear": 47
+      },
+      "stages": {
+        "turn_generation": 2373,
+        "other": 196
+      },
+      "inclusive": {},
+      "profile_sha256": "4c5ccffb210c2695f1615d2f8f8a48de546126a36bd37ea9e6fad1107141f798"
+    },
+    {
+      "name": "optimized-double-star-sym_difference",
+      "variant": "optimized",
+      "coordinate": "double",
+      "workload": "star",
+      "operation": "sym_difference",
+      "pid": 34195,
+      "binary_sha256": "268c03301ebc7cf3019cd71eb4b72c5b0ca8e69f976573237eaa875be0d4d43f",
+      "args": [
+        "--workload",
+        "star",
+        "--operation",
+        "sym_difference",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2556,
+      "total_samples": 2556,
+      "groups": {
+        "expansions_rounding": 1459,
+        "other": 496,
+        "forward_filter": 97,
+        "point_comparison": 65,
+        "cache": 16,
+        "rounding_mode": 63,
+        "memory_copy_clear": 202,
+        "coordinate_filter": 29,
+        "nextafter": 10,
+        "allocation": 80,
+        "fixed_exact": 30,
+        "interval_arithmetic": 3,
+        "native_orientation": 2,
+        "working_point_setup": 2,
+        "input_validation": 2
+      },
+      "stages": {
+        "turn_generation": 1509,
+        "sectionalize": 24,
+        "ring_topology": 461,
+        "other": 343,
+        "enrichment": 18,
+        "output_conversion": 201
+      },
+      "inclusive": {
+        "expansions": 1593,
+        "cache": 176,
+        "fixed": 87,
+        "ring_topology": 461,
+        "bgl": 46,
+        "validation": 2,
+        "output": 201
+      },
+      "profile_sha256": "6255876351e30ca8bdab8e0fb9e924b68d606f57419371c3e609ec885fffd809"
+    },
+    {
+      "name": "develop-double-star-sym_difference",
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "star",
+      "operation": "sym_difference",
+      "pid": 34201,
+      "binary_sha256": "3084f691f67579dcb833126b68f329992d8cc430441f5b90de05a033b7ad5783",
+      "args": [
+        "--workload",
+        "star",
+        "--operation",
+        "sym_difference",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2571,
+      "total_samples": 2571,
+      "groups": {
+        "other": 1717,
+        "allocation": 728,
+        "memory_copy_clear": 126
+      },
+      "stages": {
+        "other": 1767,
+        "turn_generation": 652,
+        "enrichment": 106,
+        "ring_topology": 42,
+        "sectionalize": 4
+      },
+      "inclusive": {
+        "bgl": 728,
+        "ring_topology": 42
+      },
+      "profile_sha256": "997689f87e0f0f71ade43199cb1d9ae2840a2d6812697a72ecf992282bd16ce9"
+    },
+    {
+      "name": "optimized-double-shared-relate_aa",
+      "variant": "optimized",
+      "coordinate": "double",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "pid": 34219,
+      "binary_sha256": "268c03301ebc7cf3019cd71eb4b72c5b0ca8e69f976573237eaa875be0d4d43f",
+      "args": [
+        "--workload",
+        "shared",
+        "--operation",
+        "relate_aa",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2572,
+      "total_samples": 2572,
+      "groups": {
+        "expansions_rounding": 839,
+        "interval_arithmetic": 361,
+        "nextafter": 554,
+        "rounding_mode": 59,
+        "native_orientation": 152,
+        "other": 272,
+        "point_comparison": 92,
+        "input_validation": 145,
+        "working_point_setup": 54,
+        "forward_filter": 1,
+        "allocation": 41,
+        "memory_copy_clear": 2
+      },
+      "stages": {
+        "turn_generation": 2445,
+        "sectionalize": 65,
+        "other": 62
+      },
+      "inclusive": {
+        "expansions": 839,
+        "validation": 145
+      },
+      "profile_sha256": "0ea40ba454588d944bb2237c029d4b28560b29cfc1944b4659a37d1927e20bf3"
+    },
+    {
+      "name": "develop-double-shared-relate_aa",
+      "variant": "develop",
+      "coordinate": "double",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "pid": 34232,
+      "binary_sha256": "3084f691f67579dcb833126b68f329992d8cc430441f5b90de05a033b7ad5783",
+      "args": [
+        "--workload",
+        "shared",
+        "--operation",
+        "relate_aa",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2557,
+      "total_samples": 2557,
+      "groups": {
+        "other": 2396,
+        "allocation": 118,
+        "memory_copy_clear": 43
+      },
+      "stages": {
+        "turn_generation": 2498,
+        "other": 59
+      },
+      "inclusive": {},
+      "profile_sha256": "4ab056a84fdc1b84e0270ee56df0fa1dd2c04bd12ab1e8e05715a5c178266c7e"
+    },
+    {
+      "name": "optimized-int64-convex-union",
+      "variant": "optimized",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "union",
+      "pid": 34253,
+      "binary_sha256": "e90ed24c105ec7abdbc915d0e337fb39f2ac76c784489cc26e0258059926915f",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "union",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2505,
+      "total_samples": 2505,
+      "groups": {
+        "other": 1579,
+        "forward_filter": 14,
+        "rounding_mode": 162,
+        "allocation": 238,
+        "point_comparison": 138,
+        "memory_copy_clear": 176,
+        "coordinate_filter": 4,
+        "expansions_rounding": 194
+      },
+      "stages": {
+        "turn_generation": 864,
+        "sectionalize": 349,
+        "other": 665,
+        "ring_topology": 130,
+        "enrichment": 40,
+        "output_conversion": 457
+      },
+      "inclusive": {
+        "cache": 7,
+        "bgl": 160,
+        "ring_topology": 117,
+        "expansions": 353,
+        "output": 457
+      },
+      "profile_sha256": "eb482a07012c494b468e070ef49515e12b8fb70e0dac85cd6cabba306b6eec67"
+    },
+    {
+      "name": "develop-int64-convex-union",
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "union",
+      "pid": 34272,
+      "binary_sha256": "fd7c95c9c95d4c7cc15f4dc4fa4bfd10b6c787887026108fa4ca1cac8692bfb2",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "union",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2527,
+      "total_samples": 2527,
+      "groups": {
+        "other": 1797,
+        "allocation": 625,
+        "memory_copy_clear": 105
+      },
+      "stages": {
+        "turn_generation": 1263,
+        "other": 1091,
+        "enrichment": 111,
+        "ring_topology": 62
+      },
+      "inclusive": {
+        "bgl": 414,
+        "ring_topology": 62
+      },
+      "profile_sha256": "83ea728ca5683ae6b0311bfed06808646f48cccb3a86bfb573f0d56548f225d1"
+    },
+    {
+      "name": "optimized-int64-disjoint-union",
+      "variant": "optimized",
+      "coordinate": "int64",
+      "workload": "disjoint",
+      "operation": "union",
+      "pid": 34291,
+      "binary_sha256": "e90ed24c105ec7abdbc915d0e337fb39f2ac76c784489cc26e0258059926915f",
+      "args": [
+        "--workload",
+        "disjoint",
+        "--operation",
+        "union",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2568,
+      "total_samples": 2568,
+      "groups": {
+        "other": 1750,
+        "allocation": 271,
+        "memory_copy_clear": 68,
+        "point_comparison": 479
+      },
+      "stages": {
+        "ring_topology": 1003,
+        "other": 746,
+        "sectionalize": 527,
+        "turn_generation": 50,
+        "enrichment": 1,
+        "output_conversion": 241
+      },
+      "inclusive": {
+        "ring_topology": 1001,
+        "bgl": 28,
+        "output": 241
+      },
+      "profile_sha256": "f3ae5a6160477228e082af7028f053d7d1acea6f7634eb7ce2cc610800d5de45"
+    },
+    {
+      "name": "develop-int64-disjoint-union",
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "disjoint",
+      "operation": "union",
+      "pid": 34300,
+      "binary_sha256": "fd7c95c9c95d4c7cc15f4dc4fa4bfd10b6c787887026108fa4ca1cac8692bfb2",
+      "args": [
+        "--workload",
+        "disjoint",
+        "--operation",
+        "union",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2570,
+      "total_samples": 2574,
+      "groups": {
+        "other": 1710,
+        "allocation": 657,
+        "memory_copy_clear": 203
+      },
+      "stages": {
+        "turn_generation": 1157,
+        "other": 1085,
+        "ring_topology": 322,
+        "enrichment": 6
+      },
+      "inclusive": {
+        "ring_topology": 322,
+        "bgl": 168
+      },
+      "profile_sha256": "204b875ad61db79b9b8852e0b67297a31ea786fcecda84c5eb51ceadc7bad023"
+    },
+    {
+      "name": "optimized-int64-convex-relate_aa",
+      "variant": "optimized",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "pid": 34315,
+      "binary_sha256": "e90ed24c105ec7abdbc915d0e337fb39f2ac76c784489cc26e0258059926915f",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "relate_aa",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2558,
+      "total_samples": 2558,
+      "groups": {
+        "other": 1813,
+        "forward_filter": 13,
+        "cache": 5,
+        "allocation": 104,
+        "rounding_mode": 375,
+        "point_comparison": 214,
+        "memory_copy_clear": 34
+      },
+      "stages": {
+        "turn_generation": 1572,
+        "sectionalize": 912,
+        "other": 74
+      },
+      "inclusive": {
+        "cache": 23
+      },
+      "profile_sha256": "fc3fa94f8d92dff821bc154d4f22ba195ef156e437181affd0cafed6cf8241fb"
+    },
+    {
+      "name": "develop-int64-convex-relate_aa",
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_aa",
+      "pid": 34346,
+      "binary_sha256": "fd7c95c9c95d4c7cc15f4dc4fa4bfd10b6c787887026108fa4ca1cac8692bfb2",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "relate_aa",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2561,
+      "total_samples": 2562,
+      "groups": {
+        "other": 2248,
+        "allocation": 244,
+        "memory_copy_clear": 69
+      },
+      "stages": {
+        "turn_generation": 2514,
+        "other": 47
+      },
+      "inclusive": {},
+      "profile_sha256": "8331094a1ebc11dc6dfca017b287ddeb52995e90447b8a951ae63e7f9193d41a"
+    },
+    {
+      "name": "optimized-int64-convex-relate_ll",
+      "variant": "optimized",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "pid": 34351,
+      "binary_sha256": "e90ed24c105ec7abdbc915d0e337fb39f2ac76c784489cc26e0258059926915f",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "relate_ll",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2567,
+      "total_samples": 2567,
+      "groups": {
+        "rounding_mode": 522,
+        "coordinate_filter": 335,
+        "point_comparison": 521,
+        "other": 1017,
+        "allocation": 31,
+        "forward_filter": 57,
+        "cache": 9,
+        "memory_copy_clear": 75
+      },
+      "stages": {
+        "turn_generation": 1063,
+        "sectionalize": 39,
+        "other": 1465
+      },
+      "inclusive": {
+        "cache": 111
+      },
+      "profile_sha256": "64a7d33922e58535876611b6b28a2fe07a951ed94d60df8d629bd91bc689355e"
+    },
+    {
+      "name": "develop-int64-convex-relate_ll",
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "relate_ll",
+      "pid": 34360,
+      "binary_sha256": "fd7c95c9c95d4c7cc15f4dc4fa4bfd10b6c787887026108fa4ca1cac8692bfb2",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "relate_ll",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2567,
+      "total_samples": 2567,
+      "groups": {
+        "other": 2341,
+        "allocation": 142,
+        "memory_copy_clear": 84
+      },
+      "stages": {
+        "turn_generation": 1445,
+        "other": 1122
+      },
+      "inclusive": {},
+      "profile_sha256": "ac85df0c124c16bd235ab0e2133dc1f357568e752f87d3fc253252ebf3f16c49"
+    },
+    {
+      "name": "optimized-int64-convex-covered_by",
+      "variant": "optimized",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "covered_by",
+      "pid": 34384,
+      "binary_sha256": "e90ed24c105ec7abdbc915d0e337fb39f2ac76c784489cc26e0258059926915f",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "covered_by",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2540,
+      "total_samples": 2563,
+      "groups": {
+        "other": 2540
+      },
+      "stages": {
+        "other": 2540
+      },
+      "inclusive": {},
+      "profile_sha256": "45138bcc767c810dda3dff50cdd546be3fc9b5afc8c2fd44a7eb55758324db55"
+    },
+    {
+      "name": "develop-int64-convex-covered_by",
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "covered_by",
+      "pid": 34403,
+      "binary_sha256": "fd7c95c9c95d4c7cc15f4dc4fa4bfd10b6c787887026108fa4ca1cac8692bfb2",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "covered_by",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2542,
+      "total_samples": 2568,
+      "groups": {
+        "other": 2542
+      },
+      "stages": {
+        "other": 2542
+      },
+      "inclusive": {},
+      "profile_sha256": "9fd40ddf67e6c13bfb6fec32a2d33af46376f8cd4de4e352cc7a9df5f1d881ae"
+    },
+    {
+      "name": "optimized-int64-convex-clip",
+      "variant": "optimized",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "clip",
+      "pid": 34425,
+      "binary_sha256": "e90ed24c105ec7abdbc915d0e337fb39f2ac76c784489cc26e0258059926915f",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "clip",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2570,
+      "total_samples": 2570,
+      "groups": {
+        "other": 1229,
+        "forward_filter": 16,
+        "rounding_mode": 150,
+        "cache": 6,
+        "allocation": 116,
+        "point_comparison": 109,
+        "memory_copy_clear": 426,
+        "coordinate_filter": 1,
+        "expansions_rounding": 517
+      },
+      "stages": {
+        "turn_generation": 860,
+        "sectionalize": 573,
+        "other": 144,
+        "output_conversion": 993
+      },
+      "inclusive": {
+        "cache": 31,
+        "expansions": 958,
+        "output": 993
+      },
+      "profile_sha256": "2b3489bc0a63e780c8ec7b0e4963d2c3b8d495b47101b2db5d4acea535ffdc98"
+    },
+    {
+      "name": "develop-int64-convex-clip",
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "convex",
+      "operation": "clip",
+      "pid": 34436,
+      "binary_sha256": "fd7c95c9c95d4c7cc15f4dc4fa4bfd10b6c787887026108fa4ca1cac8692bfb2",
+      "args": [
+        "--workload",
+        "convex",
+        "--operation",
+        "clip",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2577,
+      "total_samples": 2577,
+      "groups": {
+        "other": 2174,
+        "allocation": 348,
+        "memory_copy_clear": 55
+      },
+      "stages": {
+        "turn_generation": 2322,
+        "other": 255
+      },
+      "inclusive": {},
+      "profile_sha256": "25d9ceb617a52949f119bfc3c670de2415926b424c21378a1f8e265be68add26"
+    },
+    {
+      "name": "optimized-int64-star-sym_difference",
+      "variant": "optimized",
+      "coordinate": "int64",
+      "workload": "star",
+      "operation": "sym_difference",
+      "pid": 34450,
+      "binary_sha256": "e90ed24c105ec7abdbc915d0e337fb39f2ac76c784489cc26e0258059926915f",
+      "args": [
+        "--workload",
+        "star",
+        "--operation",
+        "sym_difference",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2559,
+      "total_samples": 2559,
+      "groups": {
+        "expansions_rounding": 1441,
+        "other": 578,
+        "forward_filter": 106,
+        "coordinate_filter": 33,
+        "memory_copy_clear": 114,
+        "cache": 14,
+        "rounding_mode": 77,
+        "point_comparison": 87,
+        "allocation": 87,
+        "nextafter": 6,
+        "interval_arithmetic": 2,
+        "fixed_exact": 14
+      },
+      "stages": {
+        "turn_generation": 1576,
+        "sectionalize": 18,
+        "ring_topology": 420,
+        "other": 394,
+        "enrichment": 16,
+        "output_conversion": 135
+      },
+      "inclusive": {
+        "expansions": 1543,
+        "cache": 129,
+        "ring_topology": 419,
+        "fixed": 21,
+        "bgl": 73,
+        "output": 135
+      },
+      "profile_sha256": "c30782750427141e74c182cef118c04e6ca056f883f6703ff6743538cdec0168"
+    },
+    {
+      "name": "develop-int64-star-sym_difference",
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "star",
+      "operation": "sym_difference",
+      "pid": 34456,
+      "binary_sha256": "fd7c95c9c95d4c7cc15f4dc4fa4bfd10b6c787887026108fa4ca1cac8692bfb2",
+      "args": [
+        "--workload",
+        "star",
+        "--operation",
+        "sym_difference",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2566,
+      "total_samples": 2566,
+      "groups": {
+        "other": 1535,
+        "allocation": 877,
+        "memory_copy_clear": 154
+      },
+      "stages": {
+        "other": 1893,
+        "turn_generation": 499,
+        "enrichment": 117,
+        "ring_topology": 47,
+        "sectionalize": 10
+      },
+      "inclusive": {
+        "bgl": 831,
+        "ring_topology": 47
+      },
+      "profile_sha256": "cc74e7e1f37ae9670429a1f9240fd454adf439e48cf4107aee4d8a349fe6f7d2"
+    },
+    {
+      "name": "optimized-int64-shared-relate_aa",
+      "variant": "optimized",
+      "coordinate": "int64",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "pid": 34469,
+      "binary_sha256": "e90ed24c105ec7abdbc915d0e337fb39f2ac76c784489cc26e0258059926915f",
+      "args": [
+        "--workload",
+        "shared",
+        "--operation",
+        "relate_aa",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2574,
+      "total_samples": 2574,
+      "groups": {
+        "other": 1498,
+        "point_comparison": 625,
+        "coordinate_filter": 17,
+        "nextafter": 10,
+        "rounding_mode": 146,
+        "forward_filter": 7,
+        "memory_copy_clear": 51,
+        "allocation": 220
+      },
+      "stages": {
+        "turn_generation": 1829,
+        "sectionalize": 314,
+        "other": 431
+      },
+      "inclusive": {},
+      "profile_sha256": "b92d069d59ff63558ba2bf66446b266f52efc31f5f6a11e3c9edd75ea1bbc52c"
+    },
+    {
+      "name": "develop-int64-shared-relate_aa",
+      "variant": "develop",
+      "coordinate": "int64",
+      "workload": "shared",
+      "operation": "relate_aa",
+      "pid": 34475,
+      "binary_sha256": "fd7c95c9c95d4c7cc15f4dc4fa4bfd10b6c787887026108fa4ca1cac8692bfb2",
+      "args": [
+        "--workload",
+        "shared",
+        "--operation",
+        "relate_aa",
+        "--seconds",
+        "8",
+        "--repeat",
+        "1"
+      ],
+      "sample_exit": 0,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "samples": 2569,
+      "total_samples": 2569,
+      "groups": {
+        "other": 2339,
+        "allocation": 153,
+        "memory_copy_clear": 77
+      },
+      "stages": {
+        "turn_generation": 2482,
+        "other": 87
+      },
+      "inclusive": {},
+      "profile_sha256": "bcf69fb7967af352d53f6c3b4900a29b34038e51bd2ca44aa83b1664b91329b9"
+    }
+  ],
+  "finished": "2026-11-13T00:16:20.355Z",
+  "analysis_script_sha256": "535ed34ac5c7ef3cea24fe2218254596e631c03a4e854f7455c3327ace4afd77",
+  "raw_directory": "/tmp/bg-exact-profile-20261113/",
+  "policy": "Exclusive counts partition main-thread samples inside execute(); stage and inclusive counts are separate, overlapping views. Raw call trees and names remain in the hashed .txt files."
+}

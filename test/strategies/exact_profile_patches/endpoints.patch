@@ -1,0 +1,10 @@
+--- a/boost/geometry/strategies/cartesian/exact/point.hpp
++++ b/boost/geometry/strategies/cartesian/exact/point.hpp
+@@ -268,6 +268,7 @@
+     static bool line_contains(native_line const& line, Coordinate x, Coordinate y)
+     {
+         if (line[0] == line[2] && line[1] == line[3]) { return false; }
++        if ((line[0] == x && line[1] == y) || (line[2] == x && line[3] == y)) { return true; }
+         std::array<Coordinate, 6> const input{{line[0], line[1], line[2], line[3], x, y}};
+         std::array<double, 6> values;
+         bool represented = true;

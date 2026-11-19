@@ -1,0 +1,56 @@
+ARM64 coordinate-comparator prologues; original ad5c0f0cb vs isolated compare.patch
+Original frame: 0x2190 + 0x50 = 8672 bytes. Prototype: 0x60 = 96 bytes.
+
+original
+/tmp/bg-operation-lazy-performance/optimized-int64
+sha256=e90ed24c105ec7abdbc915d0e337fb39f2ac76c784489cc26e0258059926915f
+
+__ZN5boost8geometry10strategies6detail15exact_cartesian12point_detail7compareIxEEiRKNS3_11exact_pointIT_EESA_m:
+00000001000276f0	stp	d9, d8, [sp, #-0x50]!
+00000001000276f4	stp	x28, x27, [sp, #0x10]
+00000001000276f8	stp	x22, x21, [sp, #0x20]
+00000001000276fc	stp	x20, x19, [sp, #0x30]
+0000000100027700	stp	x29, x30, [sp, #0x40]
+0000000100027704	add	x29, sp, #0x40
+0000000100027708	mov	w9, #0x2190
+000000010002770c	adrp	x16, 333 ; 0x100174000
+0000000100027710	ldr	x16, [x16, #0xb68] ; literal pool symbol address: ___chkstk_darwin
+0000000100027714	blr	x16
+0000000100027718	sub	sp, sp, #0x2, lsl #12
+000000010002771c	sub	sp, sp, #0x190
+0000000100027720	adrp	x8, 333 ; 0x100174000
+0000000100027724	ldr	x8, [x8, #0xb88] ; literal pool symbol address: ___stack_chk_guard
+0000000100027728	ldr	x8, [x8]
+000000010002772c	stur	x8, [x29, #-0x48]
+0000000100027730	cmp	x2, #0x2
+0000000100027734	b.hs	0x100027b6c
+0000000100027738	mov	x19, x2
+000000010002773c	mov	x20, x1
+0000000100027740	mov	x21, x0
+
+prototype
+/tmp/bg-exact-profile-20261113/compare-int64
+sha256=97763a0f495f659f8553bd3e1648c174b699036fb95b7d5fec52b0c0f670d738
+
+__ZN5boost8geometry10strategies6detail15exact_cartesian12point_detail7compareIxEEiRKNS3_11exact_pointIT_EESA_m:
+00000001000276f0	sub	sp, sp, #0x60
+00000001000276f4	stp	d9, d8, [sp, #0x20]
+00000001000276f8	stp	x22, x21, [sp, #0x30]
+00000001000276fc	stp	x20, x19, [sp, #0x40]
+0000000100027700	stp	x29, x30, [sp, #0x50]
+0000000100027704	add	x29, sp, #0x50
+0000000100027708	cmp	x2, #0x2
+000000010002770c	b.hs	0x100027ad0
+0000000100027710	mov	x19, x2
+0000000100027714	mov	x20, x1
+0000000100027718	mov	x21, x0
+000000010002771c	ldr	x8, [x0, #0x68]
+0000000100027720	cmn	x8, #0x1
+0000000100027724	b.eq	0x100027758
+0000000100027728	ldr	x9, [x20, #0x68]
+000000010002772c	cmn	x9, #0x1
+0000000100027730	b.eq	0x100027748
+0000000100027734	ldr	w10, [x21, #0x70]
+0000000100027738	ldr	w11, [x20, #0x70]
+000000010002773c	cmp	x8, x9
+0000000100027740	ccmp	w10, w11, #0x0, eq

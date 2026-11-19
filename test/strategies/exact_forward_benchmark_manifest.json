@@ -1,0 +1,41 @@
+{
+  "revisions": {
+    "before": "bc65c6d60fe2d891ed978d0c8cdf91bb678712b9",
+    "previous": "50c99d791b046de73f1d4c8d8b596bddf7c92bbc",
+    "pr1491": "72b2d832fb9596a2a23c0c164a5426ae720d0cd6",
+    "develop": "0b4851a77d91633cf86c3a5e679e67d8c60200e9"
+  },
+  "flags": [
+    "-std=c++14",
+    "-O3",
+    "-DNDEBUG",
+    "-gline-tables-only",
+    "-fno-omit-frame-pointer",
+    "-ffp-contract=fast",
+    "-pthread",
+    "-DBOOST_GEOMETRY_DISABLE_DEPRECATED_14_WARNING"
+  ],
+  "boost": "/Users/tinko/dev/boost",
+  "timing": {
+    "seconds": 0.3,
+    "repetitions": 6
+  },
+  "compiler": "Apple clang version 21.0.0 (clang-2100.4.1.1)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "optimized_revision": "50c99d791b046de73f1d4c8d8b596bddf7c92bbc",
+  "optimized_header_status": " M include/boost/geometry/algorithms/detail/overlay/working_output.hpp\n M include/boost/geometry/algorithms/detail/relate/interface.hpp\n M include/boost/geometry/strategies/cartesian/exact/construction_filter.hpp\n M include/boost/geometry/strategies/cartesian/exact/filtered_measure.hpp\n M include/boost/geometry/strategies/cartesian/exact/filtered_number.hpp\n M include/boost/geometry/strategies/cartesian/exact/filtered_predicates.hpp\n M include/boost/geometry/strategies/cartesian/exact/native_predicates.hpp\n M include/boost/geometry/strategies/cartesian/exact/point.hpp\n M include/boost/geometry/strategies/cartesian/exact/ratio.hpp\n M include/boost/geometry/strategies/cartesian/exact/segment.hpp\n M include/boost/geometry/strategies/relate/cartesian_exact.hpp\n M include/boost/geometry/strategies/relate/intersection_types.hpp\n?? include/boost/geometry/strategies/cartesian/exact/fixed_arithmetic.hpp\n?? include/boost/geometry/strategies/cartesian/exact/fixed_measures.hpp\n?? include/boost/geometry/strategies/cartesian/exact/fixed_rounding.hpp\n?? include/boost/geometry/strategies/cartesian/exact/fixed_scalar.hpp\n?? include/boost/geometry/strategies/cartesian/exact/forward_error.hpp\n?? include/boost/geometry/strategies/cartesian/exact/indexed_storage.hpp\n?? include/boost/geometry/strategies/cartesian/exact/point_cache.hpp\n",
+  "host": {
+    "platform": "darwin",
+    "release": "25.6.0",
+    "cpu": "Apple M5",
+    "cores": 10
+  },
+  "source_sha256": "f59a3ff3b10f9a656c6af32b9623b7aaade937e2d9988c1cd69968cd35de8f44",
+  "headers": {
+    "develop-double": "43bd6b98b55e563eab74fa2f93ecffae5bbab19d2bcea8dbad12500275eef6bc",
+    "previous-double": "c28b8bf193f6ae782fe7b8cb6eb01066175cdada4149bf3ee7aea7e532a55758",
+    "optimized-double": "0a3190d73ec28e8e8d751127f40d981a0f1a86ae2bfadc937c48db7d4bb14d60",
+    "develop-int64": "43bd6b98b55e563eab74fa2f93ecffae5bbab19d2bcea8dbad12500275eef6bc",
+    "previous-int64": "c28b8bf193f6ae782fe7b8cb6eb01066175cdada4149bf3ee7aea7e532a55758",
+    "optimized-int64": "0a3190d73ec28e8e8d751127f40d981a0f1a86ae2bfadc937c48db7d4bb14d60"
+  }
+}

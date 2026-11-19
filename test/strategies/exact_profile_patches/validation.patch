@@ -1,0 +1,11 @@
+--- a/boost/geometry/strategies/cartesian/exact/native_predicates.hpp
++++ b/boost/geometry/strategies/cartesian/exact/native_predicates.hpp
+@@ -72,7 +72,7 @@
+ private:
+     void validate(std::true_type) const {}
+ 
+-    void validate(std::false_type) const
++    BOOST_FORCEINLINE void validate(std::false_type) const
+     {
+         // Preserve make_point's finite-input precondition even when a comparison
+         // would otherwise short-circuit before inspecting both coordinates.
