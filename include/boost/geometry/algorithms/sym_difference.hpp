@@ -41,6 +41,15 @@ namespace boost { namespace geometry
 namespace detail { namespace sym_difference
 {
 
+template <typename A, typename B, typename Strategy>
+auto independent_parts(A const& a, B const& b, Strategy const& s, int)
+    -> decltype(s.no_common_boundary_edge(a, b))
+{
+    return s.no_common_boundary_edge(a, b);
+}
+
+template <typename A, typename B, typename Strategy>
+bool independent_parts(A const&, B const&, Strategy const&, long) { return false; }
 
 template <typename GeometryOut>
 struct compute_difference
@@ -135,6 +144,16 @@ struct sym_difference_areal_areal
             <
                 GeometryOut
             >::apply(areal2, areal1, oit21, strategy);
+
+        // The two regularized differences have disjoint interiors. Their
+        // closures can meet only on the common input boundary. If it has
+        // no edge, their components already form a valid multipolygon.
+        if (independent_parts(areal1, areal2, strategy, 0))
+        {
+            for (auto& p : diff12) *out++ = std::move(p);
+            for (auto& p : diff21) *out++ = std::move(p);
+            return out;
+        }
 
         return geometry::dispatch::union_insert
             <

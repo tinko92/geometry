@@ -344,11 +344,35 @@ void test_overlays()
         == ex::exact_number(12) - hole_area);
 }
 
+void test_independent_xor_parts()
+{
+    using p = bg::model::d2::point_xy<double>;
+    using poly = bg::model::polygon<p>;
+    auto read = [](char const* w) { poly v; bg::read_wkt(w, v); return v; };
+    auto a = read("POLYGON((0 0,0 4,4 4,4 0,0 0))");
+    auto check = [&](poly const& b, bool independent, double area) {
+        exact_strategy const s;
+        bg::strategies::detail::with_operation_sources(s, a, b, [&](auto const& bound) {
+            BOOST_TEST_EQ(bound.no_common_boundary_edge(a,b), independent);
+        });
+        bg::model::multi_polygon<poly> result;
+        bg::sym_difference(a,b,result,s);
+        BOOST_TEST(bg::is_valid(result)); BOOST_TEST_EQ(bg::area(result), area);
+    };
+    check(read("POLYGON((2 -1,2 3,5 3,5 -1,2 -1))"), true, 16);
+    check(read("POLYGON((4 4,4 5,5 5,5 4,4 4))"), true, 17);
+    check(read("POLYGON((4 1,4 2,4 3,5 3,5 1,4 1))"), false, 18);
+    check(a, false, 0);
+    a = read("POLYGON((0 0,0 6,6 6,6 0,0 0),(2 2,4 2,4 4,2 4,2 2))");
+    check(read("POLYGON((2 2,2 4,4 4,4 2,2 2))"), false, 36);
+}
+
 int main()
 {
     test_verified_side();
     test_turns();
     test_clusters();
     test_overlays();
+    test_independent_xor_parts();
     return boost::report_errors();
 }

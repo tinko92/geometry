@@ -6,8 +6,11 @@
 #define BOOST_GEOMETRY_STRATEGIES_CARTESIAN_EXACT_BORROWED_STRATEGY_HPP
 
 #include <iterator>
+#include <cmath>
 #include <tuple>
 #include <vector>
+#include <boost/geometry/algorithms/for_each.hpp>
+#include <boost/geometry/algorithms/num_points.hpp>
 
 #include <boost/geometry/strategies/cartesian/exact/borrowed_bounds.hpp>
 #include <boost/geometry/strategies/cartesian/exact/borrowed_clipping.hpp>
@@ -139,6 +142,38 @@ class borrowed_strategy : public relate::cartesian_exact<typename Root::coordina
     };
 
 public:
+    template <typename A, typename B>
+    bool no_common_boundary_edge(A const& a, B const& b) const
+    {
+        if constexpr (!(util::is_polygonal<A>::value && util::is_polygonal<B>::value
+            && std::is_same<coordinate_type_t<A>, double>::value
+            && std::is_same<coordinate_type_t<B>, double>::value)) return false;
+        else
+        {
+            if (geometry::num_points(a, true) > 80 || geometry::num_points(b, true) > 80) return false;
+            // In this band every nonzero difference is at least 2^-180
+            // and all orient2d expansion products fit in normal binary64.
+            auto safe = [](auto const& p) {
+                auto admit = [](double x) { return x == 0 || (std::abs(x) >= 0x1p-128 && std::abs(x) <= 0x1p128); };
+                return admit(get<0>(p)) && admit(get<1>(p));
+            };
+            if (!geometry::all_points_of(a, safe) || !geometry::all_points_of(b, safe)) return false;
+            return geometry::all_segments_of(a, [&](auto const& x) {
+                return geometry::all_segments_of(b, [&](auto const& y) {
+                    auto separated = [](double u, double v, double s, double t) {
+                        if (u == v && s == t) return u != s;
+                        return (std::max)(u,v) <= (std::min)(s,t) || (std::max)(s,t) <= (std::min)(u,v);
+                    };
+                    if (separated(get<0>(x.first), get<0>(x.second), get<0>(y.first), get<0>(y.second))
+                        || separated(get<1>(x.first), get<1>(x.second), get<1>(y.first), get<1>(y.second)))
+                        return true;
+                    return native_orientation<double>(x.first, x.second, y.first) != 0
+                        || native_orientation<double>(x.first, x.second, y.second) != 0;
+                });
+            });
+        }
+    }
+
     // R-tree's end sentinel default-constructs its stored strategy, but never
     // evaluates it. Actual operations always bind the root context explicitly.
     borrowed_strategy() = default;
