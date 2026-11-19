@@ -152,6 +152,30 @@ std::array<wkt_input, 9> const input_wkts{{
 std::vector<input> make_inputs(std::string const& category)
 {
     std::vector<input> result;
+#if defined(BG_BENCH_EXACT) && defined(BG_BENCH_ULPS)
+    if (category == "denominator")
+    {
+        // Two clockwise parallelograms with primary edges crossing at t=1/2.
+        // Their exact determinant is -1 while the naive head is -1 or zero.
+        auto strip = [](point const& p, point const& q)
+        {
+            polygon a;
+            a.outer() = {p, {p.x(), p.y() + 4}, {q.x(), q.y() + 4}, q, p};
+            return a;
+        };
+        for (int exponent : {26, 30, 36})
+        {
+            double const n = std::ldexp(1.0, exponent);
+            point const a(n, n), b(2*n+1, 2*n), c(n+0.5, n+0.5), d(2*n+0.5, 2*n-0.5);
+            input g;
+            g.a = strip(a, b); g.b = strip(c, d);
+            g.la.push_back({a, b}); g.lb.push_back({c, d});
+            g.query = {n+2, n+3};
+            result.push_back(std::move(g));
+        }
+        return result;
+    }
+#endif
     if (category == "projected" || category == "projected-local")
     {
         std::mt19937_64 random(0x455841435442454e);
@@ -431,6 +455,16 @@ int main(int argc, char** argv)
         std::cout << std::setprecision(12)
             << "label,coordinate,workload,operation,repeat,calls,seconds,cpu_seconds,ns_per_call,checksum,corpus_digest,geometry_digest,corpus_size,output_components,output_holes,output_points\n";
         std::array<char const*, 5> const shapes{{"degenerate", "general", "decimal", "projected", "projected-local"}};
+#if defined(BG_BENCH_EXACT) && defined(BG_BENCH_ULPS)
+        if (opt.shape == "denominator")
+        {
+            if (opt.operation != "all") (void)operation_code(opt.operation);
+            auto const corpus = make_inputs(opt.shape);
+            for (auto const& op : operation_names)
+                if (opt.operation == "all" || opt.operation == op) measure(opt.shape, op, opt, corpus);
+            return 0;
+        }
+#endif
         if (opt.shape != "all" && std::find(shapes.begin(), shapes.end(), opt.shape) == shapes.end())
         {
             throw std::invalid_argument("Unknown workload: " + opt.shape);
