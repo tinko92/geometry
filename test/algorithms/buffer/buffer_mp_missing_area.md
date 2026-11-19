@@ -13,13 +13,13 @@ This overload supports concrete Cartesian geometries. It does not
 change the seven-argument overload or specialize its default strategy,
 even in a translation unit that includes the optional header.
 
-Legacy buffer retains two optional hooks. The turn hook returns a
+The first two repairs use optional legacy buffer hooks. The turn hook returns a
 certificate for the unique outgoing side; the buffer algorithm still
 decides which turns can be repaired and applies the operation changes.
 The round hook supplies the certified fan or declines the request. Both
-hooks are absent from the default umbrella. The MP type checks, rational
-conversion, ray predicates and cardinal sampling live in the optional
-header, not in either legacy algorithm header.
+hooks are absent from the default umbrella, as is the touch restoration
+hook described below. The MP type checks, rational conversion, ray
+predicates and cardinal sampling live in the optional header.
 
 On a concrete double multipolygon buffer smoke translation unit, Clang
 21/C++14 sees the same 2,954 distinct headers as the parent, with an
@@ -117,21 +117,81 @@ input (area 80.15797331784302). That suite uses the built-in asymmetric
 distance with equal widths, while the original reduction uses the
 symmetric strategy. Both are admitted; unequal widths are not.
 
-The full historic `rt_w6` is still wrong in conventional MP: expected
-79.799, observed 3.17157287525381 both before and after. The repaired
-three-ring reduction is not evidence that every larger arrangement has
-the same failure. After the patch the full case still reduces to a
-different seven-component witness with area 19.48528137423857 and
-20 omitted source-vertex entries. No general overlap/cluster repair
-or change to the original area assertion is proposed here.
-
 Local test logs and phase/turn/ray traces are in
 `/private/tmp/bg1517-missing-buffer.MQgv9u`. The debug instrumentation
 used to collect the traces is not in the patch.
 The opt-in replay and compile manifests are in
 `/private/tmp/bg1517-mp-strategy.FeC9m7`.
 
-Recommendation: adopt the explicit strategy and the lightweight hooks,
-not automatic MP dispatch. The repairs are useful on the proved cases,
-but the remaining full miter failure precludes claiming complete
-conventional MP buffering.
+## Full miter fixture: an endpoint was placed at a different junction
+
+Follow-up base `0f7ba7837`, with both earlier repairs enabled. The
+registered test uses the existing full `rt_w6` and a seven-member
+subset (zero-based original indices 0, 2, 3, 4, 6, 10, 11; mask 3165).
+With unit distance and the default miter limit, all 4,095 valid
+input-order-preserving subsets of size 1 through 6 retained their
+source vertices on the follow-up base. The first failure by cardinality
+and then mask misses 20 source-vertex entries in the seven-member
+witness. The full fixture misses 55. Both incomplete outputs pass
+`is_valid`, so validity alone is not an adequate oracle.
+
+At x=5 in the witness, the two proper crossings (turns 0 and 1)
+meet the same vertical line at a point C near y=2.5857864. The
+diagonal on offset ring 3, segment 1, ends at a different point B
+on that vertical line. Exactly `C.y - B.y = 2^-332` in the stored
+binary coordinates. Turn 15 is a touch interior at B: the exact
+segment parameters are 1 on the diagonal and strictly between 0 and
+1 on the vertical. But the legacy MP segment strategy constructs its
+point by interpolation along the first support (the vertical); the
+turn has the endpoint fraction 1 and the coordinates of C, which are
+not on the diagonal support. The same discrepancy is turn 93 in
+the full input; turn 98 independently records B correctly.
+
+Clustering groups that misplaced touch with the proper crossings.
+Its additional rays leave the junction with `open_count == 0`.
+The exact union has an exposed southwest diagonal at C and an
+exposed vertical atom directly below it (B to C); B is a separate
+incidence on that vertical boundary. Restoring the endpoint before
+colocation gives both crossing clusters `open_count == 1`. No
+angular ranking, eligibility, or traversal rule was changed.
+
+The opt-in strategy checks that one side claims an end and the other
+an interior parameter. It accepts only finite inputs in the existing
+bounded conversion band. The two exact rational segment directions
+must have nonzero determinant, and the claimed endpoint must be
+collinear with and strictly inside the other segment. These conditions
+prove the claimed endpoint is the unique common point. Its stored
+coordinate is copied, and the interior fraction is replaced by the
+exact projection along a nonconstant coordinate; if either component
+of that fraction does not round-trip exactly, neither field is written.
+The check does not change side classifications or operation pairs.
+It does not recover missing turns or address collinear overlaps or
+placement of proper crossings.
+
+Rational noding of the already constructed offset rings (exact lifts
+of their stored MP vertices, independent of legacy turns) gives the
+following local results. It splits at every pairwise intersection,
+selects atoms with union interior on just one side, and sums the
+oriented cycles. For the full baseline, the only emitted polygon is
+the oracle's eight-atom hole, incorrectly emitted as a positive area.
+
+| Fixture | Base area | Repaired and oracle area | Repaired topology |
+| --- | ---: | ---: | --- |
+| Seven-member subset | 19.48528137423857 | 53.79163056034262 | 3 exteriors, no holes |
+| Full `rt_w6` | 3.17157287525381 | 79.79898987322333 | 1 exterior, 1 hole |
+
+Both repaired results cover all source vertices. All 8,191 nonempty
+input-order-preserving subsets also pass the coverage sweep (not an
+area or topology sweep). The focused test covers admitted and declined
+certificates and checks both fixtures through the public API in explicit
+MP and default double. On local Apple Clang 21/arm64, the unchanged
+ordinary `buffer`, `buffer_polygon`, and `buffer_multi_polygon`
+suites passed (7, 2,363 and 1,668 assertions). The unchanged polygon
+and multipolygon suites with explicit MP enabled, clockwise, passed
+683 and 836 assertions, respectively. The original 79.799 assertion
+was not edited. This is a local result, not an x86 run.
+
+Replayer, rational incidence checks, and phase traces:
+`/private/tmp/bg1517-rt-w6-results.kinQWz`. Recommendation: keep
+the repair in the explicit MP strategy; it does not make the general
+buffer pipeline exact.

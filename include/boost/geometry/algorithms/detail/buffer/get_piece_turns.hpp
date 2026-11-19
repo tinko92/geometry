@@ -127,6 +127,18 @@ class piece_turn_visitor
     Turns& m_turns;
     Strategy const& m_strategy;
 
+    template <typename S, typename TurnsRange, typename It>
+    static auto recover_touch_points(S const& strategy, TurnsRange& turns, std::size_t first,
+                                     It p, It q, It r, It s, int)
+        -> decltype(strategy.recover_touch_point(turns[first], *p, *q, *r, *s), void())
+    {
+        for (auto i = first; i < turns.size(); ++i)
+            if (turns[i].method == overlay::method_touch_interior)
+                strategy.recover_touch_point(turns[i], *p, *q, *r, *s);
+    }
+    template <typename S, typename TurnsRange, typename It>
+    static void recover_touch_points(S const&, TurnsRange&, std::size_t, It, It, It, It, long) {}
+
     template <typename S, typename It>
     static auto place_new_touches(S const& strategy, Turns& turns, std::size_t first,
                                   It p, It q, It r, It s, int)
@@ -319,6 +331,7 @@ class piece_turn_visitor
                                    the_model,
                                    m_strategy,
                                    std::back_inserter(m_turns));
+                recover_touch_points(m_strategy, m_turns, first_turn, prev1, it1, prev2, it2, 0);
                 recover_vertex_crossings(m_strategy, unique_sub_range1, unique_sub_range2, m_turns,
                     first_turn, piece1, piece2, ring1, ring2, 0);
                 place_new_touches(m_strategy, m_turns, first_turn, prev1, it1, prev2, it2, 0);

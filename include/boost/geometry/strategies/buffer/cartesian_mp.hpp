@@ -82,12 +82,58 @@ inline bool inside(ray const& first, ray const& last, ray const& r)
     return compare(first, last) < 0 ? after && before : after || before;
 }
 
+template <typename Point, typename TurnPoint, typename Fraction>
+void restore_interior_touch(Point const& a, Point const& b, Point const& c, Point const& d,
+                            TurnPoint& point, Fraction& interior_fraction)
+{
+    if (same(point, b) || !admissible(a) || !admissible(b) || !admissible(c) || !admissible(d))
+        return;
+
+    // The nonparallel supports meet uniquely. If b lies strictly inside
+    // [c,d], it is the intersection, regardless of rounded interpolation.
+    auto const cd = direction(c, d);
+    auto const cb = direction(c, b);
+    if (cross(direction(a, b), cd) == 0 || cross(cb, cd) != 0)
+        return;
+    rational const& delta = cd.x != 0 ? cb.x : cb.y;
+    rational const& span = cd.x != 0 ? cd.x : cd.y;
+    rational const projected = delta / span;
+    if (!(0 < projected && projected < 1))
+        return;
+
+    // Publish a point and an ordering parameter for the same incidence.
+    // Decline if the legacy fraction cannot hold this projection exactly.
+    using C = typename Fraction::int_type;
+    C const n(delta), den(span);
+    if (rational(n) != delta || rational(den) != span)
+        return;
+    geometry::convert(b, point);
+    interior_fraction.assign(n, den);
+}
+
 } // namespace cartesian_mp_detail
 
 // Opt-in repairs for represented binary multiprecision Cartesian buffers.
 // All other strategy operations are those of the conventional umbrella.
 struct cartesian_mp : cartesian<>
 {
+    template <typename Turn, typename Point>
+    static typename std::enable_if<
+        cartesian_mp_detail::admitted_type<Point>::value
+        && std::is_same<Point, typename Turn::point_type>::value
+        && std::is_same<coordinate_type_t<Point>, typename Turn::segment_ratio_type::int_type>::value,
+        void>::type
+    recover_touch_point(Turn& t, Point const& a, Point const& b, Point const& c, Point const& d)
+    {
+        namespace local = cartesian_mp_detail;
+        auto& p = t.operations[0].fraction;
+        auto& q = t.operations[1].fraction;
+        if (p.numerator() != 0 && p.numerator() == p.denominator() && q.in_segment())
+            local::restore_interior_touch(a, b, c, d, t.point, q);
+        else if (q.numerator() != 0 && q.numerator() == q.denominator() && p.in_segment())
+            local::restore_interior_touch(c, d, a, b, t.point, p);
+    }
+
     // Return the outgoing side of a proved switch, or -1 if inconclusive.
     template <typename Range, typename Point>
     static typename std::enable_if<cartesian_mp_detail::admitted_type<Point>::value, int>::type
