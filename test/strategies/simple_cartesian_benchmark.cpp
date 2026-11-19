@@ -31,6 +31,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
@@ -56,7 +57,10 @@ using lines = bg::model::multi_linestring<line>;
 #if defined(BG_BENCH_SIMPLE)
 using strategy = bg::strategies::relate::simple_cartesian;
 #elif defined(BG_BENCH_EXACT)
-#if defined(BG_BENCH_ULPS)
+#if defined(BG_BENCH_LEAN)
+using strategy = bg::strategies::relate::cartesian_exact<coordinate,
+    bg::strategies::relate::lean_bounded_ulp_output<BG_BENCH_ULPS>>;
+#elif defined(BG_BENCH_ULPS)
 using strategy = bg::strategies::relate::cartesian_exact<coordinate,
     bg::strategies::relate::bounded_ulp_output<BG_BENCH_ULPS>>;
 #elif defined(BG_BENCH_EAGER)
@@ -83,7 +87,7 @@ struct options
 {
     std::string label = "unspecified", shape = "all", operation = "all";
     double seconds = 0.1;
-    std::size_t repetitions = 3;
+    std::size_t repetitions = 3, repeat_offset = 0;
     bool digest_self_test = false, check_only = false;
 };
 
@@ -209,6 +213,45 @@ std::uint64_t mix(std::uint64_t state, std::uint64_t value)
 {
     return (state ^ value) * 1099511628211ULL;
 }
+
+#ifdef BG_BENCH_COMPARE_BOUNDED
+// Hash native binary64 bits in traversal order, including all range boundaries.
+std::uint64_t input_fingerprint(std::vector<input> const& corpus)
+{
+    auto hash = mix(0, corpus.size());
+    auto add_point = [&](point const& p)
+    {
+        for (double v : {p.x(), p.y()})
+        {
+            std::uint64_t bits;
+            static_assert(sizeof(bits) == sizeof(v), "Expected binary64");
+            std::memcpy(&bits, &v, sizeof(bits));
+            hash = mix(hash, bits);
+        }
+    };
+    auto path = [&](auto const& r)
+    {
+        hash = mix(hash, r.size());
+        for (auto const& p : r) add_point(p);
+    };
+    for (auto const& g : corpus)
+    {
+        for (auto const* p : {&g.a, &g.b})
+        {
+            path(p->outer());
+            hash = mix(hash, p->inners().size());
+            for (auto const& r : p->inners()) path(r);
+        }
+        for (auto const* ls : {&g.la, &g.lb})
+        {
+            hash = mix(hash, ls->size());
+            for (auto const& l : *ls) path(l);
+        }
+        add_point(g.query);
+    }
+    return hash;
+}
+#endif
 
 // Native exported coordinates only, never operation-owned implicit points.
 // Quantization at 2^-16 native units suppresses ordinary/nearest ULP noise on
@@ -365,6 +408,9 @@ void measure(std::string const& shape, std::string const& operation, options con
              std::vector<input> const& corpus)
 {
     auto const id = operation_code(operation);
+#ifdef BG_BENCH_COMPARE_BOUNDED
+    auto const fingerprint = input_fingerprint(corpus);
+#endif
     polygons out;
     lines linear;
     // Only native output containers survive public calls. Each exact operation
@@ -388,7 +434,11 @@ void measure(std::string const& shape, std::string const& operation, options con
     {
         std::cout << opt.label << ',' << coordinate_name << ',' << shape
                   << ',' << operation << ",0,0,0,0,0,0," << digest << ',' << spatial_digest
-                  << ',' << corpus.size() << ',' << components << ',' << holes << ',' << points << '\n';
+                  << ',' << corpus.size() << ',' << components << ',' << holes << ',' << points
+#ifdef BG_BENCH_COMPARE_BOUNDED
+                  << ',' << fingerprint
+#endif
+                  << '\n';
         return;
     }
     for (std::size_t repetition = 0; repetition < opt.repetitions; ++repetition)
@@ -416,11 +466,15 @@ void measure(std::string const& shape, std::string const& operation, options con
         auto const cpu_end = std::clock();
         double const seconds = std::chrono::duration<double>(end - start).count();
         std::cout << opt.label << ',' << coordinate_name << ',' << shape
-                  << ',' << operation << ',' << repetition << ',' << calls << ',' << seconds
+                  << ',' << operation << ',' << (opt.repeat_offset + repetition) << ',' << calls << ',' << seconds
                   << ',' << double(cpu_end - cpu_start) / CLOCKS_PER_SEC
                   << ',' << seconds * 1e9 / double(calls)
                   << ',' << checksum << ',' << digest << ',' << spatial_digest
-                  << ',' << corpus.size() << ',' << components << ',' << holes << ',' << points << '\n' << std::flush;
+                  << ',' << corpus.size() << ',' << components << ',' << holes << ',' << points
+#ifdef BG_BENCH_COMPARE_BOUNDED
+                  << ',' << fingerprint
+#endif
+                  << '\n' << std::flush;
     }
 }
 
@@ -438,6 +492,7 @@ int main(int argc, char** argv)
             else if (name == "--operation") { opt.operation = value; }
             else if (name == "--seconds") { opt.seconds = std::stod(value); }
             else if (name == "--repeat") { opt.repetitions = std::stoul(value); }
+            else if (name == "--repeat-offset") { opt.repeat_offset = std::stoul(value); }
             else if (name == "--digest-self-test" && (value == "0" || value == "1")) { opt.digest_self_test = value == "1"; }
             else if (name == "--check" && (value == "0" || value == "1")) { opt.check_only = value == "1"; }
             else { throw std::invalid_argument("Unknown option: " + name); }
@@ -453,7 +508,11 @@ int main(int argc, char** argv)
         std::cerr << "pid=" << getpid() << '\n';
 #endif
         std::cout << std::setprecision(12)
-            << "label,coordinate,workload,operation,repeat,calls,seconds,cpu_seconds,ns_per_call,checksum,corpus_digest,geometry_digest,corpus_size,output_components,output_holes,output_points\n";
+            << "label,coordinate,workload,operation,repeat,calls,seconds,cpu_seconds,ns_per_call,checksum,corpus_digest,geometry_digest,corpus_size,output_components,output_holes,output_points"
+#ifdef BG_BENCH_COMPARE_BOUNDED
+            << ",input_fingerprint"
+#endif
+            << '\n';
         std::array<char const*, 5> const shapes{{"degenerate", "general", "decimal", "projected", "projected-local"}};
 #if defined(BG_BENCH_EXACT) && defined(BG_BENCH_ULPS)
         if (opt.shape == "denominator")
