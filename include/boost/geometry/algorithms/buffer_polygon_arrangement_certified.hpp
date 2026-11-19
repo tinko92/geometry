@@ -15,6 +15,28 @@
 namespace boost { namespace geometry
 {
 
+#ifndef DOXYGEN_NO_DETAIL
+namespace detail { namespace certified_polygon_buffer
+{
+
+template <typename Polygon>
+inline status read_arrangement_polygon(Polygon const& input, std::vector<ring>& rings, std::size_t& count)
+{
+    bool constexpr ccw = geometry::point_order<Polygon>::value == counterclockwise;
+    bool constexpr closed = closure<Polygon>::value == geometry::closed;
+    auto result = read_ring(exterior_ring(input), closed, ccw, rings, count);
+    if (result != status::success) { return result; }
+    for (auto const& h : interior_rings(input))
+    {
+        result = read_ring(h, closed, !ccw, rings, count);
+        if (result != status::success) { return result; }
+    }
+    return valid_source(rings) ? status::success : status::invalid_input;
+}
+
+}} // namespace detail::certified_polygon_buffer
+#endif // DOXYGEN_NO_DETAIL
+
 /*!
 \brief Bounded native round dilation or regularized erosion of a Cartesian Polygon.
 \details Positive distance dilates; negative distance erodes. Exact rational
@@ -65,33 +87,17 @@ template <typename Polygon, typename MultiPolygon, typename Distance, typename E
         if (r == 0 || e < 0 || e >= r || d < 0 || d >= r - e) { return status::invalid_input; }
         if (e == 0) { return status::cannot_certify; }
 
-        bool constexpr ccw = point_order<Polygon>::value == counterclockwise;
-        bool constexpr closed = closure<Polygon>::value == geometry::closed;
         std::size_t count = 0;
-        auto result = source::read_ring(exterior_ring(input), closed, ccw, rings, count);
+        auto const result = source::read_arrangement_polygon(input, rings, count);
         if (result != status::success) { return result; }
-        for (auto const& h : interior_rings(input))
-        {
-            result = source::read_ring(h, closed, !ccw, rings, count);
-            if (result != status::success) { return result; }
-        }
     }
     catch (std::domain_error const&) { return status::invalid_input; }
-    if (!source::valid_source(rings)) { return status::invalid_input; }
 
     try
     {
         impl::algebraic_chord_union arrangement;
         auto const& anchor = rings.front().points.front();
-        for (auto const& ring : rings)
-        {
-            for (auto const& edge : ring.edges)
-            {
-                arrangement.append(impl::capsule::rational_segment(impl::difference(edge.from, anchor),
-                                   impl::difference(edge.to, anchor)), r, e);
-            }
-        }
-        arrangement.append_source(rings, anchor);
+        arrangement.append_polygon(rings, anchor, r, e);
         return arrangement.build_polygon(anchor, d, erosion, output) ? status::success : status::cannot_certify;
     }
     catch (impl::uncertified const&) { return status::cannot_certify; }

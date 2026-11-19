@@ -265,6 +265,7 @@ private:
         rn::point vertex(id i)
         {
             auto const& p = owner.m_vertices[i];
+            if (p.coefficient.x == 0 && p.coefficient.y == 0) { return rn::lift(f, p.base); }
             rn::value root;
             if (!f.try_sqrt(owner.m_roots[p.root].square, root)) { throw uncertified{}; }
             return {f.add(f.rational(p.base.x), f.scale(root, p.coefficient.x)),

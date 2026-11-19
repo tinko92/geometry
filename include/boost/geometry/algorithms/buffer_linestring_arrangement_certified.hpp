@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <map>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <type_traits>
@@ -80,25 +81,44 @@ public:
         m_pieces.push_back(record(span.first, span.second, m_pieces.size()));
     }
 
-    void append_source(std::vector<rational_arr::ring> const& source, rational_xy const& anchor)
+    void append_disk(rational_xy const& center, exact_number const& radius, exact_number const& sagitta)
     {
-        id const root = m_geometry.m_roots.size();
-        m_geometry.m_roots.emplace_back(1);
+        if (m_pieces.size() == max_pieces || m_edges.size() == max_edges) { throw uncertified{}; }
+        rational_line::piece vertices;
+        auto emit = [&](rational_xy const& u)
+        {
+            if (vertices.size() == max_edges - m_edges.size()) { return false; }
+            vertices.push_back({center.x + radius * u.x, center.y + radius * u.y});
+            return true;
+        };
+        for (unsigned q = 0; q < 4; ++q)
+        {
+            rb::circle_direction const a(rb::rational_arc_sample(q, 0)), b(rb::rational_arc_sample(q, 1));
+            if (!common::subdivide(q, 0, a, 1, b, radius, sagitta, 0, emit)) { throw uncertified{}; }
+        }
+        m_pieces.push_back(record_rational(vertices, m_pieces.size()));
+    }
+
+    void append_polygon(std::vector<rational_arr::ring> const& source, rational_xy const& anchor,
+                        exact_number const& radius, exact_number const& sagitta)
+    {
+        id const start = m_source.size();
         for (auto const& r : source)
         {
             id const n = r.points.size();
             if (n > max_edges - m_edges.size()) { throw uncertified{}; }
-            id const vertex_first = m_geometry.m_vertices.size(), edge_first = m_geometry.m_edges.size();
-            auto const& scale = m_geometry.m_roots[root];
+            rational_line::piece vertices;
             for (id i = 0; i < n; ++i)
             {
-                auto const p = difference(r.points[r.area2 > 0 ? i : n - 1 - i], anchor);
-                m_geometry.m_vertices.push_back({p, {0, 0}, root,
-                    {scale.coordinate(p.x, 0), scale.coordinate(p.y, 0)}});
-                m_geometry.m_edges.push_back({vertex_first + i, vertex_first + (i + 1) % n});
+                vertices.push_back(difference(r.points[r.area2 > 0 ? i : n - 1 - i], anchor));
             }
-            m_source.push_back(record(edge_first, edge_first + n, source_owner));
+            m_source.push_back(record_rational(vertices, source_owner));
+            for (auto const& e : r.edges)
+            {
+                append(capsule::rational_segment(difference(e.from, anchor), difference(e.to, anchor)), radius, sagitta);
+            }
         }
+        m_source_components.emplace_back(start, m_source.size());
     }
 
     template <typename Polygon>
@@ -127,9 +147,23 @@ public:
     bool build_polygon(rational_xy const& anchor, exact_number const& displacement, bool erosion,
                        MultiPolygon& output)
     {
+        return build_multi(erosion ? operation::erosion : operation::dilation, anchor, displacement, output);
+    }
+
+    template <typename MultiPolygon>
+    bool build_band(rational_xy const& anchor, exact_number const& displacement, MultiPolygon& output)
+    {
+        return build_multi(operation::band, anchor, displacement, output);
+    }
+
+private:
+    template <typename MultiPolygon>
+    bool build_multi(operation op, rational_xy const& anchor, exact_number const& displacement, MultiPolygon& output)
+    {
         node();
-        auto const rings = cycles(erosion ? operation::erosion : operation::dilation);
-        if (rings.empty() && !erosion) { return false; }
+        auto const rings = cycles(op);
+        bool const erosion = op == operation::erosion;
+        if (rings.empty() && !erosion && !m_pieces.empty()) { return false; }
         using polygon = typename boost::range_value<MultiPolygon>::type;
         using coordinate = coordinate_type_t<point_type_t<polygon>>;
         native_rings stored;
@@ -150,8 +184,26 @@ public:
         return true;
     }
 
-private:
     knot vertex(id i) const { return {knot_kind::vertex, i, 0, m_geometry.m_vertices[i].bounds, 0, false}; }
+
+    piece_range record_rational(rational_line::piece const& vertices, id owner)
+    {
+        if (!m_rational_root)
+        {
+            m_rational_root = m_geometry.m_roots.size();
+            m_geometry.m_roots.emplace_back(1);
+        }
+        auto const& scale = m_geometry.m_roots[*m_rational_root];
+        id const vertex_first = m_geometry.m_vertices.size(), edge_first = m_geometry.m_edges.size();
+        for (id i = 0; i < vertices.size(); ++i)
+        {
+            auto const& p = vertices[i];
+            m_geometry.m_vertices.push_back({p, {0, 0}, *m_rational_root,
+                {scale.coordinate(p.x, 0), scale.coordinate(p.y, 0)}});
+            m_geometry.m_edges.push_back({vertex_first + i, vertex_first + (i + 1) % vertices.size()});
+        }
+        return record(edge_first, m_geometry.m_edges.size(), owner);
+    }
 
     int compare_axis(knot const& a, knot const& b, bool y)
     {
@@ -308,12 +360,17 @@ private:
 
     bool source_contains(knot const& a, knot const& b, box_point const& mid)
     {
-        if (!source_ring_contains(m_source.front(), a, b, mid)) { return false; }
-        for (id i = 1; i < m_source.size(); ++i)
+        for (auto const& c : m_source_components)
         {
-            if (source_ring_contains(m_source[i], a, b, mid)) { return false; }
+            if (!source_ring_contains(m_source[c.first], a, b, mid)) { continue; }
+            bool in_hole = false;
+            for (id i = c.first + 1; i < c.second; ++i)
+            {
+                if (source_ring_contains(m_source[i], a, b, mid)) { in_hole = true; break; }
+            }
+            if (!in_hole) { return true; }
         }
-        return true;
+        return false;
     }
 
     struct link { knot to; id edge; };
@@ -516,6 +573,8 @@ private:
     envelope m_geometry;
     std::vector<piece_range> m_pieces;
     std::vector<piece_range> m_source;
+    std::vector<std::pair<id, id>> m_source_components;
+    std::optional<id> m_rational_root;
     std::vector<edge_cuts> m_edges;
 };
 

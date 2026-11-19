@@ -676,6 +676,84 @@ The reverse implication is false: a chord can miss part of a round cap.
 Nonempty chord results have the radius bounds above; neither their
 nonemptiness nor their component count is a claim about smooth erosion.
 
+## Multi-Input Algebraic Arrangement
+
+`<boost/geometry/algorithms/buffer_multi_arrangement_certified.hpp>`
+provides `buffer_multi_arrangement_certified(input, output, distance, e, d)`
+for 2D Cartesian MultiPoint, MultiLineString and an admitted subset of
+MultiPolygon. Output is a native MultiPolygon. Point and line inputs require
+positive distance; polygon input admits both signs. As in the single
+arrangement paths, `r = abs(distance)`, `0 < e < r` and `0 <= d < r-e`.
+A wholly empty collection succeeds with empty output on admissible budgets.
+Empty line members and default-empty polygon members are ignored; singleton
+or all-equal lines contribute point traces. A Polygon with an empty shell
+and present hole rings is not an empty member.
+
+Points append exact rational inscribed disk chords. Line members append the
+same exact algebraic segment capsules as the single-line path. The union is
+noded **once** over the entire collection, so components and holes do not
+depend on export of individual members. Polygon members each contribute
+their exact source rings and boundary capsules. The source face classifier
+computes the union of the members' filled sets, each evaluated as its shell
+minus its own holes. Cross-member source boundaries must be disjoint, and
+neither shell may lie in another member's filled material. Exact pair and
+membership tests enforce those conditions. An island strictly inside another
+member's hole is admitted. Valid OGC configurations with source boundary
+contacts are outside this opt-in class. The boundary of the admitted filled
+union is the union of its individual boundaries, so the polygon face action
+and radius proofs apply without changing their meaning.
+
+All existing work caps are shared across the collection: 16 point disks
+and/or nonzero source edges, 384 combined producer edges, 8192 pair checks
+after box rejection, 4096 open atoms and 16 cycles. Coincident input points
+can consume separate disk slots; coincident directed boundary atoms are
+deduplicated exactly. Successful export preserves the ideal chord-result
+shell/hole containment forest and separately checks Euclidean displacement
+`d`; there is no rounded-member fallback. Exact or native boundary contacts
+are refused. Dilation has filled-set error at most `e+d`, not a smooth
+boundary or topology guarantee. Polygon erosion has the same radius
+inclusions as the single-polygon path. On failure the output is unchanged.
+
+The regression suite checks overlapping and disjoint disks and traces, a
+hole formed by more than one line member, touching and native-grid refusal,
+empty inputs and members, merged polygon dilations, and an island inside a
+hole at both radius signs. The full [#1233 published MultiLineString]
+(https://github.com/boostorg/geometry/issues/1233) is also tested. At radius
+`1`, `e = 1/8`, `d = 1/2`, the far-left input parses as `x = -2^63`. The
+certified inner and outer neighborhoods would force the minimum output
+abscissa into `[x-3/2,x-3/8]`; the next smaller binary64 value is `x-2048`.
+The original therefore must return `cannot_certify` for this native output
+contract, independent of arrangement capacity. The reduced `2^52` hairpin
+does export when split across two line members beside a separate component.
+
+### Unified API Hook
+
+Kierkegaard's `detail::certified_round_buffer::dispatch` can add a branch
+before its scalar-geometry branches and forward the existing staged native
+MultiPolygon and admitted budgets (include the multi header above):
+
+```cpp
+if constexpr (std::is_same_v<tag_t<Geometry>, multi_point_tag>
+           || std::is_same_v<tag_t<Geometry>, multi_linestring_tag>
+           || std::is_same_v<tag_t<Geometry>, multi_polygon_tag>)
+{
+    using coordinate = coordinate_type_t<MultiPolygon>;
+    if constexpr (std::is_same_v<coordinate, exact_number>)
+        return status::cannot_certify; // native backend only
+    else
+        return geometry::buffer_multi_arrangement_certified(input, output,
+            b.distance, b.sagitta, b.displacement);
+}
+```
+
+Add the same tags to the wrapper's static dispatch admission. The wrapper's
+existing staged SinglePolygon conversion should still refuse more than one
+component. The wrapper also needs to preserve this backend's successful
+empty result for an empty collection rather than apply its nonempty
+dilation guard unconditionally. Nonpositive linear regularization or looser
+budget policy, if exposed, belongs in the unified wrapper; this hook keeps
+the bounded arrangement backend's existing numerical admission.
+
 ## Remaining Work
 
 - The algebraic pair primitive is integrated into the bounded opt-in
@@ -684,8 +762,8 @@ nonemptiness nor their component count is a claim about smooth erosion.
   is still impossible on #578; its separate common-witness export is the
   supported path for that larger original fixture.
 - The lossless linestring API still accepts one exterior ring only. The
-  algebraic polygon API supports multiple disjoint cycles but not boundary
-  contacts, MultiPolygon input or boundary-only mode.
+  algebraic polygon APIs support multiple disjoint cycles but not boundary
+  contacts, overlapping source MultiPolygon members or boundary-only mode.
 - Forming the actual buffer requires exact intersection construction,
   ordering and noding for offsets and chords, followed by topology assembly
   and cleanup. Primitives from different edges can introduce expressions
@@ -729,4 +807,7 @@ c++ -std=c++17 -O2 -DNDEBUG -ffp-contract=off -Iinclude -I"$BOOST_ROOT" \
     test/algorithms/buffer/buffer_polygon_arrangement_certified.cpp -o /tmp/buffer_polygon_arrangement_certified
 /tmp/buffer_polygon_arrangement_certified
 /tmp/buffer_polygon_arrangement_certified --benchmark
+c++ -std=c++17 -ffp-contract=off -Iinclude -I"$BOOST_ROOT" \
+    test/algorithms/buffer/buffer_multi_arrangement_certified.cpp -o /tmp/buffer_multi_arrangement_certified
+/tmp/buffer_multi_arrangement_certified
 ```
