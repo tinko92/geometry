@@ -136,3 +136,57 @@ arbitrary overlays. A separate probe certified nine originals in the first
 two contact cases and none in the traversed difference. The no-contact
 controls ranged from 0.98x to 1.00x. These are historical stored-original
 measurements, not a performance claim for the triangle check.
+
+## Paired public triangle check
+
+The [standalone benchmark](exact_generated_triangle_benchmark.cpp) rotates
+the touching-triangle fixture so the shared tip is the lexicographic minimum
+of both clipped triangles. This makes the actual public
+`intersection(polygon, multipolygon, output, cartesian_exact<double>{})`
+query the shared point during parenting. The control clips an ordinary convex
+parallelogram with a rectangle and produces one nontriangular ring.
+
+Separate instrumented builds counted work inside the parent selection.
+The off probe withheld only the triangle candidate marker; it still counted
+the two shapes that would be candidates. The timing binaries had no counters.
+
+| Per call | Candidate shapes | Certified | Boundary queries | Raw boundary kept | Direct residual | General split |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Touching triangles, off | 2 | 0 | 2 | 0 | 0 | 3 |
+| Touching triangles, on | 2 | 2 | 2 | 2 | 1 | 0 |
+| Convex clip, either | 0 | 0 | 0 | 0 | 0 | 0 |
+
+Both uninstrumented builds produced byte-identical retained rational WKT
+for both cases. The harness separately checks rational validity, expected
+exact area (1 and 12), and DE-9IM set equality with independent coordinates.
+The timed calls emit native output and reuse its outer container.
+
+Apple Clang 21, arm64, `-std=c++17 -O2 -DNDEBUG -ffp-contract=off`.
+Off used the headers at `cc7de2684`; on used `491f34e01`. Same source,
+21 paired samples of 0.15 seconds per variant and case, alternating
+variant/case order. Table times are sample medians in CPU us/call; the
+ratio is the median of the within-pair time ratios.
+
+| Public intersection | Off | On | Paired on/off (p10-p90) | On faster |
+| --- | ---: | ---: | ---: | ---: |
+| Touching triangles | 10.453 | 8.559 | 0.818 (0.775-0.831) | 21/21 |
+| Convex clip | 3.725 | 3.735 | 0.997 (0.977-1.018) | 13/21 |
+
+A separate 13-pair repeat measured 0.817x and 0.998x respectively. This
+demonstrates a local gain when generated triangles reach the boundary path,
+not a general overlay speedup or a hit-rate estimate.
+
+To build either variant from this checkout, set `HEADERS` to the relevant
+Geometry `include` directory and use:
+
+```sh
+clang++ -std=c++17 -O2 -DNDEBUG -ffp-contract=off \
+  -I"$HEADERS" -isystem "$BOOST_ROOT" test/strategies/exact_generated_triangle_benchmark.cpp \
+  -o /tmp/bg-triangle-variant
+/tmp/bg-triangle-variant
+/tmp/bg-triangle-variant touching-triangles 0.15
+/tmp/bg-triangle-variant convex-clip 0.15
+```
+
+Local raw samples, the counter-only header override, and the pairing script
+are in `/private/tmp/bg1517-ring-proof-bench`.
