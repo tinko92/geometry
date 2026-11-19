@@ -623,10 +623,7 @@ void test_all()
     TEST_BUFFER(rt_w9, join_miter, end_flat, 68.9852, 1.0);
     TEST_BUFFER(rt_w10, join_miter, end_flat, 88.1985, 1.0);
     TEST_BUFFER(rt_w11, join_miter, end_flat, 53.4853, 1.0);
-#if defined(BOOST_GEOMETRY_TEST_EXCEPT_MACOS_RELEASE)
-    // macOS Release-only: empty output
     TEST_BUFFER(rt_w12, join_miter, end_flat, 28.7353, 1.0);
-#endif
     TEST_BUFFER(rt_w13, join_miter, end_flat, 25.5711, 1.0);
     TEST_BUFFER(rt_w14, join_miter, end_flat, 58.05634, 1.0);
     TEST_BUFFER(rt_w15, join_miter, end_flat, 80.1348, 1.0);
@@ -634,15 +631,15 @@ void test_all()
     TEST_BUFFER(rt_w17, join_miter, end_flat, 33.74264, 1.0);
     TEST_BUFFER(rt_w18, join_miter, end_flat, 83.4779, 1.0);
 
-#if defined(BOOST_GEOMETRY_TEST_FAILURES) || defined(BOOST_GEOMETRY_CONCEPT_FIX_ARRIVAL)
-    // See comments at issue issue_1262
     TEST_BUFFER(rt_w19, join_miter, end_flat, 53.7132, 1.0);
-#endif
-
-#if defined(BOOST_GEOMETRY_TEST_EXCEPT_MACOS_RELEASE)
-    // macOS Release-only: area calculated as ~13.66
     TEST_BUFFER(rt_w20, join_miter, end_flat, 63.0269, 1.0);
-#endif
+
+    // #1359 reduced to two triangles. Their unit miter offsets have legs
+    // of length 3 + sqrt(2), and intersect in a triangle of leg sqrt(2) - 1.
+    test_one<multi_polygon_type, polygon_type>("issue_1359_reduced",
+        "MULTIPOLYGON(((2 8,2 9,3 8,2 8)),((6 4,6 5,7 4,6 4)))",
+        join_miter, end_flat, 9.5 + 7.0 * std::sqrt(2.0), 1.0);
+
     TEST_BUFFER(rt_w21, join_miter, end_flat, 26.3137, 1.0);
     TEST_BUFFER(rt_w22, join_miter, end_flat, 86.1274, 1.0);
 
