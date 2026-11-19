@@ -84,6 +84,17 @@ void test_all()
         test_with_custom_strategies<multi_point_type, polygon>("grid_collinear",
                 grid_collinear, join, end_flat,
                 distance_strategy(12), side_strategy, point_strategy, 1416.0);
+
+        // The square centered at (0,0) covers the would-be hole at (0,0).
+        multi_point_type const points = bg::from_wkt<multi_point_type>(
+            "MULTIPOINT((0 5),(3 -3),(4 0),(-3 0),(0 0))");
+        bg::model::multi_polygon<polygon> buffered;
+        bg::buffer(points, buffered, distance_strategy(3), side_strategy,
+                   join, end_flat, point_strategy);
+        BOOST_CHECK(bg::is_valid(buffered));
+        BOOST_CHECK_EQUAL(buffered.size(), 1u);
+        BOOST_CHECK_EQUAL(bg::num_interior_rings(buffered), 0u);
+        BOOST_CHECK_EQUAL(bg::area(buffered), 126);
     }
 
     test_with_custom_strategies<multi_point_type, polygon>("mysql_report_2015_02_25_1_800",

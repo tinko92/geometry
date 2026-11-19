@@ -14,6 +14,8 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_BUFFER_TURN_IN_PIECE_VISITOR_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_BUFFER_TURN_IN_PIECE_VISITOR_HPP
 
+#include <type_traits>
+
 #include <boost/geometry/core/assert.hpp>
 #include <boost/geometry/core/config.hpp>
 
@@ -185,7 +187,7 @@ public:
             return true;
         }
 
-        if (piece.type == geometry::strategy::buffer::buffered_point)
+        if (piece.type == geometry::strategy::buffer::buffered_point && ! border.m_closed_offset)
         {
             // Optimization for a buffer around points: if distance from center
             // is not between min/max radius, it is either inside or outside,

@@ -114,6 +114,7 @@ struct piece_border
     Ring const* m_ring;
     std::size_t m_begin;
     std::size_t m_end;
+    bool m_closed_offset;
 
     // Points from the original (one or two, depending on piece shape)
     // Note, if there are 2 points, they are REVERSED w.r.t. the original
@@ -139,6 +140,7 @@ struct piece_border
         , m_ring(NULL)
         , m_begin(0)
         , m_end(0)
+        , m_closed_offset(false)
         , m_original_size(0)
         , m_has_envelope(false)
         , m_is_convex(false)
@@ -196,7 +198,8 @@ struct piece_border
         }
     }
 
-    void set_offsetted(Ring const& ring, std::size_t begin, std::size_t end)
+    void set_offsetted(Ring const& ring, std::size_t begin, std::size_t end,
+                       bool closed_offset = false)
     {
         BOOST_GEOMETRY_ASSERT(begin <= end);
         BOOST_GEOMETRY_ASSERT(begin < boost::size(ring));
@@ -205,6 +208,7 @@ struct piece_border
         m_ring = std::addressof(ring);
         m_begin = begin;
         m_end = end;
+        m_closed_offset = closed_offset;
     }
 
     void add_original_point(Point const& point)
@@ -299,7 +303,8 @@ struct piece_border
     //! Returns true if empty (no ring, or no points, or no original)
     bool ring_or_original_empty() const
     {
-        return m_ring == NULL || m_begin >= m_end || m_original_size == 0;
+        return m_ring == NULL || m_begin >= m_end
+            || (m_original_size == 0 && ! m_closed_offset);
     }
 
 private :
