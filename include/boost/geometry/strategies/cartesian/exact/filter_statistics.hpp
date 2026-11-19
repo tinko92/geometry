@@ -24,6 +24,10 @@ struct filter_statistics
     std::uint64_t small_integer_measure_comparisons = 0;
     std::uint64_t compact_measure_comparisons = 0;
     std::uint64_t full_measure_comparisons = 0;
+    std::uint64_t decimal_side_hits = 0;
+    std::uint64_t decimal_side_fallbacks = 0;
+    std::uint64_t decimal_equality_hits = 0;
+    std::uint64_t decimal_range_hits = 0;
     std::uint64_t sterbenz_orientations = 0;
     std::uint64_t tagged_orientation_calls = 0;
 };
