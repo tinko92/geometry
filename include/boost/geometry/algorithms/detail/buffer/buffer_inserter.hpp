@@ -45,7 +45,10 @@
 #include <boost/geometry/geometries/ring.hpp>
 
 #include <boost/geometry/strategies/agnostic/buffer_distance_asymmetric.hpp>
+#include <boost/geometry/strategies/agnostic/buffer_distance_symmetric.hpp>
 #include <boost/geometry/strategies/buffer.hpp>
+#include <boost/geometry/strategies/cartesian/buffer_end_round.hpp>
+#include <boost/geometry/strategies/cartesian/buffer_side_straight.hpp>
 #include <boost/geometry/strategies/side.hpp>
 
 #include <boost/geometry/util/constexpr.hpp>
@@ -164,6 +167,40 @@ struct buffer_range
     using output_point_type = point_type_t<RingOutput>;
     using coordinate_type = coordinate_type_t<RingOutput>;
 
+    template <typename Point, typename End, typename Distance>
+    static bool apply_asymmetric_round_spike(Point const&, Point const&, Point const&,
+        Point const&, strategy::buffer::buffer_side_selector, End const&, Distance const&,
+        std::vector<output_point_type>&)
+    {
+        return false;
+    }
+
+    template <typename Point, typename Numeric>
+    static bool apply_asymmetric_round_spike(Point const& previous, Point const& from,
+        Point const& vertex, Point const& to, strategy::buffer::buffer_side_selector side,
+        strategy::buffer::end_round const& end,
+        strategy::buffer::distance_asymmetric<Numeric> const& distance,
+        std::vector<output_point_type>& out)
+    {
+        using namespace strategy::buffer;
+        auto const left = distance.apply(previous, vertex, buffer_side_left);
+        auto const right = distance.apply(previous, vertex, buffer_side_right);
+        if (distance.negative() || left < 0 || right < 0 || left == right)
+        {
+            return false;
+        }
+        auto const radius = side == buffer_side_left ? left : right;
+        if (radius > 0)
+        {
+            // A spike connects two opposite offsets of the SAME side.
+            // An ordinary asymmetric cap instead connects left to right.
+            end.apply(previous, from, vertex, to, side, distance_symmetric<Numeric>(radius), out);
+            out.front() = from;
+            out.back() = to;
+        }
+        return true;
+    }
+
     template
     <
         typename Collection,
@@ -217,7 +254,18 @@ struct buffer_range
                     // For linestrings, only add spike at one side to avoid
                     // duplicates
                     std::vector<output_point_type> range_out;
-                    end_strategy.apply(penultimate_input, prev_perp2, previous_input, perp1, side, distance, range_out);
+                    bool handled = false;
+                    if constexpr (std::is_same<geometry::cs_tag_t<output_point_type>, cartesian_tag>::value
+                               && std::is_same<SegmentStrategy, strategy::buffer::side_straight>::value)
+                    {
+                        handled = apply_asymmetric_round_spike(penultimate_input, prev_perp2, previous_input,
+                                                               perp1, side, end_strategy, distance, range_out);
+                    }
+                    if (! handled)
+                    {
+                        end_strategy.apply(penultimate_input, prev_perp2, previous_input, perp1,
+                                           side, distance, range_out);
+                    }
                     collection.add_endcap(end_strategy, range_out, previous_input);
                     collection.set_current_ring_concave();
                 }

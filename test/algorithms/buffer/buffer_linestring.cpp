@@ -140,6 +140,26 @@ void test_issue_1433()
     BOOST_CHECK(bg::within(input[2], buffered));
 }
 
+template <bool Clockwise>
+void test_asymmetric_round_retrace()
+{
+    using point = bg::model::point<double, 2, bg::cs::cartesian>;
+    using linestring = bg::model::linestring<point>;
+    using polygon = bg::model::polygon<point, Clockwise>;
+    auto const line = bg::from_wkt<linestring>("LINESTRING(0 2,0 -2,0 0,0 -4)");
+    bg::model::multi_polygon<polygon> out;
+    bg::buffer(line, out, bg::strategy::buffer::distance_asymmetric<double>(0, 2),
+               bg::strategy::buffer::side_straight(), bg::strategy::buffer::join_round(4),
+               bg::strategy::buffer::end_round(4), bg::strategy::buffer::point_square());
+    BOOST_CHECK(bg::is_valid(out));
+    BOOST_CHECK_EQUAL(out.size(), 1u);
+    // Strips of area 12 and 4, two exterior cap triangles of area 1,
+    // and the uncovered halves of the two spike triangles of area 2.
+    BOOST_CHECK_CLOSE(bg::area(out), 22.0, ut_settings::default_tolerance);
+    BOOST_CHECK(bg::within(point(-1.875, 0.5), out));
+    BOOST_CHECK(bg::within(point(1.875, -1), out));
+}
+
 template <bool Clockwise, typename P>
 void test_all()
 {
@@ -513,10 +533,12 @@ int test_main(int, char* [])
 
     test_all<true, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();
     test_issue_1433<true>();
+    test_asymmetric_round_retrace<true>();
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_ORDER)
     test_all<false, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();
     test_issue_1433<false>();
+    test_asymmetric_round_retrace<false>();
 #endif
 
     test_invalid<true, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();

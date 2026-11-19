@@ -265,11 +265,33 @@ void test_all()
 }
 
 
+template <typename P, bool Closed>
+void test_touching_cardinal_round_caps()
+{
+    using line = bg::model::linestring<P>;
+    using multi_line = bg::model::multi_linestring<line>;
+    using polygon = bg::model::polygon<P, Closed, Closed>;
+    auto const input = bg::from_wkt<multi_line>(
+        "MULTILINESTRING((0 4,0 0),(2 6,2 8,-2 8,0 8,0 10))");
+    bg::model::multi_polygon<polygon> out;
+    bg::buffer(input, out, bg::strategy::buffer::distance_symmetric<double>(2),
+               bg::strategy::buffer::side_straight(), bg::strategy::buffer::join_miter(),
+               bg::strategy::buffer::end_round(4), bg::strategy::buffer::point_square());
+    // The two chord caps share a diagonal. Both strokes must survive.
+    BOOST_CHECK(bg::is_valid(out));
+    BOOST_CHECK_EQUAL(out.size(), 1u);
+    BOOST_CHECK_EQUAL(bg::area(out), 60);
+    BOOST_CHECK(bg::within(P(0, 1), out));
+    BOOST_CHECK(bg::within(P(-3, 8), out));
+}
+
 int test_main(int, char* [])
 {
     BoostGeometryWriteTestConfiguration();
 
     test_all<true, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();
+    test_touching_cardinal_round_caps<bg::model::point<double, 2, bg::cs::cartesian>, true>();
+    test_touching_cardinal_round_caps<bg::model::point<float, 2, bg::cs::cartesian>, false>();
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_ORDER)
     test_all<false, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();

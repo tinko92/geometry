@@ -14,6 +14,7 @@
 #ifndef BOOST_GEOMETRY_STRATEGIES_CARTESIAN_BUFFER_END_ROUND_HPP
 #define BOOST_GEOMETRY_STRATEGIES_CARTESIAN_BUFFER_END_ROUND_HPP
 
+#include <type_traits>
 #include <boost/core/ignore_unused.hpp>
 
 #include <boost/geometry/arithmetic/arithmetic.hpp>
@@ -127,6 +128,29 @@ public :
 
         promoted_type const dist_left = distance.apply(penultimate_point, ultimate_point, buffer_side_left);
         promoted_type const dist_right = distance.apply(penultimate_point, ultimate_point, buffer_side_right);
+        if constexpr (std::is_floating_point<coordinate_type_t<Point>>::value)
+        {
+            promoted_type const dx = get<0>(ultimate_point) - get<0>(penultimate_point);
+            promoted_type const dy = get<1>(ultimate_point) - get<1>(penultimate_point);
+            if (m_points_per_circle == 4 && dist_left >= 0 && dist_right >= 0
+                && ((dx == 0) != (dy == 0)))
+            {
+                // All three samples are cardinal. Use the incident supports
+                // and the actual axial direction instead of sin/cos of pi/2.
+                promoted_type const x = (dx > 0) - (dx < 0);
+                promoted_type const y = (dy > 0) - (dy < 0);
+                promoted_type const radius = (dist_left + dist_right) / 2;
+                promoted_type const shift = side == buffer_side_left
+                    ? (dist_left - dist_right) / 2 : (dist_right - dist_left) / 2;
+                Point middle;
+                set<0>(middle, get<0>(ultimate_point) - y * shift + x * radius);
+                set<1>(middle, get<1>(ultimate_point) + x * shift + y * radius);
+                range_out.push_back(perp_left_point);
+                range_out.push_back(middle);
+                range_out.push_back(perp_right_point);
+                return;
+            }
+        }
         promoted_type const alpha
                 = calculate_angle<promoted_type>(penultimate_point, ultimate_point)
                     - geometry::math::half_pi<promoted_type>();
