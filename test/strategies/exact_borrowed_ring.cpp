@@ -338,7 +338,7 @@ void test_parenting_and_midpoints()
     topology_strategy<C> strategy;
     reset_counters();
     for (std::size_t i = 0; i != roots.size(); ++i)
-        metadata.emplace(bg::ring_identifier(2, i, -1), properties(roots[i], strategy));
+        metadata.try_emplace(bg::ring_identifier(2, i, -1), roots[i], strategy);
     // Every triangle vertex lies on the square boundary. Its diagonal midpoint
     // is strictly inside, so parent classification must test a true midpoint.
     ov::assign_parents<bg::overlay_union>(empty, empty, roots, metadata, strategy);
@@ -419,7 +419,7 @@ void test_internal_rational_points()
     std::map<bg::ring_identifier, properties> metadata;
     reset_counters();
     for (std::size_t i = 0; i != roots.size(); ++i)
-        metadata.emplace(bg::ring_identifier(2, i, -1), properties(roots[i], strategy));
+        metadata.try_emplace(bg::ring_identifier(2, i, -1), roots[i], strategy);
     BOOST_TEST(metadata.at(bg::ring_identifier(2, 0, -1)).valid);
     BOOST_TEST(metadata.at(bg::ring_identifier(2, 0, -1)).clockwise);
     ov::assign_parents<bg::overlay_union>(empty, empty, roots, metadata, strategy);
@@ -460,9 +460,9 @@ void test_mixed_parenting_without_rewrapping()
     };
     topology_strategy<double> strategy;
     std::map<bg::ring_identifier, properties> metadata;
-    metadata.emplace(bg::ring_identifier(0, -1, -1), properties(outer.outer(), strategy));
-    metadata.emplace(bg::ring_identifier(1, -1, -1), properties(subtractor.outer(), strategy));
-    metadata.emplace(bg::ring_identifier(2, 0, -1), properties(generated[0], strategy));
+    metadata.try_emplace(bg::ring_identifier(0, -1, -1), outer.outer(), strategy);
+    metadata.try_emplace(bg::ring_identifier(1, -1, -1), subtractor.outer(), strategy);
+    metadata.try_emplace(bg::ring_identifier(2, 0, -1), generated[0], strategy);
     metadata.at(bg::ring_identifier(1, -1, -1)).reversed = true;
     reset_counters();
     ov::assign_parents<bg::overlay_union>(outer, subtractor, generated, metadata, strategy);
