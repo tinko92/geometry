@@ -13,6 +13,8 @@
 #include <utility>
 #include <vector>
 
+#include <boost/range/value_type.hpp>
+
 #include <boost/geometry/algorithms/buffer_linestring_star_certified.hpp>
 #include <boost/geometry/algorithms/buffer_polygon_certified.hpp>
 
@@ -26,8 +28,8 @@ namespace detail { namespace certified_star_buffer
 namespace rational_arr = rational_chord_arrangement;
 namespace rational_line = certified_linestring_buffer;
 
-// This arrangement uses the same exact producers and local predicate field
-// as the star sweep, but has no radial ordering or common-witness assumption.
+// The same exact producers and local predicate field as the star sweep,
+// without a common witness. Polygon source rings can also supply facets.
 class algebraic_chord_union
 {
     static constexpr id max_pieces = 16;
@@ -62,30 +64,90 @@ class algebraic_chord_union
         std::vector<knot> cuts;
     };
 
+    static constexpr id source_owner = max_pieces;
+    enum class operation { band, dilation, erosion };
+    struct native_rings
+    {
+        std::vector<rational_arr::ring> rings;
+        std::vector<id> parent;
+    };
+
 public:
     void append(capsule::rational_segment const& source, exact_number const& radius, exact_number const& sagitta)
     {
         if (m_pieces.size() == max_pieces || m_edges.size() == max_edges) { throw uncertified{}; }
         auto const span = m_geometry.append_capsule(source, radius, sagitta, max_edges - m_edges.size());
-        rectangle box(vertex(m_geometry.m_edges[span.first].from).bounds);
-        for (id i = span.first; i < span.second; ++i)
+        m_pieces.push_back(record(span.first, span.second, m_pieces.size()));
+    }
+
+    void append_source(std::vector<rational_arr::ring> const& source, rational_xy const& anchor)
+    {
+        id const root = m_geometry.m_roots.size();
+        m_geometry.m_roots.emplace_back(1);
+        for (auto const& r : source)
         {
-            auto const& e = m_geometry.m_edges[i];
-            auto const a = vertex(e.from), b = vertex(e.to);
-            rectangle bounds(a.bounds);
-            bounds.extend(rectangle(b.bounds));
-            box.extend(bounds);
-            m_edges.push_back({m_pieces.size(), bounds, compare(a, b) < 0, {a, b}});
+            id const n = r.points.size();
+            if (n > max_edges - m_edges.size()) { throw uncertified{}; }
+            id const vertex_first = m_geometry.m_vertices.size(), edge_first = m_geometry.m_edges.size();
+            auto const& scale = m_geometry.m_roots[root];
+            for (id i = 0; i < n; ++i)
+            {
+                auto const p = difference(r.points[r.area2 > 0 ? i : n - 1 - i], anchor);
+                m_geometry.m_vertices.push_back({p, {0, 0}, root,
+                    {scale.coordinate(p.x, 0), scale.coordinate(p.y, 0)}});
+                m_geometry.m_edges.push_back({vertex_first + i, vertex_first + (i + 1) % n});
+            }
+            m_source.push_back(record(edge_first, edge_first + n, source_owner));
         }
-        m_pieces.push_back({span.first, span.second, box});
     }
 
     template <typename Polygon>
     bool build(rational_xy const& anchor, exact_number const& displacement, Polygon& output)
     {
         node();
-        auto rings = cycles();
-        return certify_and_export(rings, anchor, displacement, output);
+        auto const rings = cycles(operation::band);
+        using coordinate = coordinate_type_t<point_type_t<Polygon>>;
+        native_rings stored;
+        if (!certify_native<coordinate>(rings, anchor, displacement, false, stored)) { return false; }
+        id shell = stored.rings.size();
+        for (id i = 0; i < stored.rings.size(); ++i)
+        {
+            if (stored.rings[i].area2 < 0) { continue; }
+            if (shell != stored.rings.size()) { return false; }
+            shell = i;
+        }
+        if (shell == stored.rings.size()) { return false; }
+        Polygon candidate;
+        if (!write_component(stored, shell, candidate)) { return false; }
+        output = std::move(candidate);
+        return true;
+    }
+
+    template <typename MultiPolygon>
+    bool build_polygon(rational_xy const& anchor, exact_number const& displacement, bool erosion,
+                       MultiPolygon& output)
+    {
+        node();
+        auto const rings = cycles(erosion ? operation::erosion : operation::dilation);
+        if (rings.empty() && !erosion) { return false; }
+        using polygon = typename boost::range_value<MultiPolygon>::type;
+        using coordinate = coordinate_type_t<point_type_t<polygon>>;
+        native_rings stored;
+        if (!certify_native<coordinate>(rings, anchor, displacement, erosion, stored)) { return false; }
+        MultiPolygon candidate;
+        auto const count = std::count_if(stored.rings.begin(), stored.rings.end(),
+            [](rational_arr::ring const& r) { return r.area2 > 0; });
+        range::resize(candidate, static_cast<id>(count));
+        auto component = boost::begin(candidate);
+        for (id i = 0; i < stored.rings.size(); ++i)
+        {
+            if (stored.rings[i].area2 < 0) { continue; }
+            if (component == boost::end(candidate) || !write_component(stored, i, *component)) { return false; }
+            ++component;
+        }
+        if (component != boost::end(candidate)) { return false; }
+        output = std::move(candidate);
+        return true;
     }
 
 private:
@@ -106,6 +168,21 @@ private:
     {
         int const x = compare_axis(a, b, false);
         return x != 0 ? x : compare_axis(a, b, true);
+    }
+
+    piece_range record(id first, id end, id owner)
+    {
+        rectangle box(vertex(m_geometry.m_edges[first].from).bounds);
+        for (id i = first; i < end; ++i)
+        {
+            auto const& e = m_geometry.m_edges[i];
+            auto const a = vertex(e.from), b = vertex(e.to);
+            rectangle bounds(a.bounds);
+            bounds.extend(rectangle(b.bounds));
+            box.extend(bounds);
+            m_edges.push_back({owner, bounds, compare(a, b) < 0, {a, b}});
+        }
+        return {first, end, box};
     }
 
     void node()
@@ -144,6 +221,11 @@ private:
         }
     }
 
+    static rn::parameter midpoint_coordinate(rn::field const& f, rn::parameter const& a, rn::parameter const& b)
+    {
+        return {f.add(f.multiply(a.n, b.d), f.multiply(b.n, a.d)), f.scale(f.multiply(a.d, b.d), 2)};
+    }
+
     int midpoint_side(id e, knot const& a, knot const& b, box_point const& mid)
     {
         auto const& edge = m_geometry.m_edges[e];
@@ -161,18 +243,15 @@ private:
         auto const edge_exact = f.segment(e);
         auto const offset = [&](rn::parameter const& x, rn::parameter const& y, rn::value const& base)
         {
-            auto const n = f.f.add(f.f.multiply(x.n, y.d), f.f.multiply(y.n, x.d));
-            auto const d = f.f.scale(f.f.multiply(x.d, y.d), 2);
-            return f.f.subtract(n, f.f.multiply(d, base));
+            auto const m = midpoint_coordinate(f.f, x, y);
+            return f.f.subtract(m.n, f.f.multiply(m.d, base));
         };
         return f.f.sign(rn::cross(f.f, rn::subtract(f.f, edge_exact.to, edge_exact.from),
             {offset(u.x, v.x, edge_exact.from.x), offset(u.y, v.y, edge_exact.from.y)}));
     }
 
-    bool exposed(id e, knot const& a, knot const& b)
+    bool exposed(id e, knot const& a, knot const& b, box_point const& mid)
     {
-        ec::interval const half{0.5, 0};
-        box_point const mid{(a.bounds.x + b.bounds.x) * half, (a.bounds.y + b.bounds.y) * half};
         rectangle const bounds(mid);
         for (id k = 0; k < m_pieces.size(); ++k)
         {
@@ -196,9 +275,50 @@ private:
         return true;
     }
 
+    bool above_midpoint(id v, knot const& a, knot const& b, box_point const& mid)
+    {
+        auto const& p = m_geometry.m_vertices[v];
+        auto const s = ec::sign(p.bounds.y - mid.y);
+        if (s.certain) { return s.value > 0; }
+        m_geometry.fallback();
+        envelope::local f(m_geometry);
+        auto const u = f.evaluate(a), w = f.evaluate(b);
+        auto const y = midpoint_coordinate(f.f, u.y, w.y);
+        return f.f.sign(f.f.subtract(f.f.scale(y.d, p.base.y), y.n)) > 0;
+    }
+
+    bool source_ring_contains(piece_range const& ring, knot const& a, knot const& b, box_point const& mid)
+    {
+        if (!ring.box.overlaps(rectangle(mid))) { return false; }
+        bool inside = false;
+        bool high = above_midpoint(m_geometry.m_edges[ring.first].from, a, b, mid);
+        for (id i = ring.first; i < ring.end; ++i)
+        {
+            bool const next = above_midpoint(m_geometry.m_edges[i].to, a, b, mid);
+            if (high != next)
+            {
+                int const side = midpoint_side(i, a, b, mid);
+                if (side == 0) { throw uncertified{}; }
+                if ((side > 0) == next) { inside = !inside; }
+            }
+            high = next;
+        }
+        return inside;
+    }
+
+    bool source_contains(knot const& a, knot const& b, box_point const& mid)
+    {
+        if (!source_ring_contains(m_source.front(), a, b, mid)) { return false; }
+        for (id i = 1; i < m_source.size(); ++i)
+        {
+            if (source_ring_contains(m_source[i], a, b, mid)) { return false; }
+        }
+        return true;
+    }
+
     struct link { knot to; id edge; };
 
-    std::vector<contour> cycles()
+    std::vector<contour> cycles(operation op)
     {
         auto const less = [&](knot const& a, knot const& b) { return compare(a, b) < 0; };
         std::map<knot, link, decltype(less)> next(less);
@@ -206,6 +326,10 @@ private:
         id atoms = 0;
         for (id i = 0; i < m_edges.size(); ++i)
         {
+            // Each source-boundary point is interior to the band, which
+            // contains its positive (r-e)-neighborhood. Neither P union T
+            // nor regularized P minus T can change side at a source atom.
+            if (m_edges[i].owner == source_owner) { continue; }
             auto& c = m_edges[i].cuts;
             std::sort(c.begin(), c.end(), less);
             c.erase(std::unique(c.begin(), c.end(), [&](knot const& a, knot const& b) { return compare(a, b) == 0; }),
@@ -215,9 +339,18 @@ private:
                 if (++atoms > max_atoms) { throw uncertified{}; }
                 auto const& a = m_edges[i].ascending ? c[j - 1] : c[j];
                 auto const& b = m_edges[i].ascending ? c[j] : c[j - 1];
-                if (!exposed(i, a, b)) { continue; }
-                auto const added = next.emplace(a, link{b, i});
-                if (added.second ? !incoming.insert(b).second : compare(added.first->second.to, b) != 0)
+                ec::interval const half{0.5, 0};
+                box_point const mid{(a.bounds.x + b.bounds.x) * half, (a.bounds.y + b.bounds.y) * half};
+                if (!exposed(i, a, b, mid)) { continue; }
+                // Exposed atoms are away from the source rings, so source
+                // material is constant on both sides. Dilation selects an
+                // outside band atom; erosion selects and reverses an inside one.
+                bool const reverse = op == operation::erosion;
+                if (op != operation::band && source_contains(a, b, mid) != reverse) { continue; }
+                auto const& from = reverse ? b : a;
+                auto const& to = reverse ? a : b;
+                auto const added = next.emplace(from, link{to, i});
+                if (added.second ? !incoming.insert(to).second : compare(added.first->second.to, to) != 0)
                 {
                     throw uncertified{}; // Touching or branching boundary.
                 }
@@ -250,13 +383,14 @@ private:
     {
         // The lexicographically least vertex is a strict extreme turn of
         // a simple noded ring. The original directions suffice here; no
-        // area sum involving all of the linestring's roots is required.
+        // area sum involving all roots is required. In erosion both
+        // directions are reversed, which leaves their cross product alone.
         envelope::local f(m_geometry);
         auto const a = f.segment(ring.back().edge), b = f.segment(ring.front().edge);
         return f.f.sign(rn::cross(f.f, rn::subtract(f.f, a.to, a.from), rn::subtract(f.f, b.to, b.from)));
     }
 
-    bool inside(contour const& ring, knot const& p)
+    bool inside(contour const& ring, knot const& p, bool reversed)
     {
         bool result = false;
         for (id i = 0; i < ring.size(); ++i)
@@ -265,81 +399,123 @@ private:
             auto const& b = ring[(i + 1) % ring.size()];
             bool const high_a = compare_axis(a.at, p, true) > 0, high_b = compare_axis(b.at, p, true) > 0;
             if (high_a == high_b) { continue; }
-            int const side = m_geometry.side(a.edge, p);
+            int const side = m_geometry.side(a.edge, p) * (reversed ? -1 : 1);
             if (side == 0) { throw uncertified{}; }
             if ((side > 0) == high_b) { result = !result; }
         }
         return result;
     }
 
-    template <typename Polygon>
-    bool certify_and_export(std::vector<contour>& ideal, rational_xy const& anchor,
-                            exact_number const& displacement, Polygon& output)
+    using containment = std::vector<std::vector<bool>>;
+
+    static bool same_native_topology(std::vector<rational_arr::ring> const& rings, containment const& contains)
     {
-        using coordinate = coordinate_type_t<point_type_t<Polygon>>;
-        static_assert(std::is_integral<coordinate>::value || std::is_same<coordinate, float>::value
-                   || std::is_same<coordinate, double>::value, "Chord arrangement export requires native coordinates");
-        id shell = ideal.size();
-        for (id i = 0; i < ideal.size(); ++i)
+        for (id i = 0; i < rings.size(); ++i)
+        {
+            auto const& a = rings[i];
+            for (id j = 0; j < a.edges.size(); ++j)
+            {
+                for (id k = j + 1; k < a.edges.size(); ++k)
+                {
+                    rational_arr::intersection hit;
+                    if (!rational_arr::intersect(a.edges[j], a.edges[k], hit)) { continue; }
+                    bool const adjacent = k == j + 1 || (j == 0 && k + 1 == a.edges.size());
+                    if (!adjacent || hit.t0 != hit.t1) { return false; }
+                }
+            }
+            for (id j = 0; j < i; ++j)
+            {
+                auto const& b = rings[j];
+                for (auto const& u : a.edges)
+                {
+                    for (auto const& v : b.edges)
+                    {
+                        rational_arr::intersection hit;
+                        if (rational_arr::intersect(u, v, hit)) { return false; }
+                    }
+                }
+                if ((rational_arr::locate(a, b.points.front()) == 1) != contains[i][j]
+                 || (rational_arr::locate(b, a.points.front()) == 1) != contains[j][i]) { return false; }
+            }
+        }
+        return true;
+    }
+
+    template <typename Coordinate>
+    bool certify_native(std::vector<contour> const& ideal, rational_xy const& anchor,
+                        exact_number const& displacement, bool reversed, native_rings& stored)
+    {
+        static_assert(std::is_integral<Coordinate>::value || std::is_same<Coordinate, float>::value
+                   || std::is_same<Coordinate, double>::value, "Chord arrangement export requires native coordinates");
+        id const n = ideal.size();
+        containment contains(n, std::vector<bool>(n));
+        std::vector<bool> positive;
+        for (id i = 0; i < n; ++i)
         {
             int const turn = winding_order(ideal[i]);
             if (turn == 0) { return false; }
-            if (turn < 0) { continue; }
-            if (shell != ideal.size()) { return false; }
-            shell = i;
-        }
-        if (shell == ideal.size()) { return false; }
-        std::swap(ideal.front(), ideal[shell]);
-        for (id i = 1; i < ideal.size(); ++i)
-        {
-            if (!inside(ideal.front(), ideal[i].front().at)) { return false; }
-            for (id j = 1; j < i; ++j)
+            positive.push_back(turn > 0);
+            for (id j = 0; j < n; ++j)
             {
-                if (inside(ideal[j], ideal[i].front().at) || inside(ideal[i], ideal[j].front().at)) { return false; }
+                if (i != j) { contains[i][j] = inside(ideal[i], ideal[j].front().at, reversed); }
             }
         }
 
-        std::vector<rational_arr::ring> stored;
-        for (auto const& ring : ideal)
+        // Disjoint cycles are either nested or disjoint. Find the immediate
+        // container; orientation must alternate along this forest.
+        for (id i = 0; i < n; ++i)
+        {
+            id parent = n;
+            for (id j = 0; j < n; ++j)
+            {
+                if (contains[j][i] && (parent == n || contains[parent][j])) { parent = j; }
+            }
+            if (parent == n ? !positive[i] : positive[i] == positive[parent]) { return false; }
+            stored.parent.push_back(parent);
+        }
+
+        for (id i = 0; i < n; ++i)
         {
             rational_line::piece vertices;
-            for (auto const& m : ring)
+            for (auto const& m : ideal[i])
             {
-                coordinate x, y;
+                Coordinate x, y;
                 if (!m_geometry.native_euclidean(m.at, anchor, displacement, x, y)) { return false; }
                 rational_xy const p{common::rational_value(x), common::rational_value(y)};
                 if (!vertices.empty() && capsule::same_point(vertices.back(), p)) { return false; }
                 vertices.push_back(p);
             }
             if (capsule::same_point(vertices.back(), vertices.front())) { return false; }
-            stored.emplace_back(std::move(vertices));
-            auto const& area = stored.back().area2;
-            if (stored.size() == 1 ? area <= 0 : area >= 0) { return false; }
+            stored.rings.emplace_back(std::move(vertices));
+            auto const& area = stored.rings.back().area2;
+            if (area == 0 || (area > 0) != positive[i]) { return false; }
         }
-        // Independent exact rational read-back topology: simplicity, all
-        // rings disjoint, all holes inside the shell and no nested holes.
-        if (!certified_polygon_buffer::valid_source(stored)) { return false; }
+        return same_native_topology(stored.rings, contains);
+    }
 
-        Polygon candidate;
+    template <typename Polygon>
+    static bool write_component(native_rings const& stored, id shell, Polygon& output)
+    {
         bool constexpr cw = geometry::point_order<Polygon>::value == clockwise;
         bool constexpr closed = closure<Polygon>::value == geometry::closed;
-        if (!rational_line::write_ring_lossless(stored.front().points, exterior_ring(candidate), cw, closed))
+        if (!rational_line::write_ring_lossless(stored.rings[shell].points, exterior_ring(output), cw, closed))
         { return false; }
-        auto& holes = interior_rings(candidate);
-        range::resize(holes, stored.size() - 1);
+        auto& holes = interior_rings(output);
+        range::resize(holes, static_cast<id>(std::count(stored.parent.begin(), stored.parent.end(), shell)));
         auto h = boost::begin(holes);
-        for (id i = 1; i < stored.size(); ++i, ++h)
+        for (id i = 0; i < stored.rings.size(); ++i)
         {
-            if (h == boost::end(holes) || !rational_line::write_ring_lossless(stored[i].points, *h, cw, closed))
+            if (stored.parent[i] != shell) { continue; }
+            if (h == boost::end(holes) || !rational_line::write_ring_lossless(stored.rings[i].points, *h, cw, closed))
             { return false; }
+            ++h;
         }
-        if (h != boost::end(holes)) { return false; }
-        output = std::move(candidate);
-        return true;
+        return h == boost::end(holes);
     }
 
     envelope m_geometry;
     std::vector<piece_range> m_pieces;
+    std::vector<piece_range> m_source;
     std::vector<edge_cuts> m_edges;
 };
 

@@ -551,17 +551,111 @@ integer tests check a square and a connected two-hole trace at `d = 0`,
 and refusal tests cover an exact pinch at a point, a tight/zero displacement
 budget and work limits.
 
+## Algebraic Polygon Arrangement and Native Export
+
+`<boost/geometry/algorithms/buffer_polygon_arrangement_certified.hpp>`
+adds `buffer_polygon_arrangement_certified(input, multi_polygon, distance,
+e, d)`. Positive distance dilates; negative distance applies regularized
+erosion. Let `r = abs(distance)`; require `0 < e < r` and `0 <= d < r-e`.
+As in the rational path the input is one finite 2D Cartesian Polygon with
+correctly oriented simple rings and pairwise disjoint, unnested holes
+strictly inside its shell. There is no square-class restriction on source
+edge lengths, and no common-witness premise. This is a native opt-in;
+legacy, star, and lossless buffer contracts are unchanged. In particular
+native lossless output can still be impossible for exposed irrational edges.
+
+### Exact Face Selection
+
+Node the rational source rings and exact algebraic chord capsule producers
+together, including collinear overlaps. The same bounded local fields and
+exposed-atom classification as the non-star linestring case find the chord
+band boundary. Let `P` be the filled source and `T` the union of inscribed
+boundary capsules. Since `T` contains the positive radius-`r-e` neighborhood
+of the entire source boundary, both sides of a source-boundary atom are in
+`T`. Such an atom cannot be on either output boundary. Any exposed band atom
+is away from the source boundary, so exact rational-ray comparisons at its
+algebraic midpoint determine a single material state on both sides. For
+`P union T`, keep the exposed atom precisely when it is outside `P`. For
+`P minus T`, keep it when it is inside `P` and reverse it so material stays
+on the left. Closed selected faces give the regularized result; a zero-area
+remnant is not exported. No source, facet, cut or midpoint is rounded before
+these decisions.
+
+Assemble disjoint exact cycles. Local extreme-turn and ray predicates build
+their containment forest, with alternating shell and hole orientations.
+This handles multiple components, holes and empty erosion. Franklin's
+exact Euclidean vertex-displacement check is applied with budget `d`;
+the bound extends along each pair of matched edges by interpolation.
+Exact rational checks reject native edge collapse, crossings, contacts,
+orientation changes or any difference from the ideal cycle containment
+matrix. Every actual stored ring is read back before publishing. This
+preserves chord-result topology, not necessarily the topology of the
+smooth round result. On refusal the output is unchanged.
+
+The arrangement caps remain 16 nonzero source edges across shell and holes,
+384 combined producer edges (including source edges), 8192 pair checks after
+box rejection, 4096 open band atoms and 16 cycles. The four-root cap is per
+predicate, not per Polygon. Chord depth and exact filter-fallback limits
+still apply. Output contacts and branch nodes are refused. Pairwise noding
+and export validation are quadratic in their edge counts; this is not a
+scalable sweep. The same binary64 environment is required for the filters.
+
+### Radius Certificates
+
+Write `N(P,s)` for the closed `s`-neighborhood of filled `P`, and `E_s` for
+the closure of its interior points with clearance strictly greater than
+`s` from the source boundary. After native export:
+
+```
+dilation: N(P,r-e-d) subset output subset N(P,r+d)
+erosion:  E_(r+d) subset output subset {x in int(P): clearance(x) > r-e-d}
+```
+
+The ideal band contains the source boundary's radius-`r-e` neighborhood
+and lies inside its radius-`r` neighborhood. These give the ideal bounds
+with `d = 0`. Winding is unchanged outside the closed `d`-neighborhood of
+the ideal boundary during the paired-edge homotopy. For dilation this yields
+the native neighborhood bounds (the inner equality follows by closure),
+so filled-set Hausdorff error is at most `e+d`. For erosion, every point of
+clearance `> r+d` has its `d`-ball in the ideal erosion interior. Conversely,
+the stored erosion lies within distance `d` of the ideal erosion, whose
+clearance is strictly `> r-e`; since `d < r-e`, that short displacement
+cannot cross the source boundary. These are inclusion bounds, not a
+general erosion Hausdorff or component-correspondence bound to the smooth
+erosion. A topology change near a smooth critical radius is still possible.
+
+The focused tests use a concave shell with two oblique holes and five
+independent length square classes across the source. They check positive
+and negative outputs against independent exact rational ray and distance
+samples, including dilation that fills the holes. A sheared dumbbell has
+no common witness and yields two erosion components: chamber samples meet
+the inner inclusion bound, and a narrow cross-section meets the exclusion
+bound. A sheared slab gives empty erosion. Tests also exercise invalid
+closure and lossless/native-grid refusal. Run the fixture binary with
+`--benchmark` for end-to-end timing, excluding the sample oracle.
+
+One local Darwin arm64 run (Apple Clang 21, `-O2 -DNDEBUG -ffp-contract=off`,
+20 calls per fixture, including construction, certification and export):
+
+| Fixture | Mean per call | Output vertices before closure |
+| --- | ---: | ---: |
+| Concave shell, two holes, dilation | 6.5 ms | 34 |
+| Concave shell, two holes, erosion | 9.1 ms | 85 |
+| Sheared dumbbell, split erosion | 8.1 ms | 28 |
+
+These are small-fixture timings, not a general scaling claim or a speed
+comparison with the different lossless or legacy contracts.
+
 ## Remaining Work
 
-- The algebraic pair primitive is integrated into bounded linestring paths,
-  not into the legacy buffer or the rational polygon arrangement. General
-  arrangement scaling, point-touching topology, and native output for
-  unrestricted algebraic polygon buffers remain open. Native lossless
-  output is still impossible on #578; its separate common-witness export
-  is the supported path for that larger original fixture.
-- The lossless linestring API still accepts one exterior ring only; the
-  polygon API supports multiple disjoint cycles but not boundary contacts.
-  MultiPolygon input and general lossy native export are not implemented.
+- The algebraic pair primitive is integrated into the bounded opt-in
+  linestring and polygon paths, not the legacy buffer. General arrangement
+  scaling and point-touching topology remain open. Native lossless output
+  is still impossible on #578; its separate common-witness export is the
+  supported path for that larger original fixture.
+- The lossless linestring API still accepts one exterior ring only. The
+  algebraic polygon API supports multiple disjoint cycles but not boundary
+  contacts, MultiPolygon input or boundary-only mode.
 - Forming the actual buffer requires exact intersection construction,
   ordering and noding for offsets and chords, followed by topology assembly
   and cleanup. Primitives from different edges can introduce expressions
@@ -601,4 +695,8 @@ c++ -std=c++17 -ffp-contract=off -Iinclude -I"$BOOST_ROOT" \
 c++ -std=c++17 -ffp-contract=off -Iinclude -I"$BOOST_ROOT" \
     test/algorithms/buffer/buffer_linestring_arrangement_certified.cpp -o /tmp/buffer_linestring_arrangement_certified
 /tmp/buffer_linestring_arrangement_certified
+c++ -std=c++17 -O2 -DNDEBUG -ffp-contract=off -Iinclude -I"$BOOST_ROOT" \
+    test/algorithms/buffer/buffer_polygon_arrangement_certified.cpp -o /tmp/buffer_polygon_arrangement_certified
+/tmp/buffer_polygon_arrangement_certified
+/tmp/buffer_polygon_arrangement_certified --benchmark
 ```
