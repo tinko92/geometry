@@ -5,6 +5,9 @@ once. The base is `32cc22de5` (develop `082b99181` plus PR 1517).
 The external randomized grid driver is not part of the diff. Branches
 under `review/exact-final-1517/` mark the following cumulative endpoints.
 Review from the preceding endpoint rather than diffing every stage against develop.
+The [CPU qualification](exact_1517_cpu_results.md) summarizes the retained
+implementation. The [optimization audit](exact_optimization_audit.md)
+also lists rejected experiments and shortcuts for which no proof was found.
 
 | Endpoint | Review unit |
 |---|---|
