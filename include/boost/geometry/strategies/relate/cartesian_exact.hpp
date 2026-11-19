@@ -1042,7 +1042,9 @@ namespace relate
       coordinate error fields. approximate_output retains forward error bounds.
       bounded_ulp_output<N, Retry> certifies binary64 intersections within N
       representable steps of nearest, ties to even, and retains predicate
-      error bounds. Retry (default false) enables an FMA residual retry.
+      error bounds. N=1 selectively tightens determinant bounds after a
+      miss. For larger budgets, Retry (default false) enables an FMA
+      residual retry.
       Uncertified axes, non-double Coordinate types, float output and legacy
       exact_point conversion use nearest rounding for floating constructions.
       Integral output uses BG numeric_cast conversion, which truncates floating

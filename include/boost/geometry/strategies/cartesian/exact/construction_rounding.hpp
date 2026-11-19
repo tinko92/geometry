@@ -15,10 +15,12 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include <boost/config.hpp>
 #include <boost/geometry/strategies/cartesian/exact/forward_error.hpp>
 #include <boost/geometry/strategies/cartesian/exact/output_policy.hpp>
 #include <boost/geometry/strategies/cartesian/exact/point_cache.hpp>
 #include <boost/geometry/util/numeric_cast.hpp>
+#include <boost/geometry/util/precise_math.hpp>
 
 namespace boost { namespace geometry { namespace strategies { namespace relate
 {
@@ -122,6 +124,87 @@ inline bool certify(fe::scalar_approximation const& a, bool nearest)
 template <std::size_t N>
 constexpr std::size_t certificate_steps = N < (1u << 24) ? N : (1u << 24);
 
+inline double scaled_division_residual(double t, double d, double n)
+{
+    // For n != 0, ilogb(t)+ilogb(d) >= ilogb(n)-1, so the grid of t*d
+    // is no finer than 2^(ilogb(n)-105).
+    // The residual lies on that grid and |n-t*d| <= u*|n|, so it fits
+    // in 53 bits. The admitted exponent band also covers the scaling.
+    return std::abs(std::fma(-t, d, n)) * 0x1p53;
+}
+
+inline bool bounded_axis_passes(double direction, double z, double height, double threshold)
+{
+    return arithmetic::rounded_mul(std::abs(direction), height)
+         < arithmetic::rounded_mul(std::abs(z), threshold);
+}
+
+// Budget in units of u for the ORIGINAL head k = RN(p-q). Requires all
+// four endpoint differences to be exact. The three EFT tails ep, eq, ek
+// give det-k = ek+ep-eq exactly. For s=RN(ep-eq), r=RN(ek+s), the
+// posterior rounding bound gives |det-k| <= (|r|+u*|s|)/(1-u).
+// The factor 2 covers this denominator and the rounded nonnegative sum:
+// 2*(1-u)^2 > 1.
+inline double determinant_budget(double ax, double ay, double bx, double by, double k)
+{
+    using geometry::detail::precise_math::two_diff_tail;
+    using geometry::detail::precise_math::two_product_tail;
+    double const p = arithmetic::rounded_mul(ax, by), q = arithmetic::rounded_mul(ay, bx);
+    double const s = arithmetic::rounded_sub(two_product_tail(ax, by, p), two_product_tail(ay, bx, q));
+    double const r = arithmetic::rounded_add(two_diff_tail(p, q, k), s);
+    return 2 * std::fma(0x1p53, std::abs(r), std::abs(s));
+}
+
+// Keep the original quotient, candidate and certified lower bound. This
+// slow path is reached only if removing the determinant and quotient errors
+// could help at least one axis. Keep it out of the initial filter.
+BOOST_NOINLINE inline double retry_one_ulp(std::array<double, 8> const& p,
+    fe::detail::native_intersection_heads const& heads, double t, double lower, double threshold,
+    std::array<double, 2> const& z, std::array<bool, 2> const& accepted)
+{
+    double const at = std::abs(t);
+    double const residual = scaled_division_residual(t, heads.denominator, heads.numerator);
+    auto height = [&](double et, double ed)
+    { return std::fma(at, lower, arithmetic::rounded_add(residual, std::fma(at, ed, et))); };
+    double et = 8 * heads.mt, ed = 8 * heads.md;
+    double h = height(et, ed);
+    auto can_improve = [&](double optimistic)
+    {
+        auto axis = [&](std::size_t i, double dir)
+        {
+            return !accepted[i] && bounded_axis_passes(dir, z[i], optimistic, threshold)
+                && !bounded_axis_passes(dir, z[i], h, threshold);
+        };
+        return axis(0, heads.ux) || axis(1, heads.uy);
+    };
+    // With t and L fixed, the three nonnegative rounded operations in
+    // height are monotone in each budget. If even perfect determinants
+    // cannot rescue another axis, don't recover any tails.
+    if (!can_improve(height(0, 0))) return h;
+
+    using geometry::detail::precise_math::two_diff_tail;
+    double const vx = arithmetic::rounded_sub(p[6], p[4]), vy = arithmetic::rounded_sub(p[7], p[5]);
+    if (two_diff_tail(p[6], p[4], vx) != 0 || two_diff_tail(p[7], p[5], vy) != 0) return h;
+    auto tighten = [&](bool denominator)
+    {
+        std::size_t const i = denominator ? 2 : 4;
+        double const x = denominator ? heads.ux : arithmetic::rounded_sub(p[4], p[0]);
+        double const y = denominator ? heads.uy : arithmetic::rounded_sub(p[5], p[1]);
+        if (two_diff_tail(p[i], p[0], x) != 0 || two_diff_tail(p[i + 1], p[1], y) != 0) return;
+        auto& budget = denominator ? ed : et;
+        budget = (std::min)(budget, determinant_budget(x, y, vx, vy,
+            denominator ? heads.denominator : heads.numerator));
+        h = height(et, ed);
+    };
+    bool const denominator_first = at * ed > et;
+    tighten(denominator_first);
+    // Don't tighten the other determinant unless erasing its entire
+    // contribution would certify an axis which still fails.
+    if (can_improve(denominator_first ? height(0, ed) : height(et, 0)))
+        tighten(!denominator_first);
+    return h;
+}
+
 template <std::size_t N, bool Retry>
 inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
                                                 fe::point_approximation& output)
@@ -167,8 +250,7 @@ inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
         // Strict rounded order implies strict real order of the products.
         // Passing keeps RN(Z) within k steps of z=RN(y): k intervening
         // rounding cells span at least k*u*(1-2u)^(k+1)*|z|.
-        if (!(arithmetic::rounded_mul(std::abs(direction[axis]), bound)
-              < arithmetic::rounded_mul(std::abs(z), b))) return;
+        if (!bounded_axis_passes(direction[axis], z, bound, b)) return;
         output.value[axis] = z;
         // Also enclose Z for existing predicates. Acceptance bounds |Z-y|
         // by k*u*|z|; |y-z| <= u/(1-u)*|z|. Slack covers this multiply.
@@ -180,15 +262,25 @@ inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
     for (std::size_t axis = 0; axis < 2; ++axis)
         certify_axis(axis, z[axis], h);
 
-    if constexpr (Retry)
+    if constexpr (N == 1)
     {
         if (!accepted[0] || !accepted[1])
         {
-            // If n != 0, the grid of t*d is no finer than 2^(ilogb(n)-105):
-            // ilogb(t)+ilogb(d) >= ilogb(n)-1. The residual is on that grid
-            // and |n-t*d| <= u*|n|, so it fits in 53 bits (n=0 is trivial).
-            double const r = std::fma(-t, heads.denominator, heads.numerator);
-            double const tightened = height(arithmetic::rounded_mul(std::abs(r), 0x1p53));
+            double const floor = arithmetic::rounded_mul(at, lower);
+            if ((!accepted[0] && bounded_axis_passes(heads.ux, z[0], floor, b))
+                || (!accepted[1] && bounded_axis_passes(heads.uy, z[1], floor, b)))
+            {
+                double const tightened = retry_one_ulp(p, heads, t, lower, b, z, accepted);
+                for (std::size_t axis = 0; axis < 2; ++axis)
+                    if (!accepted[axis]) certify_axis(axis, z[axis], tightened);
+            }
+        }
+    }
+    else if constexpr (Retry)
+    {
+        if (!accepted[0] || !accepted[1])
+        {
+            double const tightened = height(scaled_division_residual(t, heads.denominator, heads.numerator));
             for (std::size_t axis = 0; axis < 2; ++axis)
                 if (!accepted[axis]) certify_axis(axis, z[axis], tightened);
         }

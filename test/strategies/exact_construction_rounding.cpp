@@ -501,6 +501,97 @@ void bounded_other_formats()
     check_input(j);
 }
 
+void determinant_budgets()
+{
+    namespace ar = ec::arithmetic_detail;
+    double const u = ec::forward_error::detail::u;
+    auto check = [&](double ax, double ay, double bx, double by)
+    {
+        double const k = ar::rounded_sub(ar::rounded_mul(ax, by), ar::rounded_mul(ay, bx));
+        rational const exact = rational(ax) * rational(by) - rational(ay) * rational(bx);
+        double const budget = cr::detail::determinant_budget(ax, ay, bx, by, k);
+        BOOST_TEST(absolute(exact - rational(k)) <= rational(u) * rational(budget));
+        return budget;
+    };
+    double const n = 0x1p27;
+    // Equal rounded products can conceal a nonzero determinant.
+    BOOST_TEST(check(n + 1, n, n, n - 1) > 0);
+    BOOST_TEST_EQ(check(1.25, 2, 4, 5.5), 0.);
+    std::mt19937_64 random(0x4445544255444745);
+    auto value = [&]
+    {
+        double const x = 1 + double(random() >> 12) * 0x1p-52;
+        int const exponent = int(random() % 128) - 64;
+        return std::ldexp((random() & 1) ? -x : x, exponent);
+    };
+    for (unsigned i = 0; i < 512; ++i) check(value(), value(), value(), value());
+}
+
+void selective_one_ulp_retry()
+{
+    namespace ar = ec::arithmetic_detail;
+    namespace fe = ec::forward_error;
+    constexpr double u = fe::detail::u;
+    auto check = [](producers const& v, std::array<bool, 2> expected,
+                    bool numerator_tightens, bool denominator_tightens)
+    {
+        auto const heads = fe::detail::intersection_heads(v, false);
+        double const et = 8 * heads.mt, ed = 8 * heads.md;
+        double const lower = (1 - 2 * u) * (std::abs(heads.denominator) - u * ed);
+        BOOST_TEST(lower > 0);
+        double const t = ar::rounded_div(heads.numerator, heads.denominator), at = std::abs(t);
+        double const threshold = (1 - 18 * u) * lower;
+        std::array<double, 2> const z{{std::fma(t, heads.ux, v[0]), std::fma(t, heads.uy, v[1])}};
+        double const h = std::fma(at, lower, std::fma(8, std::fma(at, heads.md, heads.mt),
+                                                       std::abs(heads.numerator)));
+        std::array<bool, 2> const initial{{cr::detail::bounded_axis_passes(heads.ux, z[0], h, threshold),
+                                          cr::detail::bounded_axis_passes(heads.uy, z[1], h, threshold)}};
+        BOOST_TEST(!initial[0]);
+        // In these fixtures every tightened determinant is exact. Checking
+        // the returned height distinguishes doing one, both or no retries.
+        double const residual = cr::detail::scaled_division_residual(t, heads.denominator, heads.numerator);
+        double const want = std::fma(at, lower, ar::rounded_add(residual,
+            std::fma(at, denominator_tightens ? 0. : ed, numerator_tightens ? 0. : et)));
+        BOOST_TEST_EQ(cr::detail::retry_one_ulp(v, heads, t, lower, threshold, z, initial), want);
+
+        fe::point_approximation result{{{1, 2}}, {{3, 4}}};
+        auto const passed = cr::detail::bounded_intersection<1, false>(v, result);
+        BOOST_TEST(passed == expected);
+        exact_point exact;
+        BOOST_TEST(oracle(v, exact));
+        for (std::size_t d = 0; d < 2; ++d)
+        {
+            if (!passed[d])
+            {
+                BOOST_TEST_EQ(result.value[d], double(d + 1));
+                BOOST_TEST_EQ(result.error[d], double(d + 3));
+                continue;
+            }
+            BOOST_TEST_EQ(bits(result.value[d]), bits(z[d])); // No head/candidate replacement.
+            BOOST_TEST(ulp_distance(result.value[d], nearest<double>(exact[d])) <= 1);
+            BOOST_TEST(absolute(rational(result.value[d]) - exact[d]) <= rational(result.error[d]));
+        }
+    };
+    // Both budgets block x; y already passes.
+    check({{1.6875, 9, 2.6875, 10, 1.6875, 10, 3.6875, 8}}, {{true, true}}, true, true);
+    // Only the dominant budget needs tightening. Retain the other one.
+    check({{5.5, 9, 6.5, 10, 5.5, 10, 7.5, 8}}, {{true, true}}, true, false);
+    check({{5, 10, 6, 11, 5, 10.25, 6, 10.75}}, {{true, true}}, false, true);
+    // Using the exact division residual is sufficient; no determinant retry.
+    check({{8.25, 9, 9.25, 10, 8.25, 10, 10.25, 8}}, {{true, true}}, false, false);
+    // Direction error alone blocks x, or the remaining division residual does.
+    check({{-0.25, 9, 0.75, 10, -0.25, 10, 1.75, 8}}, {{false, true}}, false, false);
+    check({{0.25, 2, 3.25, 2, 1.25, 1, 1.25, 3}}, {{false, true}}, false, false);
+    // The shared endpoint subtraction is not exact; keep both old budgets.
+    check({{4, 8, 5, 8, 4.5, -0x1p-10, 4.5, 0x1p54}}, {{false, true}}, false, false);
+    // No certified positive lower bound: keep the original exact fallback.
+    double const n = 0x1p27;
+    fe::point_approximation result;
+    auto const rejected = cr::detail::bounded_intersection<1, false>
+        ({{0, 0, n + 1, n, 0, 1, n - 2, n - 2}}, result);
+    BOOST_TEST(!rejected[0] && !rejected[1]);
+}
+
 void integer_inputs()
 {
     for (std::int64_t base : {std::int64_t(0), (std::int64_t(1) << 54) + 1,
@@ -882,6 +973,8 @@ int main(int argc, char** argv)
         random_cases();
         bounded_cases();
         bounded_other_formats();
+        determinant_budgets();
+        selective_one_ulp_retry();
         integer_inputs();
         small_integers();
         ordinary_first_stage();
