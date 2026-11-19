@@ -229,3 +229,30 @@ The measured5 matrix after the borrowed-output copy and orientation changes
 had 45 operation/workload pairs and three repetitions per policy.
 Stored-output exact took .8610 / 1.1333 times same-compiler develop
 (GCC / Clang). Absolute Clang/GCC exact time was .9887; develop was .7511.
+
+### Final A/B decisions
+
+These supersede the entries marked "open" in the initial inventory above.
+Timings are ratios, smaller is better. Server A/B runs compare identical
+corpora and check results independently of the timed calls.
+
+| TODO | Experiment and decision |
+|---|---|
+| 45-108: eager N-step operands | Five rotated repetitions, GCC 13 / Clang 22. Compared with no root scan or stamp, global scalar order took 1.000/.998, local scalar order .998/.998. Global scalar plus side/local took .988/.995 across 15 cells but slowed areal relation. A representable-rank scalar test did not beat the existing comparison. Squared-distance/signed-measure variants had no qualifying operands in this public corpus. Do not enable whole-operation preparation by default. |
+| 126-129: determinant head reuse | The turn rejection plus construction trial took 1.015/1.012 overall and 1.062/1.049 on projected data. Do not retain extra live values across every segment-pair candidate. |
+| 131-135: one noding for XOR | `649c9b076` extracts both directed differences from one node set and verifies output before publication. Independent rational sweep: 935 accepted pairs, 9 refused. On local arm64, strip/comb cost .32/.28 times the current append route, but failed attempts before fallback cost 1.19 on a seam crossing and 1.47 on containment. Shared-edge/sector ownership, repeated vertices, and holes are not solved by that reduction. No general fast path. |
+| 182-195: generated cycles | Three distinct non-collinear normalized vertices are a sufficient simple-cycle certificate (`491f34e01`). Turn visits and biconnectivity do not prove simplicity of longer walks or unique geometric edge ownership. Never remove inter-ring cancellation or parenting on this evidence. |
+| 205-208: checked products | `b07317a40`, 15 public operation/fixture cells, five rotated x86 pairs. Equal WKT, matrix and checksums; unchecked scratch .984/1.006 overall. Retain checked products by default. |
+| 262-282: denominator and subtraction tails | If the head cannot prove a positive denominator bound, recover the low-order determinant and rebuild the quotient/bounds. On near-parallel N=1 areal relation: .812/.710; ordinary cases did not need rescue. For N up to four, also tighten the signed determinant using nonzero TwoDiff tails. On decimal data N=1 took .917/.903 and N=4 .881/.864. The two mechanisms compose. Both are enabled. See `exact_twodiff_cross_terms.md`. |
+| 284-296: tagged fallback | `357434d0a`, three originally supported cold intersection records, five rotated pairs. Thirty public cells agreed in full WKT and matrix; near-parallel intersection took .643/.873, all cells .979/.996. This is evidence for a cold-path dispatch, not for new per-point storage or replacing the fixed-integer fallback for all expressions. |
+| Clang profile | On the hottest native box instantiation the direct min/max, forced-inlining, and combined trials each fell within .4% of baseline. Do not force template inlining or move cold branches indiscriminately. |
+
+An IEEE interval record remains useful for a point's stored absolute error.
+The decimal point orientation filter now uses the ordinary forward bound;
+certified algebraic buffers still use interval arithmetic for their algebraic
+edge bounds and must not lose those operators. Normalized native spherical
+orientation now uses the six determinant products and a 16u permanent bound.
+Exact rational rays decide all uncertain signs. A rounded-product inequality
+proves two native rays distinct; equal rounded products do not prove them
+parallel. Five-pair x86 native ray tests: ordinary side 754 to 23 ns GCC,
+750 to 20 ns Clang. These are primitive timings, not full-sphere overlay rates.
