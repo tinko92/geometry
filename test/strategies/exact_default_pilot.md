@@ -32,7 +32,7 @@ exact-kernel filter proofs and fallbacks.
 | Call without strategy | Additional requirement |
 | --- | --- |
 | `relation(a, b)` | None |
-| `relate(a, b, mask)` | `de9im::mask`, not a static mask |
+| `relate(a, b, mask)` | One `de9im::mask` or `de9im::static_mask<...>`; compound masks built with `operator||` stay legacy |
 | `intersection`, `union_`, `difference`, `sym_difference` | Destination is exactly `model::multi_polygon<model::polygon<model::d2::point_xy<double>>>` |
 
 All other signatures keep the legacy path. Selection happens before dynamic
@@ -40,9 +40,32 @@ visitation, so a variant containing an otherwise admitted polygon is still
 legacy. Calls with any explicit strategy, including `bg::default_strategy{}`,
 are unchanged. The shared Cartesian umbrella, insert helpers, named
 predicates, validation, index, unary operations, and buffer are not opted in.
-For example, two polygons one ULP apart can be disjoint according to pilot
-`relation` yet touching according to legacy `touches`. Use an explicit
-strategy for all related calls when they must agree.
+Static masks use the same source-bound explicit route as runtime masks.
+Library callers that already supply a strategy, such as polygon validity,
+do not enter the selector.
+
+## Why Named Predicates Stay Legacy
+
+With unit squares separated along x by `nextafter(1.0, 2.0) - 1.0`, both
+inputs pass admission. The exact matrix is `FF2FF1212` and the single static
+and runtime disjoint masks match it; legacy reports `FF2F11212` and
+`touches=true`. Without the build macro the public matrix and both public
+masks keep the legacy answers.
+
+For a separate valid, admitted pair, compare a unit square with a copy whose
+right edge is moved from 1 to `nextafter(1.0, 2.0)`. The matrix is
+`2FF11F212`: the square is contained, but the sets are not equal. Both
+legacy and explicit exact `equals` return true because Cartesian polygon
+equality uses the optimized coordinate-tolerant path. Passing the exact
+umbrella to the named overload is therefore not equivalent to using an
+equality mask.
+
+Redirecting only no-strategy `equals` to an exact matrix would still change
+`index::equal_to<std::pair<Point, Polygon>>`, even when its caller passes
+an explicit legacy strategy. The comparator uses no-strategy `equals` for
+the polygon payload. Both cases are covered in the pilot test. The named
+family remains outside this pilot; use `relation` or a qualified
+`relate` mask for answers defined by the matrix.
 
 ## Native Output And Feedback
 
@@ -84,3 +107,6 @@ The active test compares all four overlays against explicit approximate
 output, including pre-populated destinations that own both input polygons.
 It also compares a crossing whose approximate export differs from nearest
 and legacy output, and checks the excluded signatures and fallback paths.
+Static mask checks include disjointness, edge and point contact, and
+overlap. A stateful explicit custom strategy verifies that the pilot does
+not intercept its own source-binding hook.

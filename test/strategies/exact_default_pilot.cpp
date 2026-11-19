@@ -4,6 +4,7 @@
 
 #include <boost/core/lightweight_test.hpp>
 #include <boost/geometry.hpp>
+#include <boost/geometry/index/equal_to.hpp>
 
 #include <cfenv>
 #include <cmath>
@@ -13,6 +14,7 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace bg = boost::geometry;
@@ -21,7 +23,25 @@ using polygon = bg::model::polygon<point<double>>;
 using polygons = bg::model::multi_polygon<polygon>;
 using variant = boost::variant<polygon>;
 using static_disjoint = bg::de9im::static_mask<'F', 'F', '*', 'F', 'F', '*', '*', '*', '*'>;
+using static_equals = bg::de9im::static_mask<'T', '*', 'F', '*', '*', 'F', 'F', 'F', '*'>;
+using static_edge_touch = bg::de9im::static_mask<'F', '*', '*', '*', '1'>;
 auto const legacy = bg::default_strategy{};
+
+struct observed_legacy : bg::strategies::relate::cartesian<>
+{
+    using base = bg::strategies::relate::cartesian<>;
+
+    explicit observed_legacy(unsigned& calls) : calls(calls) {}
+
+    template <typename A, typename B, typename Apply>
+    decltype(auto) with_sources(A const&, B const&, Apply&& apply) const
+    {
+        ++calls;
+        return std::forward<Apply>(apply)(static_cast<base const&>(*this));
+    }
+
+    unsigned& calls;
+};
 
 #if defined(BOOST_GEOMETRY_TEST_EXPECT_EXACT_DEFAULT_PILOT) \
     && !defined(BOOST_GEOMETRY_DETAIL_CARTESIAN_EXACT_DEFAULT_PILOT)
@@ -87,6 +107,7 @@ void test_relation()
     BOOST_TEST_EQ(bg::relate(a, b, disjoint), bg::relate(a, b, disjoint, reference));
 #ifdef BOOST_GEOMETRY_DETAIL_CARTESIAN_EXACT_DEFAULT_PILOT
     BOOST_TEST_EQ(bg::relation(a, b).str(), "FF2FF1212");
+    BOOST_TEST(pilot::admits_values(a, b));
     BOOST_TEST(bg::relate(a, b, disjoint));
 #else
     BOOST_TEST_EQ(bg::relation(a, b).str(), "FF2F11212");
@@ -95,15 +116,89 @@ void test_relation()
     // These public and internal users of the shared umbrella are not opted in.
     BOOST_TEST(bg::intersects(a, b));
     BOOST_TEST(bg::touches(a, b));
-    BOOST_TEST(!bg::relate(a, b, static_disjoint{}));
+    BOOST_TEST_EQ(bg::relate(a, b, static_disjoint{}), bg::relate(a, b, disjoint));
+    BOOST_TEST(!bg::relate(a, b, static_disjoint{}, legacy));
+    BOOST_TEST(!bg::relate(a, b, static_disjoint{} || static_equals{}));
+    BOOST_TEST(!bg::relate(a, b, disjoint || bg::de9im::mask("T*F**FFF*")));
     BOOST_TEST_EQ(bg::relation(variant(a), b).str(), bg::relation(a, b, legacy).str());
     BOOST_TEST(!bg::relate(a, variant(b), disjoint));
+    BOOST_TEST(!bg::relate(a, variant(b), static_disjoint{}));
     BOOST_TEST_EQ(bg::relation(variant(b), variant(a)).str(), bg::relation(b, a, legacy).str());
+
+    unsigned calls = 0;
+    observed_legacy const custom(calls);
+    BOOST_TEST_EQ(bg::relation(a, b, custom).str(), bg::relation(a, b, legacy).str());
+    BOOST_TEST(!bg::relate(a, b, disjoint, custom));
+    BOOST_TEST(!bg::relate(a, b, static_disjoint{}, custom));
+    BOOST_TEST(bg::touches(a, b, custom));
+    BOOST_TEST(bg::intersects(a, b, custom));
+    BOOST_TEST_EQ(calls, 5u);
 
     for (auto& p : b.outer())
         if (bg::get<1>(p) == 0)
             bg::set<1>(p, std::ldexp(1.0, -65));
     BOOST_TEST_EQ(bg::relation(a, b).str(), bg::relation(a, b, legacy).str());
+    BOOST_TEST_EQ(bg::relate(a, b, static_disjoint{}), bg::relate(a, b, static_disjoint{}, legacy));
+}
+
+template <char... Cells>
+void check_mask(polygon const& a, polygon const& b, std::string const& matrix,
+                bg::de9im::static_mask<Cells...> mask)
+{
+    char const pattern[] = {Cells..., '\0'};
+    bool expected = true;
+    for (std::size_t i = 0; i < matrix.size(); ++i)
+        expected = expected && (pattern[i] == '*' || pattern[i] == matrix[i]
+                                  || (pattern[i] == 'T' && matrix[i] != 'F'));
+    BOOST_TEST_EQ(bg::relate(a, b, mask), expected);
+    BOOST_TEST_EQ(bg::relate(a, b, bg::de9im::mask(pattern)), expected);
+}
+
+void test_static_masks()
+{
+    auto const a = read("POLYGON((0 0,0 1,1 1,1 0,0 0))");
+    auto const edge = read("POLYGON((1 0,1 1,2 1,2 0,1 0))");
+    auto const corner = read("POLYGON((1 1,1 2,2 2,2 1,1 1))");
+    auto const overlap = read("POLYGON((0.5 0.5,0.5 2,2 2,2 0.5,0.5 0.5))");
+    for (auto const* b : {&a, &edge, &corner, &overlap})
+    {
+#ifdef BOOST_GEOMETRY_DETAIL_CARTESIAN_EXACT_DEFAULT_PILOT
+        BOOST_TEST(pilot::admits_values(a, *b));
+#endif
+        auto const matrix = bg::relation(a, *b).str();
+        check_mask(a, *b, matrix, static_equals{});
+        check_mask(a, *b, matrix, static_disjoint{});
+        check_mask(a, *b, matrix, static_edge_touch{});
+        check_mask(a, *b, matrix, bg::de9im::static_mask<'F', '*', '*', '*', '0'>{});
+        check_mask(a, *b, matrix, bg::de9im::static_mask<'2', '1', '2', '1', '0', '1', '2', '1', '2'>{});
+    }
+}
+
+void test_named_equality_boundary()
+{
+    auto const a = read("POLYGON((0 0,0 1,1 1,1 0,0 0))");
+    auto b = a;
+    for (auto& p : b.outer())
+        if (bg::get<0>(p) == 1)
+            bg::set<0>(p, std::nextafter(1.0, 2.0));
+    BOOST_TEST(bg::is_valid(a));
+    BOOST_TEST(bg::is_valid(b));
+#ifdef BOOST_GEOMETRY_DETAIL_CARTESIAN_EXACT_DEFAULT_PILOT
+    BOOST_TEST(pilot::admits_values(a, b));
+    // The explicit exact umbrella still uses the optimized equals algorithm.
+    BOOST_TEST(bg::equals(a, b, approximate{}));
+    BOOST_TEST(!bg::relate(a, b, static_equals{}, approximate{}));
+#endif
+    BOOST_TEST_EQ(bg::relation(a, b).str(), "2FF11F212");
+    BOOST_TEST(!bg::relate(a, b, static_equals{}));
+    BOOST_TEST(bg::equals(a, b));
+    BOOST_TEST(bg::equals(a, b, legacy));
+
+    // Even an explicitly legacy index comparator calls no-strategy equals
+    // for polygon payloads. Changing that overload would leak into it.
+    using value = std::pair<point<double>, polygon>;
+    bg::index::equal_to<value> const equal;
+    BOOST_TEST(equal(value{{0, 0}, a}, value{{0, 0}, b}, bg::strategies::relate::cartesian<>{}));
 }
 
 auto const intersect = [](auto const& a, auto const& b, auto& out, auto const&... strategy)
@@ -245,6 +340,8 @@ void test_domain()
 int main()
 {
     test_relation();
+    test_static_masks();
+    test_named_equality_boundary();
     test_overlay();
 #ifdef BOOST_GEOMETRY_DETAIL_CARTESIAN_EXACT_DEFAULT_PILOT
     test_emission();

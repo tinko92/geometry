@@ -156,6 +156,14 @@ struct result_handler_type<Geometry1, Geometry2, util::type_sequence<StaticMasks
         > type;
 };
 
+#ifdef BOOST_GEOMETRY_DETAIL_CARTESIAN_EXACT_DEFAULT_PILOT
+template <typename Mask>
+struct admits_pilot_mask : std::is_same<Mask, geometry::de9im::mask> {};
+
+template <char... Cells>
+struct admits_pilot_mask<geometry::de9im::static_mask<Cells...>> : std::true_type {};
+#endif
+
 
 }} // namespace detail::relate
 #endif // DOXYGEN_NO_DETAIL
@@ -381,7 +389,7 @@ inline bool relate(Geometry1 const& geometry1,
 {
 #ifdef BOOST_GEOMETRY_DETAIL_CARTESIAN_EXACT_DEFAULT_PILOT
     namespace pilot = detail::cartesian_default_pilot;
-    if constexpr (pilot::admits_pair<Geometry1, Geometry2> && std::is_same<Mask, de9im::mask>::value)
+    if constexpr (pilot::admits_pair<Geometry1, Geometry2> && detail::relate::admits_pilot_mask<Mask>::value)
     {
         if (pilot::admits_values(geometry1, geometry2))
             return geometry::relate(geometry1, geometry2, mask, pilot::strategy{});
