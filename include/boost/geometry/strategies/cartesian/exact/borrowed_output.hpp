@@ -115,22 +115,24 @@ void copy_supported(signed_size_type view_size, bool circular,
         ? to_index - from_index + 1
         : view_size - from_index + to_index + 1;
     signed_size_type const edge_count = view_size - 1;
+    auto index = from_index;
     for (signed_size_type i = 0; i < count; ++i)
     {
-        auto const index = circular ? (from_index + i) % view_size : from_index + i;
         if (edge_count > 0 && (circular || index > 0))
         {
-            auto const previous = circular ? (index + edge_count - 1) % edge_count : index - 1;
+            auto const previous = index == 0 ? edge_count - 1 : index - 1;
             out.pending = support_at(previous, Reverse);
         }
         append_supported(out, point_at(index, Reverse), side, equal,
                          RemoveSpikes ? supported_append_mode::spikes
                                       : supported_append_mode::duplicates);
-        if (edge_count > 0)
-        {
-            auto const next = circular ? index % edge_count : (std::min)(index, edge_count - 1);
-            out.pending = support_at(next, Reverse);
-        }
+        if (++index == view_size && circular) index = 0;
+    }
+    // Each intermediate pending label would be overwritten before the next append.
+    if (edge_count > 0)
+    {
+        auto const next = circular && to_index == edge_count ? 0 : (std::min)(to_index, edge_count - 1);
+        out.pending = support_at(next, Reverse);
     }
 }
 

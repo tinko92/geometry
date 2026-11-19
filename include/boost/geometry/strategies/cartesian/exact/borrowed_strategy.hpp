@@ -384,14 +384,21 @@ public:
             constexpr bool circular = std::is_same<geometry::tag_t<input>, ring_tag>::value
                                    || std::is_same<geometry::tag_t<input>, box_tag>::value;
             auto const size = borrowed_detail::range_size(range) + (circular ? 1 : 0);
-            output.pending = source_support(range, id.segment_index, Reverse, context());
+            auto const& original = borrowed_detail::conversion_range(range);
+            auto const support_at = [&] {
+                if constexpr (borrowed_detail::is_supported_range<std::decay_t<decltype(original)>>::value)
+                    return [&](std::size_t index, bool rev) { return source_support(range, index, rev, context()); };
+                else
+                    return [&, slot = context().register_range(original)](std::size_t index, bool rev)
+                    { return original_edge{slot, borrowed_detail::source_edge_index(original, index, rev)}; };
+            }();
+            output.pending = support_at(id.segment_index, Reverse);
             copy_supported<Reverse, RemoveSpikes>(size, circular, id, to, output, exact_cartesian::side<coordinate>(), equal_call(),
                 [&](std::size_t index, bool reverse)
                 {
-                    auto const& original = borrowed_detail::conversion_range(range);
                     return context_type::native_vertex(original, borrowed_detail::source_vertex_index(original, index, reverse));
                 },
-                [&](std::size_t index, bool reverse) { return source_support(range, index, reverse, context()); });
+                support_at);
         });
     }
 };
