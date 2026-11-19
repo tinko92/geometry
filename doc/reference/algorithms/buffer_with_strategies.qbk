@@ -54,6 +54,16 @@ side_straight
 [heading The linestring case]
 [$img/algorithms/buffer_linestring.png]
 
+A custom distance strategy with fixed left and right widths for every
+segment can declare an optional `constant_side_distances() const` member
+returning `std::pair<Numeric, Numeric>` in left/right order. For unequal
+nonnegative Cartesian widths, the buffer uses this declaration to keep
+collinear reversals during simplification. With `side_straight` and
+`end_round`, it also uses the declared width of the incident side for the
+round cap at a reversal. The pair must agree with `apply` on every segment.
+An empty side alone does not establish the other side's width or sign.
+Strategies that do not declare this capability keep their existing path.
+
 [heading The multi_point case]
 [$img/algorithms/buffer_multi_point.png]
 

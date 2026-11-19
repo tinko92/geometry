@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <iterator>
 #include <type_traits>
+#include <utility>
 
 #include <boost/core/ignore_unused.hpp>
 #include <boost/range/begin.hpp>
@@ -100,63 +101,109 @@ inline void simplify_input(RangeIn const& range,
     }
 }
 
-template <typename Linestring, typename DistanceStrategy, typename RangeOut, typename Strategies>
-inline void simplify_linestring(Linestring const& line, DistanceStrategy const& distance,
-                                RangeOut& simplified, Strategies const& strategies)
+struct unknown_side_distances {};
+
+template <typename Numeric>
+std::pair<Numeric, Numeric> side_distances(std::pair<Numeric, Numeric> const& distances)
 {
-    simplify_input(line, distance, simplified, strategies);
+    return distances;
 }
 
-template <typename Linestring, typename NumericType, typename RangeOut, typename Strategies>
-inline void simplify_linestring(Linestring const& line,
-                                strategy::buffer::distance_asymmetric<NumericType> const& distance,
+// The optional strategy member certifies these widths for every segment.
+// Merely inheriting from distance_asymmetric or reporting an empty side
+// does not establish that contract.
+template <typename Distance, typename Point>
+auto constant_side_distances(Distance const& distance, Point const&, int)
+    -> decltype(detail::buffer::side_distances(distance.constant_side_distances()))
+{
+    return detail::buffer::side_distances(distance.constant_side_distances());
+}
+
+template <typename Numeric, typename Point>
+std::pair<Numeric, Numeric> constant_side_distances(
+    strategy::buffer::distance_asymmetric<Numeric> const& distance, Point const& p, long)
+{
+    return {distance.apply(p, p, strategy::buffer::buffer_side_left),
+            distance.apply(p, p, strategy::buffer::buffer_side_right)};
+}
+
+template <typename Distance, typename Point>
+unknown_side_distances constant_side_distances(Distance const&, Point const&, long)
+{
+    return {};
+}
+
+template <typename Distance, typename Numeric>
+bool has_unequal_nonnegative_widths(Distance const& distance, std::pair<Numeric, Numeric> const& widths)
+{
+    return ! distance.negative() && widths.first >= 0 && widths.second >= 0
+        && widths.first != widths.second;
+}
+
+template <typename Linestring, typename Distance, typename RangeOut, typename Strategies>
+bool simplify_reversals(Linestring const&, Distance const&, RangeOut&, Strategies const&,
+                        unknown_side_distances)
+{
+    return false;
+}
+
+template <typename Linestring, typename Distance, typename RangeOut, typename Strategies, typename Numeric>
+bool simplify_reversals(Linestring const& line, Distance const& distance, RangeOut& simplified,
+                        Strategies const& strategies, std::pair<Numeric, Numeric> const& widths)
+{
+    if (! has_unequal_nonnegative_widths(distance, widths))
+    {
+        return false;
+    }
+
+    auto first = boost::begin(line);
+    auto const end = boost::end(line);
+    auto const side = strategies.side();
+    auto const simplify_section = [&](auto last)
+    {
+        geometry::detail::simplify::simplify_range<2>::apply(
+            boost::make_iterator_range(first, last), simplified,
+            distance.simplify_distance(), detail::simplify::douglas_peucker(), strategies);
+    };
+
+    auto previous = first;
+    auto current = first;
+    for (auto next = std::next(current); next != end; ++next)
+    {
+        if (detail::equals::equals_point_point(*current, *next, strategies))
+        {
+            continue;
+        }
+        if (previous != current && side.apply(*previous, *current, *next) == 0
+            && direction_code<cartesian_tag>(*previous, *current, *next) == -1)
+        {
+            // A collinear reversal can change the buffered side even
+            // though it has zero distance to the simplification chord.
+            simplify_section(std::next(current));
+            simplified.pop_back(); // The next section will add the shared vertex.
+            first = current;
+        }
+        previous = current;
+        current = next;
+    }
+    if (first == boost::begin(line))
+    {
+        return false;
+    }
+    simplify_section(end);
+    return true;
+}
+
+template <typename Linestring, typename Distance, typename RangeOut, typename Strategies>
+inline void simplify_linestring(Linestring const& line, Distance const& distance,
                                 RangeOut& simplified, Strategies const& strategies)
 {
-    if BOOST_GEOMETRY_CONSTEXPR ((std::is_same<geometry::cs_tag_t<RangeOut>, cartesian_tag>::value))
+    if (std::is_same<geometry::cs_tag_t<RangeOut>, cartesian_tag>::value
+        && boost::size(line) > 2
+        && simplify_reversals(line, distance, simplified, strategies,
+                              constant_side_distances(distance, *boost::begin(line), 0)))
     {
-        auto first = boost::begin(line);
-        auto const end = boost::end(line);
-        if (boost::size(line) > 2)
-        {
-            auto const left = distance.apply(*first, *first, strategy::buffer::buffer_side_left);
-            auto const right = distance.apply(*first, *first, strategy::buffer::buffer_side_right);
-            if (! distance.negative() && left >= 0 && right >= 0 && left != right)
-            {
-                auto const side = strategies.side();
-                auto const simplify_section = [&](auto last)
-                {
-                    geometry::detail::simplify::simplify_range<2>::apply(
-                        boost::make_iterator_range(first, last), simplified,
-                        distance.simplify_distance(), detail::simplify::douglas_peucker(), strategies);
-                };
-
-                auto previous = first;
-                auto current = first;
-                for (auto next = std::next(current); next != end; ++next)
-                {
-                    if (detail::equals::equals_point_point(*current, *next, strategies))
-                    {
-                        continue;
-                    }
-                    if (previous != current && side.apply(*previous, *current, *next) == 0
-                        && direction_code<cartesian_tag>(*previous, *current, *next) == -1)
-                    {
-                        // A collinear reversal can change the buffered side
-                        // even though it has zero distance to the simplification chord.
-                        simplify_section(std::next(current));
-                        simplified.pop_back(); // The next section will add the shared vertex.
-                        first = current;
-                    }
-                    previous = current;
-                    current = next;
-                }
-                if (first != boost::begin(line))
-                {
-                    simplify_section(end);
-                    return;
-                }
-            }
-        }
+        return;
     }
     simplify_input(line, distance, simplified, strategies);
 }
@@ -176,21 +223,38 @@ struct buffer_range
         return false;
     }
 
-    template <typename Point, typename Numeric>
+    template <typename Point, typename Distance>
     static bool apply_asymmetric_round_spike(std::true_type, Point const& previous, Point const& from,
         Point const& vertex, Point const& to, strategy::buffer::buffer_side_selector side,
+        strategy::buffer::end_round const& end, Distance const& distance,
+        std::vector<output_point_type>& out)
+    {
+        return apply_round_spike(previous, from, vertex, to, side, end, distance,
+            constant_side_distances(distance, vertex, 0), out);
+    }
+
+    template <typename Point, typename Distance>
+    static bool apply_round_spike(Point const&, Point const&, Point const&,
+        Point const&, strategy::buffer::buffer_side_selector,
+        strategy::buffer::end_round const&, Distance const&, unknown_side_distances,
+        std::vector<output_point_type>&)
+    {
+        return false;
+    }
+
+    template <typename Point, typename Distance, typename Numeric>
+    static bool apply_round_spike(Point const& previous, Point const& from,
+        Point const& vertex, Point const& to, strategy::buffer::buffer_side_selector side,
         strategy::buffer::end_round const& end,
-        strategy::buffer::distance_asymmetric<Numeric> const& distance,
+        Distance const& distance, std::pair<Numeric, Numeric> const& widths,
         std::vector<output_point_type>& out)
     {
         using namespace strategy::buffer;
-        auto const left = distance.apply(previous, vertex, buffer_side_left);
-        auto const right = distance.apply(previous, vertex, buffer_side_right);
-        if (distance.negative() || left < 0 || right < 0 || left == right)
+        if (! has_unequal_nonnegative_widths(distance, widths))
         {
             return false;
         }
-        auto const radius = side == buffer_side_left ? left : right;
+        auto const radius = side == buffer_side_left ? widths.first : widths.second;
         if (radius > 0)
         {
             // A spike connects two opposite offsets of the SAME side.

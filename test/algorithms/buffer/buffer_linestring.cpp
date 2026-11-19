@@ -160,6 +160,50 @@ void test_asymmetric_round_retrace()
     BOOST_CHECK(bg::within(point(1.875, -1), out));
 }
 
+struct wrapped_asymmetric_distance : bg::strategy::buffer::distance_asymmetric<double>
+{
+    using bg::strategy::buffer::distance_asymmetric<double>::distance_asymmetric;
+};
+
+struct declared_asymmetric_distance : wrapped_asymmetric_distance
+{
+    explicit declared_asymmetric_distance(double left, double right)
+        : wrapped_asymmetric_distance(left, right), widths(left, right)
+    {}
+
+    std::pair<double, double> constant_side_distances() const { return widths; }
+
+    std::pair<double, double> const widths;
+};
+
+template <bool Clockwise>
+void test_wrapped_asymmetric_retrace()
+{
+    using point = bg::model::point<double, 2, bg::cs::cartesian>;
+    using linestring = bg::model::linestring<point>;
+    using polygon = bg::model::polygon<point, Clockwise>;
+    auto const line = bg::from_wkt<linestring>("LINESTRING(0 2,0 -2,0 0,0 -4)");
+    auto const check = [&](auto const& distance, auto const& end, double area, bool covers_east)
+    {
+        bg::model::multi_polygon<polygon> out;
+        bg::buffer(line, out, distance, bg::strategy::buffer::side_straight(),
+                   bg::strategy::buffer::join_round(4), end, bg::strategy::buffer::point_square());
+        BOOST_CHECK(bg::is_valid(out));
+        BOOST_CHECK_EQUAL(out.size(), 1u);
+        BOOST_CHECK_EQUAL(bg::area(out), area);
+        BOOST_CHECK_EQUAL(bg::within(point(1.875, -1), out), covers_east);
+    };
+    bg::strategy::buffer::end_flat const flat;
+    bg::strategy::buffer::end_round const round(4);
+    // Same width strategy behaviour, with or without the explicit contract.
+    check(wrapped_asymmetric_distance(0, 2), flat, 12, false);
+    check(wrapped_asymmetric_distance(0, 2), round, 14, false);
+    check(declared_asymmetric_distance(0, 2), flat, 16, true);
+    check(declared_asymmetric_distance(0, 2), round, 22, true);
+    check(declared_asymmetric_distance(2, 4), flat, 40, true);
+    check(declared_asymmetric_distance(2, 4), round, 62, true);
+}
+
 template <bool Clockwise, typename P>
 void test_all()
 {
@@ -534,11 +578,13 @@ int test_main(int, char* [])
     test_all<true, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();
     test_issue_1433<true>();
     test_asymmetric_round_retrace<true>();
+    test_wrapped_asymmetric_retrace<true>();
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_ORDER)
     test_all<false, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();
     test_issue_1433<false>();
     test_asymmetric_round_retrace<false>();
+    test_wrapped_asymmetric_retrace<false>();
 #endif
 
     test_invalid<true, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();
