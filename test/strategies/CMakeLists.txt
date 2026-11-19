@@ -89,6 +89,7 @@ foreach(item IN ITEMS
     segment_intersection_sph
     spherical_side
     side_rounded_input
+    simple_cartesian
     thomas
     transform_cs
     transformer
@@ -100,7 +101,7 @@ foreach(item IN ITEMS
   if (item MATCHES "^exact_")
     target_compile_features(${BOOST_GEOMETRY_UNIT_TEST_NAME} PRIVATE cxx_std_17)
   endif()
-  if (item MATCHES "^exact_")
+  if (item MATCHES "^exact_" OR item STREQUAL "simple_cartesian")
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
       target_compile_options(${BOOST_GEOMETRY_UNIT_TEST_NAME} PRIVATE -ffp-contract=off)
     elseif (MSVC)
