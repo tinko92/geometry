@@ -45,6 +45,8 @@ struct edge
     std::ptrdiff_t flow;
 };
 
+enum class source_cycle : unsigned char { none, clockwise, counterclockwise, certified };
+
 template <typename Coordinate, typename Point = exact_point<Coordinate>>
 struct boundary
 {
@@ -52,6 +54,9 @@ struct boundary
     std::vector<point_type> points;
     std::vector<edge> edges;
     bool closed = true;
+    // Only lvalue native source rings in an areal Boolean operation can be
+    // candidates. Cache the certificate lazily: most pairs never touch.
+    mutable source_cycle cycle = source_cycle::none;
     int order = 1;
     std::size_t min_x = 0, max_x = 0, min_y = 0, max_y = 0;
 };
@@ -320,7 +325,50 @@ inline bool fast_analyze(Box const& box, Point& representative,
 }
 
 template <typename Coordinate, typename Point>
-inline boundary<Coordinate, Point> residual(boundary<Coordinate, Point> const& input)
+inline bool certify_original_cycle(boundary<Coordinate, Point> const& input)
+{
+    auto const expected = input.cycle;
+    if (expected == source_cycle::certified) return true;
+    if (expected == source_cycle::none) return false;
+    input.cycle = source_cycle::none;
+    auto const n = input.points.size();
+    if (!input.closed || n < 3 || input.edges.size() != n) return false;
+
+    auto const extrema = std::minmax_element(input.points.begin(), input.points.end(),
+        [](auto const& a, auto const& b) { return less(a, b); });
+    auto const first = static_cast<std::size_t>(extrema.first - input.points.begin());
+    auto const last = static_cast<std::size_t>(extrema.second - input.points.begin());
+    auto chain = [&](bool forward, int& side)
+    {
+        auto i = first;
+        while (i != last)
+        {
+            auto const next = forward ? (i + 1 == n ? 0 : i + 1) : (i == 0 ? n - 1 : i - 1);
+            if (!less(input.points[i], input.points[next])) return false;
+            if (next != last)
+            {
+                int const s = static_orientation<Coordinate>(*extrema.first, *extrema.second, input.points[next]);
+                if (s == 0 || (side != 0 && s != side)) return false;
+                side = s;
+            }
+            i = next;
+        }
+        return true;
+    };
+    int forward_side = 0, backward_side = 0;
+    if (!chain(true, forward_side) || !chain(false, backward_side)
+        || forward_side == backward_side) return false;
+    // Along either strictly ordered chain, a nonadjacent segment cannot share
+    // a lexicographic interval. The chains are on opposite open sides of the
+    // endpoint chord (one may be the chord), so meet only at the endpoints.
+    bool const clockwise = forward_side != 0 ? forward_side > 0 : backward_side < 0;
+    if (clockwise != (expected == source_cycle::clockwise)) return false;
+    input.cycle = source_cycle::certified;
+    return true;
+}
+
+template <bool Simple, typename Coordinate, typename Point>
+inline boundary<Coordinate, Point> residual_impl(boundary<Coordinate, Point> const& input)
 {
     boundary<Coordinate, Point> result;
     result.closed = input.closed;
@@ -331,7 +379,7 @@ inline boundary<Coordinate, Point> residual(boundary<Coordinate, Point> const& i
         { return less(input.points[a], input.points[b]); });
     for (auto index : order)
     {
-        if (result.points.empty() || !static_equal_points<Coordinate>(result.points.back(), input.points[index]))
+        if (Simple || result.points.empty() || !static_equal_points<Coordinate>(result.points.back(), input.points[index]))
             result.points.push_back(input.points[index]);
         mapping[index] = result.points.size() - 1;
     }
@@ -340,27 +388,40 @@ inline boundary<Coordinate, Point> residual(boundary<Coordinate, Point> const& i
     {
         auto const a = mapping[original.first], b = mapping[original.second];
         if (a == b) continue;
-        cuts.clear();
-        for (std::size_t i = 0; i != result.points.size(); ++i)
-            if (on_segment<Coordinate>(result.points[a], result.points[b], result.points[i])) cuts.push_back(i);
-        // Lexicographic vertex indices run monotonically along every segment.
-        auto const sign = a < b ? original.flow : -original.flow;
-        for (std::size_t i = 1; i < cuts.size(); ++i)
-            result.edges.push_back({cuts[i - 1], cuts[i], sign});
+        if constexpr (Simple)
+        {
+            // No other vertex lies on this edge and no other edge overlaps
+            // it. Preserve the original residual's lexicographic edge order.
+            auto const sign = a < b ? original.flow : -original.flow;
+            result.edges.push_back({(std::min)(a, b), (std::max)(a, b), sign});
+        }
+        else
+        {
+            cuts.clear();
+            for (std::size_t i = 0; i != result.points.size(); ++i)
+                if (on_segment<Coordinate>(result.points[a], result.points[b], result.points[i])) cuts.push_back(i);
+            // Lexicographic vertex indices run monotonically along every segment.
+            auto const sign = a < b ? original.flow : -original.flow;
+            for (std::size_t i = 1; i < cuts.size(); ++i)
+                result.edges.push_back({cuts[i - 1], cuts[i], sign});
+        }
     }
     std::sort(result.edges.begin(), result.edges.end(), [](edge const& a, edge const& b)
     {
         return a.first < b.first || (a.first == b.first && a.second < b.second);
     });
-    std::size_t write = 0;
-    for (std::size_t i = 0; i < result.edges.size();)
+    if constexpr (!Simple)
     {
-        auto current = result.edges[i++];
-        while (i < result.edges.size() && result.edges[i].first == current.first
-            && result.edges[i].second == current.second) current.flow += result.edges[i++].flow;
-        if (current.flow != 0) result.edges[write++] = current;
+        std::size_t write = 0;
+        for (std::size_t i = 0; i < result.edges.size();)
+        {
+            auto current = result.edges[i++];
+            while (i < result.edges.size() && result.edges[i].first == current.first
+                && result.edges[i].second == current.second) current.flow += result.edges[i++].flow;
+            if (current.flow != 0) result.edges[write++] = current;
+        }
+        result.edges.resize(write);
     }
-    result.edges.resize(write);
     for (std::size_t i = 1; i < result.points.size(); ++i)
     {
         if (static_compare_coordinate<0, Coordinate>(result.points[i], result.points[result.min_x]) < 0) result.min_x = i;
@@ -369,6 +430,12 @@ inline boundary<Coordinate, Point> residual(boundary<Coordinate, Point> const& i
         if (static_compare_coordinate<1, Coordinate>(result.points[i], result.points[result.max_y]) > 0) result.max_y = i;
     }
     return result;
+}
+
+template <typename Coordinate, typename Point>
+inline boundary<Coordinate, Point> residual(boundary<Coordinate, Point> const& input)
+{
+    return certify_original_cycle(input) ? residual_impl<true>(input) : residual_impl<false>(input);
 }
 
 template <typename Coordinate, typename Point>
@@ -452,9 +519,9 @@ template <typename Coordinate, typename Point, typename Query>
 inline int locate(Query const& point, boundary<Coordinate, Point> const& ring)
 {
     int const result = locate_raw(point, ring);
-    if (result != 0) return result;
+    if (result != 0 || certify_original_cycle(ring)) return result;
     // A point on a canceled excursion is not on the surviving boundary.
-    return locate_raw(point, residual(ring));
+    return locate_raw(point, residual_impl<false>(ring));
 }
 
 template <typename Coordinate, typename A, typename B>
@@ -491,11 +558,25 @@ inline int classify(boundary<Coordinate, InnerPoint> const& inner, boundary<Coor
 }
 
 template <typename Coordinate, typename Tag, typename Geometry>
-inline auto selected_source(ring_identifier const& id, Geometry const& geometry)
+inline auto selected_source(ring_identifier const& id, Geometry const& geometry,
+                            bool allow_certificate = false)
 {
     decltype(auto) ring = geometry::detail::overlay::get_ring<Tag>::apply(id, geometry);
     if constexpr (std::is_lvalue_reference<decltype(ring)>::value)
-        return make_boundary<Coordinate>(ring);
+    {
+        using ring_type = std::remove_reference_t<decltype(ring)>;
+        auto boundary = make_boundary<Coordinate>(ring);
+        if constexpr (std::is_same<geometry::tag_t<ring_type>, ring_tag>::value
+            && fixed_native_supported<geometry::coordinate_type_t<ring_type>>::value)
+        {
+            if (allow_certificate)
+            {
+                int const direction = id.ring_index < 0 ? boundary.order : -boundary.order;
+                boundary.cycle = direction > 0 ? source_cycle::clockwise : source_cycle::counterclockwise;
+            }
+        }
+        return boundary;
+    }
     else
         return make_boundary_as<Coordinate, exact_point<Coordinate>>(ring);
 }
@@ -511,13 +592,14 @@ using selected_boundary = std::variant<
 
 template <typename Coordinate, typename Geometry1, typename Geometry2, typename Collection>
 inline selected_boundary<Coordinate, Geometry1, Geometry2, Collection>
-selected(ring_identifier const& id, Geometry1 const& a, Geometry2 const& b, Collection const& collection)
+selected(ring_identifier const& id, Geometry1 const& a, Geometry2 const& b, Collection const& collection,
+         bool allow_certificate)
 {
     using result = selected_boundary<Coordinate, Geometry1, Geometry2, Collection>;
     switch (id.source_index)
     {
-    case 0: return result(std::in_place_index<0>, selected_source<Coordinate, geometry::tag_t<Geometry1>>(id, a));
-    case 1: return result(std::in_place_index<1>, selected_source<Coordinate, geometry::tag_t<Geometry2>>(id, b));
+    case 0: return result(std::in_place_index<0>, selected_source<Coordinate, geometry::tag_t<Geometry1>>(id, a, allow_certificate));
+    case 1: return result(std::in_place_index<1>, selected_source<Coordinate, geometry::tag_t<Geometry2>>(id, b, allow_certificate));
     case 2: return result(std::in_place_index<2>, selected_source<Coordinate, void>(id, collection));
     }
     return {};
@@ -629,13 +711,16 @@ public:
             ring_topology_detail::selected_boundary<Coordinate, Geometry1, Geometry2, Collection> boundary;
         };
         std::vector<selected_ring> rings;
+        constexpr bool allow_certificate = OverlayType == overlay_union
+            || OverlayType == overlay_intersection || OverlayType == overlay_difference;
         for (auto& pair : map)
         {
             auto& info = pair.second;
             info.children.clear();
             info.parent = ring_identifier();
             if (!info.valid || info.effective_direction() == 0) { info.discarded = true; continue; }
-            rings.push_back({pair.first, &info, ring_topology_detail::selected<Coordinate>(pair.first, a, b, collection)});
+            rings.push_back({pair.first, &info, ring_topology_detail::selected<Coordinate>(
+                pair.first, a, b, collection, allow_certificate)});
         }
         auto relation = [&](std::size_t inner, std::size_t outer)
         {

@@ -195,10 +195,79 @@ void test_first_boundary_point_contract()
     BOOST_TEST_EQ(ov::range_in_geometry(selected, inner, outer, ordinary), -1);
 }
 
+void test_certified_sources()
+{
+    namespace rt = ec::ring_topology_detail;
+    auto const square = make_ring<double>({{{0,0}},{{0,2}},{{0,4}},{{4,4}},{{4,0}},{{0,0}}});
+    auto const diamond = make_ring<double>({{{0,2}},{{2,4}},{{4,2}},{{2,0}},{{0,2}}});
+    auto outer = rt::selected_source<double, bg::ring_tag>(id(0,-1,-1), square, true);
+    auto inner = rt::selected_source<double, bg::ring_tag>(id(1,-1,-1), diamond, true);
+    auto const reference_outer = rt::make_boundary<double>(square);
+    auto const reference_inner = rt::make_boundary<double>(diamond);
+    BOOST_TEST(rt::certify_original_cycle(outer));
+    BOOST_TEST(rt::certify_original_cycle(inner));
+
+    auto const reference = rt::residual(reference_outer);
+    auto const reduced = rt::residual(outer);
+    BOOST_TEST_EQ(reduced.edges.size(), reference.edges.size());
+    for (std::size_t i = 0; i < (std::min)(reduced.edges.size(), reference.edges.size()); ++i)
+    {
+        BOOST_TEST_EQ(reduced.edges[i].first, reference.edges[i].first);
+        BOOST_TEST_EQ(reduced.edges[i].second, reference.edges[i].second);
+        BOOST_TEST_EQ(reduced.edges[i].flow, reference.edges[i].flow);
+    }
+    // All inner vertices touch the outside ring. A midpoint is needed to
+    // show strict containment; equality at the representative is not enough.
+    for (auto const& p : inner.points) { BOOST_TEST_EQ(rt::locate(p, outer), 0); }
+    auto const& sample = inner.points.front();
+    BOOST_TEST_EQ(rt::classify(inner, outer, sample), 1);
+    BOOST_TEST_EQ(rt::classify(reference_inner, reference_outer, sample), 1);
+    BOOST_TEST_EQ(rt::classify(outer, outer, outer.points.front()), 0);
+
+    // A stored hole can be certified with the opposite role orientation.
+    bg::model::polygon<point<double>> polygon;
+    polygon.outer() = square;
+    polygon.inners().push_back(make_ring<double>({{{0,2}},{{1,3}},{{2,2}},{{1,1}},{{0,2}}}));
+    std::reverse(polygon.inners()[0].begin(), polygon.inners()[0].end());
+    auto const hole = rt::selected_source<double, bg::polygon_tag>(id(0,-1,0), polygon, true);
+    BOOST_TEST(rt::certify_original_cycle(hole));
+    auto const wrong_role = rt::selected_source<double, bg::ring_tag>(id(0,-1,0), square, true);
+    BOOST_TEST(!rt::certify_original_cycle(wrong_role));
+
+    // The same shape in a traversal collection has no original provenance.
+    std::vector<ring<double>> const generated{square};
+    auto const selected = rt::selected<double>(id(2,0,-1), square, square, generated, true);
+    BOOST_TEST(!rt::certify_original_cycle(std::get<2>(selected)));
+    auto const ordinary = rt::selected_source<double, bg::ring_tag>(id(0,-1,-1), square);
+    BOOST_TEST(!rt::certify_original_cycle(ordinary));
+
+    using properties = ov::ring_properties<point<double>, ec::ring_metadata<double>>;
+    std::map<id, properties> coincident;
+    auto const a = id(0,-1,-1), b = id(1,-1,-1);
+    strategy<double> s;
+    coincident.try_emplace(a, square, s);
+    coincident.try_emplace(b, square, s);
+    coincident.at(b).reversed = true;
+    // Individually simple input rings can share their entire support. Keep
+    // the bidirectional classification and signed multiplicity reduction.
+    ov::assign_parents<bg::overlay_difference>(square, square, generated, coincident, s);
+    BOOST_TEST(coincident.at(a).discarded && coincident.at(b).discarded);
+
+    // A noncertifying original still needs cancellation along an excursion.
+    auto const spur = make_ring<double>({{{0,0}},{{-4,0}},{{-2,0}},{{0,0}},
+                                        {{0,4}},{{4,4}},{{4,0}},{{0,0}}});
+    auto const spurred = rt::selected_source<double, bg::ring_tag>(id(0,-1,-1), spur, true);
+    point<double> const erased(-1,0);
+    BOOST_TEST(!rt::certify_original_cycle(spurred));
+    BOOST_TEST_EQ(rt::locate_raw(erased, spurred), 0);
+    BOOST_TEST_EQ(rt::locate(erased, spurred), -1);
+}
+
 int main()
 {
     ec::point_cache_scope operation;
     test_first_boundary_point_contract();
+    test_certified_sources();
     int const previous = std::fegetround();
     for (int mode : {FE_TONEAREST})
     {
