@@ -172,8 +172,9 @@ High priority: profile global bounding-box filters for eager N-ULP points.
    source lifetimes and avoid unnecessary owning coordinate snapshots.
 
 9. Simplify ring parenting under valid-input and traversal invariants.
-   A narrow stored-original certificate and traversal audit are documented in
-   exact_ring_parenting.md. Generated walks and contact tests remain unchanged.
+   Narrow certificates for stored originals and normalized generated triangles,
+   and the open traversal invariants, are documented in exact_ring_parenting.md.
+   Inter-ring cancellation and contact tests remain unchanged.
    Scope this to Cartesian areal set operations with valid inputs respecting BG
    orientation/closure traits, not buffer/dissolve's general intermediate walks.
    For known-valid original rings, avoid residual reconstruction after a boundary

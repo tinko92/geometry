@@ -21,7 +21,7 @@ for name in arithmetic round_buffer round_buffer_api convex_erosion buffer_radic
     borrowed_primitive borrowed_clipping borrowed_operations output_support_hooks \
     borrowed_capacity borrowed_gc borrowed_geometry borrowed_tuple borrowed_reverse_dispatch \
     borrowed_segment_box borrowed_public_predicates gc_conversion_hooks gc_boxes \
-    fixed_rounding typed_cache borrowed_native borrowed_mixed borrowed_section borrowed_ring segment_box \
+    fixed_rounding typed_cache tagged_lines tagged_dispatch borrowed_native borrowed_mixed borrowed_section borrowed_ring segment_box \
     native_predicates point segment_position \
     segment spherical_angular_audit spherical_angular_export spherical_boundary_union spherical_linear_replays spherical_point_placement spherical_ray spherical_region spherical_strategy filtered_segment static_predicates static_box static_clipping \
     static_ring_topology relate_overlay shared_boundary cluster rounding_policies output_policy ulp_filter filter_routing \
@@ -38,6 +38,9 @@ do
     compile=0
     define=
     if [ "$name" = benchmark_check ]; then define=-DBG_BENCH_EXACT; fi
+    if [ "$name" = tagged_dispatch ]; then
+        define='-DBOOST_GEOMETRY_EXACT_TAGGED_ORIENTATION=1 -DBOOST_GEOMETRY_EXACT_FILTER_STATISTICS'
+    fi
     if [ "$name" = default_pilot ]; then
         define='-DBOOST_GEOMETRY_ENABLE_CARTESIAN_EXACT_DEFAULT_PILOT -DBOOST_GEOMETRY_TEST_EXPECT_EXACT_DEFAULT_PILOT'
     fi

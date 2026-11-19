@@ -1,8 +1,8 @@
 # Borrowed side and dot: shared X/Y reads
 
-Base: `5a3405c9a`. This is a local experiment for the stored-error binary64
-first filter, not a replacement for numerical variants throughout Cartesian
-predicates. No server measurements were taken.
+First tested on `5a3405c9a`; retested on `32ba6e9dc` on x86-64.
+This changes the stored-error binary64 first filter, not every Cartesian
+predicate or the representation of borrowed points.
 
 ## Route and numerical scope
 
@@ -93,7 +93,13 @@ five serial, order-alternating pairs yielded these median us per call:
 
 The small deltas are not a general speedup claim. In particular, the
 unchanged native control is a measure of local variation. The full
-Boost.Geometry suite and other CPU architectures were not tested.
+Boost.Geometry suite was not part of this arm64 comparison.
+
+On the CPU server, five rotated paired runs across five workloads and nine
+public operations gave candidate/base .9920 (GCC 13) and .9888 (Clang 22)
+for stored output. All 45 per-compiler cell fingerprints agreed with base.
+The forward-error, borrowed predicates, shared-boundary and tagged-dispatch
+regressions also passed with both compilers.
 
 Local artifacts in `/private/tmp`: `bg1517-xy-filter-probe.cpp`,
 `bg1517-xy-filter-base.s`, `bg1517-xy-filter-new.s`, `bg1517-xy-filter-micro.cpp`,

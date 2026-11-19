@@ -256,3 +256,25 @@ Exact rational rays decide all uncertain signs. A rounded-product inequality
 proves two native rays distinct; equal rounded products do not prove them
 parallel. Five-pair x86 native ray tests: ordinary side 754 to 23 ns GCC,
 750 to 20 ns Clang. These are primitive timings, not full-sphere overlay rates.
+
+### Decisions on the combined implementation
+
+* For a normalized generated triangle, three distinct non-collinear vertices
+  prove a simple cycle. Apply this certificate before residual reduction.
+  The public case that generates two such cycles took .823/.807 times the
+  previous GCC/Clang time; the no-triangle control took 1.006/1.004.
+  Longer generated walks still need cancellation and parenting.
+* Use the fixed-capacity exponent-tagged sign only on an unresolved orientation
+  of three crossings with native supports. On the final seven-pair study the
+  near-parallel fixture took .572/.824 and the 30-cell aggregate .979/.992.
+  No cache or tag was added to a point. Fixed integers remain the general fallback.
+* In the first side/dot filter, decode a selected borrowed source once for
+  both coordinates. Use certified errors, not provenance, to take the
+  zero-error bound. Against the combined implementation without this change,
+  the 45-cell stored-output aggregate was .9920/.9888 (five rotated pairs);
+  linear/linear relation was .973/.986. All compared fingerprints matched.
+  Native-only and lean layouts are unchanged. See `exact_shared_xy_filter.md`.
+
+The general single-pass XOR, elimination of cancellation on arbitrary
+generated rings, and unrestricted reuse of arrival ranks are not proved.
+The narrower changes above do not depend on any of those claims.
