@@ -225,14 +225,77 @@ segment-intersection tests verify the two output boundaries never meet.
 This is a regression for the inclusion property, not the historical issue
 input and not a fix to the existing `boost::geometry::buffer` path.
 
-## Remaining Work Beyond Rational Linestrings
+## Rational-Length Polygon Buffers
 
-- General linestrings still need independently algebraic support predicates
-  and noding. Exact chord unions with holes or multiple boundary rings and
-  lossy but topology-preserving native export are not implemented. Polygon
-  boundaries, filled polygons and multigeometries are not handled by this
-  opt-in path. Buffering a filled polygon is a different operation from
-  buffering its boundary.
+`<boost/geometry/algorithms/buffer_polygon_certified.hpp>` adds
+`buffer_polygon_certified(polygon, multi_polygon, radius, max_error, mode)`.
+Modes are `dilation` (default), `erosion`, and `boundary_band`. The input is
+one 2D Cartesian Polygon with a nonempty simple shell, correctly oriented
+simple holes strictly inside the shell, and pairwise disjoint ring
+boundaries. Exact input tests reject crossings, overlaps, touching rings,
+nested holes, zero-length edges, and missing closure on closed models.
+Every source edge must have rational length; otherwise the operation returns
+`cannot_certify`. In particular there is no rounded-support fallback.
+
+### Exact Arrangement and Export
+
+Build the exact inscribed chord capsule for each shell and hole edge as for
+linestrings. Call their union `T`. Node the source and capsule edges together
+using exact rational segment parameters for crossings and both endpoints of
+collinear overlaps. For each distinct open atom, classify both incident sides
+of the atom against the Polygon (shell minus holes) and the capsule union.
+The midpoint is not a vertex or a crossing after noding, so if a ring contains
+it on its boundary, the oriented supporting edge determines the local inside
+side. This avoids offset probes, epsilon nudges, or rounded joins. Select
+faces by union (`P or T`), difference (`P and not T`), or band (`T`). Keeping
+the boundary of the selected faces implements regularized set operations;
+isolated points and zero-area lines are not emitted.
+
+Orient each retained atom with material to its left and require disjoint
+directed cycles. Positive cycles are shells, and each negative cycle is
+attached to the innermost shell containing it. This permits holes, nested
+disjoint components, and erosion that splits into several polygons or
+disappears entirely. Branching and point-touching output cycles are refused.
+Export re-reads all stored rings and requires lossless coordinates, with
+the requested orientation and closure. Failure leaves output unchanged.
+Limits are 32 source edges, 512 capsule edges, 32768 pair cut parameters,
+and 4096 distinct atoms, in addition to the capsule subdivision limits.
+
+### What Is Certified
+
+Write `N_s` for the closed radius-`s` neighborhood of the source boundary,
+and use effective error `e` (`r/2` if the requested error is at least `r`).
+The capsule certificate gives `N_(r-e) subset interior(T)` and
+`T subset N_r`. Therefore `boundary_band` and `dilation` (`P union T`) have
+strict filled-set Hausdorff error `< e`: the strictly contained inner
+neighborhood can be made uniformly a little larger across the finite
+capsule set. This is **not** a boundary Hausdorff or smooth-topology claim.
+
+For erosion let `E_s` be the closure of the interior points of `P` whose
+distance from its boundary is strictly greater than `s`. The output is the
+closure of the selected open faces of `P minus T`, so it contains `E_r`
+and is contained in the set of points of `P` at clearance `> r-e`.
+No general Hausdorff or component-correspondence bound follows near a
+critical width or inradius. A neck whose entire cross-section is within
+`N_(r-e)` must be blocked; chamber points at clearance `> r` must survive.
+The dumbbell regression exercises both conditions independently.
+
+For an accepted **convex shell without holes**, the regularized erosion is
+exact. At an interior point the distance to the complement is the smallest
+distance to a supporting half-plane's exterior. The perpendicular foot on
+a minimizing support lies on a boundary edge: the disk of that minimum
+radius fits in every supporting half-plane and touches the minimizing one.
+The chord capsule contains the entire exact side strip over that edge, so
+it contains the point whenever its clearance is `<= r`. Thus `T` and `N_r`
+agree inside the convex Polygon. The 3-4-5 triangle regression checks the
+exact inward half-planes, area, and disappearance at the inradius.
+
+## Remaining Work
+
+- Independently algebraic supports and noding are not implemented. The
+  linestring API still accepts one exterior ring only; the polygon API
+  supports multiple disjoint cycles but not boundary contacts. MultiPolygon
+  input and lossy but topology-preserving native export are not implemented.
 - Forming the actual buffer requires exact intersection construction,
   ordering and noding for offsets and chords, followed by topology assembly
   and cleanup. Primitives from different edges can introduce expressions
@@ -263,4 +326,7 @@ c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
 c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
     test/algorithms/buffer/buffer_linestring_certified.cpp -o /tmp/buffer_linestring_certified
 /tmp/buffer_linestring_certified
+c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
+    test/algorithms/buffer/buffer_polygon_certified.cpp -o /tmp/buffer_polygon_certified
+/tmp/buffer_polygon_certified
 ```

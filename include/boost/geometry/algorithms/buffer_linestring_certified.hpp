@@ -153,39 +153,47 @@ inline bool union_one_ring(std::vector<piece> const& pieces, piece& ring)
     return it == first && area2 > 0;
 }
 
-template <typename Polygon>
-inline bool export_lossless(piece& ccw, Polygon& output)
+template <typename Ring>
+inline bool write_ring_lossless(piece const& vertices, Ring& ring, bool reverse, bool close)
 {
-    if constexpr (geometry::point_order<Polygon>::value == clockwise)
-    {
-        std::reverse(ccw.begin(), ccw.end());
-    }
-    if constexpr (closure<Polygon>::value == closed)
-    {
-        ccw.push_back(ccw.front());
-    }
-
-    using point = point_type_t<Polygon>;
+    using point = point_type_t<Ring>;
     using coordinate = coordinate_type_t<point>;
     using rounder = capsule::ec::point_detail::output_rounder<coordinate>;
-    Polygon candidate;
-    auto& ring = exterior_ring(candidate);
-    for (auto const& v : ccw)
+    auto const at = [&](std::size_t i) -> rational_xy const&
     {
+        if (i == vertices.size()) { i = 0; }
+        return vertices[reverse ? vertices.size() - 1 - i : i];
+    };
+    std::size_t const size = vertices.size() + (close ? 1 : 0);
+    for (std::size_t i = 0; i < size; ++i)
+    {
+        auto const& v = at(i);
         point p;
         geometry::set<0>(p, rounder::apply(v.x));
         geometry::set<1>(p, rounder::apply(v.y));
         range::push_back(ring, std::move(p));
     }
-    auto const& holes = interior_rings(candidate);
-    if (boost::begin(holes) != boost::end(holes)) { return false; }
     auto it = boost::begin(ring);
     auto const end = boost::end(ring);
-    for (auto const& v : ccw)
+    for (std::size_t i = 0; i < size; ++i)
     {
-        if (it == end || !same_point(read_point(*it++), v)) { return false; }
+        if (it == end || !same_point(read_point(*it++), at(i))) { return false; }
     }
-    if (it != end) { return false; }
+    return it == end;
+}
+
+template <typename Polygon>
+inline bool export_lossless(piece const& ccw, Polygon& output)
+{
+    Polygon candidate;
+    auto const& holes = interior_rings(candidate);
+    if (boost::begin(holes) != boost::end(holes)
+        || !write_ring_lossless(ccw, exterior_ring(candidate),
+                                geometry::point_order<Polygon>::value == clockwise,
+                                closure<Polygon>::value == closed))
+    {
+        return false;
+    }
     output = std::move(candidate);
     return true;
 }
