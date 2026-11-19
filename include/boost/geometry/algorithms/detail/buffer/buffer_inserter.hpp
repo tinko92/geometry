@@ -266,6 +266,25 @@ struct buffer_range
         return true;
     }
 
+    template <typename Strategy, typename Join, typename Segment, typename Distance, typename Point>
+    static auto apply_source_round_join(Strategy const& strategy, Join const& join,
+        Segment const& segment, Distance const& distance,
+        Point const& before, Point const& vertex, Point const& after,
+        output_point_type const& first, output_point_type const& last,
+        geometry::strategy::buffer::buffer_side_selector side, std::vector<output_point_type>& out, int)
+        -> decltype(strategy.apply_source_round_join(join, segment, distance, before, vertex, after,
+                                                     first, last, side, out))
+    {
+        return strategy.apply_source_round_join(join, segment, distance, before, vertex, after,
+                                                first, last, side, out);
+    }
+
+    template <typename Strategy, typename Join, typename Segment, typename Distance, typename Point>
+    static bool apply_source_round_join(Strategy const&, Join const&, Segment const&, Distance const&,
+        Point const&, Point const&, Point const&, output_point_type const&, output_point_type const&,
+        geometry::strategy::buffer::buffer_side_selector, std::vector<output_point_type>&, long)
+    { return false; }
+
     template
     <
         typename Collection,
@@ -343,7 +362,9 @@ struct buffer_range
                                                       intersection_point))
                     {
                         std::vector<output_point_type> range_out;
-                        if (join_strategy.apply(intersection_point,
+                        if (apply_source_round_join(strategies, join_strategy, segment_strategy, distance,
+                                penultimate_input, previous_input, input, prev_perp2, perp1, side, range_out, 0)
+                            || join_strategy.apply(intersection_point,
                                     previous_input, prev_perp2, perp1,
                                     distance.apply(previous_input, input, side),
                                     range_out))

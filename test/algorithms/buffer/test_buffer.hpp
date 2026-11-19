@@ -23,6 +23,10 @@
 #include <geometry_test_common.hpp>
 #include <expectation_limits.hpp>
 
+#ifdef BOOST_GEOMETRY_TEST_BUFFER_CARTESIAN_MP
+#include <boost/geometry/strategies/buffer/cartesian_mp.hpp>
+#endif
+
 #include <boost/geometry/algorithms/envelope.hpp>
 #include <boost/geometry/algorithms/area.hpp>
 #include <boost/geometry/algorithms/buffer.hpp>
@@ -456,10 +460,15 @@ void test_one(std::string const& caseid, std::string const& wkt,
                         bg::math::equals(distance_right, same_distance)
                         ? distance_left : distance_right);
 
-    typename bg::strategies::buffer::services::default_strategy
-        <
-            Geometry
-        >::type strategies;
+    using default_strategies = typename bg::strategies::buffer::services::default_strategy<Geometry>::type;
+#ifdef BOOST_GEOMETRY_TEST_BUFFER_CARTESIAN_MP
+    using test_strategies = typename std::conditional<
+        bg::strategies::buffer::cartesian_mp_detail::admitted_type<bg::point_type_t<Geometry>>::value,
+        bg::strategies::buffer::cartesian_mp, default_strategies>::type;
+#else
+    using test_strategies = default_strategies;
+#endif
+    test_strategies strategies;
 
     bg::model::multi_polygon<GeometryOut> buffered;
     test_buffer<GeometryOut>

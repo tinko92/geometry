@@ -8,6 +8,7 @@ foreach(item IN ITEMS
     buffer
     buffer_gc
     buffer_variable_width
+    buffer_mp_missing_area
   )
   boost_geometry_add_unit_test("algorithms" ${item})
 endforeach()

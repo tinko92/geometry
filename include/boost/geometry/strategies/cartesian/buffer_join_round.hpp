@@ -32,6 +32,7 @@
 namespace boost { namespace geometry
 {
 
+namespace strategies { namespace buffer { struct cartesian_mp; }}
 
 namespace strategy { namespace buffer
 {
@@ -65,6 +66,8 @@ public :
     {}
 
 private :
+    friend struct strategies::buffer::cartesian_mp;
+
     template
     <
         typename PromotedType,

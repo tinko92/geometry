@@ -146,6 +146,35 @@ class piece_turn_visitor
     template <typename S, typename It>
     static void place_new_touches(S const&, Turns&, std::size_t, It, It, It, It, long) {}
 
+    template <typename S, typename Range, typename Piece, typename Ring>
+    static auto recover_vertex_crossings(S const& strategy, Range const& p, Range const& q,
+        Turns& turns, std::size_t first, Piece const& piece1, Piece const& piece2,
+        Ring const& ring1, Ring const& ring2, int)
+        -> decltype(strategy.exposed_vertex_exit(p, q, turns[first].point), void())
+    {
+        if (first == turns.size() || piece1.is_deflated || piece2.is_deflated
+            || piece1.first_seg_id.multi_index == piece2.first_seg_id.multi_index
+            || ring1.has_concave || ring2.has_concave)
+            return;
+        for (auto i = first; i != turns.size(); ++i)
+        {
+            auto& turn = turns[i];
+            if (turn.method != overlay::method_touch
+                || !turn.combination(overlay::operation_intersection, overlay::operation_blocked))
+                continue;
+            int const exit = strategy.exposed_vertex_exit(p, q, turn.point);
+            if (exit != 0 && exit != 1) continue;
+            turn.operations[exit].operation = overlay::operation_union;
+            turn.operations[1 - exit].operation = overlay::operation_intersection;
+            turn.touch_only = false;
+        }
+    }
+
+    template <typename S, typename Range, typename Piece, typename Ring>
+    static void recover_vertex_crossings(S const&, Range const&, Range const&, Turns&, std::size_t,
+        Piece const&, Piece const&, Ring const&, Ring const&, long)
+    {}
+
     template <typename Piece>
     inline bool is_adjacent(Piece const& piece1, Piece const& piece2) const
     {
@@ -290,6 +319,8 @@ class piece_turn_visitor
                                    the_model,
                                    m_strategy,
                                    std::back_inserter(m_turns));
+                recover_vertex_crossings(m_strategy, unique_sub_range1, unique_sub_range2, m_turns,
+                    first_turn, piece1, piece2, ring1, ring2, 0);
                 place_new_touches(m_strategy, m_turns, first_turn, prev1, it1, prev2, it2, 0);
             }
         }
