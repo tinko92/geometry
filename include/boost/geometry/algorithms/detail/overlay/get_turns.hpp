@@ -518,15 +518,17 @@ public:
                                                      sec2, strategy, 1);
 
         // ... and then partition them, intersecting overlapping sections in visitor method
+        strategies::detail::with_turn_strategy(strategy, [&](auto const& turn_strategy)
+        {
         section_visitor
             <
                 Geometry1, Geometry2,
                 Reverse1, Reverse2,
                 TurnPolicy,
-                Strategy,
+                std::decay_t<decltype(turn_strategy)>,
                 Turns, InterruptPolicy
             > visitor(source_id1, geometry1, source_id2, geometry2,
-                      strategy, turns, interrupt_policy);
+                      turn_strategy, turns, interrupt_policy);
 
         geometry::partition
             <
@@ -534,6 +536,7 @@ public:
             >::apply(sec1, sec2, visitor,
                      detail::section::get_section_box<Strategy>(strategy),
                      detail::section::overlaps_section_box<Strategy>(strategy));
+        }, 0);
     }
 };
 

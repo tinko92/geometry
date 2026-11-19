@@ -242,8 +242,8 @@ bool ulp_orientation(A const& a, B const& b, P const& p, int& result)
     else return ulp_filter::try_orientation_iii(x, y, z, result);
 }
 
-template <typename Root, typename A, typename B, typename P>
-int orientation(A const& a, B const& b, P const& p, bool native_differences_exact = false)
+template <typename Root, typename A, typename B, typename P, typename Certified = std::false_type>
+int orientation(A const& a, B const& b, P const& p, Certified native_differences_exact = {})
 {
     if constexpr (native_operand<A>::value && native_operand<B>::value && native_operand<P>::value)
     {
@@ -497,8 +497,8 @@ int root_orientation(A const& a, B const& b, P const& p)
     { return borrowed_predicates_detail::orientation<Root>(x, y, z); });
 }
 
-template <typename Root, typename A, typename B, typename P>
-int root_orientation(A const& a, B const& b, P const& p, bool native_differences_exact)
+template <typename Root, typename A, typename B, typename P, typename Certified>
+int root_orientation(A const& a, B const& b, P const& p, Certified native_differences_exact)
 {
     return borrowed_predicates_detail::visit<Root>(a, b, p, [&](auto const& x, auto const& y, auto const& z)
     { return borrowed_predicates_detail::orientation<Root>(x, y, z, native_differences_exact); });

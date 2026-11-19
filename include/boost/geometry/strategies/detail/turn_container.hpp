@@ -132,6 +132,15 @@ inline void unique_turns(Container& turns, Predicate predicate)
     turn_container_detail::unique(turns, predicate, 0);
 }
 
+template <typename Strategy, typename Apply>
+inline auto with_turn_strategy(Strategy const& s, Apply const& apply, int)
+    -> decltype(s.with_turn_strategy(apply))
+{ return s.with_turn_strategy(apply); }
+
+template <typename Strategy, typename Apply>
+inline void with_turn_strategy(Strategy const& s, Apply const& apply, long)
+{ apply(s); }
+
 template <bool Reverse1 = false, bool Reverse2 = false, typename Strategy, typename Turn>
 inline decltype(auto) model_turn_scope(Strategy const& strategy, Turn const& turn)
 {

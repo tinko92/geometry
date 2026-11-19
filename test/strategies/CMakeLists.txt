@@ -16,6 +16,7 @@ foreach(item IN ITEMS
     douglas_peucker
     envelope_segment
     exact_arithmetic
+    exact_sterbenz
     exact_algorithm_optimization
     exact_benchmark_check
     exact_additional_issue_api

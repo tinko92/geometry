@@ -45,8 +45,8 @@ template <typename Root> struct borrowed_geometry_types;
 
 template <typename Root, typename A, typename B> bool root_equal(A const&, B const&);
 template <typename Root, typename A, typename B, typename P> int root_orientation(A const&, B const&, P const&);
-template <typename Root, typename A, typename B, typename P>
-int root_orientation(A const&, B const&, P const&, bool);
+template <typename Root, typename A, typename B, typename P, typename Certified>
+int root_orientation(A const&, B const&, P const&, Certified);
 template <std::size_t D, typename Root, typename A, typename B> int root_compare_coordinate(A const&, B const&);
 struct borrowed_segment_position_tag
 {

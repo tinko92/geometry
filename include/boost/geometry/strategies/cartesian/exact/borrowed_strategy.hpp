@@ -52,7 +52,7 @@ struct borrowed_section : static_section<typename Root::coordinate_type>
     }
 };
 
-template <typename Root>
+template <typename Root, int Certified = -1>
 class borrowed_strategy : public relate::cartesian_exact<typename Root::coordinate_type>
 {
     using coordinate = typename Root::coordinate_type;
@@ -170,7 +170,21 @@ public:
                            std::integral_constant<bool, Reverse2>{});
     }
 
-    auto relate() const { return borrowed_segment_intersection<Root>(context()); }
+    template <typename Apply>
+    void with_turn_strategy(Apply const& apply) const
+    {
+        if constexpr (std::is_same<coordinate, double>::value)
+        {
+            if (context().active_stage && context().active_stage->native_differences_exact)
+            {
+                apply(borrowed_strategy<Root, 1>(context()));
+                return;
+            }
+        }
+        apply(borrowed_strategy<Root, 0>(context()));
+    }
+
+    auto relate() const { return borrowed_segment_intersection<Root, Certified>(context()); }
     template <typename Point, typename Box>
     auto clipping(Box const& box) const { return borrowed_clipping<Root>(context(), box); }
     template <typename A, typename B>

@@ -57,7 +57,7 @@ struct borrowed_intersection_result
     { return *this = static_cast<borrowed_intersection_result const&>(source); }
 };
 
-template <typename Root>
+template <typename Root, int Certified = -1>
 class borrowed_segment_intersection
 {
     borrowed_context<Root>& m_context;
@@ -116,7 +116,10 @@ public:
         BOOST_ASSERT(root_equal<Root>(stage->vertex(stage->model[1]->seg_id, 1), q1));
 #endif
         using selected = filtered_segment_detail::endpoint_policy<Policy, coordinate>;
-        bool const exact_differences = stage->native_differences_exact;
+        auto const exact_differences = [&] {
+            if constexpr (Certified == -1) return stage->native_differences_exact;
+            else return std::bool_constant<Certified == 1>{};
+        }();
         int const sa0 = root_orientation<Root>(q0, q1, p0, exact_differences);
         int const sa1 = root_orientation<Root>(q0, q1, p1, exact_differences);
         if (sa0 * sa1 > 0) return selected::disjoint();
