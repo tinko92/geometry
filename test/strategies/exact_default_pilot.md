@@ -14,8 +14,8 @@ preprocessor checks alone cannot detect every incompatible flag.
 
 C++14 and detectable fast-math, finite-only, excess-precision and
 non-binary64 builds keep the legacy route without loading the exact header
-through the selector. Non-nearest runtime rounding also takes the legacy
-route. The pilot does not change the rounding mode or FP flags.
+through the selector. Round-to-nearest at runtime is a caller precondition,
+asserted in debug builds. The pilot does not change the rounding mode or FP flags.
 
 ## Admitted Calls
 

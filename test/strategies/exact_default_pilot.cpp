@@ -6,7 +6,6 @@
 #include <boost/geometry.hpp>
 #include <boost/geometry/index/equal_to.hpp>
 
-#include <cfenv>
 #include <cmath>
 #include <deque>
 #include <limits>
@@ -323,12 +322,6 @@ void test_domain()
         if (bg::get<0>(p) == 1)
             bg::set<0>(p, std::nextafter(1.0, 2.0));
     BOOST_TEST(pilot::admits_values(a, b));
-    if (std::fesetround(FE_UPWARD) == 0)
-    {
-        BOOST_TEST(!pilot::admits_values(a, b));
-        BOOST_TEST_EQ(bg::relation(a, b).str(), bg::relation(a, b, legacy).str());
-        BOOST_TEST_EQ(std::fesetround(FE_TONEAREST), 0);
-    }
 
     // Scan holes as well as exteriors. Nothing is snapped onto the grid.
     auto const off_grid = read("POLYGON((0 0,0 4,4 4,4 0,0 0),"

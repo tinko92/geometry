@@ -25,6 +25,7 @@
 #include <limits>
 #include <type_traits>
 
+#include <boost/assert.hpp>
 #include <boost/geometry/algorithms/for_each.hpp>
 #include <boost/geometry/geometries/multi_polygon.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
@@ -67,7 +68,8 @@ inline bool admits_coordinate(double value)
 
 inline bool admits_values(polygon const& a, polygon const& b)
 {
-    if (!std::numeric_limits<double>::is_iec559 || std::fegetround() != FE_TONEAREST)
+    BOOST_ASSERT(std::fegetround() == FE_TONEAREST);
+    if (!std::numeric_limits<double>::is_iec559)
         return false;
     auto const admits_point = [](auto const& p)
     {
