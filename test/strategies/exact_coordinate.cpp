@@ -206,11 +206,36 @@ void predicate_routing()
     BOOST_TEST_EQ(ec::orientation(a, b, tiny), 1);
 }
 
+void test_forward_signs()
+{
+    unsigned accepted = 0, uncertain = 0;
+    for (int exponent : {-160, -128, -22, 0, 44, 120, 160})
+    {
+        rational const step = power_of_two(exponent) / 10;
+        auto point = [&](int x, int y)
+        { return std::array<coordinate, 2>{{coordinate(step*x), coordinate(step*y)}}; };
+        for (int i = -9; i <= 9; ++i)
+        {
+            auto const a = point(i, 2*i), b = point(i + 3, 2*i - 5);
+            for (int k : {-1, 0, 1})
+            {
+                auto const c = point(i + 6, 2*i - 10 + k);
+                auto const f = ec::orientation_filter(a, b, c);
+                if (f.certain) { ++accepted; BOOST_TEST_EQ(f.value, k); }
+                else { ++uncertain; }
+                BOOST_TEST_EQ(ec::orientation(a, b, c), k);
+            }
+        }
+    }
+    BOOST_TEST(accepted != 0 && uncertain != 0);
+}
+
 int main()
 {
     ties_and_extremes();
     rounding_modes();
     decimal_intent_and_invariants();
     predicate_routing();
+    test_forward_signs();
     return boost::report_errors();
 }

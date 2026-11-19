@@ -26,16 +26,6 @@ using decimal = exact_coordinate<std::string>;
 using rational = boost::multiprecision::cpp_rational;
 using approximation = strategies::detail::exact_cartesian::forward_error::point_approximation;
 
-inline bool admit(decimal const& source)
-{
-    double const magnitude = std::abs(source.binary64());
-    // In this band input views are on the 2^-180 grid. Whole-spacing
-    // errors share that grid, and the degree-two forward-error operations
-    // (including the 2^-52 roundoff terms) stay normal when nonzero.
-    return magnitude == 0 ? source.binary64_is_exact()
-        : magnitude >= 0x1p-128 && magnitude <= 0x1p128;
-}
-
 // An owning rational point. Only preparation from the authoritative decimal
 // wrapper creates a certificate; writes from the geometry engine discard it.
 class point
@@ -44,11 +34,10 @@ public:
     point() = default;
     point(decimal const& x, decimal const& y) : m_value{{x.rational(), y.rational()}}
     {
-        if (admit(x) && admit(y))
+        approximation p;
+        if (strategies::detail::exact_cartesian::coordinate_predicates_detail::approximate(x, y, p))
         {
-            using strategies::detail::exact_cartesian::coordinate_predicates_detail::enclosure;
-            auto const a = enclosure(x), b = enclosure(y);
-            m_approx = approximation{{{a.approximate, b.approximate}}, {{a.error, b.error}}};
+            m_approx = p;
         }
     }
 

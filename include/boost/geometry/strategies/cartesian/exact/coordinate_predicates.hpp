@@ -11,6 +11,7 @@
 #include <limits>
 
 #include <boost/geometry/util/exact_coordinate.hpp>
+#include <boost/geometry/strategies/cartesian/exact/forward_error.hpp>
 
 namespace boost { namespace geometry { namespace strategies { namespace detail
 { namespace exact_cartesian
@@ -40,6 +41,16 @@ namespace coordinate_predicates_detail
 {
 
 template <typename S, typename C>
+inline bool admit(exact_coordinate<S, C> const& coordinate)
+{
+    double const magnitude = std::abs(coordinate.binary64());
+    // In this band the rounded views and their spacing bounds lie on the
+    // 2^-180 grid. Nonzero degree-two terms and their error bounds are normal.
+    return magnitude == 0 ? coordinate.binary64_is_exact()
+        : magnitude >= 0x1p-128 && magnitude <= 0x1p128;
+}
+
+template <typename S, typename C>
 inline interval enclosure(exact_coordinate<S, C> const& coordinate)
 {
     double const value = coordinate.binary64();
@@ -56,19 +67,29 @@ inline interval enclosure(exact_coordinate<S, C> const& coordinate)
     return {value, (std::max)(upper - value, value - lower)};
 }
 
+template <typename X, typename Y>
+inline bool approximate(X const& x, Y const& y, forward_error::point_approximation& p)
+{
+    if (!admit(x) || !admit(y)) { return false; }
+    auto const a = enclosure(x), b = enclosure(y);
+    p = {{{a.approximate, b.approximate}}, {{a.error, b.error}}};
+    return true;
+}
+
 } // namespace coordinate_predicates_detail
 
-// Standalone 2D predicate only. Inherits the outward interval arithmetic
-// contract (in particular, gradual underflow and no implicit contraction).
 template <typename S, typename SC, typename T, typename TC, typename U, typename UC>
 inline filter_result orientation_filter(std::array<exact_coordinate<S, SC>, 2> const& a,
                                         std::array<exact_coordinate<T, TC>, 2> const& b,
                                         std::array<exact_coordinate<U, UC>, 2> const& c)
 {
-    using coordinate_predicates_detail::enclosure;
-    interval const ax = enclosure(a[0]), ay = enclosure(a[1]);
-    return sign((enclosure(b[0]) - ax) * (enclosure(c[1]) - ay)
-              - (enclosure(b[1]) - ay) * (enclosure(c[0]) - ax));
+    using coordinate_predicates_detail::approximate;
+    forward_error::point_approximation x, y, z;
+    int result;
+    if (approximate(a[0], a[1], x) && approximate(b[0], b[1], y)
+        && approximate(c[0], c[1], z) && forward_error::try_orientation(x, y, z, result))
+    { return {result, true}; }
+    return {0, false};
 }
 
 template <typename S, typename SC, typename T, typename TC, typename U, typename UC>
