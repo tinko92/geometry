@@ -11,6 +11,7 @@ foreach(item IN ITEMS
     approximately_equals
     partition
     tupled_output
+    turn_container
     visit
   )
   boost_geometry_add_unit_test("algorithms" ${item})

@@ -15,6 +15,8 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_SYM_DIFFERENCE_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_SYM_DIFFERENCE_HPP
 
+#include <boost/geometry/algorithms/detail/overlay/working_output.hpp>
+
 
 #include <iterator>
 
@@ -624,10 +626,15 @@ struct sym_difference
                              Collection & output_collection,
                              Strategy const& strategy)
     {
-        resolve_collection::sym_difference
-            <
-                Geometry1, Geometry2, Collection
-            >::apply(geometry1, geometry2, output_collection, strategy);
+        strategies::detail::with_operation_sources(strategy, geometry1, geometry2, [&](auto const& bound)
+        {
+            detail::overlay::with_working_output(output_collection, bound, [&](auto& working)
+            {
+                resolve_collection::sym_difference<Geometry1, Geometry2, std::decay_t<decltype(working)>>
+                    ::apply(geometry1, geometry2, working, bound);
+                return true;
+            });
+        });
     }
 };
 

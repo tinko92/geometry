@@ -19,6 +19,7 @@ test-suite boost-geometry-algorithms-detail
     [ run approximately_equals.cpp  : : : : algorithms_approximately_equals ]
     [ run partition.cpp             : : : : algorithms_partition ]
     [ run tupled_output.cpp         : : : : algorithms_tupled_output ]
+    [ run turn_container.cpp        : : : : algorithms_turn_container ]
     [ run visit.cpp                 : : : : algorithms_visit ]
     ;
 

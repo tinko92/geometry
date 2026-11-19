@@ -29,6 +29,7 @@ test-suite boost-geometry-util
     [ run range.cpp                     : : : : util_range ]
     [ run rational.cpp                  : : : : util_rational ]
     [ run select_most_precise.cpp       : : : : util_select_most_precise ]
+    [ run sorted_point_view.cpp         : : : : util_sorted_point_view ]
     [ run tuples.cpp                    : : : : util_tuples ]
     [ run write_dsv.cpp                 : : : : util_write_dsv ]
     ;
