@@ -158,14 +158,13 @@ void test_polygon()
     polygon concave;
     concave.outer() = {p(0, 0), p(0, 3), p(1, 3), p(1, 1), p(3, 1), p(3, 0), p(0, 0)};
     BOOST_TEST(bg::buffer_round_certified(concave, out, -10, 0, 0) == status::cannot_certify);
-    BOOST_TEST(bg::buffer_round_certified(concave, out, 0, 0, 0) == status::cannot_certify);
 
     polygon irrational;
     irrational.outer() = {p(0, 0), p(0, 4), p(4, 0), p(0, 0)};
-    BOOST_TEST(bg::buffer_round_certified(irrational, out, 1, 0.125, 1) == status::cannot_certify);
-    BOOST_TEST(bg::buffer_round_certified(box, out, 1, 0.125, 1) == status::cannot_certify);
     BOOST_TEST(bg::buffer_round_certified(irrational, out, -0.5, 0, 0) == status::cannot_certify);
     BOOST_TEST(same_storage(out, before));
+    BOOST_TEST(bg::buffer_round_certified(box, out, 1, 0.125, 1) == status::success);
+    BOOST_TEST(area2(out.outer()) < -64);
     BOOST_TEST(bg::buffer_round_certified(irrational, out, -0.5, 0, 1e-12) == status::success);
     // The exact eroded triangle has leg length 3 - sqrt(2)/2.
     auto const triangle_area = area2(out.outer());
@@ -176,7 +175,7 @@ void test_polygon()
     translated.outer() = {p(x, 0), p(x, 4), p(x + 4, 4), p(x + 4, 0), p(x, 0)};
     auto const prior_to_collapse = out;
     // The exact erosion is 1/2 wide, but both sides round to x+2.
-    BOOST_TEST(bg::buffer_round_certified(translated, out, -1.75, 0, 1) == status::cannot_certify);
+    BOOST_TEST(bg::buffer_round_certified(translated, out, -1.75, 0.125, 1) == status::cannot_certify);
     BOOST_TEST(same_storage(out, prior_to_collapse));
 
     BOOST_TEST(bg::buffer_round_certified(box, out, -2, 0, 0) == status::success);
@@ -193,6 +192,109 @@ void test_polygon()
     invalid.outer() = {p(0, 0), p(4, 4), p(0, 4), p(4, 0), p(0, 0)};
     BOOST_TEST(bg::buffer_round_certified(invalid, out, -1, 0, 0) == status::invalid_input);
     BOOST_TEST(out.outer().empty());
+}
+
+void test_irrational_polygon_arrangement()
+{
+    using ccw_polygon = bg::model::polygon<p, false>;
+    ccw_polygon holed;
+    holed.outer() = {p(0, 0), p(24, 0), p(24, 24), p(15, 24), p(14, 20), p(10, 20),
+                     p(9, 24), p(0, 24), p(0, 0)};
+    holed.inners() = {{p(4, 6), p(5, 12), p(10, 7), p(4, 6)},
+                     {p(16, 6), p(17, 12), p(21, 7), p(16, 6)}};
+    number const e = number(1) / 5, d = number(1) / (1LL << 40);
+    multi out;
+    for (int distance : {1, -1})
+    {
+        BOOST_TEST(bg::buffer_round_certified(holed, out, distance, e, d) == status::success);
+        BOOST_TEST_EQ(out.size(), 1u);
+        if (out.size() != 1) { return; }
+        auto const before = out.front();
+        BOOST_TEST_EQ(before.inners().size(), 2u);
+        auto const source_area = area2(holed.outer());
+        number const shell_area = -area2(before.outer());
+        BOOST_TEST(distance > 0 ? shell_area > source_area : shell_area < source_area);
+        for (auto const& hole : before.inners()) { BOOST_TEST(area2(hole) > 0); }
+
+        BOOST_TEST(bg::buffer_round_certified(holed, out, distance, e, 0) == status::cannot_certify);
+        BOOST_TEST_EQ(out.size(), 1u);
+        if (out.size() == 1) { BOOST_TEST(same_storage(out.front(), before)); }
+    }
+
+    rational_polygon exact;
+    BOOST_TEST(bg::buffer_round_certified(holed, exact, 0, 0, 0) == status::success);
+    BOOST_TEST_EQ(exact.outer().size() + 1, holed.outer().size());
+    BOOST_TEST_EQ(area2(exact.outer()), -area2(holed.outer()));
+    BOOST_TEST_EQ(exact.inners().size(), 2u);
+    if (exact.inners().size() == 2)
+    {
+        BOOST_TEST_EQ(exact.inners()[0].size() + 1, holed.inners()[0].size());
+        BOOST_TEST_EQ(area2(exact.inners()[0]), -area2(holed.inners()[0]));
+    }
+    ccw_polygon roundtrip;
+    BOOST_TEST(bg::buffer_round_certified(exact, roundtrip, 0, 0, 0) == status::success);
+    BOOST_TEST(same_storage(roundtrip, holed));
+    auto const exact_before = exact;
+    for (int distance : {1, -1})
+    {
+        BOOST_TEST(bg::buffer_round_certified(holed, exact, distance, e, d) == status::cannot_certify);
+        BOOST_TEST(same_storage(exact, exact_before));
+    }
+
+    auto fractional = exact;
+    bg::set<0>(fractional.outer().front(), number(-1) / 3);
+    polygon native = out.front();
+    auto const native_before = native;
+    BOOST_TEST(bg::buffer_round_certified(fractional, native, 0, 0, 1) == status::cannot_certify);
+    BOOST_TEST(same_storage(native, native_before));
+    auto unclosed = holed;
+    unclosed.outer().pop_back();
+    BOOST_TEST(bg::buffer_round_certified(unclosed, native, 0, 0, 0) == status::invalid_input);
+    BOOST_TEST(same_storage(native, native_before));
+
+    ccw_polygon dumbbell;
+    dumbbell.outer() = {p(0, 0), p(6, 0), p(6, 2), p(10, 2), p(10, 0), p(16, 0),
+                        p(16, 6), p(10, 6), p(10, 4), p(6, 4), p(6, 6), p(0, 6), p(0, 0)};
+    for (auto& p : dumbbell.outer()) { bg::set<1>(p, bg::get<1>(p) + bg::get<0>(p) / 4); }
+    BOOST_TEST(bg::buffer_round_certified(dumbbell, out, -1.5, 0.25, d) == status::success);
+    BOOST_TEST_EQ(out.size(), 2u);
+    unsigned left = 0, right = 0;
+    for (auto const& component : out)
+    {
+        BOOST_TEST(area2(component.outer()) < 0);
+        BOOST_TEST(component.inners().empty());
+        left += std::all_of(component.outer().begin(), component.outer().end(),
+                            [](p const& p) { return bg::get<0>(p) < 8; });
+        right += std::all_of(component.outer().begin(), component.outer().end(),
+                             [](p const& p) { return bg::get<0>(p) > 8; });
+    }
+    BOOST_TEST_EQ(left, 1u);
+    BOOST_TEST_EQ(right, 1u);
+    BOOST_TEST(bg::buffer_round_certified(dumbbell, native, -1.5, 0.25, d) == status::cannot_certify);
+    BOOST_TEST(same_storage(native, native_before));
+}
+
+void test_chord_erosion_empty_implication()
+{
+    polygon elbow;
+    elbow.outer() = {p(0, 0), p(0, 3), p(1, 3), p(1, 1), p(3, 1), p(3, 0), p(0, 0)};
+    // At r=5/8, neither unit-width arm can contain a surviving interior
+    // point. In the unit joint, x,y>r gives distance to (1,1) < sqrt(2)*(1-r) < r.
+    // The chord cap instead cuts off x+y>=2-r, leaving a triangle of leg 1/8.
+    multi native;
+    rational_polygon exact;
+    BOOST_TEST(bg::buffer_round_certified(elbow, native, -0.625, 0.5, 0) == status::success);
+    BOOST_TEST_EQ(native.size(), 1u);
+    if (native.size() == 1) { BOOST_TEST_EQ(area2(native.front().outer()), number(-1) / 64); }
+    BOOST_TEST(bg::buffer_round_certified(elbow, exact, -0.625, 0.5, 0) == status::success);
+    BOOST_TEST_EQ(area2(exact.outer()), number(-1) / 64);
+
+    // At r=3/4 there is no positive-area ideal chord face, so the
+    // outer-bound certificate can report true regularized empty.
+    BOOST_TEST(bg::buffer_round_certified(elbow, native, -0.75, 0.5, 0) == status::success);
+    BOOST_TEST(native.empty());
+    BOOST_TEST(bg::buffer_round_certified(elbow, exact, -0.75, 0.5, 0) == status::success);
+    BOOST_TEST(exact.outer().empty());
 }
 
 void test_empty_vs_failure()
@@ -231,6 +333,8 @@ int main()
     test_point_and_segment();
     test_star_and_nonstar();
     test_polygon();
+    test_irrational_polygon_arrangement();
+    test_chord_erosion_empty_implication();
     test_empty_vs_failure();
     return boost::report_errors();
 }

@@ -202,9 +202,9 @@ status dispatch(Geometry const& input, MultiPolygon& output, budget const& b)
         {
             auto const result = geometry::erode_convex_polygon_certified(
                 input, output, exact_number(-b.distance), b.displacement);
-            // A convex-domain refusal (including work limits) does not
-            // decide validity or what the generic backend can certify.
-            if (result == status::success) { return result; }
+            // Only a source-domain rejection permits the generic path.
+            // Do not substitute a chord result for a failed exact export.
+            if (result != status::invalid_input) { return result; }
         }
         return polygon_backend(input, output, b.distance, b.sagitta, b.displacement);
     }
@@ -232,23 +232,28 @@ status dispatch(Geometry const& input, MultiPolygon& output, budget const& b)
     before export; max_displacement separately bounds Euclidean movement of
     each ideal chord vertex in the stored output. The stored topology is
     certified against the constructed geometry, not against unchorded arcs.
-    Convex erosion uses exact straight offsets and no arcs.
+    Convex erosion uses exact straight offsets and no arcs. Other erosion
+    targets the regularized difference with the inscribed boundary band.
+    This gives radius-inclusion bounds, not a smooth erosion Hausdorff or
+    component bound. A nonempty chord erosion need not imply nonempty
+    smooth erosion. At zero distance a valid Polygon is copied losslessly,
+    with the output's orientation and closure.
 \param distance Finite signed radius. The two error budgets must be finite
     and nonnegative, in the same coordinate units as distance.
 \param output Polygon or MultiPolygon with integral, float, double or
     cpp_rational coordinates, replaced only on success. An empty
-    successful output is true regularized empty: a nonpositive point/linear
-    buffer or a convex erosion with no positive-area result.
+    successful output is true regularized empty. For chord erosion this
+    follows because the ideal chord result contains the smooth erosion
+    and export cannot drop positive-area faces.
 \return invalid_input for detected malformed input (including an empty
     Linestring or Polygon) or invalid budgets;
     cannot_certify for unsupported cases, representation or capacity limits,
     or any failed construction, topology or export certificate. For example,
     zero sagitta cannot produce round arcs, and zero displacement requires
-    lossless export. The current generic polygon backend supports only
-    rational-length dilation with lossless export, not zero distance or
-    nonconvex erosion. Algebraic line export requires native coordinates; the
-    lossless rational line backend requires rational edge lengths and one
-    simple shell without holes. A Polygon output cannot hold multiple components.
+    lossless export. Algebraic line and polygon chord export requires native
+    coordinates. The rational chord arrangement is lossless and requires
+    rational edge lengths (and for a Linestring, a single shell without holes).
+    A Polygon output cannot hold multiple components.
 */
 template <typename Geometry, typename Output, typename Distance, typename Sagitta, typename Displacement>
 [[nodiscard]] inline certified_buffer_status buffer_round_certified(

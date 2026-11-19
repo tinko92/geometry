@@ -646,6 +646,36 @@ One local Darwin arm64 run (Apple Clang 21, `-O2 -DNDEBUG -ffp-contract=off`,
 These are small-fixture timings, not a general scaling claim or a speed
 comparison with the different lossless or legacy contracts.
 
+## Public Round Buffer Dispatch
+
+`<boost/geometry/algorithms/buffer_round_certified.hpp>` provides
+`buffer_round_certified(input, output, distance, arc_sagitta, max_displacement)`.
+For polygons it uses the following certificates, without changing `buffer()`:
+
+| Case | Certificate |
+| --- | --- |
+| Zero distance | Validate the source using exact rational coordinates, then copy the same filled polygon losslessly with the output orientation and closure. |
+| Convex erosion | Exact straight offsets, with an independent export bound. A failed exact construction or export is not replaced by a chord approximation. |
+| Other erosion or dilation, native coordinates | Algebraic chord arrangement, including irrational edge lengths. If necessary, tighten the budgets to keep `0 < e < r` and `0 <= d < r-e`. |
+| Rational chord arrangement | Lossless export for rational-length sources, including as a fallback on a native grid. `cpp_rational` output does not use the native algebraic exporter. |
+
+On a native grid, `d > 0` permits bounded displacement; `d = 0` requires
+every vertex losslessly. Zero-distance identity is lossless even if `d > 0`.
+The native allowance does not relax the arc sagitta or permit dropping rings.
+Unsupported geometry, a failed certificate, or a split that cannot fit a
+single `Polygon` returns `cannot_certify` without changing the output.
+
+For chord erosion, let `C = reg(P \ T)` where `T` is the closed inscribed
+boundary band, and `reg(S)` is the closure of the interior of `S`. Since
+`T` is contained in the true closed radius-`r` boundary neighborhood, every
+point with clearance strictly greater than `r` is in the interior of
+`P \ T`. Taking closures gives `E_r subset C`. A successful export preserves
+all positive-area ideal components, including at `d > 0`. Thus an empty
+successful result proves `C` and `E_r` empty. Failed export proves neither.
+The reverse implication is false: a chord can miss part of a round cap.
+Nonempty chord results have the radius bounds above; neither their
+nonemptiness nor their component count is a claim about smooth erosion.
+
 ## Remaining Work
 
 - The algebraic pair primitive is integrated into the bounded opt-in
