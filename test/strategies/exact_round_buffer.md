@@ -84,13 +84,76 @@ Either returned failure leaves the caller's polygon unchanged. Failure does
 not prove no admissible polygon exists on the target grid: the algorithm only
 tries one sampling and nearest-rounding policy.
 
-## Remaining Work Beyond Point Buffers
+## Public Segment Capsules
 
-- General buffering needs strategy and input-policy integration, degeneracy
-  handling, join/cap selection and exact sweep ordering, and a tessellator
-  that preserves the exact offset endpoints and certifies every chord in
-  the chosen sweep. It needs a termination/resource policy, including what
-  to do when a positive sweep is requested with zero tolerance.
+`<boost/geometry/algorithms/buffer_segment_certified.hpp>` adds
+`buffer_segment_certified(segment, polygon, radius, max_error)` for a 2D
+Cartesian Segment. The Point and Segment APIs share `certified_buffer_status`
+(`certified_point_buffer_status` still names the same status type). Equal
+endpoints delegate to the Point path. `buffer_collinear_linestring_certified`
+in the same header accepts exactly collinear nonempty Linestrings: a connected
+trace on a line covers the entire segment between its extreme vertices, even
+with repeats and backtracking. An all-equal trace gives a disk. A bent trace,
+including a nonzero bend below binary64 resolution, returns `cannot_certify`.
+
+### Exact Sides and Caps
+
+Let `d = b - a`, `n = (dy,-dx)`, and `D = d.d`. Rotate the unit-circle chart
+by using the right-handed frame `(n,d)/sqrt(D)`. For the rational chart sample
+`(u,v)`, the ideal cap vertex is `center + r*(u*n + v*d)/sqrt(D)`. The first
+two quadrants run around `b`; the last two run around `a`. The cap endpoints
+are exactly the kernel's left and right offset endpoints. Connecting matching
+normals at different centers gives the two true straight offset sides, not
+chords between perturbed tangent directions. The cap chords use the exact
+Point subdivision predicate in the rotated frame, with unchanged angles,
+radius and sagitta. All ideal coordinates use the same symbolic square root.
+
+For export, write `D = N/M` and bracket `1/sqrt(D)` from the integer square
+root of `(N*M) << (2*bits)`. A zero remainder gives an exact rational scale,
+including nonintegral Pythagorean edge lengths. Otherwise native integral or
+IEEE floating export requires the two interval endpoints to round to the
+same nearest/ties-even value. It refines the shared scale up to 4096 bits
+and fails conservatively on an unresolved rounding or overflow. Rational
+output takes the interval midpoint for irrational coordinates. The stored
+polygon is not claimed to have exactly parallel sides after conversion.
+
+### Export Certificate
+
+Let `S` be the exact source segment, and let `rho(p) = dist(p,S)`. Re-read
+the stored ring and require a simple single turn about the source midpoint,
+using the Point topology check. Require every vertex to satisfy
+`max(0,r-error) < rho(p) < r+error`. The upper bound extends to the edges
+and the filled polygon because the outer capsule is convex. To prove the
+lower bound on each edge, check source endpoint distances to that edge and
+check for proper crossings between the edge and `S`. The output endpoint
+distances were already checked. A minimum distance between disjoint planar
+segments is attained with at least one endpoint; touches and overlaps give
+zero endpoint distance. A proper crossing also gives zero, even when all
+four endpoints are strictly clear.
+
+The lower test puts the whole inner capsule in the polygon: it contains the
+source midpoint and is connected and disjoint from the polygon boundary.
+The bounds are strict on the compact boundary, so these inclusions hold
+with some smaller error `e < error` (using inner radius zero if `e >= r`).
+Along a ray from a closest point of `S`, that point stays closest for all
+positive radii. On such rays, pair a polygon boundary point with the point
+at radius `r`, or pair a capsule boundary point with a polygon boundary
+crossing between the inner and outer radii. The same nesting bounds distances
+for the filled sets as well. This proves the **strict Euclidean Hausdorff
+bound after output conversion** for both boundary and filled region.
+
+Zero tolerance, exhausted depth or vertex limits, rounding failure, and
+failure of the stored-ring checks return `cannot_certify` without modifying
+the output. This is not a search over alternative polygons on the target
+grid. The numeric and geometry requirements are the same as for Point.
+
+## Remaining Work Beyond Capsules
+
+- No support is claimed for bent polylines, polygon boundaries, filled
+  polygons or multigeometries. Bent traces need joins and a certified union;
+  polygon-boundary buffers can create holes or multiple components, so the
+  single simple ring proof does not apply. Buffering a filled polygon is a
+  different operation from buffering its boundary.
 - Forming the actual buffer requires exact intersection construction,
   ordering and noding for offsets and chords, followed by topology assembly
   and cleanup. Primitives from different edges can introduce expressions
@@ -115,4 +178,7 @@ CASE_FILTER=round_buffer sh test/strategies/run_exact_primitives.sh
 c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
     test/algorithms/buffer/buffer_point_certified.cpp -o /tmp/buffer_point_certified
 /tmp/buffer_point_certified
+c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
+    test/algorithms/buffer/buffer_segment_certified.cpp -o /tmp/buffer_segment_certified
+/tmp/buffer_segment_certified
 ```

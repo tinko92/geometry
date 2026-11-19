@@ -33,7 +33,8 @@
 namespace boost { namespace geometry
 {
 
-enum class certified_point_buffer_status { success, invalid_input, cannot_certify };
+enum class certified_buffer_status { success, invalid_input, cannot_certify };
+using certified_point_buffer_status = certified_buffer_status;
 
 #ifndef DOXYGEN_NO_DETAIL
 namespace detail { namespace certified_point_buffer
@@ -93,6 +94,11 @@ inline exact_number dot(rational_xy const& a, rational_xy const& b)
     return a.x * b.x + a.y * b.y;
 }
 
+inline exact_number cross(rational_xy const& a, rational_xy const& b)
+{
+    return a.x * b.y - a.y * b.x;
+}
+
 inline rational_xy difference(rational_xy const& a, rational_xy const& b)
 {
     return {a.x - b.x, a.y - b.y};
@@ -103,52 +109,32 @@ inline bool second_half(rational_xy const& v)
     return v.y < 0 || (v.y == 0 && v.x < 0);
 }
 
-// The center is the origin in this test. Endpoints have already passed the
-// annulus check. The maximum radius is at an endpoint by convexity.
-inline bool certify_ccw_edge(rational_xy const& a, rational_xy const& b,
-                             exact_number const& inner2, unsigned& wraps)
+inline bool advance_ccw(rational_xy const& a, rational_xy const& b, unsigned& wraps)
 {
-    exact_number const cross = a.x * b.y - a.y * b.x;
-    if (cross <= 0)
+    if (cross(a, b) <= 0)
     {
         return false;
     }
     // The positive cross product means the CCW sweep is in (0, pi). Its
     // unwrapped angle crosses the positive x axis iff it changes halves 1->0.
-    if (second_half(a) && !second_half(b) && ++wraps > 1)
-    {
-        return false;
-    }
-    rational_xy const edge = difference(b, a);
-    // If the projection of the origin is inside the segment, test its exact
-    // squared distance cross^2/|edge|^2. Otherwise the minimum is at a vertex.
-    return dot(a, edge) >= 0 || dot(b, edge) <= 0 || cross * cross > inner2 * dot(edge, edge);
+    return !second_half(a) || second_half(b) || ++wraps == 1;
 }
 
-template <typename Polygon>
-inline bool certify_export(Polygon const& polygon, rational_xy const& center,
-                           exact_number const& radius, exact_number const& error, std::size_t count)
+template <typename Polygon, typename VertexCheck, typename EdgeCheck>
+inline bool certify_ring(Polygon const& polygon, rational_xy const& center, std::size_t count,
+                         VertexCheck const& check_vertex, EdgeCheck const& check_distance)
 {
     auto const& holes = interior_rings(polygon);
     if (count < 3 || boost::begin(holes) != boost::end(holes))
     {
         return false;
     }
-    exact_number const inner = radius > error ? exact_number(radius - error) : exact_number(0);
-    exact_number const outer = radius + error;
-    exact_number const inner2 = inner * inner, outer2 = outer * outer;
-    auto const in_annulus = [&](rational_xy const& p)
-    {
-        exact_number const d2 = dot(p, p);
-        return inner2 < d2 && d2 < outer2;
-    };
-
     unsigned wraps = 0;
     auto const check_edge = [&](rational_xy const& a, rational_xy const& b)
     {
-        return geometry::point_order<Polygon>::value == clockwise
-            ? certify_ccw_edge(b, a, inner2, wraps)
-            : certify_ccw_edge(a, b, inner2, wraps);
+        bool const advance = geometry::point_order<Polygon>::value == clockwise
+            ? advance_ccw(b, a, wraps) : advance_ccw(a, b, wraps);
+        return advance && check_distance(a, b);
     };
 
     auto const& ring = exterior_ring(polygon);
@@ -156,13 +142,13 @@ inline bool certify_export(Polygon const& polygon, rational_xy const& center,
     auto const end = boost::end(ring);
     if (it == end) { return false; }
     rational_xy const first = difference(read_point(*it++), center);
-    if (!in_annulus(first)) { return false; }
+    if (!check_vertex(first)) { return false; }
     rational_xy previous = first;
     for (std::size_t i = 1; i < count; ++i)
     {
         if (it == end) { return false; }
         rational_xy current = difference(read_point(*it++), center);
-        if (!in_annulus(current) || !check_edge(previous, current)) { return false; }
+        if (!check_vertex(current) || !check_edge(previous, current)) { return false; }
         previous = std::move(current);
     }
     if constexpr (closure<Polygon>::value == closed)
@@ -174,6 +160,28 @@ inline bool certify_export(Polygon const& polygon, rational_xy const& center,
     // One full turn with positive angular gaps enforces distinct vertices,
     // a simple boundary and one intersection per ray from the center.
     return it == end && check_edge(previous, first) && wraps == 1;
+}
+
+template <typename Polygon>
+inline bool certify_export(Polygon const& polygon, rational_xy const& center,
+                           exact_number const& radius, exact_number const& error, std::size_t count)
+{
+    exact_number const inner = radius > error ? exact_number(radius - error) : exact_number(0);
+    exact_number const outer = radius + error;
+    exact_number const inner2 = inner * inner, outer2 = outer * outer;
+    auto const in_annulus = [&](rational_xy const& p)
+    {
+        exact_number const d2 = dot(p, p);
+        return inner2 < d2 && d2 < outer2;
+    };
+    auto const outside_inner = [&](rational_xy const& a, rational_xy const& b)
+    {
+        rational_xy const edge = difference(b, a);
+        // Endpoints passed in_annulus. Test the interior projection, if any.
+        exact_number const area = cross(a, b);
+        return dot(a, edge) >= 0 || dot(b, edge) <= 0 || area * area > inner2 * dot(edge, edge);
+    };
+    return certify_ring(polygon, center, count, in_annulus, outside_inner);
 }
 
 }} // namespace detail::certified_point_buffer

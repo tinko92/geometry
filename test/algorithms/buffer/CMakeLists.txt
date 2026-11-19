@@ -12,8 +12,10 @@ foreach(item IN ITEMS
   boost_geometry_add_unit_test("algorithms" ${item})
 endforeach()
 
-boost_geometry_add_unit_test("algorithms" buffer_point_certified)
-target_compile_features(${BOOST_GEOMETRY_UNIT_TEST_NAME} PRIVATE cxx_std_17)
+foreach(item IN ITEMS buffer_point_certified buffer_segment_certified)
+  boost_geometry_add_unit_test("algorithms" ${item})
+  target_compile_features(${BOOST_GEOMETRY_UNIT_TEST_NAME} PRIVATE cxx_std_17)
+endforeach()
 
 # Tests for all geometry types, cartesian, for one floating point type
 foreach(item IN ITEMS
