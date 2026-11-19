@@ -39,6 +39,7 @@
 #include <boost/geometry/strategies/cartesian/exact/fixed_rounding.hpp>
 #include <boost/geometry/strategies/cartesian/exact/native_traits.hpp>
 #include <boost/geometry/strategies/cartesian/exact/output_policy.hpp>
+#include <boost/geometry/strategies/cartesian/exact/rational_rounding.hpp>
 #include <boost/geometry/strategy/cartesian/side_robust.hpp>
 #include <boost/geometry/util/numeric_cast.hpp>
 
@@ -1003,19 +1004,7 @@ namespace point_detail
 {
 
 using output_integer = boost::multiprecision::cpp_int;
-
-inline output_integer rounded_quotient(output_integer const& numerator,
-                                       output_integer const& denominator)
-{
-    output_integer result = numerator / denominator;
-    output_integer const remainder = numerator % denominator;
-    output_integer const twice = remainder << 1;
-    if (twice > denominator || (twice == denominator && (result & 1) != 0))
-    {
-        ++result;
-    }
-    return result;
-}
+using rational_rounding::rounded_quotient;
 
 template <typename Output, typename Enable = void>
 struct output_rounder
@@ -1067,58 +1056,7 @@ struct output_rounder<Output, typename std::enable_if<std::is_same<Output, float
 {
     static Output apply(exact_number const& value)
     {
-        static_assert(std::numeric_limits<Output>::radix == 2
-                      && std::numeric_limits<Output>::is_iec559,
-                      "Exact Cartesian floating output requires IEEE binary arithmetic");
-        output_integer numerator = boost::multiprecision::numerator(value);
-        bool const negative = numerator < 0;
-        if (negative)
-        {
-            numerator = -numerator;
-        }
-        if (numerator == 0)
-        {
-            return Output(0);
-        }
-        output_integer denominator = boost::multiprecision::denominator(value);
-        std::intmax_t exponent = static_cast<std::intmax_t>(boost::multiprecision::msb(numerator))
-                              - static_cast<std::intmax_t>(boost::multiprecision::msb(denominator));
-        // Find floor(log2(value)) with integer comparisons, not a floating estimate.
-        if (exponent >= 0 ? numerator < (denominator << exponent)
-                          : (numerator << -exponent) < denominator)
-        {
-            --exponent;
-        }
-        constexpr int digits = std::numeric_limits<Output>::digits;
-        constexpr int minimum_step = std::numeric_limits<Output>::min_exponent - digits;
-        if (exponent >= std::numeric_limits<Output>::max_exponent)
-        {
-            return negative ? -(std::numeric_limits<Output>::infinity)()
-                            : (std::numeric_limits<Output>::infinity)();
-        }
-        if (exponent < minimum_step - 1)
-        {
-            return negative ? -Output(0) : Output(0);
-        }
-        int const step = static_cast<int>((std::max)(exponent - digits + 1,
-                                                    std::intmax_t(minimum_step)));
-        if (step < 0)
-        {
-            numerator <<= -step;
-        }
-        else
-        {
-            denominator <<= step;
-        }
-        output_integer const significand = rounded_quotient(numerator, denominator);
-        if (exponent == std::numeric_limits<Output>::max_exponent - 1
-            && significand == (output_integer(1) << digits))
-        {
-            return negative ? -(std::numeric_limits<Output>::infinity)()
-                            : (std::numeric_limits<Output>::infinity)();
-        }
-        Output const magnitude = std::ldexp(significand.template convert_to<Output>(), step);
-        return negative ? -magnitude : magnitude;
+        return rational_rounding::round<Output>(value).value;
     }
 };
 

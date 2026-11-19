@@ -40,6 +40,7 @@ test-suite boost-geometry-strategies
     [ run exact_additional_issues.cpp        : : : $(exact-requirements) <library>/boost/property_tree//boost_property_tree : strategies_exact_additional_issues ]
     [ run exact_gc.cpp                       : : : $(exact-requirements) : strategies_exact_gc ]
     [ run exact_construction_filter.cpp      : : : $(exact-requirements) : strategies_exact_construction_filter ]
+    [ run exact_coordinate.cpp               : : : $(exact-requirements) : strategies_exact_coordinate ]
     [ run exact_default_pilot.cpp            : : : $(exact-requirements) <define>BOOST_GEOMETRY_ENABLE_CARTESIAN_EXACT_DEFAULT_PILOT : strategies_exact_default_pilot ]
     [ run exact_filter_routing.cpp           : : : $(exact-requirements) : strategies_exact_filter_routing ]
     [ run exact_static_box.cpp               : : : $(exact-requirements) : strategies_exact_static_box ]
