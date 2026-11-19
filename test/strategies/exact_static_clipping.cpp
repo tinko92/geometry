@@ -6,6 +6,7 @@
 #include <boost/core/lightweight_test.hpp>
 #include <boost/geometry.hpp>
 #include <boost/geometry/strategies/relate/cartesian_exact.hpp>
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <random>
@@ -25,6 +26,10 @@ void compare_clip(std::array<Coordinate, 8> const& values)
     result_type expected, actual;
     bg::intersection(line, box, expected, bg::strategies::relate::cartesian<rational>());
     bg::intersection(line, box, actual, bg::strategies::relate::cartesian_exact<Coordinate>());
+    // The legacy rational oracle also emits isolated contacts as singleton
+    // lines. Compare only its positive-length components on the exact path.
+    expected.erase(std::remove_if(expected.begin(), expected.end(),
+        [](auto const& part) { return part.size() == 1; }), expected.end());
     BOOST_TEST_EQ(actual.size(), expected.size());
     if (actual.size() != expected.size()) return;
     for (std::size_t i = 0; i != actual.size(); ++i)
@@ -54,7 +59,11 @@ void test_isolated_contacts()
         bg::intersection(input, box, output, strategy);
         BOOST_TEST(output.empty());
         bg::intersection(input, box, output);
-        BOOST_TEST(output.empty());
+        BOOST_TEST_EQ(output.size(), 1u);
+        BOOST_TEST_EQ(output.at(0).size(), 1u);
+        auto const& contact = input.size() == 3 ? input[1] : bg::get<0>(input[0]) == 1 ? input[0] : input[1];
+        BOOST_TEST(bg::get<0>(output[0][0]) == bg::get<0>(contact));
+        BOOST_TEST(bg::get<1>(output[0][0]) == bg::get<1>(contact));
     }
     {
         line const input{{4096, 4000}, {4100, 4010}};
@@ -71,6 +80,13 @@ void test_isolated_contacts()
     BOOST_TEST_EQ(output.front().size(), 2u);
     BOOST_TEST_EQ(bg::get<0>(output.front().front()), rational(1));
     BOOST_TEST_EQ(bg::get<0>(output.front().back()), rational(0));
+    bg::model::multi_linestring<line> const multi{line{{2, 1}, {1, 1}}, line{{-2, 0}, {2, 1}}};
+    output.clear();
+    bg::intersection(multi, box, output, strategy);
+    BOOST_TEST_EQ(output.size(), 1u);
+    BOOST_TEST_EQ(output.at(0).size(), 2u);
+    BOOST_TEST_EQ(bg::get<1>(output[0][0]), rational(1) / 2);
+    BOOST_TEST_EQ(bg::get<1>(output[0][1]), rational(3) / 4);
     if constexpr (std::is_same<Coordinate, double>::value)
     {
         line const short_line{{0.5, 1}, {std::nextafter(0.5, 1.0), 1}};
