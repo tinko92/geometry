@@ -5,6 +5,9 @@
 #ifndef BOOST_GEOMETRY_STRATEGIES_CARTESIAN_EXACT_OUTPUT_POLICY_HPP
 #define BOOST_GEOMETRY_STRATEGIES_CARTESIAN_EXACT_OUTPUT_POLICY_HPP
 
+#include <cstddef>
+#include <type_traits>
+
 namespace boost { namespace geometry { namespace strategies { namespace relate
 {
 
@@ -17,6 +20,27 @@ struct approximate_output {};
 // Integral output follows BG numeric_cast conversion under every policy.
 struct nearest_output {};
 
+// Bound constructed binary64 output by N representable steps from nearest.
+// Retry uses the exact FMA division residual before falling back to nearest.
+template <std::size_t N, bool Retry = false>
+struct bounded_ulp_output
+{
+    static_assert(N >= 1, "bounded_ulp_output requires at least one ULP");
+    static constexpr std::size_t steps = N;
+    static constexpr bool retry = Retry;
+};
+
 }}}} // namespace boost::geometry::strategies::relate
+
+namespace boost { namespace geometry { namespace strategies { namespace detail
+{ namespace exact_cartesian
+{
+
+template <typename Policy> struct is_bounded_ulp_output : std::false_type {};
+template <std::size_t N, bool Retry>
+struct is_bounded_ulp_output<relate::bounded_ulp_output<N, Retry>>
+    : std::bool_constant<(relate::bounded_ulp_output<N, Retry>::steps > 0)> {};
+
+}}}}}
 
 #endif

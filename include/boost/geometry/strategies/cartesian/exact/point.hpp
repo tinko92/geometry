@@ -1168,7 +1168,8 @@ template <typename Output, typename OutputPolicy = strategies::relate::approxima
 inline Output output_coordinate(exact_point<Coordinate> const& point, std::size_t dimension)
 {
     static_assert(std::is_same<OutputPolicy, strategies::relate::approximate_output>::value
-        || std::is_same<OutputPolicy, strategies::relate::nearest_output>::value,
+        || std::is_same<OutputPolicy, strategies::relate::nearest_output>::value
+        || is_bounded_ulp_output<OutputPolicy>::value,
         "Unknown exact Cartesian output policy");
     if constexpr (std::is_same<Output, exact_number>::value)
     {
@@ -1220,7 +1221,8 @@ inline void assign_output(exact_point<Coordinate> const& point, OutputPoint& out
 {
     static_assert(geometry::dimension<OutputPoint>::value == 2, "Exact Cartesian output is two-dimensional");
     static_assert(std::is_same<OutputPolicy, strategies::relate::approximate_output>::value
-        || std::is_same<OutputPolicy, strategies::relate::nearest_output>::value,
+        || std::is_same<OutputPolicy, strategies::relate::nearest_output>::value
+        || is_bounded_ulp_output<OutputPolicy>::value,
         "Unknown exact Cartesian output policy");
     using coordinate = typename geometry::coordinate_type<OutputPoint>::type;
     coordinate x, y;

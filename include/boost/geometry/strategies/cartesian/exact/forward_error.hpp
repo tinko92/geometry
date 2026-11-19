@@ -202,8 +202,12 @@ inline scalar_approximation dot(point_approximation const& a, point_approximatio
         a.error[0], a.error[1], b.error[0], b.error[1], p, q, value)};
 }
 
-inline bool native_intersection(std::array<double, 8> const& p, bool exact, point_approximation* output,
-                                scalar_approximation* parameter = nullptr, bool second = false)
+struct native_intersection_heads
+{
+    double ux, uy, numerator, denominator, mt, md;
+};
+
+inline native_intersection_heads intersection_heads(std::array<double, 8> const& p, bool second)
 {
     double const ux = arithmetic::rounded_sub(p[2], p[0]);
     double const uy = arithmetic::rounded_sub(p[3], p[1]);
@@ -216,9 +220,19 @@ inline bool native_intersection(std::array<double, 8> const& p, bool exact, poin
     double const tq = arithmetic::rounded_mul(wy, second ? ux : vx);
     double const denominator = arithmetic::rounded_sub(dp, dq);
     double const numerator = arithmetic::rounded_sub(tp, tq);
+    return {ux, uy, numerator, denominator,
+            arithmetic::rounded_add(std::abs(tp), std::abs(tq)),
+            arithmetic::rounded_add(std::abs(dp), std::abs(dq))};
+}
+
+inline bool native_intersection(std::array<double, 8> const& p, bool exact, point_approximation* output,
+                                scalar_approximation* parameter = nullptr, bool second = false)
+{
+    auto const heads = intersection_heads(p, second);
+    double const ux = heads.ux, uy = heads.uy;
+    double const numerator = heads.numerator, denominator = heads.denominator;
     double sx = std::abs(ux), sy = std::abs(uy);
-    double md = arithmetic::rounded_add(std::abs(dp), std::abs(dq));
-    double mt = arithmetic::rounded_add(std::abs(tp), std::abs(tq));
+    double md = heads.md, mt = heads.mt;
     if (!exact)
     {
         // Rounded-integer endpoint errors are <=2u*|p[i]|. A computed

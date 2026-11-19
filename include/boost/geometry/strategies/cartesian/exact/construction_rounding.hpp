@@ -67,6 +67,15 @@ template <> struct policy_traits<relate::eager_nearest_output>
 template <> struct policy_traits<relate::nearest_output>
     : policy_traits<relate::deferred_nearest_output> {};
 
+template <std::size_t N, bool Retry>
+struct policy_traits<relate::bounded_ulp_output<N, Retry>>
+{
+    // The existing lean predicate filters assume one ULP, not N steps.
+    static constexpr bool store_errors = true;
+    static constexpr bool eager = true;
+    static constexpr bool nearest_output = false;
+};
+
 namespace detail
 {
 namespace arithmetic = arithmetic_detail;
@@ -104,6 +113,87 @@ inline bool certify(fe::scalar_approximation const& a, bool nearest)
                               arithmetic::rounded_sub(next, a.value));
     if (nearest) width = arithmetic::rounded_mul(0.5, width);
     return width > 0 && (a.error < width || (a.error == width && (!nearest || even(a.value))));
+}
+
+// Use a stricter certificate for very large policies. For K <= 2^24,
+// Bernoulli gives (1-2u)^(K+1)*(1-u)^4/(1+u) >= 1-(2K+7)u.
+// The parenthesized dyadic below is exact; the extra slack covers rounding
+// its multiplication by K. No runtime power, division or spacing lookup.
+template <std::size_t N>
+constexpr std::size_t certificate_steps = N < (1u << 24) ? N : (1u << 24);
+
+template <std::size_t N, bool Retry>
+inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
+                                                fe::point_approximation& output)
+{
+    static_assert(N >= 1, "A rounding cell must intervene");
+    constexpr auto k = certificate_steps<N>;
+    constexpr double u = fe::detail::u;
+    constexpr double c = double(k) * (1 - (2 * double(k) + 16) * u);
+    // In this band differences are multiples of 2^-116 and <= 2^65.
+    // Determinants and magnitudes are multiples of 2^-232 and <= 2^131,
+    // so nonzero |t| is in [2^-363, 2^363], and positive L >= 2^-283.
+    // Even the FMA residual and comparisons stay within normal range:
+    // t's grid is >= 2^-415; t*h and t*d use grids >= 2^-531 and 2^-647.
+    // The smallest nonzero comparison product exceeds 2^-820, the
+    // largest is below 2^600. The intervening cells are normal and finite.
+    for (double x : p)
+        if (x != 0 && !(std::abs(x) >= 0x1p-64 && std::abs(x) <= 0x1p64))
+            return {{false, false}};
+
+    auto const heads = fe::detail::intersection_heads(p, false);
+    // Same 8u determinant bounds as forward_error::detail::native_intersection.
+    // (1-2u)*(1+u)^2 < 1 accounts for rounding both lower-bound operations.
+    double const d = std::abs(heads.denominator);
+    double const ed = arithmetic::rounded_mul(8 * u, heads.md);
+    if (!(d > ed)) return {{false, false}};
+    double const lower = arithmetic::rounded_mul(1 - 2 * u, arithmetic::rounded_sub(d, ed));
+    double const t = arithmetic::rounded_div(heads.numerator, heads.denominator);
+    double const at = std::abs(t);
+    double const v = std::fma(at, heads.md, heads.mt);
+    double const b = arithmetic::rounded_mul(c, lower);
+    auto height = [&](double division_budget)
+    { return std::fma(at, lower, std::fma(8, v, division_budget)); };
+
+    double const h = height(std::abs(heads.numerator));
+    std::array<double, 2> const direction{{heads.ux, heads.uy}};
+    std::array<bool, 2> accepted{};
+    // |T-tD| <= u*(|n| + 8*(MT + |t|*MD)). Divide the mathematical
+    // bound by L, use |U| <= |h_axis|/(1-u) and add |t|*|U-h_axis|.
+    // The three nonnegative FMAs can lose at most another (1-u)^3,
+    // yielding |Z-y| <= u*|h_axis|*H/(L*(1-u)^4), y=a+t*h_axis.
+    auto certify_axis = [&](std::size_t axis, double z, double bound)
+    {
+        // Strict rounded order implies strict real order of the products.
+        // Passing keeps RN(Z) within k steps of z=RN(y): k intervening
+        // rounding cells span at least k*u*(1-2u)^(k+1)*|z|.
+        if (!(arithmetic::rounded_mul(std::abs(direction[axis]), bound)
+              < arithmetic::rounded_mul(std::abs(z), b))) return;
+        output.value[axis] = z;
+        // Also enclose Z for existing predicates. Acceptance bounds |Z-y|
+        // by k*u*|z|; |y-z| <= u/(1-u)*|z|. Slack covers this multiply.
+        output.error[axis] = arithmetic::rounded_mul((double(k) + 2) * u, std::abs(z));
+        accepted[axis] = true;
+    };
+    std::array<double, 2> const z{{std::fma(t, direction[0], p[0]),
+                                  std::fma(t, direction[1], p[1])}};
+    for (std::size_t axis = 0; axis < 2; ++axis)
+        certify_axis(axis, z[axis], h);
+
+    if constexpr (Retry)
+    {
+        if (!accepted[0] || !accepted[1])
+        {
+            // If n != 0, the grid of t*d is no finer than 2^(ilogb(n)-105):
+            // ilogb(t)+ilogb(d) >= ilogb(n)-1. The residual is on that grid
+            // and |n-t*d| <= u*|n|, so it fits in 53 bits (n=0 is trivial).
+            double const r = std::fma(-t, heads.denominator, heads.numerator);
+            double const tightened = height(arithmetic::rounded_mul(std::abs(r), 0x1p53));
+            for (std::size_t axis = 0; axis < 2; ++axis)
+                if (!accepted[axis]) certify_axis(axis, z[axis], tightened);
+        }
+    }
+    return accepted;
 }
 
 // If t encloses the exact segment parameter T, exact X=A+T*(B-A).
@@ -231,6 +321,7 @@ class point_state
         "Construction rounding requires IEEE binary64");
     using traits = policy_traits<Policy>;
     using cache = point_cache_detail::native_cache<C>;
+    static constexpr bool bounded_output = is_bounded_ulp_output<Policy>::value;
 
 public:
     using coordinate_type = C;
@@ -259,9 +350,25 @@ public:
     void init(producers_type const& producers)
     {
         m_state = storage_type{};
+        forward_error::point_approximation first;
+        if constexpr (bounded_output)
+        {
+            std::array<bool, 2> accepted{};
+            if constexpr (std::is_same<C, double>::value)
+                accepted = detail::bounded_intersection<Policy::steps, Policy::retry>(producers, first);
+            for (std::size_t d = 0; d < 2; ++d)
+            {
+                if (accepted[d])
+                {
+                    m_state.approximate[d] = first.value[d];
+                    m_state.error[d] = first.error[d];
+                }
+                else refine_value(producers, d);
+            }
+            return;
+        }
         if constexpr (!traits::store_errors && std::is_integral<C>::value)
             if (detail::small_integer(producers, m_state.approximate)) return;
-        forward_error::point_approximation first;
         bool ready;
         // Stored-error predicates need an enclosure, not a one-ULP certificate.
         // Reuse the native a-priori proof and the SAME segment-parameter/FMA
@@ -323,7 +430,7 @@ public:
         check_dimension(dimension);
         // BG integral conversion deliberately observes the CURRENT value,
         // without nearest refinement or nearest-integer rational rounding.
-        if constexpr (!traits::nearest_output || std::is_integral<Output>::value)
+        if constexpr ((!traits::nearest_output && !bounded_output) || std::is_integral<Output>::value)
         {
             return geometry::util::numeric_cast<Output>(approximate(dimension));
         }
@@ -358,7 +465,11 @@ private:
     void update(std::size_t dimension, double nearest, bool zero) const
     {
         m_state.approximate[dimension] = nearest;
-        if constexpr (traits::store_errors)
+        if constexpr (bounded_output)
+            // Full spacing also encloses exact fallback at subnormals/zero,
+            // where half a spacing cannot itself be represented.
+            m_state.error[dimension] = zero ? 0 : detail::spacing(nearest);
+        else if constexpr (traits::store_errors)
             m_state.error[dimension] = zero ? 0 : detail::arithmetic::rounded_mul(0.5, detail::spacing(nearest));
     }
 
