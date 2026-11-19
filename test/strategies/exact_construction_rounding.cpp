@@ -554,10 +554,10 @@ void selective_one_ulp_retry()
         double const residual = cr::detail::scaled_division_residual(t, heads.denominator, heads.numerator);
         double const want = std::fma(at, lower, ar::rounded_add(residual,
             std::fma(at, denominator_tightens ? 0. : ed, numerator_tightens ? 0. : et)));
-        BOOST_TEST_EQ(cr::detail::retry_determinants(v, heads, t, lower, threshold, z, initial), want);
+        BOOST_TEST_EQ(cr::detail::retry_determinants<false>(v, heads, t, lower, threshold, z, initial), want);
 
         fe::point_approximation result{{{1, 2}}, {{3, 4}}};
-        auto const passed = cr::detail::bounded_intersection<1, false>(v, result);
+        auto const passed = cr::detail::bounded_intersection<1, false, true, false>(v, result);
         BOOST_TEST(passed == expected);
         exact_point exact;
         BOOST_TEST(oracle(v, exact));
@@ -600,15 +600,24 @@ void denominator_rescue()
     auto check = [](auto steps, producers const& p)
     {
         constexpr auto n = decltype(steps)::value;
-        fe::point_approximation original, rescued;
-        auto const before = cr::detail::bounded_intersection<n, false, false>(p, original);
+        fe::point_approximation original, rescued, composed;
+        // Cross terms cannot replace denominator rescue, or change its
+        // rebuilt candidate and bound when both optimizations are enabled.
+        auto const before = cr::detail::bounded_intersection<n, false, false, true>(p, original);
         BOOST_TEST(!before[0] && !before[1]);
-        auto const after = cr::detail::bounded_intersection<n, false>(p, rescued);
+        auto const after = cr::detail::bounded_intersection<n, false, true, false>(p, rescued);
         BOOST_TEST(after[0] && after[1]);
+        auto const both = cr::detail::bounded_intersection<n, false, true, true>(p, composed);
+        BOOST_TEST(both == after);
         exact_point reference;
         BOOST_TEST(oracle(p, reference));
         for (std::size_t d = 0; d < 2; ++d)
         {
+            if (after[d] && both[d])
+            {
+                BOOST_TEST_EQ(bits(composed.value[d]), bits(rescued.value[d]));
+                BOOST_TEST_EQ(bits(composed.error[d]), bits(rescued.error[d]));
+            }
             BOOST_TEST(ulp_distance(rescued.value[d], nearest<double>(reference[d])) <= n);
             BOOST_TEST(absolute(rational(rescued.value[d]) - reference[d]) <= rational(rescued.error[d]));
         }
@@ -642,6 +651,118 @@ void denominator_rescue()
         BOOST_TEST(sentinel.value[0] == 5 && sentinel.value[1] == 6);
     }
 }
+
+struct cross_term_counts
+{
+    std::size_t before = 0, after = 0, cache_before = 0, cache_after = 0;
+};
+
+template <std::size_t N>
+std::array<bool, 2> check_cross_term_retry(producers const& input, exact_point const& exact,
+                                           std::array<double, 2> const& nearest_coords, cross_term_counts& counts)
+{
+    using ec::forward_error::point_approximation;
+    point_approximation plain, corrected{{{1, 2}}, {{3, 4}}};
+    auto const before = cr::detail::bounded_intersection<N, false, true, false>(input, plain);
+    auto const after = cr::detail::bounded_intersection<N, false, true, true>(input, corrected);
+    counts.cache_before += !(before[0] && before[1]);
+    counts.cache_after += !(after[0] && after[1]);
+    for (std::size_t i = 0; i < 2; ++i)
+    {
+        counts.before += before[i];
+        counts.after += after[i];
+        if (before[i])
+        {
+            BOOST_TEST(after[i]);
+            BOOST_TEST_EQ(bits(corrected.value[i]), bits(plain.value[i]));
+            BOOST_TEST_EQ(bits(corrected.error[i]), bits(plain.error[i]));
+        }
+        if (after[i])
+        {
+            BOOST_TEST(ulp_distance(corrected.value[i], nearest_coords[i]) <= N);
+            BOOST_TEST(absolute(rational(corrected.value[i]) - exact[i]) <= rational(corrected.error[i]));
+        }
+        else
+        {
+            BOOST_TEST_EQ(corrected.value[i], double(i + 1));
+            BOOST_TEST_EQ(corrected.error[i], double(i + 3));
+        }
+    }
+    return {{after[0] && !before[0], after[1] && !before[1]}};
+}
+
+void nonzero_cross_terms()
+{
+    namespace ar = ec::arithmetic_detail;
+    namespace fe = ec::forward_error;
+    using bg::detail::precise_math::two_diff_tail;
+
+    auto check_budget = [](producers const& p, unsigned i)
+    {
+        double const x = ar::rounded_sub(p[i], p[0]), y = ar::rounded_sub(p[i + 1], p[1]);
+        double const vx = ar::rounded_sub(p[6], p[4]), vy = ar::rounded_sub(p[7], p[5]);
+        double const xt = two_diff_tail(p[i], p[0], x), yt = two_diff_tail(p[i + 1], p[1], y);
+        double const vxt = two_diff_tail(p[6], p[4], vx), vyt = two_diff_tail(p[7], p[5], vy);
+        auto const h = fe::detail::intersection_heads(p, false);
+        double const k = i == 2 ? h.denominator : h.numerator, m = i == 2 ? h.md : h.mt;
+        double const budget = cr::detail::cross_term_budget(x, y, vx, vy, k, xt, yt, vxt, vyt, m);
+        rational const exact = (rational(p[i]) - rational(p[0])) * (rational(p[7]) - rational(p[5]))
+                             - (rational(p[i + 1]) - rational(p[1])) * (rational(p[6]) - rational(p[4]));
+        BOOST_TEST(absolute(exact - rational(k)) <= rational(fe::detail::u) * rational(budget));
+        return budget;
+    };
+    // Both rounded products are 1. The linear terms cancel; the residual
+    // -e^2 must be covered even though the head and signed correction are 0.
+    double const e = 0x1p-54;
+    producers const quadratic{{-e, 0, 1, 1, 0, e, 1, 1}};
+    BOOST_TEST(check_budget(quadratic, 2) > 0);
+    fe::point_approximation output;
+    auto const rejected = cr::detail::bounded_intersection<1, false, true, true>(quadratic, output);
+    BOOST_TEST(!rejected[0] && !rejected[1]); // No positive L; rescue rejects nonzero tails.
+
+    std::array<cross_term_counts, 4> counts{};
+    std::size_t checked = 0;
+    auto check = [&](producers const& p)
+    {
+        check_budget(p, 2);
+        check_budget(p, 4);
+        exact_point exact;
+        if (!oracle(p, exact)) return std::array<bool, 2>{{false, false}};
+        std::array<double, 2> const nearest_coords{{nearest<double>(exact[0]), nearest<double>(exact[1])}};
+        ++checked;
+        auto const rescue = check_cross_term_retry<1>(p, exact, nearest_coords, counts[0]);
+        check_cross_term_retry<2>(p, exact, nearest_coords, counts[1]);
+        check_cross_term_retry<3>(p, exact, nearest_coords, counts[2]);
+        check_cross_term_retry<4>(p, exact, nearest_coords, counts[3]);
+        return rescue;
+    };
+    // Proper crossing. The shared vertical difference rounds away 2^-10;
+    // exactly x was refused by the zero-tail retry.
+    auto const rescue = check({{4, 8, 5, 8, 4.5, -0x1p-10, 4.5, 0x1p54}});
+    BOOST_TEST(rescue[0] && !rescue[1]);
+    for (auto const& p : bounded_corpus()) check(p);
+    std::mt19937_64 random(0x54574f44494646);
+    for (std::size_t i = 0; i < 2048; ++i)
+    {
+        producers p;
+        for (double& x : p)
+        {
+            double const m = 1 + double(random() >> 12) * 0x1p-52;
+            bool const negative = (random() & 1) != 0;
+            int const exponent = int(random() % 128) - 64;
+            x = std::ldexp(negative ? -m : m, exponent);
+        }
+        check(p);
+    }
+    for (std::size_t i = 0; i < counts.size(); ++i)
+    {
+        auto const& count = counts[i];
+        std::cout << "TwoDiff N=" << i + 1 << ": " << count.before << " -> " << count.after
+                  << '/' << 2 * checked << " axes; " << count.cache_before << " -> " << count.cache_after
+                  << " constructions with a fallback\n";
+    }
+}
+
 void integer_inputs()
 {
     for (std::int64_t base : {std::int64_t(0), (std::int64_t(1) << 54) + 1,
@@ -1026,6 +1147,7 @@ int main(int argc, char** argv)
         determinant_budgets();
         selective_one_ulp_retry();
         denominator_rescue();
+        nonzero_cross_terms();
         integer_inputs();
         small_integers();
         ordinary_first_stage();

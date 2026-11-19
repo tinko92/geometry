@@ -22,6 +22,11 @@
 #include <boost/geometry/util/numeric_cast.hpp>
 #include <boost/geometry/util/precise_math.hpp>
 
+// Experimental same-head retry for nonzero endpoint subtraction tails.
+#ifndef BOOST_GEOMETRY_EXACT_TWODIFF_CROSS_TERMS
+#define BOOST_GEOMETRY_EXACT_TWODIFF_CROSS_TERMS 0
+#endif
+
 namespace boost { namespace geometry { namespace strategies { namespace relate
 {
 
@@ -155,9 +160,37 @@ inline double determinant_budget(double ax, double ay, double bx, double by, dou
     return 2 * std::fma(0x1p53, std::abs(r), std::abs(s));
 }
 
+// Tighten the ORIGINAL head, not a compensated replacement. The signed
+// linear terms may cancel each other or the exact product/subtraction tails.
+// Let M be RN(|p|+|q|). In the admitted exponent band, the sums of the exact
+// and rounded product magnitudes are each <= 2*M. The three product/head
+// tails total <= 4*u*M and the four linear terms total <= 5*u*M. Therefore
+// for M > 0 each of the six rounded intermediates has magnitude < 16*u*M
+// (even after accumulating earlier rounding errors). The two omitted
+// quadratic terms total <= 3*u*u*M because |tail| <= u*|head|/(1-u).
+// 128*u*M covers those errors in units of u; (1+4*u)*(1-u)^2 > 1
+// covers evaluation of the final nonnegative bound. All terms stay on
+// the existing determinant grid before exact scaling by 1/u.
+inline double cross_term_budget(double ax, double ay, double bx, double by, double k,
+                                double axt, double ayt, double bxt, double byt, double magnitude)
+{
+    using geometry::detail::precise_math::two_diff_tail;
+    using geometry::detail::precise_math::two_product_tail;
+    constexpr double u = fe::detail::u;
+    double const p = arithmetic::rounded_mul(ax, by), q = arithmetic::rounded_mul(ay, bx);
+    double r = arithmetic::rounded_add(two_diff_tail(p, q, k),
+        arithmetic::rounded_sub(two_product_tail(ax, by, p), two_product_tail(ay, bx, q)));
+    r = std::fma(ax, byt, r);
+    r = std::fma(axt, by, r);
+    r = std::fma(-ay, bxt, r);
+    r = std::fma(-ayt, bx, r);
+    return (1 + 4 * u) * std::fma(128 * u, magnitude, 0x1p53 * std::abs(r));
+}
+
 // Keep the original quotient, candidate and certified lower bound. This
 // slow path is reached only if removing the determinant and quotient errors
 // could help at least one axis. Keep it out of the initial filter.
+template <bool CrossTerms = (BOOST_GEOMETRY_EXACT_TWODIFF_CROSS_TERMS != 0)>
 BOOST_NOINLINE inline double retry_determinants(std::array<double, 8> const& p,
     fe::detail::native_intersection_heads const& heads, double t, double lower, double threshold,
     std::array<double, 2> const& z, std::array<bool, 2> const& accepted)
@@ -184,16 +217,31 @@ BOOST_NOINLINE inline double retry_determinants(std::array<double, 8> const& p,
 
     using geometry::detail::precise_math::two_diff_tail;
     double const vx = arithmetic::rounded_sub(p[6], p[4]), vy = arithmetic::rounded_sub(p[7], p[5]);
-    if (two_diff_tail(p[6], p[4], vx) != 0 || two_diff_tail(p[7], p[5], vy) != 0) return h;
+    double const vxt = two_diff_tail(p[6], p[4], vx);
+    if constexpr (!CrossTerms) { if (vxt != 0) return h; }
+    double const vyt = two_diff_tail(p[7], p[5], vy);
+    if constexpr (!CrossTerms) { if (vyt != 0) return h; }
     auto tighten = [&](bool denominator)
     {
         std::size_t const i = denominator ? 2 : 4;
         double const x = denominator ? heads.ux : arithmetic::rounded_sub(p[4], p[0]);
         double const y = denominator ? heads.uy : arithmetic::rounded_sub(p[5], p[1]);
-        if (two_diff_tail(p[i], p[0], x) != 0 || two_diff_tail(p[i + 1], p[1], y) != 0) return;
+        double const xt = two_diff_tail(p[i], p[0], x);
+        if constexpr (!CrossTerms) { if (xt != 0) return; }
+        double const yt = two_diff_tail(p[i + 1], p[1], y);
+        if constexpr (!CrossTerms) { if (yt != 0) return; }
+        double const k = denominator ? heads.denominator : heads.numerator;
+        double tightened;
+        if constexpr (CrossTerms)
+        {
+            tightened = xt == 0 && yt == 0 && vxt == 0 && vyt == 0
+                ? determinant_budget(x, y, vx, vy, k)
+                : cross_term_budget(x, y, vx, vy, k, xt, yt, vxt, vyt,
+                                    denominator ? heads.md : heads.mt);
+        }
+        else { tightened = determinant_budget(x, y, vx, vy, k); }
         auto& budget = denominator ? ed : et;
-        budget = (std::min)(budget, determinant_budget(x, y, vx, vy,
-            denominator ? heads.denominator : heads.numerator));
+        budget = (std::min)(budget, tightened);
         h = height(et, ed);
     };
     bool const denominator_first = at * ed > et;
@@ -262,7 +310,9 @@ BOOST_NOINLINE std::array<bool, 2> rescue_bounded_denominator(std::array<double,
     }
     return accepted;
 }
-template <std::size_t N, bool Retry, bool Rescue = true>
+
+template <std::size_t N, bool Retry, bool Rescue = true,
+          bool CrossTerms = (BOOST_GEOMETRY_EXACT_TWODIFF_CROSS_TERMS != 0)>
 inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
                                                 fe::point_approximation& output)
 {
@@ -331,7 +381,7 @@ inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
             if ((!accepted[0] && bounded_axis_passes(heads.ux, z[0], floor, b))
                 || (!accepted[1] && bounded_axis_passes(heads.uy, z[1], floor, b)))
             {
-                double const tightened = retry_determinants(p, heads, t, lower, b, z, accepted);
+                double const tightened = retry_determinants<CrossTerms>(p, heads, t, lower, b, z, accepted);
                 for (std::size_t axis = 0; axis < 2; ++axis)
                     if (!accepted[axis]) certify_axis(axis, z[axis], tightened);
             }
