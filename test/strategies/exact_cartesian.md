@@ -46,7 +46,8 @@ Equality and along-segment order use coordinate comparisons. A search envelope
 still needs outward bounds, and a derived measure still needs its own error
 bound; neither is an N-step coordinate. Midpoints are separately certified,
 and a mixed owning point cannot borrow the enclosing operation's certificate.
-See the [filter proof](exact_lean_n_ulp_filters.md).
+See the [filter proof](exact_lean_n_ulp_filters.md) and the
+[matched GCC/Clang benchmark](exact_lean_ulp_benchmark.md).
 
 Point-only contact is not a linear exact output. Legacy line/box calls retain
 their established singleton convention; the two routes have separate tests.
