@@ -74,6 +74,9 @@ inline rounded_value<Output> round(exact_number const& value)
     else { denominator <<= step; }
     bool exact;
     cpp_int const significand = rounded_quotient(numerator, denominator, &exact);
+    // A zero significand has no magnitude to scale. Return the prescribed
+    // sign directly, independently of the active floating-point rounding mode.
+    if (significand == 0) { return {zero, false}; }
     if (exponent == limits::max_exponent - 1 && significand == (cpp_int(1) << digits))
     {
         return {negative ? -infinity : infinity, false};

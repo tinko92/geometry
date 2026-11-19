@@ -88,6 +88,8 @@ void rounding_modes()
         check(1 + power_of_two(-53), 1);
         check(1 + power_of_two(-53) + power_of_two(-90), std::nextafter(1.0, 2.0));
         check(-power_of_two(-1075), -0.0);
+        check(power_of_two(-1075), 0.0);
+        check(-power_of_two(-1100), -0.0);
         check(power_of_two(-1074), limits::denorm_min(), true);
     }
     BOOST_TEST_EQ(std::fesetround(saved), 0);
