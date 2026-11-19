@@ -92,6 +92,7 @@ test-suite boost-geometry-strategies
           : strategies_exact_tagged_dispatch ]
     [ run exact_cluster.cpp                  : : : $(exact-requirements) : strategies_exact_cluster ]
     [ run exact_rounding_policies.cpp        : : : $(exact-requirements) : strategies_exact_rounding_policies ]
+    [ run exact_round_buffer.cpp             : : : $(exact-requirements) : strategies_exact_round_buffer ]
     [ run exact_output_policy.cpp            : : : $(exact-requirements) : strategies_exact_output_policy ]
     [ run exact_ulp_filter.cpp               : : : $(exact-requirements) : strategies_exact_ulp_filter ]
     [ run exact_point.cpp                    : : : $(exact-requirements) : strategies_exact_point ]

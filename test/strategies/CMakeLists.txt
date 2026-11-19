@@ -74,6 +74,7 @@ foreach(item IN ITEMS
     exact_double_qualification
     exact_cluster
     exact_rounding_policies
+    exact_round_buffer
     exact_output_policy
     exact_output_support_hooks
     exact_ulp_filter
