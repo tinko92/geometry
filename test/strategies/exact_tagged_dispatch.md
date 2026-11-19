@@ -1,9 +1,10 @@
 # Cold tagged orientation
 
 This ports the bounded kernel and cold dispatch from `357434d0a` to
-`0f7ba7837`. `BOOST_GEOMETRY_EXACT_TAGGED_ORIENTATION=0` (the default)
-keeps the fixed path. `=1` enables the tagged route. Use a consistent
-setting across all translation units.
+`0f7ba7837`. The tagged route is enabled for the cold case below.
+`BOOST_GEOMETRY_EXACT_TAGGED_ORIENTATION=0` opts out (including the header
+and stack scratch) and keeps the fixed path. Use a consistent setting
+across all translation units.
 
 The route requires three borrowed proper-crossing records in a binary64
 Root, after visitation, both sign filters, and the existing alias and
@@ -15,6 +16,12 @@ Existing expansion/coordinate refinement may still populate its normal
 cache before dispatch. No record layout or other predicate is changed.
 
 ## A/B and verification
+
+At `f785248ba`, seven rotated pairs under GCC 13 and Clang 22 on x86-64-v2
+gave .572/.824 of fixed-path time on the near-parallel intersection and
+.979/.992 over all 30 public cells. All paired full native geometry and
+matrix outputs matched. Only the near-parallel intersection entered the
+new branch on that corpus. Do not interpret this as a general 43% speedup.
 
 Compile `test/strategies/exact_tagged_dispatch.cpp` at settings 0 and 1,
 with identical C++17 optimization, `-ffp-contract=off -pthread`,

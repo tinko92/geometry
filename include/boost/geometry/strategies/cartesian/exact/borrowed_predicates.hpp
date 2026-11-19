@@ -20,7 +20,7 @@
 #include <boost/geometry/strategies/cartesian/exact/ulp_filter.hpp>
 
 #ifndef BOOST_GEOMETRY_EXACT_TAGGED_ORIENTATION
-#define BOOST_GEOMETRY_EXACT_TAGGED_ORIENTATION 0
+#define BOOST_GEOMETRY_EXACT_TAGGED_ORIENTATION 1
 #endif
 #if BOOST_GEOMETRY_EXACT_TAGGED_ORIENTATION
 #include <boost/geometry/strategies/cartesian/exact/tagged_orientation.hpp>
