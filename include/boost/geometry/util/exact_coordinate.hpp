@@ -12,6 +12,7 @@
 #include <utility>
 
 #include <boost/geometry/strategies/cartesian/exact/rational_rounding.hpp>
+#include <boost/geometry/util/coordinate_cast.hpp>
 
 namespace boost { namespace geometry
 {
@@ -190,6 +191,21 @@ private:
     Scalar m_scalar;
     rounding m_view;
 };
+
+namespace detail
+{
+
+// Use the original token when reading decimal coordinates from WKT.
+template <typename Conversion>
+struct coordinate_cast<exact_coordinate<std::string, Conversion>>
+{
+    static exact_coordinate<std::string, Conversion> apply(std::string const& source)
+    {
+        return exact_coordinate<std::string, Conversion>(source);
+    }
+};
+
+} // namespace detail
 
 }} // namespace boost::geometry
 

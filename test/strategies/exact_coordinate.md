@@ -29,8 +29,6 @@ decide. The operands may use different wrapper specializations.
 
 The wrapper is not a general arithmetic type. `model::point` storage and
 `get`/`set` work, but the standalone predicates are not selected by BG
-algorithm or strategy dispatch. Integration still needs an authoritative
-input path for borrowed/static geometry, an unbounded fallback for values
-outside fixed-width capacity, and rules for constructions and output
-conversion. WKT/I/O, mixed wrapped/native dispatch, overlay, clipping, and
-other geometry algorithms do not gain support from this change.
+algorithm or strategy dispatch. See [decimal polygon overlay](exact_decimal_overlay.md)
+for the explicit rational operation boundary and closed polygon WKT input.
+This is not direct wrapper support in the native borrowed kernel.
