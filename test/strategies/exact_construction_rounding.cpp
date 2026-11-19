@@ -425,12 +425,12 @@ void bounded_cases()
         check_bounded<100, true>(input, exact, expected, counts[5]);
         ++cases;
     };
-    // Exact t=1/2. The residual retry improves only x, retaining the passing y.
+    // Exact t=1/2. The default selective retry now certifies x as well as y.
     producers const rescue{{1.6875, 9, 2.6875, 10, 1.6875, 10, 3.6875, 8}};
     ec::forward_error::point_approximation first;
     auto const plain = cr::detail::bounded_intersection<4, false>(rescue, first);
     auto const retry = cr::detail::bounded_intersection<4, true>(rescue, first);
-    BOOST_TEST(!plain[0] && plain[1] && retry[0] && retry[1]);
+    BOOST_TEST(plain[0] && plain[1] && retry == plain);
     check_input(rescue);
 
     for (double sign : {-1.0, 1.0})
@@ -459,7 +459,7 @@ void bounded_cases()
 
     for (auto const& input : bounded_corpus()) check_input(input);
     BOOST_TEST(counts[0].accepted > 100 && counts[0].different > 0);
-    BOOST_TEST(counts[3].rescued > 0);
+    BOOST_TEST_EQ(counts[3].accepted, counts[2].accepted);
     BOOST_TEST(counts[4].accepted > counts[0].accepted && counts[4].beyond_one > 0);
     for (std::size_t i = 0; i < counts.size(); ++i)
         std::cout << "bounded " << (i < 2 ? 1 : i < 4 ? 4 : 100) << (i % 2 ? " retry: " : ": ")
@@ -552,7 +552,7 @@ void selective_one_ulp_retry()
         double const residual = cr::detail::scaled_division_residual(t, heads.denominator, heads.numerator);
         double const want = std::fma(at, lower, ar::rounded_add(residual,
             std::fma(at, denominator_tightens ? 0. : ed, numerator_tightens ? 0. : et)));
-        BOOST_TEST_EQ(cr::detail::retry_one_ulp(v, heads, t, lower, threshold, z, initial), want);
+        BOOST_TEST_EQ(cr::detail::retry_determinants(v, heads, t, lower, threshold, z, initial), want);
 
         fe::point_approximation result{{{1, 2}}, {{3, 4}}};
         auto const passed = cr::detail::bounded_intersection<1, false>(v, result);

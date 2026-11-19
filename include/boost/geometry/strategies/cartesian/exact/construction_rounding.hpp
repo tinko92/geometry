@@ -158,7 +158,7 @@ inline double determinant_budget(double ax, double ay, double bx, double by, dou
 // Keep the original quotient, candidate and certified lower bound. This
 // slow path is reached only if removing the determinant and quotient errors
 // could help at least one axis. Keep it out of the initial filter.
-BOOST_NOINLINE inline double retry_one_ulp(std::array<double, 8> const& p,
+BOOST_NOINLINE inline double retry_determinants(std::array<double, 8> const& p,
     fe::detail::native_intersection_heads const& heads, double t, double lower, double threshold,
     std::array<double, 2> const& z, std::array<bool, 2> const& accepted)
 {
@@ -262,7 +262,7 @@ inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
     for (std::size_t axis = 0; axis < 2; ++axis)
         certify_axis(axis, z[axis], h);
 
-    if constexpr (N == 1)
+    if constexpr (N <= 4)
     {
         if (!accepted[0] || !accepted[1])
         {
@@ -270,7 +270,7 @@ inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
             if ((!accepted[0] && bounded_axis_passes(heads.ux, z[0], floor, b))
                 || (!accepted[1] && bounded_axis_passes(heads.uy, z[1], floor, b)))
             {
-                double const tightened = retry_one_ulp(p, heads, t, lower, b, z, accepted);
+                double const tightened = retry_determinants(p, heads, t, lower, b, z, accepted);
                 for (std::size_t axis = 0; axis < 2; ++axis)
                     if (!accepted[axis]) certify_axis(axis, z[axis], tightened);
             }

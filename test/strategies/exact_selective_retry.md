@@ -1,9 +1,13 @@
-# Selective determinant retry for one-step output
+# Selective determinant retry for small output budgets
 
 Candidate based on `12bb0ff9a4d1dd71a36818d8d846806bc46aa55c`. The initial
 certificate is unchanged. The new retry is used only by
-`bounded_ulp_output<1>` (also when its existing `Retry` argument is true).
-There is no new production selector. Larger budgets, uncertified denominators
+`bounded_ulp_output<N>` for N=1 through 4 (also when `Retry` is true).
+The bound proof below uses the actual policy threshold, not a one-step assumption.
+A four-repetition x86-64 study found whole-operation time ratios of .773/.737
+(GCC 13/Clang 22) on general position and .773/.766 on projected-local at N=4.
+At N=100 the gain was mostly confined to projected-local; the ordinary path
+stays unchanged. There is no new production selector. Larger budgets, uncertified denominators
 and inputs outside the existing binary64 exponent guard keep their old
 paths. Unlike the compensated-head experiment, this retry never replaces a
 head, quotient, candidate coordinate or denominator lower bound.

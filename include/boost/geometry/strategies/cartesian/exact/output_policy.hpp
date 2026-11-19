@@ -21,7 +21,7 @@ struct approximate_output {};
 struct nearest_output {};
 
 // Bound constructed binary64 output by N representable steps from nearest.
-// The one-step policy selectively tightens determinant bounds on a miss.
+// Budgets of up to four steps selectively tighten determinant bounds on a miss.
 // For larger budgets, Retry enables the exact FMA division residual stage.
 template <std::size_t N, bool Retry = false>
 struct bounded_ulp_output
