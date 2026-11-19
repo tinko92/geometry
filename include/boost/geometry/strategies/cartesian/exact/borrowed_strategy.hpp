@@ -55,6 +55,14 @@ struct borrowed_section : static_section<typename Root::coordinate_type>
             return (direction == 1 && static_cast<double>(geometry::get<D>(point)) < geometry::get<0, D>(other))
                 || (direction == -1 && static_cast<double>(geometry::get<D>(point)) > geometry::get<1, D>(other));
         }
+        else if constexpr (std::is_same<Box, search_box>::value)
+        {
+            if (direction == 0) return false;
+            double const limit = direction == 1 ? geometry::get<0, D>(other) : geometry::get<1, D>(other);
+            // An unbounded search enclosure is valid metadata, but infinity
+            // is not a homogeneous point and must never enter exact fallback.
+            if (std::isinf(limit)) return direction == 1 ? limit > 0 : direction == -1 && limit < 0;
+        }
         return (direction == 1 && borrowed_bounds_detail::with_bound<0, D, Root>(other,
                     [&](auto const& bound) { return root_compare_coordinate<D, Root>(point, bound); }) < 0)
             || (direction == -1 && borrowed_bounds_detail::with_bound<1, D, Root>(other,
