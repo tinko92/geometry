@@ -4,8 +4,8 @@ The opt-in umbrella is
 `boost::geometry::strategies::relate::cartesian_exact<Coordinate>` in
 `boost/geometry/strategies/relate/cartesian_exact.hpp`. Unconfigured defaults
 are unchanged; see the [build-wide pilot](exact_default_pilot.md) for the
-separate opt-in on a few public calls. This work starts at PR1491 commit
-`72b2d832fb9596a2a23c0c164a5426ae720d0cd6`.
+separate opt-in on a few public calls. The original prototype used PR 1491;
+see the [current integration order](exact_integration_order.md) for the develop + PR 1517 series.
 
 ```cpp
 #include <boost/geometry/strategies/relate/cartesian_exact.hpp>
@@ -19,24 +19,20 @@ auto matrix = boost::geometry::relation(a, b, strategy);
 
 Inputs are two-dimensional Cartesian geometries with finite integral, float or
 double coordinates. Floating inputs mean their exact binary values, not an
-intended decimal value or intended collinearity. Mixed native input types are
-not narrowed to the umbrella's `Coordinate` type. Exact rational literals can
-also enter predicates and working geometries. Long double is not supported.
-Floating-point overflow and underflow are outside the promised domain of the
-filters; integer overflow is not. Conservative exponent guards may still select
-the exact fallback rather than attempt an uncertified floating expansion.
+intended decimal value or intended collinearity. Mixed native promotion must
+preserve the input types; lossy type combinations and long double are outside
+the interface. Decimal intent is a separate authoritative-scalar strategy.
 
-Constructed intersections remain exact until the complete operation finishes,
-including intermediate geometry-collection merges and subtractions. Final
-integral and floating outputs use nearest, ties-to-even rounding. Distinct
-vertices may collapse, or a rounded output may become invalid. Such an output
-must not be fed back as if it were the unrounded exact set. Rational output
-coordinates avoid that final representation loss.
+Original supports and implicit intersections stay available until the operation
+has finished, including intermediate set operations. The default emits the
+stored approximation without further refinement at output. Alternative
+policies specify a bounded number of representable binary64 steps or correct
+rounding. Integral output uses ordinary BG conversion of the stored value.
+Distinct vertices can coincide after export under any policy; do not feed a
+rounded polygon back as though it represented the exact set.
 
-This does not change existing dimensional output conventions. For example,
-line/box clipping still emits a singleton linestring at a tangent contact,
-as required by the existing box test. The resulting validity discrepancy in
-issue #1448 is not a floating-point rounding problem.
+Point-only contact is not a linear exact output. Legacy line/box calls retain
+their established singleton convention; the two routes have separate tests.
 
 ## Algorithm And Strategy Boundary
 
@@ -71,33 +67,24 @@ overlay engine support circular arcs.
 
 - Integral orientation uses a compile-time widening proof for small types,
   checked wider arithmetic where available, and bounded integer fallback.
-- Native orientation starts with an analytic determinant error bound, then uses
-  outward intervals and error-free expansions. Unresolved cases use exact
-  arithmetic. Native integer comparisons and checked arithmetic stay inline.
-- Native intersections own the coordinates of their two supporting segments,
-  approximate coordinates and error bounds. Operation-scoped indexed caches
-  hold fixed-size expansions and bounded integer homogeneous coordinates.
-  Equality, ordering and orientation have exact homogeneous fallbacks.
-- Constructed-point filters first use coordinate error bounds, then refine those
-  bounds with certified expansion evaluation of the producing line equations.
-  Exact polynomial expansion comparisons and producer-incidence certificates
-  resolve further ambiguities without constructing rational coordinates. Only
-  unresolved cases materialize homogeneous coordinates or rational values.
-- Final coordinate conversion also verifies the nearest representable value
-  using expansion comparisons against its rounding cell, including ties-to-even.
-- Envelope coordinates, comparable distances, ring measures and segment
-  parameters use explicit forward-error filters. Native scalar arithmetic
-  retains exact error-free residuals inline. Closed primitive sources own their
-  operands without a runtime expression tree; ambiguous native values use
-  fixed-size expansions or checked bounded integers. Arbitrary rational literals
-  and unbounded global rational sums retain a compatibility fallback.
+- Native binary64 orientation uses filtered signs and exact fallback. In a
+  certified same-sign box the Sterbenz dispatch knows the coordinate differences
+  are exact; unequal rounded products then decide the sign. Ties do not.
+- A constructed point borrows its original supports. Per-operation, indexed
+  precision caches store reusable expansions or bounded integer homogeneous
+  coordinates on demand. No per-point locks or process-wide precision store.
+- Constructed predicates use forward-error filters with exact fallback on the
+  implicit homogeneous values. Exact support incidence is distinct from
+  rounding coincidence. Ring parenting uses topology, not numerical area.
+- See the [borrowed representation](exact_borrowed_status.md) and
+  [capacity proofs](exact_borrowed_capacity.md) for the numerical layouts.
+  The certified algebraic buffer backend has a separate arithmetic contract.
 
-Certification requires IEEE binary arithmetic and no fast-math/reassociation.
-Floating overflow/underflow and flush-to-zero modes are outside this contract.
-Basic-operation rounding barriers permit
-contraction-enabled builds. Exact floating expansions require round-to-nearest;
-other standard rounding modes take the exact fallback. Caches use
-`std::call_once`; older Unix toolchains can require native thread link flags.
+Floating filters assume IEEE round-to-nearest/ties-to-even, gradual underflow,
+no excess precision, no reassociation and no implicit contraction. Use strict
+FP flags (e.g. `-fno-fast-math -ffp-contract=off`). An unsupported runtime
+rounding mode is a precondition violation, not a request for dynamic dispatch.
+Do not infer an all-exponent filter guarantee from the bounded integer fallback.
 
 This is not yet a proposal to make the strategy the default. Allocation,
 coordinate materialization and conservative filters still need performance
@@ -105,8 +92,8 @@ work and broader compiler/platform verification.
 
 ## Verification
 
-Twenty-four registered `exact_*` strategy tests cover arithmetic, implicit points,
-ratios, exhaustive small-grid segment classification, set operations, relate,
+The registered `exact_*` strategy tests cover arithmetic, implicit points,
+segment ordering, exhaustive small-grid segment classification, set operations, relate,
 geometry collections and issue fixtures. They include integer ranges above
 2^53, mixed coordinates, exact one-third intersections, a genuine hole of area
 2^-107, delayed collection rounding, partial box output on failure, and box
@@ -123,7 +110,7 @@ With a configured Geometry CMake test build:
 cmake --build "$build" --target \
   boost_geometry_strategies_exact_arithmetic \
   boost_geometry_strategies_exact_point \
-  boost_geometry_strategies_exact_ratio \
+  boost_geometry_strategies_exact_segment_position \
   boost_geometry_strategies_exact_segment \
   boost_geometry_strategies_exact_relate_overlay \
   boost_geometry_strategies_exact_gc \
