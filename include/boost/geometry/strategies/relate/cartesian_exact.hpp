@@ -1260,7 +1260,7 @@ decltype(auto) cartesian_exact<Coordinate, OutputPolicy>::with_sources(
         exact::check_coordinate_type<Coordinate, A>();
         exact::check_coordinate_type<Coordinate, B>();
         using root = exact::borrowed_root<Coordinate, OutputPolicy, A, B>;
-        exact::borrowed_context<root> context;
+        exact::borrowed_context<root> context(a, b);
         exact::borrowed_strategy<root> bound(context);
         return std::forward<Apply>(apply)(bound);
     }

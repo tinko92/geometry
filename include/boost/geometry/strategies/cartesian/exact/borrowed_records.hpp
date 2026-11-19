@@ -31,6 +31,7 @@
 #include <boost/geometry/strategies/cartesian/exact/construction_capacity.hpp>
 #include <boost/geometry/strategies/cartesian/exact/iterator_point_view.hpp>
 #include <boost/geometry/strategies/cartesian/exact/native_traits.hpp>
+#include <boost/geometry/strategies/cartesian/exact/sterbenz.hpp>
 
 namespace boost { namespace geometry { namespace strategies { namespace detail
 { namespace exact_cartesian
@@ -44,6 +45,8 @@ template <typename Root> struct borrowed_geometry_types;
 
 template <typename Root, typename A, typename B> bool root_equal(A const&, B const&);
 template <typename Root, typename A, typename B, typename P> int root_orientation(A const&, B const&, P const&);
+template <typename Root, typename A, typename B, typename P>
+int root_orientation(A const&, B const&, P const&, bool);
 template <std::size_t D, typename Root, typename A, typename B> int root_compare_coordinate(A const&, B const&);
 struct borrowed_segment_position_tag
 {
@@ -498,10 +501,13 @@ struct borrowed_stage
     std::array<bool, 2> boundary{{false, false}};
     std::array<typename Root::operation_type const*, 2> model{{nullptr, nullptr}};
     bool finalized = false;
+    bool native_differences_exact;
 
     template <typename A, typename B>
     borrowed_stage(borrowed_context<Root>& owner, A const& a, B const& b)
-        : context(owner), sources{{source(a, 0), source(b, 0)}}, boundary{{is_boundary(a, 0), is_boundary(b, 0)}} {}
+        : context(owner), sources{{source(a, 0), source(b, 0)}}, boundary{{is_boundary(a, 0), is_boundary(b, 0)}}
+        , native_differences_exact(owner.certifies_native_differences(sources))
+    {}
     borrowed_point<Root> vertex(segment_identifier const& id, std::size_t offset) const;
     original_edge support(segment_identifier const& id) const;
 
@@ -541,6 +547,7 @@ private:
 template <typename Root>
 class borrowed_context
 {
+    using source_type = typename borrowed_geometry_types<Root>::sources;
     point_cache_scope<typename Root::coordinate_type> m_precision_scope;
     using range_variant = boost::mp11::mp_rename<boost::mp11::mp_push_front<boost::mp11::mp_transform<
         borrowed_detail::geometry_pointer, typename Root::native_boundaries>, std::monostate>, std::variant>;
@@ -552,8 +559,36 @@ class borrowed_context
     };
     std::vector<std::unique_ptr<work_owner>> m_work;
     std::vector<range_variant> m_ranges;
+    std::array<source_type, 2> m_sterbenz_sources;
 public:
     borrowed_stage<Root>* active_stage = nullptr;
+
+    borrowed_context() = default;
+
+    template <typename A, typename B>
+    borrowed_context(A const& a, B const& b)
+    {
+        if constexpr (std::is_same<typename Root::coordinate_type, double>::value
+                      && sterbenz::source<A> && sterbenz::source<B>)
+        {
+            if (sterbenz::certify_sources(a, b))
+                m_sterbenz_sources = {{std::addressof(a), std::addressof(b)}};
+        }
+    }
+
+    bool certifies_native_differences(std::array<source_type, 2> const& sources) const
+    {
+        if constexpr (std::is_same<typename Root::coordinate_type, double>::value)
+        {
+            // Bound strategies can run later stages against other geometries.
+            // Accept only the original, immutable sources, in either order.
+            auto original = [&](source_type const& source)
+            { return source == m_sterbenz_sources[0] || source == m_sterbenz_sources[1]; };
+            return m_sterbenz_sources[0].index() != 0 && original(sources[0]) && original(sources[1]);
+        }
+        else return false;
+    }
+
     template <typename T, typename... A>
     T& retain(A&&... args)
     {

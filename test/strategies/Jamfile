@@ -78,6 +78,7 @@ test-suite boost-geometry-strategies
     [ run exact_construction_capacity.cpp   : : : $(exact-requirements) : strategies_exact_construction_capacity ]
     [ run exact_construction_rounding.cpp    : : : $(exact-requirements) : strategies_exact_construction_rounding ]
     [ run exact_double_qualification.cpp     : : : $(exact-requirements) : strategies_exact_double_qualification ]
+    [ run exact_sterbenz.cpp                 : : : $(exact-requirements) : strategies_exact_sterbenz ]
     [ run exact_output_support_hooks.cpp     : : : $(exact-requirements) : strategies_exact_output_support_hooks ]
     [ run exact_segment_box.cpp              : : : $(exact-requirements) : strategies_exact_segment_box ]
     [ run exact_shared_boundary.cpp          : : : $(exact-requirements) : strategies_exact_shared_boundary ]

@@ -243,10 +243,17 @@ bool ulp_orientation(A const& a, B const& b, P const& p, int& result)
 }
 
 template <typename Root, typename A, typename B, typename P>
-int orientation(A const& a, B const& b, P const& p)
+int orientation(A const& a, B const& b, P const& p, bool native_differences_exact = false)
 {
     if constexpr (native_operand<A>::value && native_operand<B>::value && native_operand<P>::value)
+    {
+        if constexpr (std::is_same<typename Root::coordinate_type, double>::value
+                      && exact_double<A>::value && exact_double<B>::value && exact_double<P>::value)
+        {
+            if (native_differences_exact) return sterbenz::orientation(a, b, p);
+        }
         return native_orientation<typename Root::coordinate_type>(a, b, p);
+    }
     else
     {
         int result;
@@ -488,6 +495,13 @@ int root_orientation(A const& a, B const& b, P const& p)
 {
     return borrowed_predicates_detail::visit<Root>(a, b, p, [](auto const& x, auto const& y, auto const& z)
     { return borrowed_predicates_detail::orientation<Root>(x, y, z); });
+}
+
+template <typename Root, typename A, typename B, typename P>
+int root_orientation(A const& a, B const& b, P const& p, bool native_differences_exact)
+{
+    return borrowed_predicates_detail::visit<Root>(a, b, p, [&](auto const& x, auto const& y, auto const& z)
+    { return borrowed_predicates_detail::orientation<Root>(x, y, z, native_differences_exact); });
 }
 
 template <std::size_t D, typename Root, typename A, typename B>

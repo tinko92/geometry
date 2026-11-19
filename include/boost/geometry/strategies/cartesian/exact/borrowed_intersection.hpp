@@ -116,11 +116,12 @@ public:
         BOOST_ASSERT(root_equal<Root>(stage->vertex(stage->model[1]->seg_id, 1), q1));
 #endif
         using selected = filtered_segment_detail::endpoint_policy<Policy, coordinate>;
-        int const sa0 = root_orientation<Root>(q0, q1, p0);
-        int const sa1 = root_orientation<Root>(q0, q1, p1);
+        bool const exact_differences = stage->native_differences_exact;
+        int const sa0 = root_orientation<Root>(q0, q1, p0, exact_differences);
+        int const sa1 = root_orientation<Root>(q0, q1, p1, exact_differences);
         if (sa0 * sa1 > 0) return selected::disjoint();
-        int const sb0 = root_orientation<Root>(p0, p1, q0);
-        int const sb1 = root_orientation<Root>(p0, p1, q1);
+        int const sb0 = root_orientation<Root>(p0, p1, q0, exact_differences);
+        int const sb1 = root_orientation<Root>(p0, p1, q1, exact_differences);
         if (sb0 * sb1 > 0) return selected::disjoint();
         if (sa0 == 0 && sa1 == 0 && sb0 == 0 && sb1 == 0)
         {
