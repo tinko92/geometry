@@ -300,14 +300,13 @@ private:
         }
 
         std::vector<rational_arr::ring> stored;
-        exact_number const axis_budget = displacement / 2;
         for (auto const& ring : ideal)
         {
             rational_line::piece vertices;
             for (auto const& m : ring)
             {
                 coordinate x, y;
-                if (!m_geometry.native(m.at, anchor, axis_budget, x, y)) { return false; }
+                if (!m_geometry.native_euclidean(m.at, anchor, displacement, x, y)) { return false; }
                 rational_xy const p{common::rational_value(x), common::rational_value(y)};
                 if (!vertices.empty() && capsule::same_point(vertices.back(), p)) { return false; }
                 vertices.push_back(p);
@@ -353,6 +352,9 @@ private:
     chord capsules before conversion. Requires one simple shell with disjoint
     (non-touching) holes, and certifies the same ring topology and corresponding
     boundary displacement at most max_displacement on the native grid.
+    The vertex bound is Euclidean, checked against the exact algebraic contour.
+    A zero displacement requires lossless export; nonzero displacement does not
+    promise nearest-rounded vertices.
     Requires 0 < sagitta < radius and 0 <= max_displacement < radius-sagitta.
     The stored region contains the radius-(r-sagitta-max_displacement)
     neighborhood and is contained in the radius-(r+max_displacement)

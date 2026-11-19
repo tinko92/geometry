@@ -7,7 +7,10 @@
 #include <boost/geometry/geometries/linestring.hpp>
 #include <boost/core/lightweight_test.hpp>
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
+#include <limits>
 #include <vector>
 
 namespace bg = boost::geometry;
@@ -205,11 +208,112 @@ void test_touching_hole_refusal()
     BOOST_TEST_EQ(area2(out.outer()), area);
 }
 
+void test_1233_binary64_hairpin()
+{
+    double constexpr length = 0x1p52;
+    line const trace{p(0, 100), p(-length, 0), p(0, -100)};
+    number const sagitta = q(1, 8);
+    polygon out;
+    BOOST_TEST(bg::buffer_linestring_arrangement_certified(trace, out, 1, sagitta, q(1, 2))
+               == status::success);
+    BOOST_TEST(out.inners().empty());
+    BOOST_TEST(out.outer().size() >= 4);
+    if (out.outer().size() < 4) { return; }
+    BOOST_TEST(area2(out.outer()) < 0);
+    BOOST_TEST_EQ(bg::get<0>(out.outer().front()), bg::get<0>(out.outer().back()));
+    BOOST_TEST_EQ(bg::get<1>(out.outer().front()), bg::get<1>(out.outer().back()));
+
+    auto const shell = edges(out.outer());
+    number min_x = 0;
+    bool has_notch = false;
+    number const squared_length = number(length) * number(length) + 10000;
+    for (std::size_t i = 0; i < shell.size(); ++i)
+    {
+        auto const& v = shell[i].a;
+        min_x = (std::min)(min_x, v.x);
+        BOOST_TEST(v.x != shell[i].b.x || v.y != shell[i].b.y);
+        for (std::size_t j = i + 2; j < shell.size(); ++j)
+        {
+            if (i != 0 || j + 1 != shell.size()) { BOOST_TEST_NOT(meet(shell[i], shell[j])); }
+        }
+
+        if (v.y == 0 && v.x > -length && v.x < -length / 2)
+        {
+            // The inward unit offsets of the original sloping edges meet at
+            // (-length + sqrt(length^2 + 100^2)/100, 0), not at a cap vertex.
+            // Check its exported abscissa without constructing a rounded root.
+            number const lo = 100 * (v.x + length - q(1, 2));
+            number const hi = 100 * (v.x + length + q(1, 2));
+            has_notch = has_notch
+                || (lo >= 0 && lo * lo <= squared_length && squared_length <= hi * hi);
+        }
+    }
+    BOOST_TEST(has_notch);
+    BOOST_TEST_EQ(min_x, -length - 1);
+    for (auto const& source : edges(trace))
+    {
+        BOOST_TEST_EQ(locate(shell, source.a), 1);
+        BOOST_TEST_EQ(locate(shell, source.b), 1);
+        for (auto const& side : shell) { BOOST_TEST_NOT(meet(source, side)); }
+    }
+    BOOST_TEST_EQ(locate(shell, {-length / 2, 50 + q(1, 4)}), 1);
+    BOOST_TEST_EQ(locate(shell, {-length / 2, -50 - q(1, 4)}), 1);
+    BOOST_TEST_EQ(locate(shell, {-length / 2, 0}), -1);
+
+    auto const original = out.outer();
+    auto const check_refusal = [&](line const& input, number const& displacement)
+    {
+        BOOST_TEST(bg::buffer_linestring_arrangement_certified(input, out, 1, sagitta, displacement)
+                   == status::cannot_certify);
+        BOOST_TEST(out.inners().empty());
+        BOOST_TEST(std::equal(original.begin(), original.end(), out.outer().begin(), out.outer().end(),
+            [](p const& a, p const& b)
+            { return bg::get<0>(a) == bg::get<0>(b) && bg::get<1>(a) == bg::get<1>(b); }));
+    };
+    // At the tip the first capsule samples quadrant 1 at t=1/2.
+    // Its radius direction supports both capsules uniquely there (the
+    // other endpoints project behind the tip). That exposed vertex is
+    // farther than 1/4 from either adjacent binary64 x coordinate.
+    number const cap_numerator = 3 * number(length) - 400;
+    number const cap_numerator2 = cap_numerator * cap_numerator;
+    BOOST_TEST(4 * cap_numerator2 > 25 * squared_length);
+    BOOST_TEST(16 * cap_numerator2 < 225 * squared_length);
+    check_refusal(trace, q(1, 4));
+    check_refusal(trace, 0);
+
+    // The original report has an x coordinate rounded to -2^63. There is no
+    // binary64 abscissa at which the leftmost vertex can meet the required
+    // inner/outer envelope: it must be in [-2^63-3/2, -2^63-3/8].
+    double constexpr far_x = -0x1p63;
+    double const next = std::nextafter(far_x, -(std::numeric_limits<double>::infinity)());
+    BOOST_TEST_EQ(number(far_x) - number(next), 2048);
+    line const reported_component{p(11393, -19530), p(-5728, 30983),
+                                  p(far_x, 15322), p(27608, 14504)};
+    check_refusal(reported_component, q(1, 2));
+}
+
+void test_displacement_is_euclidean()
+{
+    using rational_point = point<number>;
+    bg::model::linestring<rational_point> const line{
+        rational_point(q(13, 3), q(13, 3)), rational_point(q(25, 3), q(13, 3))};
+    bg::model::polygon<point<int>> out;
+    // Quarter charts and a unit radius give a displacement of (1/3, 1/3)
+    // at each vertex. Bounding each axis by 2/5 does not prove the norm.
+    BOOST_TEST(bg::buffer_linestring_arrangement_certified(line, out, 1, q(3, 8), q(2, 5))
+               == status::cannot_certify);
+    BOOST_TEST(out.outer().empty());
+    BOOST_TEST(bg::buffer_linestring_arrangement_certified(line, out, 1, q(3, 8), q(1, 2))
+               == status::success);
+}
+
 int main()
 {
     test_open_irrational_loop();
     test_exact_native_and_work_limit();
     test_two_holes();
     test_touching_hole_refusal();
+    test_1233_binary64_hairpin();
+    test_displacement_is_euclidean();
     return boost::report_errors();
 }

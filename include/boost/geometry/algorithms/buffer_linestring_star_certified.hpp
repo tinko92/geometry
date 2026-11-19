@@ -214,6 +214,37 @@ public:
     bool native(knot const& p, rational_xy const& witness, exact_number const& axis_budget,
                 Coordinate& x, Coordinate& y) const
     {
+        if (!propose_native(p, witness, x, y)) { return false; }
+        local f(*this);
+        auto const exact = f.evaluate(p);
+        return f.within(exact.x, common::rational_value(x) - witness.x, axis_budget)
+            && f.within(exact.y, common::rational_value(y) - witness.y, axis_budget);
+    }
+
+    template <typename Coordinate>
+    bool native_euclidean(knot const& p, rational_xy const& anchor, exact_number const& budget,
+                          Coordinate& x, Coordinate& y) const
+    {
+        if (!propose_native(p, anchor, x, y)) { return false; }
+        local f(*this);
+        auto const exact = f.evaluate(p);
+        auto const x_error = f.f.subtract(exact.x.n,
+            f.f.scale(exact.x.d, common::rational_value(x) - anchor.x));
+        auto const y_error = f.f.subtract(exact.y.n,
+            f.f.scale(exact.y.d, common::rational_value(y) - anchor.y));
+        // Both coordinates of a vertex, or of a node evaluated by rn::at,
+        // have the same denominator. Compare squared distances in the field.
+        auto const limit = f.f.scale(exact.x.d, budget);
+        auto const length2 = f.f.add(f.f.multiply(x_error, x_error),
+                                     f.f.multiply(y_error, y_error));
+        return f.f.sign(f.f.subtract(length2, f.f.multiply(limit, limit))) <= 0;
+    }
+
+private:
+    template <typename Coordinate>
+    bool propose_native(knot const& p, rational_xy const& witness,
+                        Coordinate& x, Coordinate& y) const
+    {
         using rounder = ec::point_detail::output_rounder<Coordinate>;
         // Rational evaluations here only propose storage values. They never
         // decide a turn, cut or incidence, nor do they become producer edges.
@@ -224,13 +255,9 @@ public:
         {
             if (!std::isfinite(x) || !std::isfinite(y)) { return false; }
         }
-        local f(*this);
-        auto const exact = f.evaluate(p);
-        return f.within(exact.x, common::rational_value(x) - witness.x, axis_budget)
-            && f.within(exact.y, common::rational_value(y) - witness.y, axis_budget);
+        return true;
     }
 
-private:
     struct local
     {
         explicit local(envelope const& owner) : owner(owner) {}

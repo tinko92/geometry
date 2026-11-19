@@ -489,7 +489,12 @@ binary64 environment as the star path.
 ### Native Displacement, Topology and Containment
 
 Only after assembly, propose native vertices and certify each against its
-exact algebraic value by coordinate comparisons with `d/2`. Verify the
+exact algebraic value. The projective coordinates share a positive
+denominator `D`. For a proposed stored point, subtract its exact rational
+coordinates (relative to the anchor) times `D` from the ideal numerators.
+The sum of the squared residuals must be at most `(d*D)^2` in the local
+radical field. This uses the specified Euclidean budget rather than the
+more restrictive rule of allowing only `d/2` on each axis. Verify the
 stored rings with exact rational simplicity, orientation, inter-ring and
 nesting checks, then read back the actual Polygon before publishing it.
 A failed check returns `cannot_certify` and leaves the output unchanged.
@@ -513,6 +518,27 @@ bound `<= e+d`; `e` and the export bound `d` remain separate. It does not
 certify boundary Hausdorff distance to the smooth buffer. For nested traces,
 `r_inner+d_inner < r_outer-e_outer-d_outer` suffices for strict nesting of
 the two stored sets.
+
+For [#1233](https://github.com/boostorg/geometry/issues/1233), the reduced trace
+`LINESTRING(0 100,-4503599627370496 0,0 -100)` returns empty with the
+ordinary Cartesian buffer on the local replay. A unit offset to the left
+of the tip is representable. The arrangement constructs from the original
+sloping supports after exact rational translation; it does not flatten the
+arms or round before noding. With `r=1`, `e=1/8`, and `d=1/2`, it exports
+a simple binary64 ring covering both arms and preserving the notch.
+The same fixture is refused with `d=1/4` or `d=0`. An exposed cap sample has
+x offset strictly between `-3/4` and `-1/2` relative to the tip, so neither
+adjacent binary64 x coordinate is within `1/4`. The displacement contract
+does not promise nearest rounding. The existing star and lossless-linestring
+entry points are unchanged.
+
+The published report's far x coordinate rounds to `-2^63` for binary64.
+Under those same budgets the minimum x of a certified output would have
+to be in `[-2^63-3/2, -2^63-3/8]` by the outer and inner inclusions.
+There is no binary64 number in that interval (the next smaller number is
+`-2^63-2048`). The offending linestring component is a refusal test.
+This is an output-grid obstruction distinct from loss of the representable
+reduced trace in the ordinary algorithm.
 
 The open fixture `LINESTRING(0 0,8 8,0 12,-8 4,-0.5 0.25)` has source
 lengths in two independent square classes. Its opposite parallel sides
