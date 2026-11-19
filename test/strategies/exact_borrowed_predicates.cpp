@@ -8,6 +8,7 @@
 #include <boost/geometry/strategies/cartesian/exact/borrowed_predicates.hpp>
 #include <boost/geometry/strategies/cartesian/exact/borrowed_query.hpp>
 #include <boost/geometry/strategies/cartesian/exact/static_predicates.hpp>
+#include <boost/geometry/strategies/relate/cartesian_exact.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/views/detail/boundary_view.hpp>
 #include <boost/core/lightweight_test.hpp>
@@ -16,6 +17,7 @@
 #include <cfenv>
 #include <cstdlib>
 #include <iostream>
+#include <iterator>
 #include <new>
 #include <random>
 #include <vector>
@@ -103,14 +105,78 @@ struct fixture
 template <typename Root, typename A, typename B, typename P>
 void check(A const& a, B const& b, P const& p, qp const& x, qp const& y, qp const& z)
 {
-    BOOST_TEST_EQ(ec::root_orientation<Root>(a, b, p), sign(det(x, y, z)));
-    BOOST_TEST_EQ(ec::root_direction<Root>(a, b, p), sign(dot(x, y, z)));
+    auto const side = policy::cartesian_exact<typename Root::coordinate_type, typename Root::output_policy>{}.side();
+    BOOST_TEST_EQ(side.apply(a, b, p), sign(det(x, y, z)));
+    BOOST_TEST_EQ(side.direction_code(a, b, p), sign(dot(x, y, z)));
     BOOST_TEST_EQ((ec::root_compare_coordinate<0, Root>(a, b)), sign(x[0] - y[0]));
     BOOST_TEST_EQ((ec::root_compare_coordinate<1, Root>(a, b)), sign(x[1] - y[1]));
     BOOST_TEST_EQ(ec::root_compare_coordinate<Root>(b, a, 0), sign(y[0] - x[0]));
     BOOST_TEST_EQ(ec::root_equal<Root>(a, b), x == y);
     BOOST_TEST(ec::root_equal<Root>(p, p));
     ++triples;
+}
+
+struct counted_native_iterator
+{
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = bg::model::d2::point_xy<double>;
+    using difference_type = std::ptrdiff_t;
+    using pointer = value_type const*;
+    using reference = value_type const&;
+
+    pointer point;
+    unsigned* reads;
+
+    reference operator*() const { ++*reads; return *point; }
+};
+
+template <typename Policy>
+void stored_filter_reads_once()
+{
+    using F = fixture<double, Policy>;
+    using P = typename F::native;
+    auto const side = policy::cartesian_exact<double, Policy>{}.side();
+    // An exact x after refinement, but y remains uncertain (7/3). The filter
+    // must use its stored error rather than treating the record as native.
+    F f({{0, 0, 0, 5, -2, 1, 1, 3}});
+    f.p.refine(0);
+    BOOST_TEST_EQ(f.p.approximation(0).error, 0.0);
+    BOOST_TEST(f.p.approximation(1).error > 0.0);
+    unsigned reads_a = 0, reads_b = 0;
+    P const pa(-2, 0), pb(-1, 0);
+    ec::iterator_point_view<counted_native_iterator> const
+        a(counted_native_iterator{&pa, &reads_a}), b(counted_native_iterator{&pb, &reads_b});
+    no_allocations([&]
+    {
+        BOOST_TEST_EQ(side.apply(a, b, f.p), 1);
+        BOOST_TEST_EQ(reads_a, 1u);
+        BOOST_TEST_EQ(reads_b, 1u);
+        reads_a = reads_b = 0;
+        BOOST_TEST_EQ(side.direction_code(a, b, f.p), 1);
+        BOOST_TEST_EQ(reads_a, 1u);
+        BOOST_TEST_EQ(reads_b, 1u);
+    });
+
+    double const rounded_y = 7.0 / 3.0;
+    P const c(-2, rounded_y), d(0, rounded_y), e(0, rounded_y - 1);
+    BOOST_TEST_EQ(side.apply(c, d, f.p), sign(det({{-2, q(rounded_y)}}, {{0, q(rounded_y)}}, f.exact)));
+    BOOST_TEST_EQ(side.direction_code(e, d, f.p), sign(dot({{0, q(rounded_y - 1)}}, {{0, q(rounded_y)}}, f.exact)));
+
+    // Exactly (2, 0). Full zero/cancellation cases must still agree with the
+    // underlying topology even if they enter a different numerical bound.
+    F exact({{2, -4, 2, 4, -4, 0, 4, 0}});
+    exact.p.refine(0); exact.p.refine(1);
+    BOOST_TEST_EQ(side.apply(pa, pb, exact.p), 0);
+    BOOST_TEST_EQ(side.direction_code(pa, pb, exact.p), 1);
+    BOOST_TEST_EQ(side.direction_code(P(2, 1), P(2, 0), exact.p), 0);
+
+    // Translate a crossing to the origin to exercise two certified zero axes.
+    F origin({{0, -4, 0, 4, -4, 0, 4, 0}});
+    origin.p.refine(0); origin.p.refine(1);
+    BOOST_TEST_EQ(origin.p.approximation(0).error, 0.0);
+    BOOST_TEST_EQ(origin.p.approximation(1).error, 0.0);
+    BOOST_TEST_EQ(side.apply(P(1, 1), P(2, 1), origin.p), -1);
+    BOOST_TEST_EQ(side.direction_code(P(1, 1), P(2, 1), origin.p), -1);
 }
 
 template <typename Root>
@@ -518,6 +584,8 @@ int main()
         random_cases<policy::approximate_output>();
         random_cases<policy::eager_nearest_output>();
         random_cases<policy::deferred_nearest_output>();
+        stored_filter_reads_once<policy::approximate_output>();
+        stored_filter_reads_once<policy::bounded_ulp_output<4>>();
         indexed_native();
         lean_does_not_reconstruct_errors();
         coordinate_filter_reads_one_axis();

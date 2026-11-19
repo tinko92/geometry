@@ -139,13 +139,22 @@ inline std::array<double, 2> difference_values(point_approximation const& a, poi
 // adds <=u*M, M=|p|+|q|. Computed M >=(1-u)*M, so 8*(1-u)>5 proves that
 // ONE final 8u coefficient covers the error and bound evaluation. Scaling by
 // this power of two is exact under the first-stage no-under/overflow contract.
+inline double native_bilinear_error(double p, double q)
+{ return arithmetic::rounded_mul(8 * u, arithmetic::rounded_add(std::abs(p), std::abs(q))); }
+
 inline scalar_approximation native_bilinear(std::array<double, 2> const& a,
                                             std::array<double, 2> const& b, bool determinant)
 {
     double const p = arithmetic::rounded_mul(a[0], b[determinant ? 1 : 0]);
     double const q = arithmetic::rounded_mul(a[1], b[determinant ? 0 : 1]);
-    return {determinant ? arithmetic::rounded_sub(p, q) : arithmetic::rounded_add(p, q),
-        arithmetic::rounded_mul(8 * u, arithmetic::rounded_add(std::abs(p), std::abs(q)))};
+    return {determinant ? arithmetic::rounded_sub(p, q) : arithmetic::rounded_add(p, q), native_bilinear_error(p, q)};
+}
+
+// |(A-B)-fl(a-b)| <= Ea+Eb+rho*|fl(a-b)|.
+inline double difference_error(double value, double ea, double eb)
+{
+    return inflate(arithmetic::rounded_add(arithmetic::rounded_add(ea, eb),
+        arithmetic::rounded_mul(rho, std::abs(value))));
 }
 
 inline point_approximation difference(point_approximation const& a, point_approximation const& b)
@@ -154,10 +163,7 @@ inline point_approximation difference(point_approximation const& a, point_approx
     for (std::size_t d = 0; d < 2; ++d)
     {
         result.value[d] = arithmetic::rounded_sub(a.value[d], b.value[d]);
-        // |(A-B)-fl(a-b)| <= Ea+Eb+rho*|fl(a-b)|.
-        result.error[d] = inflate(arithmetic::rounded_add(
-            arithmetic::rounded_add(a.error[d], b.error[d]),
-            arithmetic::rounded_mul(rho, std::abs(result.value[d]))));
+        result.error[d] = difference_error(result.value[d], a.error[d], b.error[d]);
     }
     return result;
 }

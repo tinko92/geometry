@@ -184,6 +184,82 @@ forward_error::point_approximation approximation(P const& point)
 template <typename Root>
 constexpr bool lean = !construction_rounding::policy_traits<typename Root::output_policy>::store_errors;
 
+template <typename P>
+constexpr bool reads_by_reference = true;
+template <typename I>
+constexpr bool reads_by_reference<iterator_point_view<I>> =
+    std::is_lvalue_reference<typename iterator_point_view<I>::reference>::value;
+
+template <typename Root, typename A, typename B, typename P>
+constexpr bool stored_bilinear_operands = !lean<Root>
+    && std::is_same<typename Root::coordinate_type, double>::value
+    && (record_point<A>::value || record_point<B>::value || record_point<P>::value)
+    && (record_point<A>::value || (exact_double<A>::value && reads_by_reference<A>))
+    && (record_point<B>::value || (exact_double<B>::value && reads_by_reference<B>))
+    && (record_point<P>::value || (exact_double<P>::value && reads_by_reference<P>));
+
+// This is only used inside the typed visitor, where a borrowed_point argument
+// denotes a construction. Decode the record or lvalue iterator once for X/Y.
+template <typename P>
+decltype(auto) bilinear_source(P const& p)
+{
+    if constexpr (record_point<P>::value) return (p.record().numeric);
+    else return (p);
+}
+
+template <typename I>
+decltype(auto) bilinear_source(iterator_point_view<I> const& p) { return p.read(); }
+
+template <std::size_t D, typename C, typename Policy>
+interval bilinear_coordinate(construction_rounding::point_state<C, Policy> const& p)
+{ return p.approximation(D); }
+
+template <std::size_t D, typename P>
+interval bilinear_coordinate(P const& p) { return {double(geometry::get<D>(p)), 0}; }
+
+struct bilinear_axis
+{
+    double u, v, ea, eb, ep;
+    bool exact() const { return ea == 0 && eb == 0 && ep == 0; }
+    double ue() const { return forward_error::detail::difference_error(u, ea, eb); }
+    template <bool Dot>
+    double ve() const { return forward_error::detail::difference_error(v, ep, Dot ? eb : ea); }
+};
+
+template <bool Dot, std::size_t D, typename A, typename B, typename P>
+bilinear_axis read_bilinear_axis(A const& a, B const& b, P const& p)
+{
+    auto const x = bilinear_coordinate<D>(a), y = bilinear_coordinate<D>(b), z = bilinear_coordinate<D>(p);
+    return {arithmetic_detail::rounded_sub(y.approximate, x.approximate),
+            arithmetic_detail::rounded_sub(z.approximate, Dot ? y.approximate : x.approximate),
+            x.error, y.error, z.error};
+}
+
+template <bool Dot, typename A, typename B, typename P>
+bool stored_bilinear_sign(A const& a, B const& b, P const& p, int& result)
+{
+    namespace fe = forward_error::detail;
+    namespace ar = arithmetic_detail;
+    auto const& first = bilinear_source(a);
+    auto const& second = bilinear_source(b);
+    auto const& point = bilinear_source(p);
+    auto const x = read_bilinear_axis<Dot, 0>(first, second, point);
+    auto const y = read_bilinear_axis<Dot, 1>(first, second, point);
+    // These errors come from point_state or exact native conversions. Any
+    // nonfinite coordinate propagates through a difference and product, so
+    // sign's result check rejects it. The zero-error branch changes only the
+    // bound, never the operand's support, identity, or fallback representation.
+    auto const& v1 = Dot ? x : y;
+    auto const& v2 = Dot ? y : x;
+    double const t1 = ar::rounded_mul(x.u, v1.v), t2 = ar::rounded_mul(y.u, v2.v);
+    double const value = Dot ? ar::rounded_add(t1, t2) : ar::rounded_sub(t1, t2);
+    double const error = x.exact() && y.exact()
+        ? fe::native_bilinear_error(t1, t2)
+        : fe::bilinear_error(x.u, y.u, v1.v, v2.v, x.ue(), y.ue(),
+                             v1.template ve<Dot>(), v2.template ve<Dot>(), t1, t2, value);
+    return fe::sign({value, error}, result);
+}
+
 template <std::size_t D, typename P>
 interval coordinate_approximation(P const& point)
 {
@@ -269,7 +345,11 @@ int orientation(A const& a, B const& b, P const& p, Certified native_differences
             if constexpr (lean<Root>) return ulp_orientation(a, b, p, result);
             else return forward_error::try_orientation(approximation(a), approximation(b), approximation(p), result);
         };
-        if (filter()) return result;
+        if constexpr (stored_bilinear_operands<Root, A, B, P>)
+        {
+            if (stored_bilinear_sign<false>(a, b, p, result)) return result;
+        }
+        else if (filter()) return result;
         if (same_intersection(a, b) || same_intersection(a, p) || same_intersection(b, p)) return 0;
         if (on_support<Root>(a, b, p) || on_support<Root>(b, p, a) || on_support<Root>(p, a, b)) return 0;
         refine(a); refine(b); refine(p);
@@ -447,7 +527,11 @@ int direction(A const& a, B const& b, P const& p)
         }
         else return forward_error::try_direction(approximation(a), approximation(b), approximation(p), result);
     };
-    if (filter()) return result;
+    if constexpr (stored_bilinear_operands<Root, A, B, P>)
+    {
+        if (stored_bilinear_sign<true>(a, b, p, result)) return result;
+    }
+    else if (filter()) return result;
     if (same_intersection(a, b) || same_intersection(b, p)) return 0;
     if (borrowed_predicates_detail::orientation<Root>(a, b, p) == 0)
     {
