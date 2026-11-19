@@ -5,6 +5,10 @@
 #ifndef BOOST_GEOMETRY_STRATEGIES_CARTESIAN_EXACT_BORROWED_STRATEGY_HPP
 #define BOOST_GEOMETRY_STRATEGIES_CARTESIAN_EXACT_BORROWED_STRATEGY_HPP
 
+#include <iterator>
+#include <tuple>
+#include <vector>
+
 #include <boost/geometry/strategies/cartesian/exact/borrowed_bounds.hpp>
 #include <boost/geometry/strategies/cartesian/exact/borrowed_clipping.hpp>
 #include <boost/geometry/strategies/cartesian/exact/borrowed_geometry.hpp>
@@ -58,24 +62,45 @@ class borrowed_strategy : public relate::cartesian_exact<typename Root::coordina
     context_type& context() const { BOOST_ASSERT(m_context); return *m_context; }
 
     template <typename Source, typename Destination>
-    void append(Source const& source, Destination& destination) const
+    auto stage_output(Source const& source, Destination const& destination) const
     {
         if constexpr (tuples::is_tuple<Destination>::value)
-            append_tuple(source, destination, std::make_index_sequence<tuples::size<Destination>::value>());
+            return stage_tuple(source, destination, std::make_index_sequence<tuples::size<Destination>::value>());
         else if constexpr (util::is_box<Destination>::value)
-            convert_geometry(source, destination);
+        {
+            Destination converted;
+            convert_geometry(source, converted);
+            return converted;
+        }
         else
+        {
+            std::vector<typename boost::range_value<Destination>::type> converted;
+            converted.reserve(boost::size(source));
             for (auto const& value : source)
             {
                 borrowed_detail::validate_supports<Root>(context(), value);
-                typename boost::range_value<Destination>::type converted;
-                convert_geometry(value, converted);
-                traits::push_back<Destination>::apply(destination, std::move(converted));
+                convert_geometry(value, converted.emplace_back());
             }
+            return converted;
+        }
     }
     template <typename Source, typename Destination, std::size_t... I>
-    void append_tuple(Source const& source, Destination& destination, std::index_sequence<I...>) const
-    { (append(tuples::get<I>(source), tuples::get<I>(destination)), ...); }
+    auto stage_tuple(Source const& source, Destination const& destination, std::index_sequence<I...>) const
+    { return std::make_tuple(stage_output(tuples::get<I>(source), tuples::get<I>(destination))...); }
+
+    template <typename Staged, typename Destination>
+    void publish_output(Staged& staged, Destination& destination) const
+    {
+        if constexpr (tuples::is_tuple<Destination>::value)
+            publish_tuple(staged, destination, std::make_index_sequence<tuples::size<Destination>::value>());
+        else if constexpr (util::is_box<Destination>::value)
+            geometry::convert(staged, destination);
+        else
+            for (auto& value : staged) traits::push_back<Destination>::apply(destination, std::move(value));
+    }
+    template <typename Staged, typename Destination, std::size_t... I>
+    void publish_tuple(Staged& staged, Destination& destination, std::index_sequence<I...>) const
+    { (publish_output(std::get<I>(staged), tuples::get<I>(destination)), ...); }
 
     template <typename Range>
     static original_edge source_support(Range const& range, std::size_t index,
@@ -188,7 +213,27 @@ public:
         else borrowed_geometry_converter<Root>(context()).apply(source, destination);
     }
     template <typename Source, typename Destination>
-    void append_output(Source const& source, Destination& destination) const { append(source, destination); }
+    void append_output(Source const& source, Destination& destination) const
+    {
+        if constexpr (!tuples::is_tuple<Destination>::value && !util::is_box<Destination>::value)
+        {
+            auto const first = boost::begin(source), last = boost::end(source);
+            if (first == last) return;
+            if (std::next(first) == last)
+            {
+                borrowed_detail::validate_supports<Root>(context(), *first);
+                typename boost::range_value<Destination>::type converted;
+                convert_geometry(*first, converted);
+                traits::push_back<Destination>::apply(destination, std::move(converted));
+                return;
+            }
+        }
+        // The destination can own a borrowed input range, even when it is not
+        // the same object as either operand. Finish reading every result (and
+        // every tuple member) before a push can reallocate that storage.
+        auto staged = stage_output(source, destination);
+        publish_output(staged, destination);
+    }
 
     template <typename Range, typename P>
     static void append_no_duplicates(Range& range, P const& value)

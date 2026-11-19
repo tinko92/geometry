@@ -65,6 +65,7 @@ test-suite boost-geometry-strategies
     [ run exact_borrowed_public_predicates.cpp : : : $(exact-requirements) : strategies_exact_borrowed_public_predicates ]
     [ run exact_borrowed_clipping.cpp        : : : $(exact-requirements) : strategies_exact_borrowed_clipping ]
     [ run exact_borrowed_operations.cpp      : : : $(exact-requirements) : strategies_exact_borrowed_operations ]
+    [ run exact_borrowed_alias.cpp           : : : $(exact-requirements) : strategies_exact_borrowed_alias ]
     [ run exact_borrowed_capacity.cpp        : : : $(exact-requirements) : strategies_exact_borrowed_capacity ]
     [ run exact_borrowed_gc.cpp              : : : $(exact-requirements) : strategies_exact_borrowed_gc ]
     [ run exact_borrowed_geometry.cpp        : : : $(exact-requirements) : strategies_exact_borrowed_geometry ]
