@@ -12,10 +12,13 @@
 
 
 #include <cmath>
+#include <iterator>
 #include <type_traits>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <boost/geometry/core/access.hpp>
 #include <boost/geometry/core/coordinate_type.hpp>
 #include <boost/geometry/strategies/buffer/services.hpp>
+#include <boost/geometry/strategies/cartesian/point_in_poly_winding.hpp>
 #include <boost/geometry/strategies/distance/cartesian.hpp>
 
 
@@ -29,6 +32,24 @@ template <typename CalculationType = void>
 struct cartesian
     : public strategies::distance::cartesian<CalculationType>
 {
+    // Classify a closed point-buffer offset: +1 inside, 0 on its border, -1 outside.
+    template <typename Point, typename Iterator,
+              typename SegmentPoint = typename std::iterator_traits<Iterator>::value_type>
+    static typename std::enable_if<std::is_integral<coordinate_type_t<Point>>::value
+                               && std::is_integral<coordinate_type_t<SegmentPoint>>::value, int>::type
+    locate_closed_offset(Point const& point, Iterator it, Iterator end)
+    {
+        // Widen before subtracting or forming determinants of stored coordinates.
+        using winding = strategy::within::cartesian_winding
+            <Point, SegmentPoint, boost::multiprecision::int256_t>;
+        typename winding::state_type state;
+        for (auto previous = it++; it != end; previous = it++)
+        {
+            if (! winding::apply(point, *previous, *it, state)) { break; }
+        }
+        return winding::result(state);
+    }
+
     template <typename Fraction, typename Point, typename T = coordinate_type_t<Point>>
     static typename std::enable_if<std::is_floating_point<T>::value>::type
     place_touch(Fraction& fraction, Point const& from, Point const& to, Point const& point)

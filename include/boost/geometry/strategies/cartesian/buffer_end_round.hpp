@@ -58,6 +58,44 @@ class end_round
 private :
     std::size_t m_points_per_circle;
 
+    template <typename Point, typename Numeric, typename RangeOut>
+    bool apply_cardinal_cap(Point const& previous, Point const& left, Point const& vertex,
+                            Point const& right, buffer_side_selector side,
+                            Numeric const& dist_left, Numeric const& dist_right,
+                            RangeOut& out, std::true_type) const
+    {
+        Numeric const dx = get<0>(vertex) - get<0>(previous);
+        Numeric const dy = get<1>(vertex) - get<1>(previous);
+        if (m_points_per_circle != 4 || !(dist_left >= 0 && dist_right >= 0)
+            || ((dx == 0) == (dy == 0)))
+        {
+            return false;
+        }
+
+        // All three samples are cardinal. Use the incident supports
+        // and the actual axial direction instead of sin/cos of pi/2.
+        Numeric const x = (dx > 0) - (dx < 0);
+        Numeric const y = (dy > 0) - (dy < 0);
+        Numeric const radius = (dist_left + dist_right) / 2;
+        Numeric const shift = side == buffer_side_left
+            ? (dist_left - dist_right) / 2 : (dist_right - dist_left) / 2;
+        Point middle;
+        set<0>(middle, get<0>(vertex) - y * shift + x * radius);
+        set<1>(middle, get<1>(vertex) + x * shift + y * radius);
+        out.push_back(left);
+        out.push_back(middle);
+        out.push_back(right);
+        return true;
+    }
+
+    template <typename Point, typename Numeric, typename RangeOut>
+    static bool apply_cardinal_cap(Point const&, Point const&, Point const&, Point const&,
+                                   buffer_side_selector, Numeric const&, Numeric const&,
+                                   RangeOut&, std::false_type)
+    {
+        return false;
+    }
+
     template
     <
         typename Point,
@@ -118,8 +156,6 @@ public :
                 DistanceStrategy const& distance,
                 RangeOut& range_out) const
     {
-        boost::ignore_unused(perp_left_point);
-
         using promoted_type = typename geometry::select_most_precise
         <
             coordinate_type_t<Point>,
@@ -128,28 +164,11 @@ public :
 
         promoted_type const dist_left = distance.apply(penultimate_point, ultimate_point, buffer_side_left);
         promoted_type const dist_right = distance.apply(penultimate_point, ultimate_point, buffer_side_right);
-        if constexpr (std::is_floating_point<coordinate_type_t<Point>>::value)
+        if (apply_cardinal_cap(penultimate_point, perp_left_point, ultimate_point, perp_right_point,
+                               side, dist_left, dist_right, range_out,
+                               std::is_floating_point<coordinate_type_t<Point>>()))
         {
-            promoted_type const dx = get<0>(ultimate_point) - get<0>(penultimate_point);
-            promoted_type const dy = get<1>(ultimate_point) - get<1>(penultimate_point);
-            if (m_points_per_circle == 4 && dist_left >= 0 && dist_right >= 0
-                && ((dx == 0) != (dy == 0)))
-            {
-                // All three samples are cardinal. Use the incident supports
-                // and the actual axial direction instead of sin/cos of pi/2.
-                promoted_type const x = (dx > 0) - (dx < 0);
-                promoted_type const y = (dy > 0) - (dy < 0);
-                promoted_type const radius = (dist_left + dist_right) / 2;
-                promoted_type const shift = side == buffer_side_left
-                    ? (dist_left - dist_right) / 2 : (dist_right - dist_left) / 2;
-                Point middle;
-                set<0>(middle, get<0>(ultimate_point) - y * shift + x * radius);
-                set<1>(middle, get<1>(ultimate_point) + x * shift + y * radius);
-                range_out.push_back(perp_left_point);
-                range_out.push_back(middle);
-                range_out.push_back(perp_right_point);
-                return;
-            }
+            return;
         }
         promoted_type const alpha
                 = calculate_angle<promoted_type>(penultimate_point, ultimate_point)

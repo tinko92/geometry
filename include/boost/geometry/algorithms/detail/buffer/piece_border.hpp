@@ -18,8 +18,7 @@
 #include <array>
 #include <memory>
 #include <type_traits>
-
-#include <boost/multiprecision/cpp_int.hpp>
+#include <utility>
 #include <boost/range/size.hpp>
 
 #include <boost/geometry/core/assert.hpp>
@@ -31,7 +30,6 @@
 #include <boost/geometry/algorithms/expand.hpp>
 #include <boost/geometry/algorithms/detail/buffer/buffer_policies.hpp>
 #include <boost/geometry/algorithms/detail/expand_by_epsilon.hpp>
-#include <boost/geometry/strategies/cartesian/point_in_poly_winding.hpp>
 #include <boost/geometry/strategies/cartesian/turn_in_ring_winding.hpp>
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/geometries/segment.hpp>
@@ -194,9 +192,9 @@ struct piece_border
     template <typename Strategy>
     void get_properties_of_offsetted_ring_part(Strategy const& strategy)
     {
-        if (std::is_integral<coordinate_type>::value && m_closed_offset)
+        if (m_closed_offset && decltype(has_closed_offset_locator<Strategy>(0))::value)
         {
-            // This boundary uses wide winding, not the convex shortcut.
+            // The strategy handles this whole boundary without the convex shortcut.
             return;
         }
         if (! ring_or_original_empty())
@@ -239,6 +237,21 @@ struct piece_border
     }
 
 
+    template <typename TurnPoint, typename State, typename Strategy>
+    bool point_on_piece(TurnPoint const& point,
+                        bool one_sided, bool is_linear_end_point,
+                        State& state, bool is_exposed_start, bool is_exposed_end,
+                        Strategy const& strategy) const
+    {
+        if (m_closed_offset && ! ring_or_original_empty()
+            && classify_closed_offset(point, state, strategy, 0))
+        {
+            return true;
+        }
+        return point_on_piece(point, one_sided, is_linear_end_point, state,
+                              is_exposed_start, is_exposed_end);
+    }
+
     // Whatever the return value, the state should be checked.
     template <typename TurnPoint, typename State>
     bool point_on_piece(TurnPoint const& point,
@@ -248,17 +261,6 @@ struct piece_border
         if (ring_or_original_empty())
         {
             return false;
-        }
-
-        if constexpr (std::is_integral<coordinate_type>::value)
-        {
-            if (m_closed_offset)
-            {
-                int const result = locate_in_integral_offset(point);
-                state.count = result > 0 ? -1 : 0;
-                state.count_on_offsetted = result == 0 ? 1 : 0;
-                return true;
-            }
         }
 
         // Walk over the different parts of the ring, in clockwise order
@@ -328,20 +330,34 @@ struct piece_border
 
 private :
 
-    template <typename TurnPoint>
-    int locate_in_integral_offset(TurnPoint const& point) const
+    using iterator = decltype(std::declval<Ring const&>().begin());
+
+    template <typename Strategy>
+    static auto has_closed_offset_locator(int)
+        -> decltype(int(std::declval<Strategy const&>().locate_closed_offset(
+                std::declval<Point const&>(), std::declval<iterator>(),
+                std::declval<iterator>())), std::true_type());
+
+    template <typename Strategy>
+    static std::false_type has_closed_offset_locator(long);
+
+    template <typename TurnPoint, typename State, typename Strategy>
+    auto classify_closed_offset(TurnPoint const& point, State& state,
+                                Strategy const& strategy, int) const
+        -> decltype(int(strategy.locate_closed_offset(point, std::declval<iterator>(),
+                                                     std::declval<iterator>())), bool())
     {
-        // Widen before subtracting or forming determinants.
-        using winding = strategy::within::cartesian_winding
-            <Point, Point, boost::multiprecision::int256_t>;
-        typename winding::state_type state;
-        auto it = m_ring->begin() + m_begin;
-        auto const end = m_ring->begin() + m_end;
-        for (auto previous = it++; it != end; previous = it++)
-        {
-            if (! winding::apply(point, *previous, *it, state)) { break; }
-        }
-        return winding::result(state);
+        int const result = int(strategy.locate_closed_offset(point,
+            m_ring->begin() + m_begin, m_ring->begin() + m_end));
+        state.count = result > 0 ? -1 : 0;
+        state.count_on_offsetted = result == 0 ? 1 : 0;
+        return true;
+    }
+
+    template <typename TurnPoint, typename State, typename Strategy>
+    bool classify_closed_offset(TurnPoint const&, State&, Strategy const&, long) const
+    {
+        return false;
     }
 
     static geometry::strategy::buffer::place_on_ring_type

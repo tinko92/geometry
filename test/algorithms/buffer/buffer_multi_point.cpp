@@ -224,11 +224,38 @@ void test_many_points_per_circle()
 #endif
 }
 
+struct mixed_radius_square
+{
+    template <typename Point, typename Distance, typename Range>
+    void apply(Point const& point, Distance const& distance, Range& out) const
+    {
+        bg::strategy::buffer::distance_symmetric<double> const large(60000);
+        bg::strategy::buffer::point_square().apply(point,
+            bg::get<1>(point) == 0 ? large : distance, out);
+    }
+};
+
+void test_integral_point_piece_coverage()
+{
+    using point = bg::model::point<int, 2, bg::cs::cartesian>;
+    using polygon = bg::model::polygon<point>;
+    bg::model::multi_point<point> const input{point(0, 0), point(0, 4), point(4, 4)};
+    bg::model::multi_polygon<polygon> buffered;
+    // The two small squares cross inside the large square, after turn finding.
+    bg::buffer(input, buffered, bg::strategy::buffer::distance_symmetric<double>(3),
+               bg::strategy::buffer::side_straight(), bg::strategy::buffer::join_miter(),
+               bg::strategy::buffer::end_flat(), mixed_radius_square());
+    BOOST_CHECK(bg::is_valid(buffered));
+    BOOST_CHECK_EQUAL(buffered.size(), 1u);
+    BOOST_CHECK_EQUAL(bg::area(buffered), 14400000000.0);
+}
+
 int test_main(int, char* [])
 {
     BoostGeometryWriteTestConfiguration();
 
     test_all<true, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();
+    test_integral_point_piece_coverage();
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_ORDER)
     test_all<false, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();

@@ -272,7 +272,7 @@ public:
         typename Border::state_type state;
         if (! border.point_on_piece(turn.point, one_sided,
                                     is_linear_end_point, state,
-                                    is_exposed_start, is_exposed_end))
+                                    is_exposed_start, is_exposed_end, m_umbrella_strategy))
         {
             return true;
         }

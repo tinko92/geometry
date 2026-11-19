@@ -168,8 +168,8 @@ struct buffer_range
     using output_point_type = point_type_t<RingOutput>;
     using coordinate_type = coordinate_type_t<RingOutput>;
 
-    template <typename Point, typename End, typename Distance>
-    static bool apply_asymmetric_round_spike(Point const&, Point const&, Point const&,
+    template <typename Tag, typename Point, typename End, typename Distance>
+    static bool apply_asymmetric_round_spike(Tag, Point const&, Point const&, Point const&,
         Point const&, strategy::buffer::buffer_side_selector, End const&, Distance const&,
         std::vector<output_point_type>&)
     {
@@ -177,7 +177,7 @@ struct buffer_range
     }
 
     template <typename Point, typename Numeric>
-    static bool apply_asymmetric_round_spike(Point const& previous, Point const& from,
+    static bool apply_asymmetric_round_spike(std::true_type, Point const& previous, Point const& from,
         Point const& vertex, Point const& to, strategy::buffer::buffer_side_selector side,
         strategy::buffer::end_round const& end,
         strategy::buffer::distance_asymmetric<Numeric> const& distance,
@@ -255,14 +255,11 @@ struct buffer_range
                     // For linestrings, only add spike at one side to avoid
                     // duplicates
                     std::vector<output_point_type> range_out;
-                    bool handled = false;
-                    if constexpr (std::is_same<geometry::cs_tag_t<output_point_type>, cartesian_tag>::value
-                               && std::is_same<SegmentStrategy, strategy::buffer::side_straight>::value)
-                    {
-                        handled = apply_asymmetric_round_spike(penultimate_input, prev_perp2, previous_input,
-                                                               perp1, side, end_strategy, distance, range_out);
-                    }
-                    if (! handled)
+                    using use_spike_cap = std::integral_constant<bool,
+                        std::is_same<geometry::cs_tag_t<output_point_type>, cartesian_tag>::value
+                        && std::is_same<SegmentStrategy, strategy::buffer::side_straight>::value>;
+                    if (! apply_asymmetric_round_spike(use_spike_cap(), penultimate_input, prev_perp2,
+                            previous_input, perp1, side, end_strategy, distance, range_out))
                     {
                         end_strategy.apply(penultimate_input, prev_perp2, previous_input, perp1,
                                            side, distance, range_out);
