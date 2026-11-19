@@ -17,7 +17,9 @@
 
 #include <array>
 #include <memory>
+#include <type_traits>
 
+#include <boost/multiprecision/cpp_int.hpp>
 #include <boost/range/size.hpp>
 
 #include <boost/geometry/core/assert.hpp>
@@ -29,6 +31,7 @@
 #include <boost/geometry/algorithms/expand.hpp>
 #include <boost/geometry/algorithms/detail/buffer/buffer_policies.hpp>
 #include <boost/geometry/algorithms/detail/expand_by_epsilon.hpp>
+#include <boost/geometry/strategies/cartesian/point_in_poly_winding.hpp>
 #include <boost/geometry/strategies/cartesian/turn_in_ring_winding.hpp>
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/geometries/segment.hpp>
@@ -191,6 +194,11 @@ struct piece_border
     template <typename Strategy>
     void get_properties_of_offsetted_ring_part(Strategy const& strategy)
     {
+        if (std::is_integral<coordinate_type>::value && m_closed_offset)
+        {
+            // This boundary uses wide winding, not the convex shortcut.
+            return;
+        }
         if (! ring_or_original_empty())
         {
             m_is_convex = is_convex(strategy);
@@ -240,6 +248,17 @@ struct piece_border
         if (ring_or_original_empty())
         {
             return false;
+        }
+
+        if constexpr (std::is_integral<coordinate_type>::value)
+        {
+            if (m_closed_offset)
+            {
+                int const result = locate_in_integral_offset(point);
+                state.count = result > 0 ? -1 : 0;
+                state.count_on_offsetted = result == 0 ? 1 : 0;
+                return true;
+            }
         }
 
         // Walk over the different parts of the ring, in clockwise order
@@ -308,6 +327,22 @@ struct piece_border
     }
 
 private :
+
+    template <typename TurnPoint>
+    int locate_in_integral_offset(TurnPoint const& point) const
+    {
+        // Widen before subtracting or forming determinants.
+        using winding = strategy::within::cartesian_winding
+            <Point, Point, boost::multiprecision::int256_t>;
+        typename winding::state_type state;
+        auto it = m_ring->begin() + m_begin;
+        auto const end = m_ring->begin() + m_end;
+        for (auto previous = it++; it != end; previous = it++)
+        {
+            if (! winding::apply(point, *previous, *it, state)) { break; }
+        }
+        return winding::result(state);
+    }
 
     static geometry::strategy::buffer::place_on_ring_type
         adapted_place_on_ring(geometry::strategy::buffer::place_on_ring_type target,
