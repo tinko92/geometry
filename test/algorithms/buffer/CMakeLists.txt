@@ -13,15 +13,17 @@ foreach(item IN ITEMS
 endforeach()
 
 foreach(item IN ITEMS buffer_point_certified buffer_segment_certified buffer_linestring_certified
-    buffer_polygon_certified buffer_issue_578_certified)
+    buffer_polygon_certified buffer_issue_578_certified buffer_linestring_arrangement_certified)
   boost_geometry_add_unit_test("algorithms" ${item})
   target_compile_features(${BOOST_GEOMETRY_UNIT_TEST_NAME} PRIVATE cxx_std_17)
 endforeach()
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  target_compile_options(boost_geometry_algorithms_buffer_issue_578_certified PRIVATE -ffp-contract=off)
-elseif(MSVC)
-  target_compile_options(boost_geometry_algorithms_buffer_issue_578_certified PRIVATE /fp:strict)
-endif()
+foreach(item IN ITEMS buffer_issue_578_certified buffer_linestring_arrangement_certified)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(boost_geometry_algorithms_${item} PRIVATE -ffp-contract=off)
+  elseif(MSVC)
+    target_compile_options(boost_geometry_algorithms_${item} PRIVATE /fp:strict)
+  endif()
+endforeach()
 
 # Tests for all geometry types, cartesian, for one floating point type
 foreach(item IN ITEMS

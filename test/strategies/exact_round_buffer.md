@@ -443,17 +443,96 @@ meet `d`. It also rejects a collapsed float ring even with a generous
 displacement budget. Run the fixture binary with `--emit-wkt` to print the certified
 inner and outer polygons in that order, with binary64 round-trip precision.
 
+## Bounded Non-Star Linestring Export
+
+`<boost/geometry/algorithms/buffer_linestring_arrangement_certified.hpp>`
+adds `buffer_linestring_arrangement_certified(line, polygon, r, e, d)`.
+This is a separate opt-in for a nonempty 2D Cartesian linestring with at
+least one nonzero edge. It requires `0 < e < r` and `0 <= d < r-e` and does
+not require a common witness. The ideal and stored outputs must have one
+simple shell and zero or more simple, pairwise disjoint, unnested holes
+strictly within it. This admits a connected chord union with holes, not an
+arbitrary arrangement of touching or branching rings. No existing buffer
+contract changes.
+
+### Local Algebraic Arrangement
+
+Use the same exact capsule producers as the star path, without interpreting
+the coordinate anchor as an interior point. The true sides and inscribed cap
+chords are never rounded before noding. Conservative interval boxes reject
+disjoint candidates; intersect the remaining producer pairs in a local
+radical field. A cut keeps an original vertex or the pair of producers that
+defines an exact projective intersection. Collinear overlaps supply both
+ends. Lexicographic comparison is monotone on a straight segment, so exact
+coordinate comparisons can sort and deduplicate cuts without rounding the
+parameters. Comparing two cut coordinates uses at most four producer roots.
+
+For an open atom, its owner capsule occupies the left neighborhood. Test
+the midpoint against every candidate convex capsule's exact half-planes.
+Another capsule hides that atom exactly when it covers the right
+neighborhood: either the midpoint is interior or it lies on an oppositely
+directed facet. Noding excludes any transverse crossing or vertex in the
+open atom. The midpoint of two cuts on a shared producer uses at most
+three source roots, and testing another facet adds at most one. Identical
+directed atoms are deduplicated; a branch or a point contact in the retained
+graph is refused. The sign of the turn at a ring's lexicographic minimum
+distinguishes a shell from a hole without forming a global radical area
+sum. Exact ray tests verify that holes lie inside the shell and do not nest.
+
+Limits are 16 nonzero source edges, 384 primitive edges, 8192 pair checks
+after box rejection, 4096 open atoms and 16 cycles. The four-root, chord
+depth and 32768 exact filter-fallback limits also apply. Coordinate bit
+costs still depend on the inputs. This is a bounded pairwise arrangement,
+not a scalable general sweep. Its interval filters require the same
+binary64 environment as the star path.
+
+### Native Displacement, Topology and Containment
+
+Only after assembly, propose native vertices and certify each against its
+exact algebraic value by coordinate comparisons with `d/2`. Verify the
+stored rings with exact rational simplicity, orientation, inter-ring and
+nesting checks, then read back the actual Polygon before publishing it.
+A failed check returns `cannot_certify` and leaves the output unchanged.
+The ideal shell and holes correspond one-for-one to native rings, not to
+the possibly different smooth-buffer topology. Each matched boundary pair
+is within Euclidean displacement `d`, including along edges by interpolation.
+
+For `N(L,s)` the closed radius-`s` neighborhood of the trace, the support-
+exact chord union `U` satisfies `N(L,r-e) subset U subset N(L,r)`. Winding
+at any point farther than `d` from the ideal boundary is unchanged along
+the straight homotopy between paired ring vertices and edges. Thus the
+stored region `P` satisfies
+
+```
+N(L,r-e-d) subset P subset N(L,r+d)
+```
+
+The lower inclusion is strict for smaller radii, and equality follows by
+closure at the positive radius `r-e-d`. This gives a filled-set Hausdorff
+bound `<= e+d`; `e` and the export bound `d` remain separate. It does not
+certify boundary Hausdorff distance to the smooth buffer. For nested traces,
+`r_inner+d_inner < r_outer-e_outer-d_outer` suffices for strict nesting of
+the two stored sets.
+
+The open fixture `LINESTRING(0 0,8 8,0 12,-8 4,-0.5 0.25)` has source
+lengths in two independent square classes. Its opposite parallel sides
+are `sqrt(72)` apart, so radius-1 capsules have no common witness. The end
+gap closes inside even the smaller certified neighborhood. Tests export
+both radii `1` and `3/4` with `e = 1/8`, `d = 2^-42`, and verify one hole
+in each. An independent rational oracle tests material membership and
+every pair of shell/hole edges for strict nesting after export. Separate
+integer tests check a square and a connected two-hole trace at `d = 0`,
+and refusal tests cover an exact pinch at a point, a tight/zero displacement
+budget and work limits.
+
 ## Remaining Work
 
-- The algebraic pair primitive is integrated only in the common-witness
-  path. General arrangement assembly still needs exact atom classification,
-  ring assembly (including holes), and a capacity policy. Two pairwise
-  nodes need at most four source roots for coordinate comparison; sorting
-  cuts or forming an atom midpoint on one producer needs at most three,
-  and testing that midpoint against another capsule's edge adds at most
-  one. Native lossless output is still impossible on #578. The opt-in star
-  result uses a separate displacement-and-topology contract, not a
-  general native export policy for exact chord arrangements.
+- The algebraic pair primitive is integrated into bounded linestring paths,
+  not into the legacy buffer or the rational polygon arrangement. General
+  arrangement scaling, point-touching topology, and native output for
+  unrestricted algebraic polygon buffers remain open. Native lossless
+  output is still impossible on #578; its separate common-witness export
+  is the supported path for that larger original fixture.
 - The lossless linestring API still accepts one exterior ring only; the
   polygon API supports multiple disjoint cycles but not boundary contacts.
   MultiPolygon input and general lossy native export are not implemented.
@@ -493,4 +572,7 @@ c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
 c++ -std=c++17 -ffp-contract=off -Iinclude -I"$BOOST_ROOT" \
     test/algorithms/buffer/buffer_issue_578_certified.cpp -o /tmp/buffer_issue_578_certified
 /tmp/buffer_issue_578_certified
+c++ -std=c++17 -ffp-contract=off -Iinclude -I"$BOOST_ROOT" \
+    test/algorithms/buffer/buffer_linestring_arrangement_certified.cpp -o /tmp/buffer_linestring_arrangement_certified
+/tmp/buffer_linestring_arrangement_certified
 ```
