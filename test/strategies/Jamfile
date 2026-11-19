@@ -98,6 +98,7 @@ test-suite boost-geometry-strategies
     [ run exact_buffer_radical_noding.cpp    : : : $(exact-requirements) : strategies_exact_buffer_radical_noding ]
     [ run exact_convex_erosion.cpp           : : : $(exact-requirements) : strategies_exact_convex_erosion ]
     [ run exact_output_policy.cpp            : : : $(exact-requirements) : strategies_exact_output_policy ]
+    [ run exact_lean_bounded_ulp.cpp         : : : $(exact-requirements) : strategies_exact_lean_bounded_ulp ]
     [ run exact_ulp_filter.cpp               : : : $(exact-requirements) : strategies_exact_ulp_filter ]
     [ run exact_point.cpp                    : : : $(exact-requirements) : strategies_exact_point ]
     [ run exact_segment_position.cpp         : : : $(exact-requirements) : strategies_exact_segment_position ]

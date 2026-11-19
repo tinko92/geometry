@@ -584,6 +584,9 @@ int main()
         random_cases<policy::approximate_output>();
         random_cases<policy::eager_nearest_output>();
         random_cases<policy::deferred_nearest_output>();
+        random_cases<policy::lean_bounded_ulp_output<1>>();
+        random_cases<policy::lean_bounded_ulp_output<100>>();
+        cases<std::int64_t, policy::lean_bounded_ulp_output<8>>((std::int64_t(1) << 54) + 1);
         stored_filter_reads_once<policy::approximate_output>();
         stored_filter_reads_once<policy::bounded_ulp_output<4>>();
         indexed_native();

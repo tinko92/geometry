@@ -80,6 +80,13 @@ struct policy_traits<relate::bounded_ulp_output<N, Retry>>
     static constexpr bool nearest_output = false;
 };
 
+template <std::size_t N, bool Retry>
+struct policy_traits<relate::lean_bounded_ulp_output<N, Retry>>
+    : policy_traits<relate::bounded_ulp_output<N, Retry>>
+{
+    static constexpr bool store_errors = false;
+};
+
 namespace detail
 {
 namespace arithmetic = arithmetic_detail;
@@ -265,7 +272,7 @@ inline fe::scalar_approximation rebuild_determinant(double ax, double ay, double
     return {sum[0], 2 * arithmetic::rounded_add(arithmetic::rounded_add(a, b), std::abs(sum[1]))};
 }
 
-template <std::size_t N>
+template <std::size_t N, bool StoreErrors = true>
 BOOST_NOINLINE std::array<bool, 2> rescue_bounded_denominator(std::array<double, 8> const& p,
     fe::detail::native_intersection_heads const& heads, fe::point_approximation& output)
 {
@@ -302,13 +309,14 @@ BOOST_NOINLINE std::array<bool, 2> rescue_bounded_denominator(std::array<double,
         double const z = std::fma(t, direction[axis], p[axis]);
         if (!bounded_axis_passes(direction[axis], z, height, threshold)) continue;
         output.value[axis] = z;
-        output.error[axis] = arithmetic::rounded_mul((double(k) + 2) * u, std::abs(z));
+        if constexpr (StoreErrors)
+            output.error[axis] = arithmetic::rounded_mul((double(k) + 2) * u, std::abs(z));
         accepted[axis] = true;
     }
     return accepted;
 }
 
-template <std::size_t N, bool Retry, bool Rescue = true, bool CrossTerms = true>
+template <std::size_t N, bool Retry, bool Rescue = true, bool CrossTerms = true, bool StoreErrors = true>
 inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
                                                 fe::point_approximation& output)
 {
@@ -334,7 +342,7 @@ inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
     double const ed = arithmetic::rounded_mul(8 * u, heads.md);
     if (!(d > ed))
     {
-        if constexpr (Rescue) return rescue_bounded_denominator<N>(p, heads, output);
+        if constexpr (Rescue) return rescue_bounded_denominator<N, StoreErrors>(p, heads, output);
         return {{false, false}};
     }
     double const lower = arithmetic::rounded_mul(1 - 2 * u, arithmetic::rounded_sub(d, ed));
@@ -361,7 +369,8 @@ inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
         output.value[axis] = z;
         // Also enclose Z for existing predicates. Acceptance bounds |Z-y|
         // by k*u*|z|; |y-z| <= u/(1-u)*|z|. Slack covers this multiply.
-        output.error[axis] = arithmetic::rounded_mul((double(k) + 2) * u, std::abs(z));
+        if constexpr (StoreErrors)
+            output.error[axis] = arithmetic::rounded_mul((double(k) + 2) * u, std::abs(z));
         accepted[axis] = true;
     };
     std::array<double, 2> const z{{std::fma(t, direction[0], p[0]),
@@ -538,6 +547,17 @@ public:
     {
         double const value = m_state.approximate.at(dimension);
         if constexpr (traits::store_errors) return {value, m_state.error[dimension]};
+        else if constexpr (bounded_output)
+        {
+            // Search envelopes need an absolute enclosure, not a predicate
+            // sign. The accepted construction proves the bound below; a
+            // refined binary64 is nearest. The floor covers rounded zero
+            // and subnormal coordinates on the latter path.
+            constexpr double coefficient = (double(detail::certificate_steps<Policy::steps>) + 2)
+                                         * forward_error::detail::u;
+            return {value, detail::arithmetic::rounded_mul(coefficient,
+                (std::max)(std::abs(value), (std::numeric_limits<double>::min)()))};
+        }
         else return {value, detail::spacing(value)};
     }
 
@@ -554,13 +574,14 @@ public:
         {
             std::array<bool, 2> accepted{};
             if constexpr (std::is_same<C, double>::value)
-                accepted = detail::bounded_intersection<Policy::steps, Policy::retry>(producers, first);
+                accepted = detail::bounded_intersection<Policy::steps, Policy::retry,
+                    true, true, traits::store_errors>(producers, first);
             for (std::size_t d = 0; d < 2; ++d)
             {
                 if (accepted[d])
                 {
                     m_state.approximate[d] = first.value[d];
-                    m_state.error[d] = first.error[d];
+                    if constexpr (traits::store_errors) m_state.error[d] = first.error[d];
                 }
                 else refine_value(producers, d);
             }
@@ -664,7 +685,7 @@ private:
     void update(std::size_t dimension, double nearest, bool zero) const
     {
         m_state.approximate[dimension] = nearest;
-        if constexpr (bounded_output)
+        if constexpr (bounded_output && traits::store_errors)
             // Full spacing also encloses exact fallback at subnormals/zero,
             // where half a spacing cannot itself be represented.
             m_state.error[dimension] = zero ? 0 : detail::spacing(nearest);

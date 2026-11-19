@@ -1025,7 +1025,8 @@ namespace relate
 /*!
 \brief Exact Cartesian predicates and implicit straight-segment intersections.
 \tparam Coordinate Native input coordinate type: integral, float or double.
-\tparam OutputPolicy approximate_output (default), a nearest policy, or bounded_ulp_output<N>.
+\tparam OutputPolicy approximate_output (default), a nearest policy, bounded_ulp_output<N>,
+        or lean_bounded_ulp_output<N>.
 \details Finite binary floating-point inputs denote their exact binary values.
          Input promotion must preserve the complete source coordinate type.
          Constructed points use forward error filters
@@ -1042,7 +1043,9 @@ namespace relate
       coordinate error fields. approximate_output retains forward error bounds.
       bounded_ulp_output<N, Retry> certifies binary64 intersections within N
       representable steps of nearest, ties to even, and retains predicate
-      error bounds. N=1 selectively tightens determinant bounds after a
+      error bounds. lean_bounded_ulp_output has the same emission contract;
+      its root-bound constructions omit both error fields and its filters
+      specialize on N. Budgets up to four steps selectively tighten determinant bounds after a
       miss. For larger budgets, Retry (default false) enables an FMA
       residual retry.
       Uncertified axes, non-double Coordinate types, float output and legacy

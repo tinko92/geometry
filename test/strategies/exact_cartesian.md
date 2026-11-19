@@ -31,6 +31,23 @@ rounding. Integral output uses ordinary BG conversion of the stored value.
 Distinct vertices can coincide after export under any policy; do not feed a
 rounded polygon back as though it represented the exact set.
 
+For an eager binary64 step guarantee, choose
+`strategies::relate::bounded_ulp_output<N>` (stored coordinate errors) or
+`strategies::relate::lean_bounded_ulp_output<N>` (no coordinate error fields
+in the root-bound construction). Pass the policy as the second template
+argument to `cartesian_exact`. Both count steps from the correctly rounded
+coordinate, use the same construction certificate and refine an uncertified
+axis. Their predicate schedules can differ, so their admissible native output
+coordinates need not be bit-identical.
+
+The lean first stage compares coordinate ranks and uses an N-dependent
+forward bound for side, direction, signed determinant and squared distance.
+Equality and along-segment order use coordinate comparisons. A search envelope
+still needs outward bounds, and a derived measure still needs its own error
+bound; neither is an N-step coordinate. Midpoints are separately certified,
+and a mixed owning point cannot borrow the enclosing operation's certificate.
+See the [filter proof](exact_lean_n_ulp_filters.md).
+
 Point-only contact is not a linear exact output. Legacy line/box calls retain
 their established singleton convention; the two routes have separate tests.
 

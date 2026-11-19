@@ -25,7 +25,7 @@ for name in arithmetic round_buffer round_buffer_api convex_erosion buffer_radic
     native_predicates point segment_position \
     segment spherical_angular_audit spherical_angular_export spherical_boundary_union spherical_linear_replays spherical_point_placement spherical_ray spherical_region spherical_strategy filtered_segment static_predicates static_box static_clipping \
     static_ring_topology relate_overlay shared_boundary cluster rounding_policies output_policy ulp_filter filter_routing \
-    algorithm_optimization benchmark_check additional_issue_api additional_issues gc issues sorted_point_view
+    lean_bounded_ulp algorithm_optimization benchmark_check additional_issue_api additional_issues gc issues sorted_point_view
 do
     source=$repo/test/strategies/exact_$name.cpp
     standard=c++17

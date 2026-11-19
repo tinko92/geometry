@@ -31,6 +31,11 @@ struct bounded_ulp_output
     static constexpr bool retry = Retry;
 };
 
+// Same construction and emission contract. Root-bound points retain no
+// coordinate error fields; predicates use a bound specialized on N.
+template <std::size_t N, bool Retry = false>
+struct lean_bounded_ulp_output : bounded_ulp_output<N, Retry> {};
+
 }}}} // namespace boost::geometry::strategies::relate
 
 namespace boost { namespace geometry { namespace strategies { namespace detail
@@ -41,6 +46,9 @@ template <typename Policy> struct is_bounded_ulp_output : std::false_type {};
 template <std::size_t N, bool Retry>
 struct is_bounded_ulp_output<relate::bounded_ulp_output<N, Retry>>
     : std::bool_constant<(relate::bounded_ulp_output<N, Retry>::steps > 0)> {};
+template <std::size_t N, bool Retry>
+struct is_bounded_ulp_output<relate::lean_bounded_ulp_output<N, Retry>>
+    : is_bounded_ulp_output<relate::bounded_ulp_output<N, Retry>> {};
 
 }}}}}
 

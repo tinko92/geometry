@@ -80,6 +80,7 @@ foreach(item IN ITEMS
     exact_buffer_radical_noding
     exact_convex_erosion
     exact_output_policy
+    exact_lean_bounded_ulp
     exact_output_support_hooks
     exact_ulp_filter
     exact_typed_cache
@@ -140,7 +141,7 @@ foreach(item IN ITEMS exact_additional_issue_api exact_additional_issues exact_a
     exact_borrowed_records exact_borrowed_reverse_dispatch exact_borrowed_ring exact_borrowed_root_ring exact_borrowed_section
     exact_borrowed_segment_box exact_gc_boxes exact_gc_conversion_hooks
     exact_borrowed_tuple exact_borrowed_turns exact_construction_capacity exact_construction_rounding exact_double_qualification
-    exact_cluster exact_rounding_policies exact_output_policy exact_output_support_hooks exact_ulp_filter exact_typed_cache
+    exact_cluster exact_rounding_policies exact_output_policy exact_lean_bounded_ulp exact_output_support_hooks exact_ulp_filter exact_typed_cache
     exact_tagged_dispatch)
   target_link_libraries(boost_geometry_strategies_${item} PRIVATE Threads::Threads)
 endforeach()

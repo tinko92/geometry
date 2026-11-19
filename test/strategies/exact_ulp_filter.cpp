@@ -19,6 +19,7 @@
 #include <iostream>
 #include <new>
 #include <random>
+#include <utility>
 #include <vector>
 
 namespace ec = boost::geometry::strategies::detail::exact_cartesian;
@@ -278,6 +279,71 @@ void randomized()
     }
 }
 
+// Independently generate the extreme points allowed by the public certificate:
+// move N binary64 steps, then almost half the next rounding cell. In particular
+// these errors need not satisfy the tighter bound from our FMA construction.
+template <unsigned N>
+rational step_extreme(double head, bool up)
+{
+    for (unsigned i = 0; i < N; ++i) head = up ? next(head) : previous(head);
+    rational const r = ec::exact_value(head);
+    return r + (ec::exact_value(up ? next(head) : previous(head)) - r) * 511 / 1024;
+}
+
+template <unsigned N, unsigned Mask>
+void bounded_triple(coordinates a, coordinates b, coordinates p)
+{
+    constexpr bool ai = (Mask & 1) != 0, bi = (Mask & 2) != 0, pi = (Mask & 4) != 0;
+    auto make = [](coordinates z, bool uncertain, bool up) -> exact_coordinates {
+        if (!uncertain) return native(z);
+        return {{step_extreme<N>(z[0], up), step_extreme<N>(z[1], !up)}};
+    };
+    auto const x = make(a, ai, true), y = make(b, bi, false), z = make(p, pi, true);
+    rational const dx = y[0]-x[0], dy = y[1]-x[1];
+    rational const det = dx*(z[1]-x[1]) - dy*(z[0]-x[0]);
+    rational const dot = dx*(z[0]-y[0]) + dy*(z[1]-y[1]);
+    rational const dist = dx*dx + dy*dy;
+    ec::forward_error::scalar_approximation d{}, s{};
+    int side = 2, direction = 2, cmp = 2;
+    allocation_guard = true;
+    bool const bounded_d = uf::try_signed_determinant_n<N,ai,bi,pi>(a,b,p,d);
+    bool const bounded_s = uf::try_squared_distance_n<N,ai,bi>(a,b,s);
+    bool const cs = uf::try_orientation_n<N,ai,bi,pi>(a,b,p,side);
+    bool const cd = uf::try_dot_n<N,ai,bi,pi>(a,b,p,direction);
+    bool const cc = uf::try_compare_n<N,ai,bi>(a[0],b[0],cmp);
+    allocation_guard = false;
+    BOOST_TEST(bounded_d && bounded_s);
+    BOOST_TEST(abs(det - ec::exact_value(d.value)) <= ec::exact_value(d.error));
+    BOOST_TEST(abs(dist - ec::exact_value(s.value)) <= ec::exact_value(s.error));
+    BOOST_TEST_EQ(side, cs ? sign(det) : 2);
+    BOOST_TEST_EQ(direction, cd ? sign(dot) : 2);
+    BOOST_TEST_EQ(cmp, cc ? sign(x[0] - y[0]) : 2);
+}
+
+template <unsigned N, unsigned... M>
+void bounded_filters(std::integer_sequence<unsigned,M...>)
+{
+    double const tiny = (std::numeric_limits<double>::denorm_min)();
+    for (double t : {0., -0., tiny, -tiny, 0x1p-1022, -0x1p-1022, 0x1p-501,
+                     .5, -1., previous(2.), next(-2.), 0x1p499})
+    {
+        coordinates const a{{t,-t}}, b{{next(t),previous(-t)}};
+        (bounded_triple<N,M>(a,b,{{previous(t),next(-t)}}), ...);
+        (bounded_triple<N,M>(a,{{1.,t}},{{-t,.25}}), ...);
+    }
+    for (double a : {-1., -tiny, -0., 0., tiny, previous(1.), 1.})
+    {
+        double b = a;
+        for (unsigned k = 0; k <= 2*N+1; ++k, b = next(b))
+        {
+            int r = 2;
+            bool const ok = uf::try_compare_n<N,true,true>(a,b,r);
+            BOOST_TEST_EQ(ok, k > 2*N);
+            BOOST_TEST_EQ(r, ok ? -1 : 2);
+        }
+    }
+}
+
 int main()
 {
     BOOST_TEST_EQ(std::fegetround(), FE_TONEAREST);
@@ -286,6 +352,9 @@ int main()
     scalars();
     adversarial();
     randomized();
+    using kinds = std::make_integer_sequence<unsigned,8>;
+    bounded_filters<1>(kinds{}); bounded_filters<2>(kinds{});
+    bounded_filters<4>(kinds{}); bounded_filters<8>(kinds{}); bounded_filters<100>(kinds{});
     BOOST_TEST_EQ(allocations, 0u);
     BOOST_TEST(coordinate_certificates > 0);
     BOOST_TEST(zeros[0] > 0);
