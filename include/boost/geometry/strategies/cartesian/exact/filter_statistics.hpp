@@ -25,6 +25,7 @@ struct filter_statistics
     std::uint64_t compact_measure_comparisons = 0;
     std::uint64_t full_measure_comparisons = 0;
     std::uint64_t sterbenz_orientations = 0;
+    std::uint64_t tagged_orientation_calls = 0;
 };
 
 inline filter_statistics& filtering_statistics()

@@ -83,6 +83,10 @@ test-suite boost-geometry-strategies
     [ run exact_segment_box.cpp              : : : $(exact-requirements) : strategies_exact_segment_box ]
     [ run exact_shared_boundary.cpp          : : : $(exact-requirements) : strategies_exact_shared_boundary ]
     [ run exact_typed_cache.cpp              : : : $(exact-requirements) : strategies_exact_typed_cache ]
+    [ run exact_tagged_lines.cpp             : : : $(exact-requirements) : strategies_exact_tagged_lines ]
+    [ run exact_tagged_dispatch.cpp          : : : $(exact-requirements)
+          <define>BOOST_GEOMETRY_EXACT_TAGGED_ORIENTATION=1 <define>BOOST_GEOMETRY_EXACT_FILTER_STATISTICS
+          : strategies_exact_tagged_dispatch ]
     [ run exact_cluster.cpp                  : : : $(exact-requirements) : strategies_exact_cluster ]
     [ run exact_rounding_policies.cpp        : : : $(exact-requirements) : strategies_exact_rounding_policies ]
     [ run exact_output_policy.cpp            : : : $(exact-requirements) : strategies_exact_output_policy ]

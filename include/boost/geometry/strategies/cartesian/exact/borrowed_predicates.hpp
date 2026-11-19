@@ -19,6 +19,13 @@
 #include <boost/geometry/strategies/cartesian/exact/fixed_measures.hpp>
 #include <boost/geometry/strategies/cartesian/exact/ulp_filter.hpp>
 
+#ifndef BOOST_GEOMETRY_EXACT_TAGGED_ORIENTATION
+#define BOOST_GEOMETRY_EXACT_TAGGED_ORIENTATION 0
+#endif
+#if BOOST_GEOMETRY_EXACT_TAGGED_ORIENTATION
+#include <boost/geometry/strategies/cartesian/exact/tagged_orientation.hpp>
+#endif
+
 namespace boost { namespace geometry { namespace strategies { namespace detail
 { namespace exact_cartesian
 {
@@ -267,6 +274,24 @@ int orientation(A const& a, B const& b, P const& p, Certified native_differences
         if (on_support<Root>(a, b, p) || on_support<Root>(b, p, a) || on_support<Root>(p, a, b)) return 0;
         refine(a); refine(b); refine(p);
         if (filter()) return result;
+#if BOOST_GEOMETRY_EXACT_TAGGED_ORIENTATION
+        // The visitor leaves borrowed_point operands here only for proper
+        // crossings. Keep the fixed path if any exact record is already warm.
+        if constexpr (std::is_same<typename Root::coordinate_type, double>::value
+                   && record_point<A>::value && record_point<B>::value && record_point<P>::value)
+        {
+            using cache = point_cache_detail::native_cache<double>;
+            if (!cache::has_exact(a.record().numeric.cache_handle())
+             && !cache::has_exact(b.record().numeric.cache_handle())
+             && !cache::has_exact(p.record().numeric.cache_handle()))
+            {
+#ifdef BOOST_GEOMETRY_EXACT_FILTER_STATISTICS
+                ++filtering_statistics().tagged_orientation_calls;
+#endif
+                return tagged_orientation::from_producers(a.producers(), b.producers(), p.producers());
+            }
+        }
+#endif
         fixed_homogeneous<128> x, y, z;
         if (copy_compact(a, x, 0) && copy_compact(b, y, 0) && copy_compact(p, z, 0))
             return fixed_orientation(x, y, z);

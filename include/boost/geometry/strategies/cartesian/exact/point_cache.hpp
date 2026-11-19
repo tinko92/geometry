@@ -45,6 +45,16 @@ class native_cache
 public:
     using value_type = typename native_fixed_traits<Coordinate>::intersection_type;
 
+    static bool has_exact(native_cache_handle const& handle)
+    {
+        if (handle.m_index == (std::numeric_limits<std::size_t>::max)()) { return false; }
+        auto const* owner = operation_detail::current<Coordinate>();
+        if (!owner) { return false; }
+        auto const& entries = owner->storage().native;
+        BOOST_ASSERT(handle.m_index < entries.size());
+        return entries[handle.m_index].exact_ready;
+    }
+
     static bool cached_bounds(native_cache_handle const& handle, std::size_t dimension,
                               interval& output)
     {
