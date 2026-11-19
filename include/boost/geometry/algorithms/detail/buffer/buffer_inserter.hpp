@@ -15,6 +15,7 @@
 #ifndef BOOST_GEOMETRY_ALGORITHMS_DETAIL_BUFFER_BUFFER_INSERTER_HPP
 #define BOOST_GEOMETRY_ALGORITHMS_DETAIL_BUFFER_BUFFER_INSERTER_HPP
 
+#include <algorithm>
 #include <cstddef>
 #include <iterator>
 #include <type_traits>
@@ -658,6 +659,17 @@ struct buffer_inserter_ring
             <
                 geometry::closure<simplified_ring_t>::value
             >::value;
+
+        // A long thin ring may simplify to an out-and-back segment. A
+        // point buffer would lose its whole length, including the far end.
+        if (!distance.negative() && n > 1 && n < min_points
+            && boost::size(ring) >= min_points)
+        {
+            simplified.clear();
+            std::copy(boost::begin(ring), boost::end(ring),
+                      geometry::range::back_inserter(simplified));
+            n = boost::size(simplified);
+        }
 
         if (n >= min_points)
         {
