@@ -612,9 +612,7 @@ void test_all()
     TEST_BUFFER(rt_w2, join_miter, end_flat, 13.65685, 1.0);
     TEST_BUFFER(rt_w3, join_miter, end_flat, 53.1421, 1.0);
 
-#if defined(BOOST_GEOMETRY_TEST_FAILURES) || defined(BOOST_GEOMETRY_CONCEPT_FIX_BLOCK_Q)
     TEST_BUFFER(rt_w4, join_miter, end_flat, 57.37, 1.0);
-#endif
 
     TEST_BUFFER(rt_w5, join_miter, end_flat, 106.7279, 1.0);
     TEST_BUFFER(rt_w6, join_miter, end_flat, 79.799, 1.0);
@@ -645,9 +643,7 @@ void test_all()
 
     TEST_BUFFER(rt_w23, join_miter, end_flat, 59.5711, 1.0);
 
-#if defined(BOOST_GEOMETRY_TEST_FAILURES) || defined(BOOST_GEOMETRY_CONCEPT_FIX_BLOCK_Q)
     TEST_BUFFER(rt_w24, join_miter, end_flat, 64.1985, 1.0);
-#endif
 
     TEST_BUFFER(rt_w25, join_miter, end_flat, 84.3848, 1.0);
     TEST_BUFFER(rt_w26, join_miter, end_flat, 91.6569, 1.0);
@@ -664,9 +660,7 @@ void test_all()
     TEST_BUFFER(rt_w30, join_miter, end_flat, 59.4485, 1.0);
     TEST_BUFFER(rt_w31, join_miter, end_flat, 85.7916, 1.0);
 
-#if defined(BOOST_GEOMETRY_TEST_FAILURES) || defined(BOOST_GEOMETRY_CONCEPT_FIX_START_TURNS)
     TEST_BUFFER(rt_w32, join_miter, end_flat, 40.6569, 1.0);
-#endif
 
     TEST_BUFFER_VALIDITY_FALSE_NEGATIVE(rt_w33, join_round32, end_flat, 23.3895, 1.0);
     TEST_BUFFER_VALIDITY_FALSE_NEGATIVE(rt_w34, join_round32, end_flat, 26.5830, 1.0);
