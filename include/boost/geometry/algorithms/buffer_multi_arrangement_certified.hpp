@@ -149,6 +149,16 @@ status read_members(MultiPolygon const& input, std::vector<polygon_rings>& membe
     return status::success;
 }
 
+template <typename MultiPolygon>
+status build_areal_members(std::vector<polygon_rings> const& members, MultiPolygon& output,
+                           exact_number const& r, exact_number const& e, exact_number const& d, bool erosion)
+{
+    algebraic::algebraic_chord_union arrangement;
+    rational_xy const anchor = members.empty() ? rational_xy{0, 0} : members.front().front().points.front();
+    for (auto const& p : members) { arrangement.append_polygon(p, anchor, r, e); }
+    return arrangement.build_polygon(anchor, d, erosion, output) ? status::success : status::cannot_certify;
+}
+
 }} // namespace detail::certified_multi_buffer
 #endif // DOXYGEN_NO_DETAIL
 
@@ -205,19 +215,16 @@ template <typename Geometry, typename MultiPolygon, typename Distance, typename 
 
     try
     {
-        impl::algebraic::algebraic_chord_union arrangement;
         if constexpr (areal)
         {
             std::vector<impl::polygon_rings> members;
             auto const result = impl::read_members(input, members);
             if (result != status::success) { return result; }
-            impl::rational_xy const anchor = members.empty() ? impl::rational_xy{0, 0}
-                                                            : members.front().front().points.front();
-            for (auto const& p : members) { arrangement.append_polygon(p, anchor, r, e); }
-            return arrangement.build_polygon(anchor, d, erosion, output) ? status::success : status::cannot_certify;
+            return impl::build_areal_members(members, output, r, e, d, erosion);
         }
         else
         {
+            impl::algebraic::algebraic_chord_union arrangement;
             impl::linear_members members(arrangement, r, e);
             for (auto const& member : input)
             {

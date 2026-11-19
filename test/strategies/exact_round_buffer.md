@@ -650,7 +650,7 @@ comparison with the different lossless or legacy contracts.
 
 `<boost/geometry/algorithms/buffer_round_certified.hpp>` provides
 `buffer_round_certified(input, output, distance, arc_sagitta, max_displacement)`.
-For polygons it uses the following certificates, without changing `buffer()`:
+For a single Polygon it uses the following certificates, without changing `buffer()`:
 
 | Case | Certificate |
 | --- | --- |
@@ -726,33 +726,54 @@ The original therefore must return `cannot_certify` for this native output
 contract, independent of arrangement capacity. The reduced `2^52` hairpin
 does export when split across two line members beside a separate component.
 
-### Unified API Hook
+### Unified API Admission and Erosion
 
-Kierkegaard's `detail::certified_round_buffer::dispatch` can add a branch
-before its scalar-geometry branches and forward the existing staged native
-MultiPolygon and admitted budgets (include the multi header above):
+`buffer_round_certified` dispatches all three multi tags to the shared
+arrangement, with the usual staged output. A `Polygon` destination is only
+published when the entire result fits one component. The wrapper admits
+empty multi inputs and members. Valid nonpositive point and linear inputs
+regularize to empty, and positive buffering of a wholly empty collection
+also succeeds with empty output. Nonempty, nonzero multi chord operations
+require positive sagitta and native output coordinates; the wrapper can
+tighten, but never relax, a supplied error budget. In particular there is
+no new componentwise convex erosion path or nonzero `cpp_rational` multi
+fallback. Caps apply to the collection, not individually to each member.
 
-```cpp
-if constexpr (std::is_same_v<tag_t<Geometry>, multi_point_tag>
-           || std::is_same_v<tag_t<Geometry>, multi_linestring_tag>
-           || std::is_same_v<tag_t<Geometry>, multi_polygon_tag>)
-{
-    using coordinate = coordinate_type_t<MultiPolygon>;
-    if constexpr (std::is_same_v<coordinate, exact_number>)
-        return status::cannot_certify; // native backend only
-    else
-        return geometry::buffer_multi_arrangement_certified(input, output,
-            b.distance, b.sagitta, b.displacement);
-}
-```
+MultiPolygon uses the same exact source admission for all distance signs,
+including zero: simple valid members with strictly disjoint filled sets and
+disjoint boundaries. At zero, copy those source rings with the destination
+orientation and closure, checking exact read-back even if the caller
+provided a positive displacement allowance. Unrepresentable coordinates
+or a destination with room for only one of several members are refused
+transactionally. Nothing is tessellated at zero distance.
 
-Add the same tags to the wrapper's static dispatch admission. The wrapper's
-existing staged SinglePolygon conversion should still refuse more than one
-component. The wrapper also needs to preserve this backend's successful
-empty result for an empty collection rather than apply its nonempty
-dilation guard unconditionally. Nonpositive linear regularization or looser
-budget policy, if exposed, belongs in the unified wrapper; this hook keeps
-the bounded arrangement backend's existing numerical admission.
+For the negative-distance domain, let `P = union P_i` be the compact
+filled union. Pairwise disjoint compact members have positive separation,
+so `boundary(P) = union boundary(P_i)`. For `x` in `int(P_i)`, a straight
+segment to any other member's boundary exits `P_i` first. Thus its clearance
+from `boundary(P)` equals its clearance from `boundary(P_i)`. Taking the
+closure of the strict clearance sets gives `E_r(P) = union E_r(P_i)` for
+the **smooth regularized** erosion on this admitted domain. This identity
+does not justify componentwise chord construction and native rounding:
+the backend nodes one `T` from all boundary capsules and selects
+`reg(P minus T)` using the whole material union. Its certified native
+inclusions remain `E_(r+d)(P) subset output` and `clearance > r-e-d`
+inside `P` for every output point. Dilation similarly selects `P union T`,
+so disjoint sources can merge into a single exported result.
+
+For shared edges the premise fails. For example, adjacent `[0,2] x [0,2]`
+and `[2,4] x [0,2]` have a shared seam; `(2,1)` survives radius-`1/2`
+erosion of the filled union but survives neither member's erosion. The
+exact source checks reject this case (and contained filled overlap) before
+any output is published, rather than inserting a spurious seam in `T`.
+
+The public dispatch tests cover all three dimensional tags and both output
+forms. A fractional line member fully hidden by a closed line's buffer,
+and a fractional island hidden by dilation that fills a hole, each refuse
+lossless export alone but succeed inside the combined exact union at `d=0`.
+Other cases check separated erosion with an island in a hole, shared-edge
+refusal, exact zero-distance round trips, failed zero-distance native
+conversion, and preservation of caller output on failure.
 
 ## Remaining Work
 

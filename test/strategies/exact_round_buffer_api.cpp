@@ -4,6 +4,8 @@
 // Distributed under the Boost Software License, Version 1.0.
 
 #include <boost/geometry/algorithms/buffer_round_certified.hpp>
+#include <boost/geometry/geometries/multi_linestring.hpp>
+#include <boost/geometry/geometries/multi_point.hpp>
 #include <boost/geometry/geometries/segment.hpp>
 #include <boost/core/lightweight_test.hpp>
 
@@ -16,7 +18,9 @@ using number = ec::exact_number;
 using status = bg::certified_buffer_status;
 template <typename T> using point = bg::model::point<T, 2, bg::cs::cartesian>;
 using p = point<double>;
+using mp = bg::model::multi_point<p>;
 using line = bg::model::linestring<p>;
+using ml = bg::model::multi_linestring<line>;
 using segment = bg::model::segment<p>;
 using polygon = bg::model::polygon<p>;
 using multi = bg::model::multi_polygon<polygon>;
@@ -37,6 +41,13 @@ bool same_storage(Polygon const& a, Polygon const& b)
     };
     return same_ring(a.outer(), b.outer())
         && std::equal(a.inners().begin(), a.inners().end(), b.inners().begin(), b.inners().end(), same_ring);
+}
+
+template <typename Multi>
+bool same_multi(Multi const& a, Multi const& b)
+{
+    return std::equal(a.begin(), a.end(), b.begin(), b.end(), [](auto const& u, auto const& v)
+    { return same_storage(u, v); });
 }
 
 template <typename Ring>
@@ -328,6 +339,151 @@ void test_empty_vs_failure()
     if (!out.outer().empty()) { BOOST_TEST_EQ(bg::get<0>(out.outer().front()), 7); }
 }
 
+void test_public_multipoint()
+{
+    mp const overlap{p(0, 0), p(1.5, 0)};
+    polygon single;
+    // A loose public sagitta is tightened for the arrangement. Quarter
+    // chords give two unit diamonds whose overlap has area 1/8.
+    BOOST_TEST(bg::buffer_round_certified(overlap, single, 1, 1, 0) == status::success);
+    BOOST_TEST_EQ(area2(single.outer()), number(-31) / 4);
+    auto const before = single;
+    mp const disjoint{p(0, 0), p(20, 0)};
+    multi out;
+    BOOST_TEST(bg::buffer_round_certified(disjoint, out, 1, 0.5, 0) == status::success);
+    BOOST_TEST_EQ(out.size(), 2u);
+    BOOST_TEST(bg::buffer_round_certified(disjoint, single, 1, 0.5, 0) == status::cannot_certify);
+    BOOST_TEST(same_storage(single, before));
+    auto const prior = out;
+    BOOST_TEST(bg::buffer_round_certified(mp{p(0, 0), p(2, 0)}, out, 1, 0.5, 0) == status::cannot_certify);
+    BOOST_TEST(same_multi(out, prior));
+    BOOST_TEST(bg::buffer_round_certified(mp{}, out, 1, 0, 0) == status::success);
+    BOOST_TEST(out.empty());
+    BOOST_TEST(bg::buffer_round_certified(overlap, single, 0, 0, 0) == status::success);
+    BOOST_TEST(single.outer().empty());
+}
+
+void test_public_multiline()
+{
+    number const e = number(1) / 8, d = number(1) / (1LL << 42);
+    ml const loop{line{p(0, 0), p(8, 8), p(0, 12)}, line{p(0, 12), p(-8, 4), p(-0.5, 0.25)}, line{}};
+    polygon single;
+    BOOST_TEST(bg::buffer_round_certified(loop, single, 1, e, d) == status::success);
+    BOOST_TEST_EQ(single.inners().size(), 1u);
+    auto const before = single;
+    ml const disjoint{line{p(0, 0), p(2, 0)}, line{p(20, 0), p(22, 0)}};
+    multi out;
+    BOOST_TEST(bg::buffer_round_certified(disjoint, out, 1, 0.5, 0) == status::success);
+    BOOST_TEST_EQ(out.size(), 2u);
+    BOOST_TEST(bg::buffer_round_certified(disjoint, single, 1, 0.5, 0) == status::cannot_certify);
+    BOOST_TEST(same_storage(single, before));
+
+    // This fraction's exposed endpoint cannot export losslessly on its
+    // own. The closed member's exact chord band hides the entire capsule.
+    // A union of member exports could not succeed at zero displacement.
+    using rp = point<number>;
+    using rl = bg::model::linestring<rp>;
+    rl const hidden{rp(number(13) / 3, 4), rp(number(14) / 3, 4)};
+    BOOST_TEST(bg::buffer_round_certified(hidden, single, 5, 4, 0) == status::cannot_certify);
+    BOOST_TEST(same_storage(single, before));
+    bg::model::multi_linestring<rl> const combination{
+        rl{rp(0, 0), rp(8, 0), rp(8, 8), rp(0, 8), rp(0, 0)}, hidden};
+    BOOST_TEST(bg::buffer_round_certified(combination, single, 5, 4, 0) == status::success);
+    BOOST_TEST(single.inners().empty());
+    BOOST_TEST_EQ(area2(single.outer()), -548);
+
+    auto const original = out;
+    double const inf = (std::numeric_limits<double>::infinity)();
+    ml const nonfinite{line{p(0, 0), p(inf, 0)}};
+    BOOST_TEST(bg::buffer_round_certified(nonfinite, out, -1, 0, 0) == status::invalid_input);
+    BOOST_TEST(same_multi(out, original));
+    BOOST_TEST(bg::buffer_round_certified(disjoint, out, -1, 0, 0) == status::success);
+    BOOST_TEST(out.empty());
+    BOOST_TEST(bg::buffer_round_certified(ml{line{}}, single, 1, 0, 0) == status::success);
+    BOOST_TEST(single.outer().empty());
+}
+
+polygon box(double x, double y, double u, double v)
+{
+    polygon result;
+    result.outer() = {p(x, y), p(x, v), p(u, v), p(u, y), p(x, y)};
+    return result;
+}
+
+number area2(multi const& m)
+{
+    number area = 0;
+    for (auto const& p : m)
+    {
+        area += area2(p.outer());
+        for (auto const& h : p.inners()) { area += area2(h); }
+    }
+    return area;
+}
+
+void test_public_multipolygon()
+{
+    auto annulus = box(0, 0, 20, 20);
+    annulus.inners().push_back(box(5, 5, 15, 15).outer());
+    std::reverse(annulus.inners().front().begin(), annulus.inners().front().end());
+    // The island is inside the hole, hence not in the other member's fill.
+    multi const input{annulus, box(8, 8, 12, 12)};
+    multi out;
+    BOOST_TEST(bg::buffer_round_certified(input, out, 1, 0.5, 0) == status::success);
+    BOOST_TEST_EQ(out.size(), 2u);
+    BOOST_TEST(bg::buffer_round_certified(input, out, -1, 0.5, 0) == status::success);
+    BOOST_TEST_EQ(out.size(), 2u);
+    // Square erosion [1,19]^2, minus the [5,15]^2 hole grown by the
+    // unit diamond (area 142), plus the eroded island [9,11]^2.
+    BOOST_TEST_EQ(area2(out), -372);
+    std::size_t holes = 0;
+    for (auto const& p : out) { holes += p.inners().size(); }
+    BOOST_TEST_EQ(holes, 1u);
+    auto const before = out;
+
+    // Sharing the seam of two rectangles does not make that seam an
+    // erosion boundary of their union. This source is refused, not eroded
+    // componentwise. Contained overlap is refused even with no ring crossing.
+    multi const shared{box(0, 0, 2, 2), box(2, 0, 4, 2)};
+    for (double r : {-0.5, 0.0, 1.0})
+    {
+        BOOST_TEST(bg::buffer_round_certified(shared, out, r, 0.25, 0) == status::invalid_input);
+        BOOST_TEST(same_multi(out, before));
+    }
+    multi const overlap{annulus, box(2, 2, 3, 3)};
+    BOOST_TEST(bg::buffer_round_certified(overlap, out, -1, 0.5, 0) == status::invalid_input);
+    BOOST_TEST(same_multi(out, before));
+
+    using exact_multi = bg::model::multi_polygon<rational_polygon>;
+    exact_multi exact;
+    BOOST_TEST(bg::buffer_round_certified(input, exact, 0, 0, 0) == status::success);
+    BOOST_TEST_EQ(exact.size(), 2u);
+    if (exact.size() != 2) { return; }
+    auto const before_exact = exact;
+    BOOST_TEST(bg::buffer_round_certified(input, exact, 1, 0.5, 0) == status::cannot_certify);
+    BOOST_TEST(same_multi(exact, before_exact));
+    BOOST_TEST_EQ(exact.front().outer().size() + 1, input.front().outer().size());
+    BOOST_TEST(bg::buffer_round_certified(exact, out, 0, 0, 0) == status::success);
+    BOOST_TEST(same_multi(out, input));
+    for (auto& p : exact.back().outer()) { bg::set<0>(p, number(bg::get<0>(p) + number(1) / 3)); }
+    BOOST_TEST(bg::buffer_round_certified(exact, out, 0, 0, 1) == status::cannot_certify);
+    BOOST_TEST(same_multi(out, input));
+
+    polygon single = input.front();
+    auto const old_single = single;
+    BOOST_TEST(bg::buffer_round_certified(input, single, 0, 0, 0) == status::cannot_certify);
+    BOOST_TEST(same_storage(single, old_single));
+    BOOST_TEST(bg::buffer_round_certified(exact.back(), single, 6, 5, 0) == status::cannot_certify);
+    BOOST_TEST(same_storage(single, old_single));
+    // Dilation fills the annulus hole and hides the island's non-dyadic
+    // coordinates. Only the final exact union has to export.
+    BOOST_TEST(bg::buffer_round_certified(exact, single, 6, 5, 0) == status::success);
+    BOOST_TEST(single.inners().empty());
+    BOOST_TEST_EQ(area2(single.outer()), -1904);
+    BOOST_TEST(bg::buffer_round_certified(multi{polygon{}}, out, 1, 0, 0) == status::success);
+    BOOST_TEST(out.empty());
+}
+
 int main()
 {
     test_point_and_segment();
@@ -336,5 +492,8 @@ int main()
     test_irrational_polygon_arrangement();
     test_chord_erosion_empty_implication();
     test_empty_vs_failure();
+    test_public_multipoint();
+    test_public_multiline();
+    test_public_multipolygon();
     return boost::report_errors();
 }

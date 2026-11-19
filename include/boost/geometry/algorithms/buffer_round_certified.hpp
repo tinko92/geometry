@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <boost/geometry/algorithms/buffer_linestring_arrangement_certified.hpp>
+#include <boost/geometry/algorithms/detail/buffer/round_multi_backend.hpp>
 #include <boost/geometry/algorithms/detail/buffer/round_polygon_backend.hpp>
 #include <boost/geometry/algorithms/is_empty.hpp>
 #include <boost/geometry/geometries/linestring.hpp>
@@ -196,7 +197,11 @@ status dilate_trace(std::vector<rational_xy> const& trace, Polygon& output, budg
 template <typename Geometry, typename MultiPolygon>
 status dispatch(Geometry const& input, MultiPolygon& output, budget const& b)
 {
-    if constexpr (std::is_same_v<tag_t<Geometry>, polygon_tag>)
+    if constexpr (multi_buffer_input<tag_t<Geometry>>)
+    {
+        return multi_backend(input, output, b.distance, b.sagitta, b.displacement);
+    }
+    else if constexpr (std::is_same_v<tag_t<Geometry>, polygon_tag>)
     {
         if (b.distance < 0)
         {
@@ -227,7 +232,8 @@ status dispatch(Geometry const& input, MultiPolygon& output, budget const& b)
 
 /*!
 \brief Opt-in certified round buffer for a 2D Cartesian Point, Segment,
-    Linestring or Polygon. Does not change buffer().
+    Linestring, Polygon, MultiPoint, MultiLineString or MultiPolygon.
+    Does not change buffer().
 \details Positive distance dilates. Arc sagitta bounds chord construction
     before export; max_displacement separately bounds Euclidean movement of
     each ideal chord vertex in the stored output. The stored topology is
@@ -236,8 +242,12 @@ status dispatch(Geometry const& input, MultiPolygon& output, budget const& b)
     targets the regularized difference with the inscribed boundary band.
     This gives radius-inclusion bounds, not a smooth erosion Hausdorff or
     component bound. A nonempty chord erosion need not imply nonempty
-    smooth erosion. At zero distance a valid Polygon is copied losslessly,
-    with the output's orientation and closure.
+    smooth erosion. MultiPolygon requires pairwise disjoint filled members
+    with disjoint boundaries, including at zero distance. Multi inputs use
+    one exact arrangement before native conversion. At zero distance the
+    admitted areal sources are copied losslessly with the output's
+    orientation and closure. Nonpositive point and linear buffers regularize
+    to empty. Empty multi inputs or members are allowed.
 \param distance Finite signed radius. The two error budgets must be finite
     and nonnegative, in the same coordinate units as distance.
 \param output Polygon or MultiPolygon with integral, float, double or
@@ -253,7 +263,8 @@ status dispatch(Geometry const& input, MultiPolygon& output, budget const& b)
     lossless export. Algebraic line and polygon chord export requires native
     coordinates. The rational chord arrangement is lossless and requires
     rational edge lengths (and for a Linestring, a single shell without holes).
-    A Polygon output cannot hold multiple components.
+    Nonzero multi chord buffering requires native output coordinates and
+    positive sagitta. A Polygon output cannot hold multiple components.
 */
 template <typename Geometry, typename Output, typename Distance, typename Sagitta, typename Displacement>
 [[nodiscard]] inline certified_buffer_status buffer_round_certified(
@@ -265,8 +276,9 @@ template <typename Geometry, typename Output, typename Distance, typename Sagitt
     using tag = tag_t<Geometry>;
     constexpr bool single = std::is_same_v<tag_t<Output>, polygon_tag>;
     static_assert(std::is_same_v<tag, point_tag> || std::is_same_v<tag, segment_tag>
-               || std::is_same_v<tag, linestring_tag> || std::is_same_v<tag, polygon_tag>,
-                  "Certified round buffer requires a Point, Segment, Linestring or Polygon");
+               || std::is_same_v<tag, linestring_tag> || std::is_same_v<tag, polygon_tag>
+               || impl::multi_buffer_input<tag>,
+                  "Certified round buffer requires a supported 2D Cartesian geometry");
     static_assert(single || std::is_same_v<tag_t<Output>, multi_polygon_tag>,
                   "Certified round buffer requires Polygon or MultiPolygon output");
     static_assert(dimension<Geometry>::value == 2 && dimension<Output>::value == 2
@@ -293,7 +305,11 @@ template <typename Geometry, typename Output, typename Distance, typename Sagitt
     {
         auto const result = impl::dispatch(input, staged, b);
         if (result != status::success) { return result; }
-        if (b.distance > 0 && geometry::is_empty(staged)) { return status::cannot_certify; }
+        if (b.distance > 0 && geometry::is_empty(staged))
+        {
+            if constexpr (!impl::multi_buffer_input<tag>) { return status::cannot_certify; }
+            else if (!geometry::is_empty(input)) { return status::cannot_certify; }
+        }
         if constexpr (single)
         {
             if (staged.size() > 1) { return status::cannot_certify; }
