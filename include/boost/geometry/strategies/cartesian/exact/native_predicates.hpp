@@ -175,13 +175,23 @@ inline int orientation(native_point_view<Coordinate, A> const& a,
     return fixed_orientation(values);
 }
 
+// orient2d also serves epsilon-based callers. Its exact sign has no use
+// for the scale of those comparisons, including on the adaptive path.
+struct no_epsilon_scale
+{
+    no_epsilon_scale() = default;
+    no_epsilon_scale(double, double, double, double) {}
+};
+
 template <typename Coordinate, typename A, typename B, typename P>
 inline int orientation(native_point_view<Coordinate, A> const& a,
                        native_point_view<Coordinate, B> const& b,
                        native_point_view<Coordinate, P> const& c, std::false_type)
 {
-    return strategy::side::side_robust<double, strategy::side::fp_equals_policy, 3>
-        ::apply(a.point(), b.point(), c.point());
+    no_epsilon_scale unused;
+    auto const det = strategy::side::side_robust<double, strategy::side::fp_equals_policy, 3>
+        ::side_value<double>(a.point(), b.point(), c.point(), unused);
+    return (det > 0) - (det < 0);
 }
 
 } // namespace native_predicates_detail
