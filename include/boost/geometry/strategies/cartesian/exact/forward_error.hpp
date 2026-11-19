@@ -567,10 +567,12 @@ inline bool try_compare_scalars(scalar_approximation const& a, scalar_approximat
         return true;
     }
     double const value = detail::arithmetic::rounded_sub(a.value, b.value);
-    double const error = detail::inflate(detail::arithmetic::rounded_add(
-        detail::arithmetic::rounded_add(a.error, b.error),
-        detail::arithmetic::rounded_mul(detail::rho, std::abs(value))));
-    return detail::sign({value, error}, output);
+    // RN is monotone and symmetric. RN(|a-b|) > RN(ea+eb) implies
+    // |a-b| > ea+eb, even when both rounded quantities round down.
+    double const error = detail::arithmetic::rounded_add(a.error, b.error);
+    if (!(std::abs(value) > error)) return false;
+    output = value > 0 ? 1 : -1;
+    return true;
 }
 
 inline bool try_compare_scalars(double a, double ea, double b, double eb, int& output)

@@ -199,6 +199,15 @@ void native_final_coefficients()
     BOOST_TEST(fe::try_compare_scalars({-0.0,0},{0.0,0},sign));BOOST_TEST_EQ(sign,0);
     sign=17;
     BOOST_TEST(!fe::try_compare_scalars({1,4*fe::detail::u},{1,0},sign));BOOST_TEST_EQ(sign,17);
+    // 1 + u/2 rounds to 1: a rounded tie must not certify separation.
+    BOOST_TEST(!fe::try_compare_scalars({1,1},{-fe::detail::u/2,0},sign));
+    BOOST_TEST_EQ(sign,17);
+    BOOST_TEST(!fe::try_compare_scalars({1,1},{0,0},sign));
+    BOOST_TEST_EQ(sign,17);
+    BOOST_TEST(fe::try_compare_scalars({std::nextafter(1.,2.),1},{0,0},sign));
+    BOOST_TEST_EQ(sign,1);
+    BOOST_TEST(fe::try_compare_scalars({0,0},{std::nextafter(1.,2.),1},sign));
+    BOOST_TEST_EQ(sign,-1);
 
     // Normal-range cancellation exercises reverse-error bounds at many scales.
     for(int exponent:{-200,-100,0,100,200})
