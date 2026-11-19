@@ -15,7 +15,7 @@ snapshot_headers > "$out/start-headers.sha256"
 printf 'test\tcompile\trun\n' > "$out/results.tsv"
 failed=0
 selected=0
-for name in arithmetic round_buffer buffer_radical_field buffer_radical_noding construction_filter coordinate decimal_overlay decimal_issues sterbenz forward_error fixed_arithmetic fixed_measures \
+for name in arithmetic round_buffer round_buffer_api convex_erosion buffer_radical_field buffer_radical_noding construction_filter coordinate default_pilot decimal_overlay decimal_issues sterbenz forward_error fixed_arithmetic fixed_measures \
     construction_capacity construction_rounding borrowed_records borrowed_predicates \
     borrowed_query borrowed_alias borrowed_bounds borrowed_root_ring borrowed_turns borrowed_output \
     borrowed_primitive borrowed_clipping borrowed_operations output_support_hooks \
@@ -23,7 +23,7 @@ for name in arithmetic round_buffer buffer_radical_field buffer_radical_noding c
     borrowed_segment_box borrowed_public_predicates gc_conversion_hooks gc_boxes \
     fixed_rounding typed_cache borrowed_native borrowed_mixed borrowed_section borrowed_ring segment_box \
     native_predicates point segment_position \
-    segment spherical_boundary_union spherical_ray spherical_region spherical_strategy filtered_segment static_predicates static_box static_clipping \
+    segment spherical_angular_audit spherical_boundary_union spherical_point_placement spherical_ray spherical_region spherical_strategy filtered_segment static_predicates static_box static_clipping \
     static_ring_topology relate_overlay shared_boundary cluster rounding_policies output_policy ulp_filter filter_routing \
     algorithm_optimization benchmark_check additional_issue_api additional_issues gc issues sorted_point_view
 do
@@ -38,6 +38,9 @@ do
     compile=0
     define=
     if [ "$name" = benchmark_check ]; then define=-DBG_BENCH_EXACT; fi
+    if [ "$name" = default_pilot ]; then
+        define='-DBOOST_GEOMETRY_ENABLE_CARTESIAN_EXACT_DEFAULT_PILOT -DBOOST_GEOMETRY_TEST_EXPECT_EXACT_DEFAULT_PILOT'
+    fi
     "$cxx" "-std=$standard" -O1 -g0 -DNDEBUG -ffp-contract=off -pthread \
         -Wno-constant-conversion $define -I"$repo/include" -I"$boost" -I"$repo/test" \
         "$source" -o "$out/$name" > "$out/$name.compile.log" 2>&1 || compile=$?
