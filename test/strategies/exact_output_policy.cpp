@@ -252,6 +252,14 @@ void test_direct_native_policy()
     BOOST_TEST_EQ(bg::get<0>(rounded.intersections[0]), bg::get<0>(expected));
     BOOST_TEST_EQ(bg::get<1>(rounded.intersections[0]), bg::get<1>(expected));
     BOOST_TEST_EQ(bg::get<0>(combined.intersection_points.intersections[0]), bg::get<0>(expected));
+    if constexpr (std::is_same<Native, point<double>>::value)
+    {
+        using bounded = sr::cartesian_exact<C, sr::bounded_ulp_output<100>>;
+        auto const fallback = bounded::relate().apply(a, b, policy());
+        BOOST_TEST_EQ(fallback.count, 1u);
+        BOOST_TEST_EQ(bg::get<0>(fallback.intersections[0]), bg::get<0>(expected));
+        BOOST_TEST_EQ(bg::get<1>(fallback.intersections[0]), bg::get<1>(expected));
+    }
     BOOST_TEST(bg::get<0>(raw.intersections[0]) != bg::get<0>(expected)
         || bg::get<1>(raw.intersections[0]) != bg::get<1>(expected));
     point<double> converted;
@@ -499,6 +507,29 @@ void test_public_set_operations()
     BOOST_TEST_EQ(bg::relation(a, b, default_strategy()).str(), bg::relation(a, b, nearest_strategy()).str());
 }
 
+template <std::size_t N, bool Retry>
+void test_bounded_line()
+{
+    using line = bg::model::linestring<point<double>>;
+    using strategy = sr::cartesian_exact<double, sr::bounded_ulp_output<N, Retry>>;
+    // The binary64 FMA candidate may lie one step away from the exact
+    // midpoint's ties-even owner. Compare emission against that owner.
+    double const odd = std::nextafter(1.0, 2.0);
+    double const end = std::nextafter(std::nextafter(std::nextafter(odd, 2.0), 2.0), 2.0);
+    line const a{{odd, 0}, {end, 3}}, b{{0, 0.5}, {2, 0.5}};
+    std::vector<point<double>> output;
+    strategy const bounded;
+    bg::intersection(a, b, output, bounded);
+    BOOST_TEST_EQ(bg::relation(a, b, bounded).str(), "0F1FF0102");
+    BOOST_TEST_EQ(output.size(), 1u);
+    if (output.size() != 1) return;
+    double const exact = std::nextafter(odd, 2.0);
+    double x = bg::get<0>(output.front());
+    for (std::size_t i = 0; i < N && x != exact; ++i) x = std::nextafter(x, exact);
+    BOOST_TEST_EQ(x, exact);
+    BOOST_TEST_EQ(bg::get<1>(output.front()), 0.5);
+}
+
 void test_polygon_operation_emission()
 {
     ec::point_cache_scope<double> scope;
@@ -631,6 +662,7 @@ void test_polygon_operation_emission()
         check_policy(sr::cartesian_exact<double, sr::eager_nearest_output>());
         check_policy(sr::cartesian_exact<double, sr::deferred_nearest_output>());
         check_policy(nearest_strategy());
+        check_policy(sr::cartesian_exact<double, sr::bounded_ulp_output<100, true>>());
     };
     check([](auto const& a, auto const& b, auto& out, auto const& strategy) { bg::intersection(a, b, out, strategy); });
     check([](auto const& a, auto const& b, auto& out, auto const& strategy) { bg::union_(a, b, out, strategy); });
@@ -663,6 +695,9 @@ int main()
     test_geometry_propagation<default_strategy>();
     test_geometry_propagation<nearest_strategy>();
     test_public_set_operations();
+    test_bounded_line<1, false>();
+    test_bounded_line<4, true>();
+    test_bounded_line<100, true>();
     test_polygon_operation_emission();
     return boost::report_errors();
 }

@@ -29,6 +29,7 @@ char const* const symmetric_wkt = "MULTIPOLYGON(((0 0,0 6,1 5,1 0,0 0)),((1 -1,1
 template <typename C, typename Policy>
 void check()
 {
+    using traits = bg::strategies::detail::exact_cartesian::construction_rounding::policy_traits<Policy>;
     using point = bg::model::d2::point_xy<C>;
     using polygon = bg::model::polygon<point>;
     using multi = bg::model::multi_polygon<polygon>;
@@ -46,7 +47,7 @@ void check()
     BOOST_TEST_EQ(i.size(), 1u);
     BOOST_TEST_EQ(d.size(), 1u);
     BOOST_TEST_EQ(s.size(), 2u);
-    if constexpr (!std::is_same<Policy, bg::strategies::relate::approximate_output>::value)
+    if constexpr (traits::nearest_output)
     {
         BOOST_TEST_EQ(bg::area(u), 41.5);
         BOOST_TEST_EQ(bg::area(i), 12.5);
@@ -64,7 +65,8 @@ void check()
         bg::sym_difference(a, b, symmetric, bound);
         bg::difference(a, b, first, bound);
         // Exact internal geometry, not rounded native coordinates, defines the
-        // set result under every policy. Ordinary emission has no area promise.
+        // set result under every policy. Approximate and bounded emission
+        // need not preserve exact area.
         check_exact_output(bound, joined, union_wkt);
         check_exact_output(bound, common, intersection_wkt);
         check_exact_output(bound, first, difference_wkt);
@@ -74,7 +76,7 @@ void check()
         check_exact_output(bound, combined, symmetric_wkt);
         multi exported;
         bound.append_output(combined, exported);
-        if constexpr (!std::is_same<Policy, bg::strategies::relate::approximate_output>::value)
+        if constexpr (traits::nearest_output)
             BOOST_TEST_EQ(bg::area(exported), 29.0);
     });
 }
@@ -176,10 +178,12 @@ int main()
     check<double, bg::strategies::relate::approximate_output>();
     check<double, bg::strategies::relate::eager_nearest_output>();
     check<double, bg::strategies::relate::deferred_nearest_output>();
+    check<double, bg::strategies::relate::bounded_ulp_output<100, true>>();
     check<std::int64_t, bg::strategies::relate::approximate_output>();
     check_linear<double, bg::strategies::relate::approximate_output>();
     check_linear<double, bg::strategies::relate::eager_nearest_output>();
     check_linear<double, bg::strategies::relate::deferred_nearest_output>();
+    check_linear<double, bg::strategies::relate::bounded_ulp_output<100, true>>();
     check_linear<std::int64_t, bg::strategies::relate::approximate_output>();
     check_ring_traits<true, false>();
     check_ring_traits<false, true>();

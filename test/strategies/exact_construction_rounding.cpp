@@ -325,6 +325,182 @@ void random_cases()
     BOOST_TEST(faithful_not_nearest > 0);
 }
 
+std::uint64_t ulp_distance(double a, double b)
+{
+    auto rank = [](double value)
+    {
+        constexpr std::uint64_t sign = std::uint64_t(1) << 63;
+        auto const word = bits(value), magnitude = word & ~sign;
+        return word & sign ? sign - magnitude : sign + magnitude;
+    };
+    auto const x = rank(a), y = rank(b);
+    return x < y ? y - x : x - y;
+}
+
+struct bounded_counts
+{
+    std::size_t accepted = 0, rescued = 0, different = 0, beyond_one = 0;
+};
+
+std::vector<producers> bounded_corpus()
+{
+    std::mt19937_64 random(0x424f554e444544);
+    std::vector<producers> inputs(512);
+    for (std::size_t i = 0; i < inputs.size(); ++i)
+    {
+        for (double& x : inputs[i])
+            x = double(std::int64_t(random() % 100001) - 50000) / 1000;
+        if (i % 3 == 0) for (double& x : inputs[i]) x += 0x1p20;
+    }
+    return inputs;
+}
+
+template <std::size_t N, bool Retry>
+void check_bounded(producers const& input, exact_point const& exact,
+                   std::array<double, 2> const& expected, bounded_counts& counts)
+{
+    using state = cr::point_state<double, policy::bounded_ulp_output<N, Retry>>;
+    using cache = ec::point_cache_detail::native_cache<double>;
+    static_assert(sizeof(state) == sizeof(ordinary), "Reuse the stored-error layout");
+    static_assert(std::is_trivially_copyable<state>::value, "No producer ownership");
+    ec::forward_error::point_approximation first, tighter;
+    auto const plain = cr::detail::bounded_intersection<N, false>(input, first);
+    auto const accepted = cr::detail::bounded_intersection<N, Retry>(input, tighter);
+    ec::point_cache_scope<double> scope;
+    state point;
+    auto const init = [&] { point.init(input); };
+    if (accepted[0] && accepted[1])
+    {
+        without_allocations(init);
+        BOOST_TEST(ec::operation_detail::current<double>() == nullptr);
+    }
+    else
+    {
+        init();
+        BOOST_TEST_EQ(cache::size(), 1u);
+    }
+    auto const entries = cache::size();
+    for (std::size_t d = 0; d < 2; ++d)
+    {
+        auto const bound = point.bounds(d);
+        auto const emitted = point.template emit<double>(d, input);
+        BOOST_TEST_EQ(bits(emitted), bits(bound.approximate));
+        auto const steps = ulp_distance(emitted, expected[d]);
+        BOOST_TEST(steps <= N);
+        BOOST_TEST(absolute(rational(emitted) - exact[d]) <= rational(bound.error));
+        if (plain[d]) BOOST_TEST(accepted[d] && bits(first.value[d]) == bits(tighter.value[d]));
+        if (accepted[d])
+        {
+            BOOST_TEST_EQ(bits(emitted), bits(tighter.value[d]));
+            ++counts.accepted;
+            counts.rescued += !plain[d];
+            counts.different += steps != 0;
+            counts.beyond_one += steps > 1;
+        }
+        else BOOST_TEST_EQ(bits(emitted), bits(expected[d]));
+    }
+    BOOST_TEST_EQ(cache::size(), entries);
+    for (std::size_t d = 0; d < 2; ++d)
+    {
+        auto const refined = point.refine(input, d);
+        BOOST_TEST_EQ(bits(refined.approximate), bits(expected[d]));
+        BOOST_TEST(absolute(rational(refined.approximate) - exact[d]) <= rational(refined.error));
+    }
+}
+
+void bounded_cases()
+{
+    std::array<bounded_counts, 6> counts{};
+    std::size_t cases = 0;
+    auto check_input = [&](producers const& input)
+    {
+        exact_point exact;
+        if (!oracle(input, exact)) return;
+        std::array<double, 2> const expected{{nearest<double>(exact[0]), nearest<double>(exact[1])}};
+        check_bounded<1, false>(input, exact, expected, counts[0]);
+        check_bounded<1, true>(input, exact, expected, counts[1]);
+        check_bounded<4, false>(input, exact, expected, counts[2]);
+        check_bounded<4, true>(input, exact, expected, counts[3]);
+        check_bounded<100, false>(input, exact, expected, counts[4]);
+        check_bounded<100, true>(input, exact, expected, counts[5]);
+        ++cases;
+    };
+    // Exact t=1/2. The residual retry improves only x, retaining the passing y.
+    producers const rescue{{1.6875, 9, 2.6875, 10, 1.6875, 10, 3.6875, 8}};
+    ec::forward_error::point_approximation first;
+    auto const plain = cr::detail::bounded_intersection<4, false>(rescue, first);
+    auto const retry = cr::detail::bounded_intersection<4, true>(rescue, first);
+    BOOST_TEST(!plain[0] && plain[1] && retry[0] && retry[1]);
+    check_input(rescue);
+
+    for (double sign : {-1.0, 1.0})
+    for (double a : {previous(1.0), 1.0, next(1.0)})
+    {
+        // Place x at a rounding boundary on both sides of a binade.
+        check_input({{sign * a, 0, sign * next(next(next(a))), 3, 0, 0.5, 2, 0.5}});
+    }
+    check_input({{0, -1, 0, 1, -1, 0, 1, 0}}); // Zero candidates.
+    double const n = 0x1p27;
+    check_input({{0, 0, n + 1, n, 0, 1, n, n}}); // Rounded denominator zero.
+    producers const near_parallel{{0, 0, n + 1, n, 0, 1, n - 2, n - 2}};
+    auto const heads = ec::forward_error::detail::intersection_heads(near_parallel, false);
+    BOOST_TEST(heads.denominator != 0);
+    auto const rejected = cr::detail::bounded_intersection<100, true>(near_parallel, first);
+    BOOST_TEST(!rejected[0] && !rejected[1]);
+    check_input(near_parallel);
+    for (int exponent : {-700, -64, 60, 700})
+    {
+        auto input = rescue;
+        for (double& x : input) x = std::ldexp(x, exponent);
+        check_input(input);
+    }
+    auto const tiny = (std::numeric_limits<double>::denorm_min)();
+    check_input({{0, 0, tiny, 0, 0, -tiny, tiny, 3 * tiny}});
+
+    for (auto const& input : bounded_corpus()) check_input(input);
+    BOOST_TEST(counts[0].accepted > 100 && counts[0].different > 0);
+    BOOST_TEST(counts[3].rescued > 0);
+    BOOST_TEST(counts[4].accepted > counts[0].accepted && counts[4].beyond_one > 0);
+    for (std::size_t i = 0; i < counts.size(); ++i)
+        std::cout << "bounded " << (i < 2 ? 1 : i < 4 ? 4 : 100) << (i % 2 ? " retry: " : ": ")
+                  << counts[i].accepted << '/' << 2 * cases << " axes accepted, "
+                  << counts[i].rescued << " rescued, " << counts[i].different
+                  << " non-nearest, " << counts[i].beyond_one << " beyond one step\n";
+}
+
+void bounded_other_formats()
+{
+    using bounded = policy::bounded_ulp_output<100, true>;
+    // A double midpoint cannot be used as a proxy for exact float rounding.
+    double const midpoint = 1 + 0x1p-24;
+    producers const input{{midpoint, 0, next(midpoint), 1, 0, 0.25, 2, 0.25}};
+    cr::point_state<double, bounded> a;
+    a.init(input);
+    BOOST_TEST_EQ(a.emit<double>(0, input), midpoint);
+    BOOST_TEST_EQ(a.emit<float>(0, input), next(1.0f));
+    BOOST_TEST_EQ(a.emit<int>(0, input), 1);
+
+    std::array<float, 8> const f{{0.25f, -1.5f, 1.75f, 2.25f, -2.5f, 0.75f, 3.25f, -1.25f}};
+    std::int64_t const base = (std::int64_t(1) << 54) + 1;
+    std::array<std::int64_t, 8> const j{{base, base, base + 17, base + 31,
+                                        base, base + 25, base + 17, base + 2}};
+    auto check_input = [](auto const& values)
+    {
+        using C = typename std::decay_t<decltype(values)>::value_type;
+        exact_point exact;
+        BOOST_TEST(oracle(values, exact));
+        cr::point_state<C, bounded> p;
+        p.init(values);
+        for (std::size_t d = 0; d < 2; ++d)
+        {
+            BOOST_TEST_EQ(p.template emit<double>(d, values), nearest<double>(exact[d]));
+            BOOST_TEST_EQ(p.template emit<float>(d, values), nearest<float>(exact[d]));
+        }
+    };
+    check_input(f);
+    check_input(j);
+}
+
 void integer_inputs()
 {
     for (std::int64_t base : {std::int64_t(0), (std::int64_t(1) << 54) + 1,
@@ -591,7 +767,7 @@ void invalid_inputs()
     BOOST_TEST(rejected);
 }
 
-template <typename C, typename Policy>
+template <bool Emit, typename C, typename Policy>
 BOOST_NOINLINE std::uint64_t benchmark_sweep(std::vector<std::array<C, 8>> const& inputs,
     std::vector<cr::point_state<C, Policy>>& points, ec::operation_detail::storage_for<C>& storage)
 {
@@ -600,21 +776,54 @@ BOOST_NOINLINE std::uint64_t benchmark_sweep(std::vector<std::array<C, 8>> const
     for (std::size_t i = 0; i < inputs.size(); ++i)
     {
         points[i].init(inputs[i]);
-        checksum += bits(points[i].approximate(0));
-        checksum ^= bits(points[i].approximate(1));
+        if constexpr (Emit)
+        {
+            checksum += bits(points[i].template emit<double>(0, inputs[i]));
+            checksum ^= bits(points[i].template emit<double>(1, inputs[i]));
+        }
+        else
+        {
+            checksum += bits(points[i].approximate(0));
+            checksum ^= bits(points[i].approximate(1));
+        }
     }
     return checksum;
 }
 
 volatile std::uint64_t benchmark_sink = 0;
 
+template <typename C, typename Policy, bool Emit = false>
+void benchmark_corpus(std::vector<std::array<C, 8>> const& inputs,
+                      char const* type, char const* policy_name, char const* corpus)
+{
+    auto const count = inputs.size();
+    ec::point_cache_scope<C> scope;
+    auto& storage = ec::operation_detail::require<C>().storage();
+    storage.native.reserve(count);
+    std::vector<cr::point_state<C, Policy>> points(count);
+    auto run = [&](std::size_t sweeps)
+    {
+        auto const begin = std::chrono::steady_clock::now();
+        for (std::size_t i = 0; i < sweeps; ++i)
+            benchmark_sink ^= benchmark_sweep<Emit>(inputs, points, storage);
+        return std::chrono::duration<double>(std::chrono::steady_clock::now() - begin).count();
+    };
+    double const pilot = run(64);
+    auto const sweeps = std::size_t((std::max)(8.0, (std::min)(262144.0, 64 * 0.03 / pilot)));
+    std::array<double, 5> times;
+    for (double& t : times) t = run(sweeps) * 1e9 / double(sweeps * count);
+    std::sort(times.begin(), times.end());
+    std::cout << type << ',' << policy_name << ',' << corpus << ','
+              << std::setprecision(10) << times[2] << ',' << times.front() << ',' << times.back()
+              << ',' << benchmark_sweep<Emit>(inputs, points, storage) << ',' << storage.native.size() << '\n';
+}
+
 template <typename C, typename Policy>
 void benchmark_case(char const* type, char const* policy_name, bool outside = false)
 {
-    constexpr std::size_t count = 128;
     std::vector<std::array<C, 8>> inputs;
     std::mt19937_64 random(0x534d414c4c494e54);
-    for (std::size_t i = 0; i < count; ++i)
+    for (std::size_t i = 0; i < 128; ++i)
     {
         std::int64_t const radius = 1 + random() % 128;
         auto position = [&]
@@ -627,25 +836,23 @@ void benchmark_case(char const* type, char const* policy_name, bool outside = fa
         inputs.push_back({{C(x - radius), C(y - radius), C(x + radius), C(y + radius + 1),
             C(x - radius), C(y + radius), C(x + radius), C(y - radius - 2)}});
     }
-    ec::point_cache_scope<C> scope;
-    auto& storage = ec::operation_detail::require<C>().storage();
-    storage.native.reserve(count);
-    std::vector<cr::point_state<C, Policy>> points(count);
-    auto run = [&](std::size_t sweeps)
-    {
-        auto const begin = std::chrono::steady_clock::now();
-        for (std::size_t i = 0; i < sweeps; ++i)
-            benchmark_sink ^= benchmark_sweep(inputs, points, storage);
-        return std::chrono::duration<double>(std::chrono::steady_clock::now() - begin).count();
-    };
-    double const pilot = run(64);
-    auto const sweeps = std::size_t((std::max)(8.0, (std::min)(262144.0, 64 * 0.03 / pilot)));
-    std::array<double, 5> times;
-    for (double& t : times) t = run(sweeps) * 1e9 / double(sweeps * count);
-    std::sort(times.begin(), times.end());
-    std::cout << type << ',' << policy_name << ',' << (outside ? "outside" : "small") << ','
-              << std::setprecision(10) << times[2] << ',' << times.front() << ',' << times.back()
-              << ',' << benchmark_sweep(inputs, points, storage) << ',' << storage.native.size() << '\n';
+    benchmark_corpus<C, Policy>(inputs, type, policy_name, outside ? "outside" : "small");
+}
+
+void benchmark_bounded()
+{
+    auto const inputs = bounded_corpus();
+    auto run = [&](auto tag, char const* name)
+    { benchmark_corpus<double, decltype(tag), true>(inputs, "double", name, "decimal"); };
+    std::cout << "coordinate,policy,corpus,median_ns,min_ns,max_ns,checksum,cache_entries\n";
+    run(policy::approximate_output{}, "ordinary");
+    run(policy::nearest_output{}, "nearest");
+    run(policy::bounded_ulp_output<1>{}, "bounded1");
+    run(policy::bounded_ulp_output<1, true>{}, "bounded1-retry");
+    run(policy::bounded_ulp_output<4>{}, "bounded4");
+    run(policy::bounded_ulp_output<4, true>{}, "bounded4-retry");
+    run(policy::bounded_ulp_output<100>{}, "bounded100");
+    run(policy::bounded_ulp_output<100, true>{}, "bounded100-retry");
 }
 
 void benchmark()
@@ -668,9 +875,13 @@ int main(int argc, char** argv)
     {
         BOOST_TEST_EQ(std::fegetround(), FE_TONEAREST);
         if (argc == 2 && std::string(argv[1]) == "--benchmark") { benchmark(); return boost::report_errors(); }
+        if (argc == 2 && std::string(argv[1]) == "--benchmark-bounded")
+        { benchmark_bounded(); return boost::report_errors(); }
         certificates();
         boundaries();
         random_cases();
+        bounded_cases();
+        bounded_other_formats();
         integer_inputs();
         small_integers();
         ordinary_first_stage();
