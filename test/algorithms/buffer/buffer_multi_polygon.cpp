@@ -754,9 +754,52 @@ void test_all()
     }
 }
 
+struct composed_cartesian_buffer
+    : bg::strategies::distance::cartesian<>
+    , bg::strategies::buffer::cartesian_touch_placement
+{};
+
+template <typename Strategy, typename Coordinate,
+          typename Point = bg::model::point<Coordinate, 2, bg::cs::cartesian>>
+auto has_buffer_touch_placement(int)
+    -> decltype(std::declval<Strategy const&>().place_touch(
+        std::declval<bg::segment_ratio<Coordinate>&>(),
+        std::declval<Point const&>(), std::declval<Point const&>(),
+        std::declval<Point const&>()), std::true_type());
+
+template <typename Strategy, typename Coordinate>
+std::false_type has_buffer_touch_placement(long);
+
+void test_umbrella_touch_placement_opt_in()
+{
+    static_assert(decltype(has_buffer_touch_placement<composed_cartesian_buffer, double>(0))::value,
+                  "The composed umbrella opts into represented floating touch placement");
+    static_assert(! decltype(has_buffer_touch_placement<composed_cartesian_buffer, int>(0))::value,
+                  "The hook must not rewrite integral ratios");
+    static_assert(! decltype(has_buffer_touch_placement<bg::strategies::distance::cartesian<>, double>(0))::value,
+                  "An independent umbrella does not get a placement policy by default");
+
+    using point = bg::model::point<double, 2, bg::cs::cartesian>;
+    using polygon = bg::model::polygon<point>;
+    using multi = bg::model::multi_polygon<polygon>;
+    auto const input = bg::from_wkt<multi>(
+        "MULTIPOLYGON(((2 8,2 9,3 8,2 8)),((6 4,6 5,7 4,6 4)))");
+    multi out;
+    bg::detail::buffer::visit_pieces_default_policy visitor;
+    // Reuse the placement rule without selecting the ordinary buffer umbrella.
+    bg::detail::buffer::buffer_inserter<polygon>(input, std::back_inserter(out),
+        bg::strategy::buffer::distance_symmetric<double>(1), bg::strategy::buffer::side_straight(),
+        bg::strategy::buffer::join_miter(), bg::strategy::buffer::end_flat(),
+        bg::strategy::buffer::point_square(), composed_cartesian_buffer(), visitor);
+    BOOST_CHECK(bg::is_valid(out));
+    BOOST_CHECK_EQUAL(out.size(), 1u);
+    BOOST_CHECK_CLOSE(bg::area(out), 9.5 + 7 * std::sqrt(2.0), ut_settings::default_tolerance);
+}
+
 int test_main(int, char* [])
 {
     BoostGeometryWriteTestConfiguration();
+    test_umbrella_touch_placement_opt_in();
 
     test_all<true, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();
 
