@@ -117,6 +117,22 @@ void test_issue(exact_issue_cases::wkt_pair const& item)
     }
     test_exact_validity(result, item);
 
+    if (item.issue == 1178)
+    {
+        // Total area alone cannot distinguish the disconnected polygon from
+        // the separate island and the surrounding polygon with one hole.
+        std::size_t islands = 0, surrounds = 0;
+        for (auto const& component : result)
+        {
+            auto const holes = bg::num_interior_rings(component);
+            exact_number const area = bg::area(component, validation);
+            islands += holes == 0 && area == 3;
+            surrounds += holes == 1 && area == 87;
+        }
+        BOOST_TEST_EQ(islands, 1u);
+        BOOST_TEST_EQ(surrounds, 1u);
+    }
+
     if (operation == "union")
     {
         exact_multi reverse;
