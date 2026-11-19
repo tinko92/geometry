@@ -45,6 +45,16 @@ struct borrowed_section : static_section<typename Root::coordinate_type>
     template <std::size_t D, typename Point, typename Box>
     static bool preceding(int direction, Point const& point, Box const&, Box const& other)
     {
+        using coordinate = geometry::coordinate_type_t<Point>;
+        if constexpr (std::is_same<Box, search_box>::value
+            && fixed_native_supported<coordinate>::value
+            && lossless_coordinate_conversion<coordinate, double>::value)
+        {
+            // A search limit is already a binary64 enclosure endpoint. The
+            // native value converts exactly, including next to an infinite limit.
+            return (direction == 1 && static_cast<double>(geometry::get<D>(point)) < geometry::get<0, D>(other))
+                || (direction == -1 && static_cast<double>(geometry::get<D>(point)) > geometry::get<1, D>(other));
+        }
         return (direction == 1 && borrowed_bounds_detail::with_bound<0, D, Root>(other,
                     [&](auto const& bound) { return root_compare_coordinate<D, Root>(point, bound); }) < 0)
             || (direction == -1 && borrowed_bounds_detail::with_bound<1, D, Root>(other,
