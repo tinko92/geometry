@@ -18,9 +18,7 @@
 #include <boost/range/begin.hpp>
 #include <boost/range/empty.hpp>
 #include <boost/range/end.hpp>
-#include <boost/range/size.hpp>
 
-#include <boost/geometry/algorithms/clear.hpp>
 #include <boost/geometry/algorithms/detail/overlay/append_no_duplicates.hpp>
 
 #include <boost/geometry/geometries/segment.hpp>
@@ -66,19 +64,6 @@ OutputIterator clip_range_with_box(Box const& b, Range const& range,
     using point_type = point_type_t<OutputLinestring>;
 
     OutputLinestring line_out;
-    auto finish = [&]
-    {
-        // Duplicate suppression can leave an isolated contact. It is not a
-        // linear component; clear it before starting the next clipped piece.
-        if (boost::size(line_out) > 1)
-        {
-            strategy.apply(line_out, out);
-        }
-        else
-        {
-            geometry::clear(line_out);
-        }
-    };
 
     auto vertex = boost::begin(range);
     signed_size_type segment_index = 0;
@@ -109,14 +94,14 @@ OutputIterator clip_range_with_box(Box const& b, Range const& range,
 
         if (!strategy.clip_segment(b, s, c1, c2))
         {
-            finish();
+            strategy.apply(line_out, out);
         }
         else
         {
             // a. If necessary, finish the line and add a start a new one
             if (c1)
             {
-                finish();
+                strategy.apply(line_out, out);
             }
 
             // b. Add p1 only if it is the first point, then add p2
@@ -130,14 +115,14 @@ OutputIterator clip_range_with_box(Box const& b, Range const& range,
             // c. If c2 is clipped, finish the line
             if (c2)
             {
-                finish();
+                strategy.apply(line_out, out);
             }
         }
 
     }
 
     // Add last part
-    finish();
+    strategy.apply(line_out, out);
     return out;
 }
 
