@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <utility>
 #include <boost/assert.hpp>
+#include <boost/range/size.hpp>
 #include <boost/geometry/algorithms/clear.hpp>
 #include <boost/geometry/geometries/segment.hpp>
 #include <boost/geometry/strategies/cartesian/exact/borrowed_geometry.hpp>
@@ -206,11 +207,11 @@ public:
     template <typename Linestring, typename Iterator>
     static void apply(Linestring& line, Iterator& output)
     {
-        if (!boost::empty(line))
+        if (boost::size(line) > 1)
         {
             *output++ = line;
-            geometry::clear(line);
         }
+        geometry::clear(line);
     }
 };
 
