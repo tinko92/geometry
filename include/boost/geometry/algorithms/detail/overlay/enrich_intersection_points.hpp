@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <map>
 #include <set>
+#include <type_traits>
 #include <vector>
 
 #ifdef BOOST_GEOMETRY_DEBUG_ENRICH
@@ -34,6 +35,7 @@
 #include <boost/range/end.hpp>
 #include <boost/range/value_type.hpp>
 
+#include <boost/geometry/core/cs.hpp>
 #include <boost/geometry/algorithms/detail/ring_identifier.hpp>
 #include <boost/geometry/algorithms/detail/overlay/check_enrich.hpp>
 #include <boost/geometry/algorithms/detail/overlay/discard_duplicate_turns.hpp>
@@ -338,7 +340,10 @@ inline void enrich_discard_turns(Turns& turns, Clusters& clusters,
     // Turns are often used by index (in clusters, next_index, etc)
     // and turns may therefore NOT be DELETED - they may only be flagged as discarded
 
-    discard_duplicate_turns(turns, geometry1, geometry2);
+    constexpr bool require_cluster = OverlayType == overlay_buffer
+        && std::is_same<geometry::cs_tag_t<typename Turns::value_type::point_type>,
+                        cartesian_tag>::value;
+    discard_duplicate_turns<require_cluster>(turns, geometry1, geometry2);
 
     // Discard turns not part of target overlay
     for (auto& turn : turns)

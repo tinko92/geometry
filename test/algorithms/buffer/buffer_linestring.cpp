@@ -116,6 +116,30 @@ static std::string const issue_1084 = "LINESTRING(269.3 -7.03, 270.23 -3.57, 270
 static std::string const issue_1250 = "LINESTRING(3 1, 4 2, 4 4, 2 4, 2 2, 3 2)";
 static std::string const issue_1250_rev = "LINESTRING(3 2, 2 2, 2 4, 4 4, 4 2, 3 1)";
 
+template <bool Clockwise>
+void test_issue_1433()
+{
+    using point = bg::model::point<double, 2, bg::cs::cartesian>;
+    using linestring = bg::model::linestring<point>;
+    using polygon = bg::model::polygon<point, Clockwise>;
+    auto const input = bg::from_wkt<linestring>(
+        "LINESTRING(1.0819919262613131 1.8488013725600743,"
+        "4.1041533228042875 -0.87236450916645436,"
+        "-2.8075663587545185 -3.1181184584717836,"
+        "-1.2965867878487485 3.990482902620351,"
+        "1.7255742852176501 1.2693173121533894)");
+    bg::model::multi_polygon<polygon> buffered;
+    bg::buffer(input, buffered,
+               bg::strategy::buffer::distance_symmetric<double>(0.0024999999441206455),
+               bg::strategy::buffer::side_straight(), bg::strategy::buffer::join_miter(1.0),
+               bg::strategy::buffer::end_flat(), bg::strategy::buffer::point_square());
+    BOOST_CHECK(bg::is_valid(buffered));
+    BOOST_CHECK_EQUAL(buffered.size(), 1u);
+    BOOST_CHECK_EQUAL(bg::num_interior_rings(buffered), 1u);
+    BOOST_CHECK(! bg::covered_by(point(0, 0), buffered));
+    BOOST_CHECK(bg::within(input[2], buffered));
+}
+
 template <bool Clockwise, typename P>
 void test_all()
 {
@@ -457,9 +481,11 @@ int test_main(int, char* [])
     BoostGeometryWriteTestConfiguration();
 
     test_all<true, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();
+    test_issue_1433<true>();
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_ORDER)
     test_all<false, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();
+    test_issue_1433<false>();
 #endif
 
     test_invalid<true, bg::model::point<default_test_type, 2, bg::cs::cartesian> >();
