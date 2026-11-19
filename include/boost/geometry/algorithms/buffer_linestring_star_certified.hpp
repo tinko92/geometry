@@ -102,40 +102,17 @@ using contour = std::vector<mark>;
 
 class envelope
 {
+    friend class algebraic_chord_union;
+
 public:
     contour capsule_contour(capsule::rational_segment const& source, exact_number const& radius,
                             exact_number const& sagitta)
     {
-        if (m_roots.size() == max_pieces) { throw uncertified{}; }
-        id const root = m_roots.size(), first = m_vertices.size();
-        m_roots.emplace_back(source.norm2);
-        rational_xy const d = source.direction;
-        for (unsigned q = 0; q < 4; ++q)
-        {
-            auto const& center = q < 2 ? source.to : source.from;
-            auto emit = [&](rational_xy const& u)
-            {
-                if (m_vertices.size() == max_vertices || m_vertices.size() - first == max_marks - 1)
-                { return false; }
-                rational_xy const c{radius * (u.x * d.y + u.y * d.x) / source.norm2,
-                                    radius * (-u.x * d.x + u.y * d.y) / source.norm2};
-                auto const& r = m_roots[root];
-                m_vertices.push_back({center, c, root, {r.coordinate(center.x, c.x), r.coordinate(center.y, c.y)}});
-                return true;
-            };
-            rb::circle_direction const a(rb::rational_arc_sample(q, 0)), b(rb::rational_arc_sample(q, 1));
-            if (!common::subdivide(q, 0, a, 1, b, radius, sagitta, 0, emit)
-                || (q % 2 == 1 && !emit(b.numerator())))
-            {
-                throw uncertified{};
-            }
-        }
-
+        auto const edges = append_capsule(source, radius, sagitta, max_marks - 1);
         contour out;
-        for (id i = first; i < m_vertices.size(); ++i)
+        for (id e = edges.first; e < edges.second; ++e)
         {
-            id const e = m_edges.size();
-            m_edges.push_back({i, i + 1 < m_vertices.size() ? i + 1 : first});
+            id const i = m_edges[e].from;
             out.push_back({make_knot(knot_kind::vertex, i, 0, m_vertices[i].bounds), e});
         }
         auto least = std::min_element(out.begin(), out.end(), [&](mark const& a, mark const& b)
@@ -152,6 +129,46 @@ public:
         return out;
     }
 
+private:
+    // Construct only primitive algebraic vertices and directed edges here.
+    // Angular events are specific to the common-witness sweep.
+    std::pair<id, id> append_capsule(capsule::rational_segment const& source, exact_number const& radius,
+                                    exact_number const& sagitta, id vertex_limit)
+    {
+        if (m_roots.size() == max_pieces) { throw uncertified{}; }
+        id const root = m_roots.size(), first = m_vertices.size();
+        m_roots.emplace_back(source.norm2);
+        rational_xy const d = source.direction;
+        for (unsigned q = 0; q < 4; ++q)
+        {
+            auto const& center = q < 2 ? source.to : source.from;
+            auto emit = [&](rational_xy const& u)
+            {
+                if (m_vertices.size() == max_vertices || m_vertices.size() - first == vertex_limit)
+                { return false; }
+                rational_xy const c{radius * (u.x * d.y + u.y * d.x) / source.norm2,
+                                    radius * (-u.x * d.x + u.y * d.y) / source.norm2};
+                auto const& r = m_roots[root];
+                m_vertices.push_back({center, c, root, {r.coordinate(center.x, c.x), r.coordinate(center.y, c.y)}});
+                return true;
+            };
+            rb::circle_direction const a(rb::rational_arc_sample(q, 0)), b(rb::rational_arc_sample(q, 1));
+            if (!common::subdivide(q, 0, a, 1, b, radius, sagitta, 0, emit)
+                || (q % 2 == 1 && !emit(b.numerator())))
+            {
+                throw uncertified{};
+            }
+        }
+
+        id const first_edge = m_edges.size();
+        for (id i = first; i < m_vertices.size(); ++i)
+        {
+            m_edges.push_back({i, i + 1 < m_vertices.size() ? i + 1 : first});
+        }
+        return {first_edge, m_edges.size()};
+    }
+
+public:
     contour merge(contour const& a, contour const& b)
     {
         contour out;
@@ -313,14 +330,19 @@ private:
         return f.f.sign(rn::cross(f.f, rn::subtract(f.f, s.to, s.from), offset));
     }
 
-    knot crossing(id e, id f)
+    box_point crossing_bounds(id e, id f) const
     {
         auto const& a = m_vertices[m_edges[e].from].bounds;
         auto const& b = m_vertices[m_edges[f].from].bounds;
         auto const v = m_vertices[m_edges[e].to].bounds - a;
         auto const w = m_vertices[m_edges[f].to].bounds - b;
         auto const t = det(b - a, w) / det(v, w);
-        return make_knot(knot_kind::crossing, e, f, {a.x + t * v.x, a.y + t * v.y});
+        return {a.x + t * v.x, a.y + t * v.y};
+    }
+
+    knot crossing(id e, id f)
+    {
+        return make_knot(knot_kind::crossing, e, f, crossing_bounds(e, f));
     }
 
     rational_xy estimate_vertex(id i) const
