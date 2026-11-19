@@ -2,10 +2,12 @@
 
 ## What is certified
 
-Only a stored native operand ring selected in an areal Boolean operation is a
-candidate. A source ID establishes provenance, not validity. Generated rings,
-exact working intermediates, temporaries, buffer, and dissolve do not carry
-this certificate. The check is lazy, after a boundary result needs resolution.
+Stored native operand rings and normalized generated triangles selected in an
+areal Boolean operation are candidates. A source ID establishes provenance,
+not validity. The check is lazy, when boundary location or residual
+normalization needs it. Buffer and dissolve do not use either certificate.
+
+### Stored originals
 
 After the usual removal of consecutive duplicates and closure normalization,
 split the cycle at its lexicographic minimum and maximum. From minimum to
@@ -29,6 +31,54 @@ non-boundary witness wins, so keep the old order. Both containment directions,
 vertex and edge midpoint contact tests, nearest-parent selection, and
 coincident-ring multiplicity reduction still run.
 
+### Generated triangles
+
+Boundary construction removes consecutive duplicates, normalizes closure and
+adds the cyclic edges of a single ring. When it has exactly three normalized
+vertices and three closed edges, **one nonzero exact orientation** proves
+three distinct vertices and a noncollinear triangle. Each pair of edges is
+incident at one endpoint and has distinct supports. No vertex lies within
+an edge, no geometric subedge can cancel, and the signed area is nonzero.
+Winding is immaterial to this certificate: either direction has the same
+boundary, and the direct residual path keeps the same signed flows and
+lexicographic edge order as the general path.
+
+The check is independent of traversal metadata, edge provenance and the
+successor rule. It does not certify orientation roles, whole-output validity
+or uniqueness **across** rings. Oppositely oriented copies of the same
+triangle still go through the coincident-ring reduction and cancel.
+Collinear triples and all other generated walks still follow the old path;
+neither orientation analysis nor parent selection changes.
+
+## What a terminal proof would need
+
+For generated walks of arbitrary size, sufficient geometric invariants are:
+
+1. **Full noding** of the final candidate boundary arcs, including endpoints
+   of partial overlaps, contacts and proper crossings. Distinct open arcs
+   meet only at nodes after coincident copies are identified.
+2. **One geometric owner per surviving open arc**, globally across selected
+   originals and generated rings, not one ID per turn. A constructive rule
+   is to retain an arc exactly when the Boolean fill differs on its two
+   sides, use the same filled-side convention for its direction, and emit
+   it once. Shared operands with equal Boolean fill on both sides emit
+   nothing. This rules out both reverse pairs and duplicates, even with
+   different source subdivisions.
+3. **Jordan cycles**: follow the same filled sector at each node. Split or
+   reject a walk that revisits a geometric vertex other than its closure;
+   require at least three distinct vertices and nonzero edges. With (1)
+   and (2), a closed cycle satisfying this condition has no self-intersection
+   or overlapping edges and encloses positive area. Separate cycles may
+   touch at nodes; that is not a proof of parentage.
+
+The actual traverser closes on the start node, rejects reusing a visited
+turn-operation ID, uses biconnected components and local target selection,
+removes local duplicates/spikes/collinearity, and checks the ring's point
+count. Marking other operations that share a segment ID and target node is
+not equivalent to marking a geometric arc across both operands. These
+mechanical checks do not establish (2) or (3), and one noncollinear corner
+does not establish nonzero signed area of a nonsimple walk.
+
 ## What is not certified
 
 Two independently valid, coincident operand rings disprove global uniqueness
@@ -43,6 +93,20 @@ Every arc can have a different turn-operation ID, yet U and V occur twice.
 This is a counterexample to the proposed bookkeeping proof, not a claim the
 overlay's angle policy emits this particular walk.
 
+The tests add two concrete **synthetic terminal** witnesses, not reports of
+valid-input traverser failures. Two equal squares with opposite windings
+touch at a repeated vertex: the walk is fully noded, has distinct geometric
+edges and a unique noncollinear lexicographic extremum, yet its signed area
+is zero. Another walk connects two lobes by going along an edge and
+returning much later along a differently subdivided copy. Local spike
+cleanup cannot account for that cancellation: the midpoint is on the raw
+boundary but not the reduced boundary. Both stay on the general path.
+
+The public exact intersection test clips two rationally validated operand
+triangles that touch at their tips. Neither output can be an untouched
+source ring. The retained result has two valid triangles, a shared tip and
+exact total area one, and agrees with the expected set by DE-9IM.
+
 An instrumented audit observed the walks immediately after traversal and
 before selection and parenting. Overlapping cell and triangle masks, a
 checkerboard, tangent holes, and issue replays were checked after certifying
@@ -50,7 +114,8 @@ the operands with rational validity predicates. In 128,084 emitted-walk
 observations, it found no non-simple ring (after correcting orientation) and
 no positive-length collinear edge overlap within or between walks of the same
 overlay invocation. This finite audit does not establish the invariants for
-all generated walks. The implementation does not skip their cancellation.
+all generated walks. That audit was not repeated here. This change proves
+only normalized generated triangles; no general repair is removed.
 
 ## Local cost
 
@@ -69,4 +134,5 @@ checked outside the timer.
 These are median paired CPU speedups on the fixture, not expected gains for
 arbitrary overlays. A separate probe certified nine originals in the first
 two contact cases and none in the traversed difference. The no-contact
-controls ranged from 0.98x to 1.00x.
+controls ranged from 0.98x to 1.00x. These are historical stored-original
+measurements, not a performance claim for the triangle check.

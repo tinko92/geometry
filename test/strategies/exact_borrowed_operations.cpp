@@ -139,6 +139,38 @@ void check_ring_traits()
     });
 }
 
+void check_touching_generated_triangles()
+{
+    using coordinate = bg::strategies::detail::exact_cartesian::exact_number;
+    using polygon = bg::model::polygon<bg::model::d2::point_xy<double>>;
+    using multi = bg::model::multi_polygon<polygon>;
+    using exact_polygon = bg::model::polygon<bg::model::d2::point_xy<coordinate>>;
+    using exact_multi = bg::model::multi_polygon<exact_polygon>;
+    polygon a;
+    multi b;
+    bg::read_wkt("POLYGON((0 0,0 4,4 4,4 0,0 0))", a);
+    bg::read_wkt("MULTIPOLYGON(((2 2,1 -2,0 -2,2 2)),((2 2,4 -2,3 -2,2 2)))", b);
+    exact_polygon qa;
+    exact_multi qb, result, expected;
+    bg::convert(a, qa);
+    bg::convert(b, qb);
+    bg::strategies::relate::cartesian<coordinate> validation;
+    BOOST_TEST(bg::is_valid(qa, validation));
+    BOOST_TEST(bg::is_valid(qb, validation));
+    // The box cuts both valid triangles, so neither output ring is an
+    // untouched operand. Their shared tip is only a point, not coincidence.
+    BOOST_TEST(bg::intersection(a, b, result, bg::strategies::relate::cartesian_exact<double>{}));
+    expected.resize(2);
+    expected[0].outer() = {{1, 0}, {2, 2}, {coordinate(3, 2), 0}, {1, 0}};
+    expected[1].outer() = {{coordinate(5, 2), 0}, {2, 2}, {3, 0}, {coordinate(5, 2), 0}};
+    BOOST_TEST_EQ(result.size(), 2u);
+    BOOST_TEST(bg::is_valid(result, validation));
+    BOOST_TEST_EQ(bg::area(result, validation), 1);
+    BOOST_TEST_EQ(bg::relation(result, expected, validation).str(), "2FFF1FFF2");
+    for (auto const& p : result)
+        BOOST_TEST_EQ(p.outer().size(), 4u);
+}
+
 int main()
 {
     check<double, bg::strategies::relate::approximate_output>();
@@ -152,5 +184,6 @@ int main()
     check_ring_traits<true, false>();
     check_ring_traits<false, true>();
     check_ring_traits<false, false>();
+    check_touching_generated_triangles();
     return boost::report_errors();
 }

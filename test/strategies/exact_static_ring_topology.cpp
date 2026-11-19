@@ -204,8 +204,8 @@ void test_certified_sources()
     auto inner = rt::selected_source<double, bg::ring_tag>(id(1,-1,-1), diamond, true);
     auto const reference_outer = rt::make_boundary<double>(square);
     auto const reference_inner = rt::make_boundary<double>(diamond);
-    BOOST_TEST(rt::certify_original_cycle(outer));
-    BOOST_TEST(rt::certify_original_cycle(inner));
+    BOOST_TEST(rt::certify_simple_cycle(outer));
+    BOOST_TEST(rt::certify_simple_cycle(inner));
 
     auto const reference = rt::residual(reference_outer);
     auto const reduced = rt::residual(outer);
@@ -230,16 +230,16 @@ void test_certified_sources()
     polygon.inners().push_back(make_ring<double>({{{0,2}},{{1,3}},{{2,2}},{{1,1}},{{0,2}}}));
     std::reverse(polygon.inners()[0].begin(), polygon.inners()[0].end());
     auto const hole = rt::selected_source<double, bg::polygon_tag>(id(0,-1,0), polygon, true);
-    BOOST_TEST(rt::certify_original_cycle(hole));
+    BOOST_TEST(rt::certify_simple_cycle(hole));
     auto const wrong_role = rt::selected_source<double, bg::ring_tag>(id(0,-1,0), square, true);
-    BOOST_TEST(!rt::certify_original_cycle(wrong_role));
+    BOOST_TEST(!rt::certify_simple_cycle(wrong_role));
 
     // The same shape in a traversal collection has no original provenance.
     std::vector<ring<double>> const generated{square};
     auto const selected = rt::selected<double>(id(2,0,-1), square, square, generated, true);
-    BOOST_TEST(!rt::certify_original_cycle(std::get<2>(selected)));
+    BOOST_TEST(!rt::certify_simple_cycle(std::get<2>(selected)));
     auto const ordinary = rt::selected_source<double, bg::ring_tag>(id(0,-1,-1), square);
-    BOOST_TEST(!rt::certify_original_cycle(ordinary));
+    BOOST_TEST(!rt::certify_simple_cycle(ordinary));
 
     using properties = ov::ring_properties<point<double>, ec::ring_metadata<double>>;
     std::map<id, properties> coincident;
@@ -258,9 +258,80 @@ void test_certified_sources()
                                         {{0,4}},{{4,4}},{{4,0}},{{0,0}}});
     auto const spurred = rt::selected_source<double, bg::ring_tag>(id(0,-1,-1), spur, true);
     point<double> const erased(-1,0);
-    BOOST_TEST(!rt::certify_original_cycle(spurred));
+    BOOST_TEST(!rt::certify_simple_cycle(spurred));
     BOOST_TEST_EQ(rt::locate_raw(erased, spurred), 0);
     BOOST_TEST_EQ(rt::locate(erased, spurred), -1);
+}
+
+void test_generated_certificate()
+{
+    namespace rt = ec::ring_topology_detail;
+    auto const triangle = make_ring<double>({{{0,0}},{{0,6}},{{6,0}},{{0,0}}});
+    auto reverse = triangle;
+    std::reverse(reverse.begin(), reverse.end());
+    auto const flat = make_ring<double>({{{0,0}},{{1,0}},{{3,0}},{{0,0}}});
+    // Nonlocal return along a differently subdivided edge. There is no
+    // adjacent reversal to remove; each end of the edge goes around a lobe.
+    auto const spur = make_ring<double>({{{-3,0}},{{3,0}},{{3,2}},{{5,2}},{{5,0}},{{3,0}},
+                                        {{0,0}},{{-3,0}},{{-3,-2}},{{-5,-2}},{{-5,0}},{{-3,0}}});
+    // Fully noded, no overlapping edges and no local spike. The two lobes
+    // touch at a repeated vertex and have opposite signed areas.
+    auto const zero = make_ring<double>({{{0,0}},{{-2,0}},{{-2,2}},{{0,2}},{{0,0}},
+                                        {{0,-2}},{{2,-2}},{{2,0}},{{0,0}}});
+    std::vector<ring<double>> const generated{triangle, reverse, flat, spur, zero};
+    auto select = [&](int i, bool allow = true)
+    { return std::get<2>(rt::selected<double>(id(2,i,-1), triangle, triangle, generated, allow)); };
+
+    for (int i : {0, 1})
+    {
+        auto const candidate = select(i);
+        auto const edge = point<double>(3,3);
+        BOOST_TEST(rt::certify_simple_cycle(candidate));
+        BOOST_TEST_EQ(rt::locate(edge, candidate), 0);
+        auto const direct = rt::residual(candidate);
+        auto const general = rt::residual_impl<false>(candidate);
+        BOOST_TEST_EQ(direct.edges.size(), 3u);
+        BOOST_TEST_EQ(direct.edges.size(), general.edges.size());
+        for (std::size_t k = 0; k < (std::min)(direct.edges.size(), general.edges.size()); ++k)
+        {
+            BOOST_TEST_EQ(direct.edges[k].first, general.edges[k].first);
+            BOOST_TEST_EQ(direct.edges[k].second, general.edges[k].second);
+            BOOST_TEST_EQ(direct.edges[k].flow, general.edges[k].flow);
+        }
+    }
+    BOOST_TEST(!rt::certify_simple_cycle(select(0, false)));
+    auto const collinear = select(2);
+    BOOST_TEST(!rt::certify_simple_cycle(collinear));
+    BOOST_TEST(rt::residual(collinear).edges.empty());
+    BOOST_TEST_EQ(rt::locate(point<double>(2,0), collinear), -1);
+
+    auto const nonlocal = select(3);
+    BOOST_TEST(!rt::certify_simple_cycle(nonlocal));
+    BOOST_TEST_EQ(rt::locate_raw(point<double>(0,0), nonlocal), 0);
+    BOOST_TEST_EQ(rt::locate(point<double>(0,0), nonlocal), -1);
+    double twice_area = 0;
+    for (std::size_t i = 1; i < zero.size(); ++i)
+    {
+        twice_area += bg::get<0>(zero[i-1]) * bg::get<1>(zero[i])
+                    - bg::get<1>(zero[i-1]) * bg::get<0>(zero[i]);
+    }
+    BOOST_TEST_EQ(twice_area, 0);
+    BOOST_TEST(!rt::certify_simple_cycle(select(4)));
+    // A unique noncollinear extremum is not a certificate of nonzero area.
+    for (std::size_t i = 0; i + 1 < zero.size(); ++i)
+        if (i != 1) BOOST_TEST(rt::less(zero[1], zero[i]));
+    BOOST_TEST(ec::static_orientation<double>(zero[0], zero[1], zero[2]) != 0);
+
+    using properties = ov::ring_properties<point<double>, ec::ring_metadata<double>>;
+    std::map<id, properties> coincident;
+    auto const a = id(2,0,-1), b = id(2,1,-1);
+    strategy<double> s;
+    coincident.try_emplace(a, generated[0], s);
+    coincident.try_emplace(b, generated[1], s);
+    // Both triangles were individually certified. Coincident-ring
+    // multiplicities still have to be reduced across the two walks.
+    ov::assign_parents<bg::overlay_difference>(triangle, triangle, generated, coincident, s);
+    BOOST_TEST(coincident.at(a).discarded && coincident.at(b).discarded);
 }
 
 int main()
@@ -268,6 +339,7 @@ int main()
     ec::point_cache_scope operation;
     test_first_boundary_point_contract();
     test_certified_sources();
+    test_generated_certificate();
     int const previous = std::fegetround();
     for (int mode : {FE_TONEAREST})
     {

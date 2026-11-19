@@ -45,7 +45,7 @@ struct edge
     std::ptrdiff_t flow;
 };
 
-enum class source_cycle : unsigned char { none, clockwise, counterclockwise, certified };
+enum class cycle_certificate : unsigned char { none, clockwise, counterclockwise, triangle, certified };
 
 template <typename Coordinate, typename Point = exact_point<Coordinate>>
 struct boundary
@@ -54,9 +54,8 @@ struct boundary
     std::vector<point_type> points;
     std::vector<edge> edges;
     bool closed = true;
-    // Only lvalue native source rings in an areal Boolean operation can be
-    // candidates. Cache the certificate lazily: most pairs never touch.
-    mutable source_cycle cycle = source_cycle::none;
+    // Cache the candidate's result lazily: most pairs never touch.
+    mutable cycle_certificate cycle = cycle_certificate::none;
     int order = 1;
     std::size_t min_x = 0, max_x = 0, min_y = 0, max_y = 0;
 };
@@ -325,14 +324,25 @@ inline bool fast_analyze(Box const& box, Point& representative,
 }
 
 template <typename Coordinate, typename Point>
-inline bool certify_original_cycle(boundary<Coordinate, Point> const& input)
+inline bool certify_simple_cycle(boundary<Coordinate, Point> const& input)
 {
     auto const expected = input.cycle;
-    if (expected == source_cycle::certified) return true;
-    if (expected == source_cycle::none) return false;
-    input.cycle = source_cycle::none;
+    if (expected == cycle_certificate::certified) return true;
+    if (expected == cycle_certificate::none) return false;
+    input.cycle = cycle_certificate::none;
     auto const n = input.points.size();
     if (!input.closed || n < 3 || input.edges.size() != n) return false;
+
+    if (expected == cycle_certificate::triangle)
+    {
+        // append(ring) supplies one cyclic edge per vertex. Three
+        // noncollinear points give three distinct, nonoverlapping segments
+        // and no vertex in an edge interior, regardless of winding.
+        if (n != 3 || static_orientation<Coordinate>(input.points[0], input.points[1], input.points[2]) == 0)
+            return false;
+        input.cycle = cycle_certificate::certified;
+        return true;
+    }
 
     auto const extrema = std::minmax_element(input.points.begin(), input.points.end(),
         [](auto const& a, auto const& b) { return less(a, b); });
@@ -362,8 +372,8 @@ inline bool certify_original_cycle(boundary<Coordinate, Point> const& input)
     // a lexicographic interval. The chains are on opposite open sides of the
     // endpoint chord (one may be the chord), so meet only at the endpoints.
     bool const clockwise = forward_side != 0 ? forward_side > 0 : backward_side < 0;
-    if (clockwise != (expected == source_cycle::clockwise)) return false;
-    input.cycle = source_cycle::certified;
+    if (clockwise != (expected == cycle_certificate::clockwise)) return false;
+    input.cycle = cycle_certificate::certified;
     return true;
 }
 
@@ -435,7 +445,7 @@ inline boundary<Coordinate, Point> residual_impl(boundary<Coordinate, Point> con
 template <typename Coordinate, typename Point>
 inline boundary<Coordinate, Point> residual(boundary<Coordinate, Point> const& input)
 {
-    return certify_original_cycle(input) ? residual_impl<true>(input) : residual_impl<false>(input);
+    return certify_simple_cycle(input) ? residual_impl<true>(input) : residual_impl<false>(input);
 }
 
 template <typename Coordinate, typename Point>
@@ -519,7 +529,7 @@ template <typename Coordinate, typename Point, typename Query>
 inline int locate(Query const& point, boundary<Coordinate, Point> const& ring)
 {
     int const result = locate_raw(point, ring);
-    if (result != 0 || certify_original_cycle(ring)) return result;
+    if (result != 0 || certify_simple_cycle(ring)) return result;
     // A point on a canceled excursion is not on the surviving boundary.
     return locate_raw(point, residual_impl<false>(ring));
 }
@@ -572,7 +582,7 @@ inline auto selected_source(ring_identifier const& id, Geometry const& geometry,
             if (allow_certificate)
             {
                 int const direction = id.ring_index < 0 ? boundary.order : -boundary.order;
-                boundary.cycle = direction > 0 ? source_cycle::clockwise : source_cycle::counterclockwise;
+                boundary.cycle = direction > 0 ? cycle_certificate::clockwise : cycle_certificate::counterclockwise;
             }
         }
         return boundary;
@@ -600,7 +610,16 @@ selected(ring_identifier const& id, Geometry1 const& a, Geometry2 const& b, Coll
     {
     case 0: return result(std::in_place_index<0>, selected_source<Coordinate, geometry::tag_t<Geometry1>>(id, a, allow_certificate));
     case 1: return result(std::in_place_index<1>, selected_source<Coordinate, geometry::tag_t<Geometry2>>(id, b, allow_certificate));
-    case 2: return result(std::in_place_index<2>, selected_source<Coordinate, void>(id, collection));
+    case 2:
+    {
+        auto boundary = selected_source<Coordinate, void>(id, collection);
+        if constexpr (std::is_same<geometry::tag_t<typename boost::range_value<Collection>::type>, ring_tag>::value)
+        {
+            if (allow_certificate && boundary.points.size() == 3)
+                boundary.cycle = cycle_certificate::triangle;
+        }
+        return result(std::in_place_index<2>, std::move(boundary));
+    }
     }
     return {};
 }
