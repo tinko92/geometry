@@ -15,6 +15,12 @@ foreach(item IN ITEMS
     distance_cross_track
     douglas_peucker
     envelope_segment
+    exact_arithmetic
+    exact_forward_error
+    exact_fixed_arithmetic
+    exact_fixed_measures
+    exact_construction_capacity
+    exact_ulp_filter
     franklin
     haversine
     point_in_box
@@ -35,4 +41,23 @@ foreach(item IN ITEMS
     winding
   )
   boost_geometry_add_unit_test("strategies" ${item})
+  if (item MATCHES "^exact_")
+    target_compile_features(${BOOST_GEOMETRY_UNIT_TEST_NAME} PRIVATE cxx_std_17)
+  endif()
+  if (item MATCHES "^exact_")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+      target_compile_options(${BOOST_GEOMETRY_UNIT_TEST_NAME} PRIVATE -ffp-contract=off)
+    elseif (MSVC)
+      target_compile_options(${BOOST_GEOMETRY_UNIT_TEST_NAME} PRIVATE /fp:strict)
+    endif()
+  endif()
+endforeach()
+
+
+find_package(Threads REQUIRED)
+# Exact point-cache regressions exercise threads. Older Unix toolchains need
+# the native thread link flags even when a particular test is single-threaded.
+# Keep this dependency on these tests, not on the production geometry target.
+foreach(item IN ITEMS exact_forward_error exact_fixed_arithmetic exact_fixed_measures exact_construction_capacity exact_ulp_filter)
+  target_link_libraries(boost_geometry_strategies_${item} PRIVATE Threads::Threads)
 endforeach()

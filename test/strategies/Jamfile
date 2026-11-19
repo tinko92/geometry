@@ -15,6 +15,12 @@
 # Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
 
+local exact-requirements = <threading>multi <cxxstd>17
+    <toolset>clang:<cxxflags>-ffp-contract=off
+    <toolset>darwin:<cxxflags>-ffp-contract=off
+    <toolset>gcc:<cxxflags>-ffp-contract=off
+    <toolset>msvc:<cxxflags>/fp:strict ;
+
 test-suite boost-geometry-strategies
     :
     [ run andoyer.cpp                        : : : : strategies_andoyer ]
@@ -27,6 +33,12 @@ test-suite boost-geometry-strategies
     [ run distance_cross_track.cpp           : : : : strategies_distance_cross_track ]
     [ run douglas_peucker.cpp                : : : : strategies_douglas_peucker ]
     [ run envelope_segment.cpp               : : : : strategies_envelope_segment ]
+    [ run exact_arithmetic.cpp               : : : $(exact-requirements) : strategies_exact_arithmetic ]
+    [ run exact_forward_error.cpp            : : : $(exact-requirements) : strategies_exact_forward_error ]
+    [ run exact_fixed_arithmetic.cpp         : : : $(exact-requirements) : strategies_exact_fixed_arithmetic ]
+    [ run exact_fixed_measures.cpp           : : : $(exact-requirements) : strategies_exact_fixed_measures ]
+    [ run exact_construction_capacity.cpp   : : : $(exact-requirements) : strategies_exact_construction_capacity ]
+    [ run exact_ulp_filter.cpp               : : : $(exact-requirements) : strategies_exact_ulp_filter ]
     [ run franklin.cpp                       : : : : strategies_franklin ]
     [ run haversine.cpp                      : : : : strategies_haversine ]
     [ run point_in_box.cpp                   : : : : strategies_point_in_box ]
