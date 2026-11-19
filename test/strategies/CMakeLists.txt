@@ -26,12 +26,18 @@ foreach(item IN ITEMS
     exact_segment_position
     exact_segment
     exact_static_predicates
+    exact_static_ring_topology
+    exact_borrowed_clipping
     exact_borrowed_geometry
     exact_borrowed_native
+    exact_borrowed_output
     exact_borrowed_predicates
     exact_borrowed_primitive
     exact_borrowed_query
     exact_borrowed_records
+    exact_borrowed_ring
+    exact_borrowed_root_ring
+    exact_borrowed_turns
     exact_construction_capacity
     exact_construction_rounding
     exact_rounding_policies
@@ -74,6 +80,6 @@ find_package(Threads REQUIRED)
 # Exact point-cache regressions exercise threads. Older Unix toolchains need
 # the native thread link flags even when a particular test is single-threaded.
 # Keep this dependency on these tests, not on the production geometry target.
-foreach(item IN ITEMS exact_point exact_segment_position exact_segment exact_construction_filter exact_filtered_segment exact_forward_error exact_fixed_arithmetic exact_fixed_measures exact_fixed_rounding exact_static_predicates exact_borrowed_geometry exact_borrowed_native exact_borrowed_predicates exact_borrowed_primitive exact_borrowed_query exact_borrowed_records exact_construction_capacity exact_construction_rounding exact_rounding_policies exact_ulp_filter exact_typed_cache)
+foreach(item IN ITEMS exact_point exact_segment_position exact_segment exact_construction_filter exact_filtered_segment exact_forward_error exact_fixed_arithmetic exact_fixed_measures exact_fixed_rounding exact_static_predicates exact_static_ring_topology exact_borrowed_clipping exact_borrowed_geometry exact_borrowed_native exact_borrowed_output exact_borrowed_predicates exact_borrowed_primitive exact_borrowed_query exact_borrowed_records exact_borrowed_ring exact_borrowed_root_ring exact_borrowed_turns exact_construction_capacity exact_construction_rounding exact_rounding_policies exact_ulp_filter exact_typed_cache)
   target_link_libraries(boost_geometry_strategies_${item} PRIVATE Threads::Threads)
 endforeach()
