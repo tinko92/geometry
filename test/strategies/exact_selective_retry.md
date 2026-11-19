@@ -119,3 +119,34 @@ the baseline. Construction-rounding tests passed under both compilers:
 N=1 certified 381/1054 axes versus 372/1054 at baseline. N=4 and N=100
 certificate counts did not change. The Clang public output-policy test also
 passed. No server or full-suite run.
+
+## A failed denominator bound
+
+When the ordinary denominator is zero or not separated from zero, the bounded
+output constructor may retry before building exact homogeneous coordinates.
+For exact endpoint differences, let p and q be the rounded products in the
+determinant, and ep, eq their exact FMA tails. With k=RN(p-q), r=RN(ep-eq),
+and (s,es)=TwoSum(k,r), the exact determinant is s+es+ek+er, where ek and er
+are the corresponding TwoDiff tails. Therefore
+`E = 2*RN(RN(abs(ek)+abs(er))+abs(es))` bounds the error in s. Accept the
+denominator only if abs(s)>E and use `L=(1-2u)*RN(abs(s)-E)` as a positive
+lower bound. A rounded endpoint difference with a nonzero tail declines this
+retry. A true zero never passes.
+
+The existing guard restricts nonzero inputs to [2^-64,2^64] in magnitude.
+Their differences lie on the 2^-116 grid; determinant terms on the 2^-232
+grid. A positive difference abs(s)-E is at least 2^-232. Thus L >= 2^-233,
+with normal finite intermediates in the residual and certificate. The
+numerator may also be rebuilt when that improves its bound. Recompute the
+quotient, scaled division residual R, candidates and both axis comparisons;
+no earlier comparison on the old denominator is valid. For t the new rounded
+quotient, the new absolute numerator of the quotient error is bounded by
+`u*R + E_num + abs(t)*E_den`. As in the original certificate, the three
+nonnegative budget rounds lose at most a factor (1-u)^3. A failed axis still
+uses exact fallback.
+
+The binary64 parallelogram fixtures have exact determinant -1 even where
+both rounded products coincide. Five paired x86 measurements of N=1
+areal relation gave 0.812x GCC 13 and 0.710x Clang 22 relative to the
+ordinary fallback. No ordinary benchmark group triggered the retry.
+Try the separate `denominator` workload in a bounded-output benchmark build.

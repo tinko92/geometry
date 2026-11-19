@@ -205,7 +205,64 @@ BOOST_NOINLINE inline double retry_determinants(std::array<double, 8> const& p,
     return h;
 }
 
-template <std::size_t N, bool Retry>
+// Enter only in bounded_intersection's exponent band. Exact endpoint
+// differences permit three error-free tails for the rebuilt determinant.
+inline fe::scalar_approximation rebuild_determinant(double ax, double ay, double bx, double by,
+                                                    double original)
+{
+    using geometry::detail::precise_math::two_diff_tail;
+    double const p = arithmetic::rounded_mul(ax, by), q = arithmetic::rounded_mul(ay, bx);
+    double const ep = std::fma(ax, by, -p), eq = std::fma(ay, bx, -q);
+    double const r = arithmetic::rounded_sub(ep, eq);
+    double const a = std::abs(two_diff_tail(p, q, original));
+    double const b = std::abs(two_diff_tail(ep, eq, r));
+    auto const sum = geometry::detail::precise_math::two_sum(original, r);
+    return {sum[0], 2 * arithmetic::rounded_add(arithmetic::rounded_add(a, b), std::abs(sum[1]))};
+}
+
+template <std::size_t N>
+BOOST_NOINLINE std::array<bool, 2> rescue_bounded_denominator(std::array<double, 8> const& p,
+    fe::detail::native_intersection_heads const& heads, fe::point_approximation& output)
+{
+    using geometry::detail::precise_math::two_diff_tail;
+    constexpr auto k = certificate_steps<N>;
+    constexpr double u = fe::detail::u;
+    constexpr double c = double(k) * (1 - (2 * double(k) + 16) * u);
+    std::array<bool, 2> accepted{};
+    double const vx = arithmetic::rounded_sub(p[6], p[4]), vy = arithmetic::rounded_sub(p[7], p[5]);
+    if (two_diff_tail(p[6], p[4], vx) != 0 || two_diff_tail(p[7], p[5], vy) != 0
+        || two_diff_tail(p[2], p[0], heads.ux) != 0 || two_diff_tail(p[3], p[1], heads.uy) != 0)
+        return accepted;
+    auto const d = rebuild_determinant(heads.ux, heads.uy, vx, vy, heads.denominator);
+    if (!(std::abs(d.value) > d.error)) return accepted;
+    double const lower = arithmetic::rounded_mul(1 - 2 * u,
+        arithmetic::rounded_sub(std::abs(d.value), d.error));
+    fe::scalar_approximation n{heads.numerator, 8 * u * heads.mt};
+    double const wx = arithmetic::rounded_sub(p[4], p[0]), wy = arithmetic::rounded_sub(p[5], p[1]);
+    if (two_diff_tail(p[4], p[0], wx) == 0 && two_diff_tail(p[5], p[1], wy) == 0)
+    {
+        auto const rebuilt = rebuild_determinant(wx, wy, vx, vy, n.value);
+        if (rebuilt.error <= n.error) n = rebuilt;
+    }
+    // New denominator and possibly new numerator: recompute everything
+    // dependent on them, including the division residual and both candidates.
+    double const t = arithmetic::rounded_div(n.value, d.value), at = std::abs(t);
+    double const residual = scaled_division_residual(t, d.value, n.value);
+    double const budget = std::fma(at, d.error * 0x1p53, n.error * 0x1p53);
+    double const height = std::fma(at, lower, arithmetic::rounded_add(residual, budget));
+    double const threshold = arithmetic::rounded_mul(c, lower);
+    std::array<double, 2> const direction{{heads.ux, heads.uy}};
+    for (std::size_t axis = 0; axis != 2; ++axis)
+    {
+        double const z = std::fma(t, direction[axis], p[axis]);
+        if (!bounded_axis_passes(direction[axis], z, height, threshold)) continue;
+        output.value[axis] = z;
+        output.error[axis] = arithmetic::rounded_mul((double(k) + 2) * u, std::abs(z));
+        accepted[axis] = true;
+    }
+    return accepted;
+}
+template <std::size_t N, bool Retry, bool Rescue = true>
 inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
                                                 fe::point_approximation& output)
 {
@@ -229,7 +286,11 @@ inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
     // (1-2u)*(1+u)^2 < 1 accounts for rounding both lower-bound operations.
     double const d = std::abs(heads.denominator);
     double const ed = arithmetic::rounded_mul(8 * u, heads.md);
-    if (!(d > ed)) return {{false, false}};
+    if (!(d > ed))
+    {
+        if constexpr (Rescue) return rescue_bounded_denominator<N>(p, heads, output);
+        return {{false, false}};
+    }
     double const lower = arithmetic::rounded_mul(1 - 2 * u, arithmetic::rounded_sub(d, ed));
     double const t = arithmetic::rounded_div(heads.numerator, heads.denominator);
     double const at = std::abs(t);

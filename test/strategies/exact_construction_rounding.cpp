@@ -445,7 +445,7 @@ void bounded_cases()
     producers const near_parallel{{0, 0, n + 1, n, 0, 1, n - 2, n - 2}};
     auto const heads = ec::forward_error::detail::intersection_heads(near_parallel, false);
     BOOST_TEST(heads.denominator != 0);
-    auto const rejected = cr::detail::bounded_intersection<100, true>(near_parallel, first);
+    auto const rejected = cr::detail::bounded_intersection<100, true, false>(near_parallel, first);
     BOOST_TEST(!rejected[0] && !rejected[1]);
     check_input(near_parallel);
     for (int exponent : {-700, -64, 60, 700})
@@ -511,6 +511,8 @@ void determinant_budgets()
         rational const exact = rational(ax) * rational(by) - rational(ay) * rational(bx);
         double const budget = cr::detail::determinant_budget(ax, ay, bx, by, k);
         BOOST_TEST(absolute(exact - rational(k)) <= rational(u) * rational(budget));
+        auto const rebuilt = cr::detail::rebuild_determinant(ax, ay, bx, by, k);
+        BOOST_TEST(absolute(exact - rational(rebuilt.value)) <= rational(rebuilt.error));
         return budget;
     };
     double const n = 0x1p27;
@@ -587,11 +589,59 @@ void selective_one_ulp_retry()
     // No certified positive lower bound: keep the original exact fallback.
     double const n = 0x1p27;
     fe::point_approximation result;
-    auto const rejected = cr::detail::bounded_intersection<1, false>
+    auto const rejected = cr::detail::bounded_intersection<1, false, false>
         ({{0, 0, n + 1, n, 0, 1, n - 2, n - 2}}, result);
     BOOST_TEST(!rejected[0] && !rejected[1]);
 }
 
+void denominator_rescue()
+{
+    namespace fe = ec::forward_error;
+    auto check = [](auto steps, producers const& p)
+    {
+        constexpr auto n = decltype(steps)::value;
+        fe::point_approximation original, rescued;
+        auto const before = cr::detail::bounded_intersection<n, false, false>(p, original);
+        BOOST_TEST(!before[0] && !before[1]);
+        auto const after = cr::detail::bounded_intersection<n, false>(p, rescued);
+        BOOST_TEST(after[0] && after[1]);
+        exact_point reference;
+        BOOST_TEST(oracle(p, reference));
+        for (std::size_t d = 0; d < 2; ++d)
+        {
+            BOOST_TEST(ulp_distance(rescued.value[d], nearest<double>(reference[d])) <= n);
+            BOOST_TEST(absolute(rational(rescued.value[d]) - reference[d]) <= rational(rescued.error[d]));
+        }
+    };
+    for (int exponent : {26, 30, 49})
+    {
+        double const n = std::ldexp(1.0, exponent);
+        producers const p{{n, n, 2*n+1, 2*n, n+0.5, n+0.5, 2*n+0.5, 2*n-0.5}};
+        auto const h = fe::detail::intersection_heads(p, false);
+        BOOST_TEST_EQ(h.denominator == 0, exponent != 26);
+        BOOST_TEST(std::abs(h.denominator) <= 8 * fe::detail::u * h.md);
+        check(std::integral_constant<std::size_t, 1>{}, p);
+        check(std::integral_constant<std::size_t, 4>{}, p);
+        check(std::integral_constant<std::size_t, 100>{}, p);
+        auto reversed = p;
+        for (std::size_t d = 0; d < 2; ++d) std::swap(reversed[d], reversed[2+d]);
+        check(std::integral_constant<std::size_t, 1>{}, reversed);
+    }
+    {
+        // Exact D=-3 and T=-1: rebuild the quotient and its nonzero residual.
+        double const n = 0x1p30;
+        check(std::integral_constant<std::size_t, 1>{},
+              {{n, n, 2*n+1, 2*n, n+1, n+1, 2*n-1, 2*n-2}});
+    }
+    for (producers const p : {producers{{1, 1, 3, 3, 1, 2, 3, 4}}, // exact parallel
+                              producers{{1, 1, 0x1p55, 0x1p55, 2, 2, 0x1p55, 0x1p55}}})
+    {
+        fe::point_approximation sentinel{{{5, 6}}, {{1, 2}}};
+        auto const accepted = cr::detail::bounded_intersection<100, true>(p, sentinel);
+        BOOST_TEST(!accepted[0] && !accepted[1]);
+        BOOST_TEST(sentinel.value[0] == 5 && sentinel.value[1] == 6);
+    }
+}
 void integer_inputs()
 {
     for (std::int64_t base : {std::int64_t(0), (std::int64_t(1) << 54) + 1,
@@ -975,6 +1025,7 @@ int main(int argc, char** argv)
         bounded_other_formats();
         determinant_budgets();
         selective_one_ulp_retry();
+        denominator_rescue();
         integer_inputs();
         small_integers();
         ordinary_first_stage();
