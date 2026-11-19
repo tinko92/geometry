@@ -28,7 +28,8 @@ and `orientation` fall back to rational arithmetic when the filter cannot
 decide. The operands may use different wrapper specializations.
 
 The wrapper is not a general arithmetic type. `model::point` storage and
-`get`/`set` work, but the standalone predicates are not selected by BG
-algorithm or strategy dispatch. See [decimal polygon overlay](exact_decimal_overlay.md)
-for the explicit rational operation boundary and closed polygon WKT input.
-This is not direct wrapper support in the native borrowed kernel.
+`get`/`set` work, but the standalone predicates are not selected for raw
+wrappers by BG algorithm or strategy dispatch. See
+[decimal polygon overlay](exact_decimal_overlay.md) for the explicit
+unfiltered and filtered rational boundaries and closed polygon WKT input.
+Neither is direct wrapper support in the native borrowed kernel.
