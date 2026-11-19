@@ -106,6 +106,7 @@ if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt")
           math
           multiprecision
           program_options
+          property_tree
           qvm
           rational
           serialization

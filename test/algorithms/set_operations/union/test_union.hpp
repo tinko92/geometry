@@ -22,6 +22,7 @@
 #include <count_set.hpp>
 #include <expectation_limits.hpp>
 #include <algorithms/check_validity.hpp>
+#include <strategies/exact_test_strategy.hpp>
 #include "../setop_output_type.hpp"
 
 #include <boost/core/ignore_unused.hpp>
@@ -68,11 +69,11 @@ inline std::size_t num_points(Range const& rng, bool add_for_open = false)
     return result;
 }
 
-template <typename OutputType, typename G1, typename G2>
+template <typename OutputType, typename G1, typename G2, typename Policy = bg_test::default_strategy_policy>
 void test_union(std::string const& caseid, G1 const& g1, G2 const& g2,
         count_set const& expected_count, count_set const& expected_hole_count,
         int expected_point_count, expectation_limits const& expected_area,
-        ut_settings const& settings)
+        ut_settings const& settings, Policy const& policy = Policy())
 {
     typedef typename bg::coordinate_type<G1>::type coordinate_type;
     boost::ignore_unused<coordinate_type>();
@@ -83,9 +84,13 @@ void test_union(std::string const& caseid, G1 const& g1, G2 const& g2,
     result_type clip;
 
     // Check normal behaviour
-    bg::union_(g1, g2, clip);
+    policy.apply([&](auto const&... strategy)
+    {
+        bg::union_(g1, g2, clip, strategy...);
+    });
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
+    if (Policy::is_default)
     {
         // Check strategy passed explicitly
         result_type clip_s;
@@ -120,6 +125,7 @@ void test_union(std::string const& caseid, G1 const& g1, G2 const& g2,
 
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
+    if (Policy::is_default)
     {
         // Test inserter functionality
         // Test if inserter returns output-iterator (using Boost.Range copy)
@@ -213,6 +219,15 @@ void test_union(std::string const& caseid, G1 const& g1, G2 const& g2,
         }
     }
 #endif
+
+    if (Policy::is_default)
+    {
+        bg_test::for_exact_strategy(g1, g2, [&](auto const& exact_policy)
+        {
+            test_union<OutputType>(caseid + "_exact", g1, g2, expected_count,
+                expected_hole_count, expected_point_count, expected_area, settings, exact_policy);
+        });
+    }
 }
 
 template <typename OutputType, typename G1, typename G2>

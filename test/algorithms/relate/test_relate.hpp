@@ -22,6 +22,7 @@
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/io/wkt/read.hpp>
 #include <boost/geometry/strategies/strategies.hpp>
+#include <strategies/exact_test_strategy.hpp>
 
 namespace bgdr = bg::detail::relate;
 
@@ -100,22 +101,26 @@ void check_mask()
     BOOST_CHECK(get_ii(m8) == '0' && get_ee(m8) == '2');
 }
 
-template <typename Geometry1, typename Geometry2>
+template <typename Geometry1, typename Geometry2, typename Policy = bg_test::default_strategy_policy>
 void check_geometry(Geometry1 const& geometry1,
                     Geometry2 const& geometry2,
                     std::string const& wkt1,
                     std::string const& wkt2,
                     std::string const& expected1,
-                    std::string const& expected2 = std::string())
+                    std::string const& expected2 = std::string(),
+                    Policy const& policy = Policy())
 {
     boost::variant<Geometry1> variant1 = geometry1;
     boost::variant<Geometry2> variant2 = geometry2;
 
     {
-        std::string res_str = bg::relation(geometry1, geometry2).str();
+        std::string res_str = policy.apply([&](auto const&... strategy)
+        {
+            return bg::relation(geometry1, geometry2, strategy...).str();
+        });
         bool ok = matrix_compare(res_str, expected1, expected2);
         BOOST_CHECK_MESSAGE(ok,
-            "relate: " << wkt1
+            "relate" << (Policy::is_default ? "" : " exact") << ": " << wkt1
             << " and " << wkt2
             << " -> Expected: " << matrix_format(expected1, expected2)
             << " detected: " << res_str);
@@ -124,15 +129,27 @@ void check_geometry(Geometry1 const& geometry1,
             <
                 Geometry1, Geometry2
             >::type;
-        std::string res_str0 = bg::relation(geometry1, geometry2, strategy_type()).str();
-        BOOST_CHECK(res_str == res_str0);
+        if (Policy::is_default)
+        {
+            std::string res_str0 = bg::relation(geometry1, geometry2, strategy_type()).str();
+            BOOST_CHECK(res_str == res_str0);
+        }
 
         // test variants
         boost::variant<Geometry1> v1 = geometry1;
         boost::variant<Geometry2> v2 = geometry2;
-        std::string res_str1 = bg::relation(geometry1, variant2).str();
-        std::string res_str2 = bg::relation(variant1, geometry2).str();
-        std::string res_str3 = bg::relation(variant1, variant2).str();
+        std::string res_str1 = policy.apply([&](auto const&... strategy)
+        {
+            return bg::relation(geometry1, variant2, strategy...).str();
+        });
+        std::string res_str2 = policy.apply([&](auto const&... strategy)
+        {
+            return bg::relation(variant1, geometry2, strategy...).str();
+        });
+        std::string res_str3 = policy.apply([&](auto const&... strategy)
+        {
+            return bg::relation(variant1, variant2, strategy...).str();
+        });
         BOOST_CHECK(res_str == res_str1);
         BOOST_CHECK(res_str == res_str2);
         BOOST_CHECK(res_str == res_str3);
@@ -140,12 +157,15 @@ void check_geometry(Geometry1 const& geometry1,
 
     // changed sequence of geometries - transposed result
     {
-        std::string res_str = bg::relation(geometry2, geometry1).str();
+        std::string res_str = policy.apply([&](auto const&... strategy)
+        {
+            return bg::relation(geometry2, geometry1, strategy...).str();
+        });
         std::string expected1_tr = transposed(expected1);
         std::string expected2_tr = transposed(expected2);
         bool ok = matrix_compare(res_str, expected1_tr, expected2_tr);
         BOOST_CHECK_MESSAGE(ok,
-            "relate: " << wkt2
+            "relate" << (Policy::is_default ? "" : " exact") << ": " << wkt2
             << " and " << wkt1
             << " -> Expected: " << matrix_format(expected1_tr, expected2_tr)
             << " detected: " << res_str);
@@ -154,10 +174,13 @@ void check_geometry(Geometry1 const& geometry1,
     if ( expected2.empty() )
     {
         {
-            bool result = bg::relate(geometry1, geometry2, bg::de9im::mask(expected1));
+            bool result = policy.apply([&](auto const&... strategy)
+            {
+                return bg::relate(geometry1, geometry2, bg::de9im::mask(expected1), strategy...);
+            });
             // TODO: SHOULD BE !interrupted - CHECK THIS!
             BOOST_CHECK_MESSAGE(result, 
-                "relate: " << wkt1
+                "relate" << (Policy::is_default ? "" : " exact") << ": " << wkt1
                 << " and " << wkt2
                 << " -> Expected: " << expected1);
 
@@ -165,13 +188,25 @@ void check_geometry(Geometry1 const& geometry1,
                 <
                     Geometry1, Geometry2
                 >::type;
-            bool result0 = bg::relate(geometry1, geometry2, bg::de9im::mask(expected1), strategy_type());
-            BOOST_CHECK(result == result0);
+            if (Policy::is_default)
+            {
+                bool result0 = bg::relate(geometry1, geometry2, bg::de9im::mask(expected1), strategy_type());
+                BOOST_CHECK(result == result0);
+            }
 
             // test variants
-            bool result1 = bg::relate(geometry1, variant2, bg::de9im::mask(expected1));
-            bool result2 = bg::relate(variant1, geometry2, bg::de9im::mask(expected1));
-            bool result3 = bg::relate(variant1, variant2, bg::de9im::mask(expected1));
+            bool result1 = policy.apply([&](auto const&... strategy)
+            {
+                return bg::relate(geometry1, variant2, bg::de9im::mask(expected1), strategy...);
+            });
+            bool result2 = policy.apply([&](auto const&... strategy)
+            {
+                return bg::relate(variant1, geometry2, bg::de9im::mask(expected1), strategy...);
+            });
+            bool result3 = policy.apply([&](auto const&... strategy)
+            {
+                return bg::relate(variant1, variant2, bg::de9im::mask(expected1), strategy...);
+            });
             BOOST_CHECK(result == result1);
             BOOST_CHECK(result == result2);
             BOOST_CHECK(result == result3);
@@ -198,14 +233,25 @@ void check_geometry(Geometry1 const& geometry1,
 
             if ( changed )
             {
-                bool result = bg::relate(geometry1, geometry2, bg::de9im::mask(expected_interrupt));
+                bool result = policy.apply([&](auto const&... strategy)
+                {
+                    return bg::relate(geometry1, geometry2, bg::de9im::mask(expected_interrupt), strategy...);
+                });
                 // TODO: SHOULD BE interrupted - CHECK THIS!
                 BOOST_CHECK_MESSAGE(!result,
-                    "relate: " << wkt1
+                    "relate" << (Policy::is_default ? "" : " exact") << ": " << wkt1
                     << " and " << wkt2
                     << " -> Expected interrupt for:" << expected_interrupt);
             }
         }
+    }
+
+    if (Policy::is_default)
+    {
+        bg_test::for_exact_strategy(geometry1, geometry2, [&](auto const& exact_policy)
+        {
+            check_geometry(geometry1, geometry2, wkt1, wkt2, expected1, expected2, exact_policy);
+        });
     }
 }
 

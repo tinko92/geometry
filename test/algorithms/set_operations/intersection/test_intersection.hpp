@@ -45,6 +45,7 @@
 #include <count_set.hpp>
 #include <expectation_limits.hpp>
 #include <algorithms/check_validity.hpp>
+#include <strategies/exact_test_strategy.hpp>
 #include "../setop_output_type.hpp"
 
 struct ut_settings : ut_base_settings
@@ -162,13 +163,14 @@ void check_result(IntersectionOutput const& intersection_output,
 }
 
 
-template <typename OutputType, typename CalculationType, typename G1, typename G2>
+template <typename OutputType, typename CalculationType, typename G1, typename G2,
+          typename Policy = bg_test::default_strategy_policy>
 typename bg::default_area_result<G1>::type test_intersection(std::string const& caseid,
         G1 const& g1, G2 const& g2,
         count_set const& expected_count = count_set(),
         count_set const& expected_hole_count = count_set(),
         int expected_point_count = 0, expectation_limits const& expected_length_or_area = 0,
-        ut_settings const& settings = ut_settings())
+        ut_settings const& settings = ut_settings(), Policy const& policy = Policy())
 {
     using coordinate_type = typename bg::coordinate_type<G1>::type;
     constexpr bool is_ccw =
@@ -194,7 +196,7 @@ typename bg::default_area_result<G1>::type test_intersection(std::string const& 
     boost::ignore_unused<point_type>();
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
-    if (! settings.debug)
+    if (! settings.debug && Policy::is_default)
     {
         // Check inserter behaviour with stratey
         using strategy_type
@@ -209,7 +211,10 @@ typename bg::default_area_result<G1>::type test_intersection(std::string const& 
 
     // Check normal behaviour
     result_type intersection_output;
-    bg::intersection(g1, g2, intersection_output);
+    policy.apply([&](auto const&... strategy)
+    {
+        bg::intersection(g1, g2, intersection_output, strategy...);
+    });
 
     check_result(intersection_output, caseid, g1, g2, expected_count,
         expected_hole_count, expected_point_count, expected_length_or_area,
@@ -218,21 +223,30 @@ typename bg::default_area_result<G1>::type test_intersection(std::string const& 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
     // Check variant behaviour
     intersection_output.clear();
-    bg::intersection(boost::variant<G1>(g1), g2, intersection_output);
+    policy.apply([&](auto const&... strategy)
+    {
+        bg::intersection(boost::variant<G1>(g1), g2, intersection_output, strategy...);
+    });
 
     check_result(intersection_output, caseid, g1, g2, expected_count,
         expected_hole_count, expected_point_count, expected_length_or_area,
         settings);
 
     intersection_output.clear();
-    bg::intersection(g1, boost::variant<G2>(g2), intersection_output);
+    policy.apply([&](auto const&... strategy)
+    {
+        bg::intersection(g1, boost::variant<G2>(g2), intersection_output, strategy...);
+    });
 
     check_result(intersection_output, caseid, g1, g2, expected_count,
         expected_hole_count, expected_point_count, expected_length_or_area,
         settings);
 
     intersection_output.clear();
-    bg::intersection(boost::variant<G1>(g1), boost::variant<G2>(g2), intersection_output);
+    policy.apply([&](auto const&... strategy)
+    {
+        bg::intersection(boost::variant<G1>(g1), boost::variant<G2>(g2), intersection_output, strategy...);
+    });
 
     check_result(intersection_output, caseid, g1, g2, expected_count,
         expected_hole_count, expected_point_count, expected_length_or_area,
@@ -278,6 +292,16 @@ typename bg::default_area_result<G1>::type test_intersection(std::string const& 
     if (settings.debug)
     {
         std::cout << "end case " << caseid << std::endl;
+    }
+
+    if (Policy::is_default)
+    {
+        bg_test::for_exact_strategy(g1, g2, [&](auto const& exact_policy)
+        {
+            test_intersection<OutputType, CalculationType>(caseid + "_exact", g1, g2,
+                expected_count, expected_hole_count, expected_point_count,
+                expected_length_or_area, settings, exact_policy);
+        });
     }
 
     return length_or_area;
@@ -368,8 +392,9 @@ void test_one_lp(std::string const& caseid,
 #endif
 }
 
-template <typename Geometry1, typename Geometry2>
-void test_point_output(std::string const& wkt1, std::string const& wkt2, unsigned int expected_count)
+template <typename Geometry1, typename Geometry2, typename Policy = bg_test::default_strategy_policy>
+void test_point_output(std::string const& wkt1, std::string const& wkt2, unsigned int expected_count,
+                       Policy const& policy = Policy())
 {
     Geometry1 g1;
     bg::read_wkt(wkt1, g1);
@@ -380,8 +405,19 @@ void test_point_output(std::string const& wkt1, std::string const& wkt2, unsigne
     bg::correct(g2);
 
     bg::model::multi_point<typename bg::point_type<Geometry1>::type> points;
-    bg::intersection(g1, g2, points);
+    policy.apply([&](auto const&... strategy)
+    {
+        bg::intersection(g1, g2, points, strategy...);
+    });
     BOOST_CHECK_EQUAL(points.size(), expected_count);
+
+    if (Policy::is_default)
+    {
+        bg_test::for_exact_strategy(g1, g2, [&](auto const& exact_policy)
+        {
+            test_point_output<Geometry1, Geometry2>(wkt1, wkt2, expected_count, exact_policy);
+        });
+    }
 }
 
 

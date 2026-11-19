@@ -22,6 +22,7 @@
 #include <count_set.hpp>
 #include <expectation_limits.hpp>
 #include <algorithms/check_validity.hpp>
+#include <strategies/exact_test_strategy.hpp>
 #include "../setop_output_type.hpp"
 
 #include <boost/core/ignore_unused.hpp>
@@ -156,13 +157,13 @@ void difference_output(std::string const& caseid, G1 const& g1, G2 const& g2, Ou
 #endif
 }
 
-template <typename OutputType, typename G1, typename G2>
+template <typename OutputType, typename G1, typename G2, typename Policy = bg_test::default_strategy_policy>
 std::string test_difference(std::string const& caseid, G1 const& g1, G2 const& g2,
         count_set const& expected_count,
         int expected_rings_count, int expected_point_count,
         expectation_limits const& expected_area,
         difference_type dtype,
-        ut_settings const& settings)
+        ut_settings const& settings, Policy const& policy = Policy())
 {
     typedef typename bg::coordinate_type<G1>::type coordinate_type;
     boost::ignore_unused<coordinate_type>();
@@ -172,11 +173,17 @@ std::string test_difference(std::string const& caseid, G1 const& g1, G2 const& g
 
     if (dtype == difference_sym)
     {
-        bg::sym_difference(g1, g2, result);
+        policy.apply([&](auto const&... strategy)
+        {
+            bg::sym_difference(g1, g2, result, strategy...);
+        });
     }
     else
     {
-        bg::difference(g1, g2, result);
+        policy.apply([&](auto const&... strategy)
+        {
+            bg::difference(g1, g2, result, strategy...);
+        });
     }
 
     if (settings.remove_spikes)
@@ -185,6 +192,7 @@ std::string test_difference(std::string const& caseid, G1 const& g1, G2 const& g
     }
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
+    if (Policy::is_default)
     {
         bg::model::multi_polygon<OutputType> result_s;
         typedef typename bg::strategy::relate::services::default_strategy
@@ -229,6 +237,7 @@ std::string test_difference(std::string const& caseid, G1 const& g1, G2 const& g
     difference_output(caseid, g1, g2, result);
 
 #if ! defined(BOOST_GEOMETRY_TEST_ONLY_ONE_TYPE)
+    if (Policy::is_default)
     {
         // Test inserter functionality
         // Test if inserter returns output-iterator (using Boost.Range copy)
@@ -284,6 +293,16 @@ std::string test_difference(std::string const& caseid, G1 const& g1, G2 const& g
             << " type: " << (type_for_assert_message<G1, G2>())
             );
 #endif
+
+    if (Policy::is_default)
+    {
+        bg_test::for_exact_strategy(g1, g2, [&](auto const& exact_policy)
+        {
+            test_difference<OutputType>(caseid + "_exact", g1, g2, expected_count,
+                expected_rings_count, expected_point_count, expected_area, dtype,
+                settings, exact_policy);
+        });
+    }
 
     return return_string.str();
 }
@@ -455,12 +474,12 @@ std::string test_one(std::string const& caseid,
         settings);
 }
 
-template <typename OutputType, typename G1, typename G2>
+template <typename OutputType, typename G1, typename G2, typename Policy = bg_test::default_strategy_policy>
 void test_one_lp(std::string const& caseid,
         std::string const& wkt1, std::string const& wkt2,
         std::size_t expected_count,
         int expected_point_count,
-        double expected_length)
+        double expected_length, Policy const& policy = Policy())
 {
     G1 g1;
     bg::read_wkt(wkt1, g1);
@@ -473,7 +492,10 @@ void test_one_lp(std::string const& caseid,
 
     typedef typename setop_output_type<OutputType>::type result_type;
     result_type pieces;
-    bg::difference(g1, g2, pieces);
+    policy.apply([&](auto const&... strategy)
+    {
+        bg::difference(g1, g2, pieces, strategy...);
+    });
 
     typename bg::default_length_result<G1>::type length = 0;
     std::size_t n = 0;
@@ -510,6 +532,15 @@ void test_one_lp(std::string const& caseid,
 
     std::string lp = "lp_";
     difference_output(lp + caseid, g1, g2, pieces);
+
+    if (Policy::is_default)
+    {
+        bg_test::for_exact_strategy(g1, g2, [&](auto const& exact_policy)
+        {
+            test_one_lp<OutputType, G1, G2>(caseid + "_exact", wkt1, wkt2,
+                expected_count, expected_point_count, expected_length, exact_policy);
+        });
+    }
 }
 
 
