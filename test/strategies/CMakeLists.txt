@@ -40,6 +40,7 @@ foreach(item IN ITEMS
     exact_shared_boundary
     exact_static_predicates
     exact_static_ring_topology
+    exact_borrowed_alias
     exact_borrowed_bounds
     exact_borrowed_capacity
     exact_borrowed_clipping
@@ -116,7 +117,7 @@ foreach(item IN ITEMS exact_additional_issue_api exact_additional_issues exact_a
     exact_construction_filter exact_filter_routing exact_static_box exact_static_clipping
     exact_filtered_segment exact_forward_error exact_fixed_arithmetic exact_fixed_measures exact_fixed_rounding
     exact_static_predicates exact_static_ring_topology
-    exact_borrowed_bounds exact_borrowed_capacity exact_borrowed_clipping exact_borrowed_gc
+    exact_borrowed_alias exact_borrowed_bounds exact_borrowed_capacity exact_borrowed_clipping exact_borrowed_gc
     exact_borrowed_geometry exact_borrowed_mixed exact_borrowed_native exact_borrowed_operations
     exact_borrowed_output exact_borrowed_predicates exact_borrowed_primitive exact_borrowed_public_predicates exact_borrowed_query
     exact_borrowed_records exact_borrowed_reverse_dispatch exact_borrowed_ring exact_borrowed_root_ring exact_borrowed_section
