@@ -43,12 +43,13 @@ void append_supported(Range& range, Point const& point, Side const& side,
         auto const size = range.size();
         auto const& a = range[size - 3];
         auto const& b = range[size - 2];
+        // A nonzero exact determinant also certifies distinct vertices.
+        if (side.apply(a, b, candidate) != 0) break;
         bool const equals_a = equal(a, candidate);
         bool const equals_b = equal(b, candidate);
         if (!equals_a && !equals_b
-            && (side.apply(a, b, candidate) != 0
-                || (mode == supported_append_mode::spikes
-                    && side.direction_code(a, b, candidate) >= 1)))
+            && mode == supported_append_mode::spikes
+            && side.direction_code(a, b, candidate) >= 1)
         {
             break;
         }
