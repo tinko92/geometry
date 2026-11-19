@@ -23,9 +23,6 @@
 #include <boost/geometry/util/precise_math.hpp>
 
 // Experimental same-head retry for nonzero endpoint subtraction tails.
-#ifndef BOOST_GEOMETRY_EXACT_TWODIFF_CROSS_TERMS
-#define BOOST_GEOMETRY_EXACT_TWODIFF_CROSS_TERMS 0
-#endif
 
 namespace boost { namespace geometry { namespace strategies { namespace relate
 {
@@ -190,7 +187,7 @@ inline double cross_term_budget(double ax, double ay, double bx, double by, doub
 // Keep the original quotient, candidate and certified lower bound. This
 // slow path is reached only if removing the determinant and quotient errors
 // could help at least one axis. Keep it out of the initial filter.
-template <bool CrossTerms = (BOOST_GEOMETRY_EXACT_TWODIFF_CROSS_TERMS != 0)>
+template <bool CrossTerms = true>
 BOOST_NOINLINE inline double retry_determinants(std::array<double, 8> const& p,
     fe::detail::native_intersection_heads const& heads, double t, double lower, double threshold,
     std::array<double, 2> const& z, std::array<bool, 2> const& accepted)
@@ -311,8 +308,7 @@ BOOST_NOINLINE std::array<bool, 2> rescue_bounded_denominator(std::array<double,
     return accepted;
 }
 
-template <std::size_t N, bool Retry, bool Rescue = true,
-          bool CrossTerms = (BOOST_GEOMETRY_EXACT_TWODIFF_CROSS_TERMS != 0)>
+template <std::size_t N, bool Retry, bool Rescue = true, bool CrossTerms = true>
 inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
                                                 fe::point_approximation& output)
 {

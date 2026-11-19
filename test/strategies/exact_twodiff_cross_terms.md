@@ -4,9 +4,9 @@ Experiment on `dfb6f0449`: `0b30b3206` retains the original heads and
 tightens their budgets if all relevant subtraction tails are zero.
 `3615f8d11` instead tried compensated replacement heads with a coarse
 rounded-difference bound or a zero-tail gate. This experiment tightens the
-**original** heads with nonzero tails. Define
-`BOOST_GEOMETRY_EXACT_TWODIFF_CROSS_TERMS=1` consistently across translation
-units to try it. The default is 0. Only the existing N<=4 weighted retry
+**original** heads with nonzero tails. The final strategy enables this in
+the existing N<=4 weighted retry. The same-commit A/B at `1d869656a`
+used `BOOST_GEOMETRY_EXACT_TWODIFF_CROSS_TERMS=0` and `=1`. Only that retry
 changes; the first attempt, positive lower-bound gate, fixed quotient,
 candidate, crossing construction, and exact fallback are unchanged. On
 `cc7de2684` a failed lower-bound gate still enters denominator rescue,
@@ -80,9 +80,17 @@ lattice locally, Sterbenz in the translated frame) and are controls, not
 evidence of useful nonzero-tail work. All 54 paired untimed operation
 checks over the three polygon workloads matched in quantized geometry
 fingerprints and output counts; this is not a bit-identical coordinate
-promise. Keep the switch off by default pending broader measurements.
+promise.
 
-To reproduce, build `exact_construction_rounding.cpp` at switch values 0
+In five rotated x86-64-v2 pairs with GCC 13 and Clang 22, the public
+decimal-workload ratios (on/off) were .917/.903 at N=1 and .881/.864 at
+N=4. Across six groups and four operations they were .983/.982 and
+.977/.976 respectively. The near-parallel rescue workload remained
+within 1%. Quantized geometry and input fingerprints matched on all pairs.
+The final implementation keeps this retry enabled; ordinary stored output,
+correct rounding and the N=100 policy do not enter it.
+
+To reproduce at the A/B commit, build `exact_construction_rounding.cpp` at switch values 0
 and 1 and run normally and with `--benchmark-bounded`. Build
 `simple_cartesian_benchmark.cpp` with `-DBG_BENCH_EXACT -DBG_BENCH_ULPS=1`
 or `4`, each at both switch values. Run `--operation intersection
