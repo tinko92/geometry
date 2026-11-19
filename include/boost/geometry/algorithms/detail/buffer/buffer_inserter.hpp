@@ -17,10 +17,12 @@
 
 #include <cstddef>
 #include <iterator>
+#include <type_traits>
 
 #include <boost/core/ignore_unused.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
+#include <boost/range/iterator_range.hpp>
 #include <boost/range/rbegin.hpp>
 #include <boost/range/rend.hpp>
 #include <boost/range/size.hpp>
@@ -42,6 +44,7 @@
 #include <boost/geometry/geometries/linestring.hpp>
 #include <boost/geometry/geometries/ring.hpp>
 
+#include <boost/geometry/strategies/agnostic/buffer_distance_asymmetric.hpp>
 #include <boost/geometry/strategies/buffer.hpp>
 #include <boost/geometry/strategies/side.hpp>
 
@@ -91,6 +94,67 @@ inline void simplify_input(RangeIn const& range,
             detail::simplify::douglas_peucker(),
             strategies);
     }
+}
+
+template <typename Linestring, typename DistanceStrategy, typename RangeOut, typename Strategies>
+inline void simplify_linestring(Linestring const& line, DistanceStrategy const& distance,
+                                RangeOut& simplified, Strategies const& strategies)
+{
+    simplify_input(line, distance, simplified, strategies);
+}
+
+template <typename Linestring, typename NumericType, typename RangeOut, typename Strategies>
+inline void simplify_linestring(Linestring const& line,
+                                strategy::buffer::distance_asymmetric<NumericType> const& distance,
+                                RangeOut& simplified, Strategies const& strategies)
+{
+    if BOOST_GEOMETRY_CONSTEXPR ((std::is_same<geometry::cs_tag_t<RangeOut>, cartesian_tag>::value))
+    {
+        auto first = boost::begin(line);
+        auto const end = boost::end(line);
+        if (boost::size(line) > 2)
+        {
+            auto const left = distance.apply(*first, *first, strategy::buffer::buffer_side_left);
+            auto const right = distance.apply(*first, *first, strategy::buffer::buffer_side_right);
+            if (! distance.negative() && left >= 0 && right >= 0 && left != right)
+            {
+                auto const side = strategies.side();
+                auto const simplify_section = [&](auto last)
+                {
+                    geometry::detail::simplify::simplify_range<2>::apply(
+                        boost::make_iterator_range(first, last), simplified,
+                        distance.simplify_distance(), detail::simplify::douglas_peucker(), strategies);
+                };
+
+                auto previous = first;
+                auto current = first;
+                for (auto next = std::next(current); next != end; ++next)
+                {
+                    if (detail::equals::equals_point_point(*current, *next, strategies))
+                    {
+                        continue;
+                    }
+                    if (previous != current && side.apply(*previous, *current, *next) == 0
+                        && direction_code<cartesian_tag>(*previous, *current, *next) == -1)
+                    {
+                        // A collinear reversal can change the buffered side
+                        // even though it has zero distance to the simplification chord.
+                        simplify_section(std::next(current));
+                        simplified.pop_back(); // The next section will add the shared vertex.
+                        first = current;
+                    }
+                    previous = current;
+                    current = next;
+                }
+                if (first != boost::begin(line))
+                {
+                    simplify_section(end);
+                    return;
+                }
+            }
+        }
+    }
+    simplify_input(line, distance, simplified, strategies);
 }
 
 
@@ -715,7 +779,7 @@ struct buffer_inserter<linestring_tag, Linestring, Polygon>
     {
         // Use helper geometry to support non-mutable input Linestrings
         model::linestring<output_point_type> simplified;
-        detail::buffer::simplify_input(linestring, distance, simplified, strategies);
+        detail::buffer::simplify_linestring(linestring, distance, simplified, strategies);
 
         geometry::strategy::buffer::result_code code = geometry::strategy::buffer::result_no_output;
         std::size_t n = boost::size(simplified);

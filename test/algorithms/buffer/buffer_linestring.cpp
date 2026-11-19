@@ -153,6 +153,20 @@ void test_all()
     bg::strategy::buffer::end_flat end_flat;
     bg::strategy::buffer::end_round end_round(100);
 
+    {
+        // The reversal is inside the line's endpoint chord, but contributes
+        // the only east-facing strip in a right-only buffer.
+        auto const retraced = bg::from_wkt<linestring>("LINESTRING(0 2,0 -2,0 0,0 -4)");
+        bg::model::multi_polygon<polygon> buffered;
+        bg::buffer(retraced, buffered, bg::strategy::buffer::distance_asymmetric<coor_type>(0, 2),
+                   bg::strategy::buffer::side_straight(), join_miter, end_flat,
+                   bg::strategy::buffer::point_square());
+        BOOST_CHECK(bg::is_valid(buffered));
+        BOOST_CHECK_EQUAL(buffered.size(), 1u);
+        BOOST_CHECK_EQUAL(bg::area(buffered), 16);
+        BOOST_CHECK(bg::within(P(1, -1), buffered));
+    }
+
     // For testing MySQL issues, which uses 32 by default
     bg::strategy::buffer::end_round end_round32(32);
     bg::strategy::buffer::join_round join_round32(32);
