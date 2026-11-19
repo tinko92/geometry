@@ -42,6 +42,7 @@ test-suite boost-geometry-strategies
     [ run exact_construction_filter.cpp      : : : $(exact-requirements) : strategies_exact_construction_filter ]
     [ run exact_coordinate.cpp               : : : $(exact-requirements) : strategies_exact_coordinate ]
     [ run exact_default_pilot.cpp            : : : $(exact-requirements) <define>BOOST_GEOMETRY_ENABLE_CARTESIAN_EXACT_DEFAULT_PILOT : strategies_exact_default_pilot ]
+    [ run exact_decimal_issues.cpp           : : : $(exact-requirements) : strategies_exact_decimal_issues ]
     [ run exact_decimal_overlay.cpp          : : : $(exact-requirements) : strategies_exact_decimal_overlay ]
     [ run exact_filter_routing.cpp           : : : $(exact-requirements) : strategies_exact_filter_routing ]
     [ run exact_static_box.cpp               : : : $(exact-requirements) : strategies_exact_static_box ]

@@ -91,6 +91,9 @@ before; unadmitted exact values can use the same rational engine.
 
 ## Reproductions and Timing
 
+See the [historical decimal-intent audit](exact_decimal_issues.md) for other
+report fixtures and for unsupported geometry pairs.
+
 - The local #663 triangles overlap in both interpretations. Independent
   slope/height oracles give areas about 7.186e-32 for decimal text and
   4.149e-33 for exact binary64 input. Neither interpretation is empty.
