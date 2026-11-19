@@ -120,6 +120,8 @@ public:
         enclose(96);
     }
 
+    bool is_exact() const { return m_lower == m_upper; }
+
     template <typename Coordinate>
     bool round(exact_number const& base, exact_number const& numerator, Coordinate& out)
     {
@@ -172,7 +174,8 @@ private:
 
 template <typename Polygon>
 inline status build(rational_xy const& a, rational_xy const& b, Polygon& output,
-                    exact_number const& radius, exact_number const& error)
+                    exact_number const& radius, exact_number const& error,
+                    bool require_rational_scale = false)
 {
     if (radius <= 0 || error < 0) { return status::invalid_input; }
     if (error == 0) { return status::cannot_certify; }
@@ -186,6 +189,7 @@ inline status build(rational_xy const& a, rational_xy const& b, Polygon& output,
     rational_xy const tangent = difference(b, a);
     auto const& normal = right.normal().numerator();
     inverse_length_enclosure scale(right.normal().squared_length());
+    if (require_rational_scale && !scale.is_exact()) { return status::cannot_certify; }
 
     Polygon candidate;
     auto& ring = exterior_ring(candidate);

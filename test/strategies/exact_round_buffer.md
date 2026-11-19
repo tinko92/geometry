@@ -147,13 +147,92 @@ failure of the stored-ring checks return `cannot_certify` without modifying
 the output. This is not a search over alternative polygons on the target
 grid. The numeric and geometry requirements are the same as for Point.
 
-## Remaining Work Beyond Capsules
+## Exact Chord Unions for Rational-Length Linestrings
 
-- No support is claimed for bent polylines, polygon boundaries, filled
-  polygons or multigeometries. Bent traces need joins and a certified union;
-  polygon-boundary buffers can create holes or multiple components, so the
-  single simple ring proof does not apply. Buffering a filled polygon is a
-  different operation from buffering its boundary.
+`<boost/geometry/algorithms/buffer_linestring_certified.hpp>` adds
+`buffer_linestring_certified(linestring, polygon, radius, max_error)`.
+Every nonzero source edge must have rational length: squared length must
+be a perfect square in the rationals. This covers axis-aligned edges and
+rational multiples of Pythagorean triples, but rejects, for example, a
+unit diagonal. Repeated vertices are skipped; an all-equal trace yields a
+disk approximation. The radius and samples are rational and the exact-scale
+path of the capsule kernel is required, so both true supports and all
+selected cap chord endpoints are rational **before** any union operation.
+
+### Exact Chord Topology and Lossless Export
+
+The cap-and-side polygons are strictly convex. For each oriented piece edge,
+clip its parameter interval against all the convex pieces using rational
+half-plane inequalities. Split at every interval endpoint, including
+singleton contacts and co-directed overlaps. The piece supplying an open
+atom occupies its left side. Another piece covers its right side exactly
+when the atom lies in the interior of that piece or on its oppositely
+directed facet. Remove such atoms and deduplicate identical oriented atoms.
+Every remaining atom bounds the union, and any boundary contact between
+noncoincident atoms was noded by the clipping. Require one directed simple
+cycle consuming all atoms. Holes, point-touch branches, and additional
+cycles are refused. Limits are 32 nonzero pieces, 512 total piece edges,
+and 4096 boundary atoms (in addition to the capsule subdivision limits).
+
+`cpp_rational` output preserves the result. Native output succeeds only if
+the stored ring reads back as the same exact sequence in the requested order
+and closure. A failed round trip, topology or resource check returns
+`cannot_certify` without changing the caller's polygon.
+
+The topology claim is about the **exact union of these chord polygons**, not
+the smooth capsule union. We do not union rounded pieces or round the union
+and infer topology from a metric tolerance. In `test_rounding_can_change_contact`,
+two exact capsules (and hence their inscribed chord polygons) are separated
+by `1/12`; their separately certified integer exports share a boundary point.
+Hausdorff error of a finite filled union is bounded by the maximum per-piece
+error, but that bound does not stop a new contact, crossing, or hole change.
+The same distinction applies between the chord union and the smooth buffer:
+the inclusion guarantee below bounds the filled-set Hausdorff distance, not
+boundary Hausdorff distance or the topology of the smooth buffer.
+
+### Sufficient Nested-Linestring Condition
+
+Write `B(L,r)` for the closed radius-`r` neighborhood of the trace `L`, and
+`P(L,r,e)` for a successful export. For `0 < e < r`, each chord capsule is
+inscribed in the exact capsule and strictly contains that segment's radius
+`r-e` capsule by the lower-distance check. Unions distribute over both
+collections of capsules, so
+
+```
+B(L,r-e) subset interior(P(L,r,e))
+P(L,r,e) subset B(L,r)
+```
+
+Finite pieces and strict clearance permit a slightly smaller error budget,
+which gives strict filled-set Hausdorff error `< e`. For `e >= r` the
+implementation uses `r/2` instead to keep a positive inner radius.
+
+For [#578](https://github.com/boostorg/geometry/issues/578), suppose the inner
+trace is contained in the outer trace and `r_inner <= r_outer - e_outer`.
+Then the inner output is contained in `B(L_inner,r_inner)`, which is contained
+in `B(L_outer,r_outer-e_outer)` and therefore in the **interior** of the outer
+output. The condition is sufficient, not necessary. No inner approximation
+allowance is needed here because its output is inscribed and exported
+losslessly; it would be needed for an output with outward displacement.
+
+`test_578_nested_traces` directly buffers two noncollinear linestrings:
+`LINESTRING(-6 -8,0 0,9 0,12 4,20 4)` and
+`LINESTRING(-3 -4,0 0,9 0,10.5 2)`. It uses outer radius `4`, outer error
+`1/16`, inner radius `63/16` (equality in the sufficient condition), and a
+different inner error `1/8`. An independent rational ray test checks all
+inner output vertices for strict containment, and rational pairwise
+segment-intersection tests verify the two output boundaries never meet.
+This is a regression for the inclusion property, not the historical issue
+input and not a fix to the existing `boost::geometry::buffer` path.
+
+## Remaining Work Beyond Rational Linestrings
+
+- General linestrings still need independently algebraic support predicates
+  and noding. Exact chord unions with holes or multiple boundary rings and
+  lossy but topology-preserving native export are not implemented. Polygon
+  boundaries, filled polygons and multigeometries are not handled by this
+  opt-in path. Buffering a filled polygon is a different operation from
+  buffering its boundary.
 - Forming the actual buffer requires exact intersection construction,
   ordering and noding for offsets and chords, followed by topology assembly
   and cleanup. Primitives from different edges can introduce expressions
@@ -181,4 +260,7 @@ c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
 c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
     test/algorithms/buffer/buffer_segment_certified.cpp -o /tmp/buffer_segment_certified
 /tmp/buffer_segment_certified
+c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
+    test/algorithms/buffer/buffer_linestring_certified.cpp -o /tmp/buffer_linestring_certified
+/tmp/buffer_linestring_certified
 ```
