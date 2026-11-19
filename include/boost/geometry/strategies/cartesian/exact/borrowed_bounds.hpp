@@ -331,6 +331,13 @@ int compare(A const& a, B const& b)
 {
     using common = typename static_predicates_detail::common_root<borrowed_point<Root>, A, B>::type;
     static_assert(std::is_same<common, Root>::value, "Bound operands must share their Root");
+    if constexpr (std::is_same<A, search_coordinate<Root>>::value
+                  && std::is_same<B, search_coordinate<Root>>::value)
+    {
+        // These are the stored search limits, not approximate geometry
+        // coordinates. Direct ordering also covers the unbounded limits.
+        return (a.value > b.value) - (a.value < b.value);
+    }
     int const ai = infinity<Root>(a), bi = infinity<Root>(b);
     if (ai || bi) return (ai > bi) - (ai < bi);
     return root_compare_coordinate<D, Root>(a, b);
