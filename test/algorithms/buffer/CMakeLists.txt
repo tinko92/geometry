@@ -12,7 +12,8 @@ foreach(item IN ITEMS
   boost_geometry_add_unit_test("algorithms" ${item})
 endforeach()
 
-foreach(item IN ITEMS buffer_point_certified buffer_segment_certified buffer_linestring_certified buffer_polygon_certified)
+foreach(item IN ITEMS buffer_point_certified buffer_segment_certified buffer_linestring_certified
+    buffer_polygon_certified buffer_issue_578_certified)
   boost_geometry_add_unit_test("algorithms" ${item})
   target_compile_features(${BOOST_GEOMETRY_UNIT_TEST_NAME} PRIVATE cxx_std_17)
 endforeach()

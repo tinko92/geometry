@@ -290,10 +290,97 @@ it contains the point whenever its clearance is `<= r`. Thus `T` and `N_r`
 agree inside the convex Polygon. The 3-4-5 triangle regression checks the
 exact inward half-planes, area, and disappearance at the inradius.
 
+## Original #578 Fixture and Export Obstacle
+
+`buffer_issue_578_certified` transcribes the two WKT strings from the
+[original Wandbox program](https://wandbox.org/permlink/wvGM3SFlM5MXLx5Z)
+and reads them as binary64, like the original. There are 16 inner and 101
+outer vertices. The source computes `R = 4`, `n = 180`, and
+`r = R - R*(1-cos(pi/n)) - 1e-6`. The 16-point trace is **not** a subset of
+the 101-point trace: inner vertex 5 is more than `0.39` from every outer
+segment. The sufficient subtrace theorem above cannot certify this fixture.
+
+The new test nevertheless proves direct nesting. It checks the original
+binary64 formula and also bounds the real formula by rational inequalities
+(using a bracket for pi and alternating cosine bounds). The inner radius
+is less than `3.9993898`. The test certifies containment of the entire
+radius-`3.9993898` smooth inner buffer in the open radius-`3.99939075`
+neighborhood of the original outer trace. In particular, **any** outer
+support-exact radius-4 chord union that contains its radius-`4-e` inner
+neighborhood for `e = 0.00060925` contains the original inner smooth buffer
+strictly. An inscribed inner chord approximation also lies strictly inside.
+No radius change is needed at the ideal-set level. This does not certify the
+legacy 180-point output or assume its actual chords meet the nominal sagitta.
+
+For this certificate all the outer capsules have a common interior point,
+so their union is star-shaped. Each inner vertex's circle is covered by
+rational tangent triangles: two exact chart directions bound an arc between
+their chord and tangents; put the triangle's three vertices strictly in one
+convex outer capsule. Split the chart interval when that test fails (depth
+12 and 4096 total arc tests). Each of the 30 true inner offset sides also
+lies in some convex outer capsule, as verified by algebraic endpoint to
+rational segment distance tests. This covers each inner capsule boundary;
+radial segments from the common outer point then cover the filled inner
+capsule. The tangent triangles are enclosures for the proof, **not** a
+replacement for any offset support or exported chord geometry.
+
+Both original traces have an exposed source edge of irrational length
+(zero-based edges 0 and 29, respectively). All source vertices are on or to
+the right; the entire true left offset is exposed in its normal direction.
+On that side `cross(d,p-a) = r*sqrt(d.d)` is irrational for either original
+positive binary64 radius, whereas the left side is rational at all rational
+points. No finite polygon with rational or native coordinates can realize
+that exposed face losslessly: its support maximum must occur at a vertex.
+The test therefore checks `cannot_certify` and unchanged output for both
+original lines under the current public contract. The outer line also
+exceeds the current 32-piece limit independently of the algebraic issue.
+
+### Bounded Algebraic Predicates and Pair Noding
+
+The isolated `bounded_radical_field` keeps up to four independent positive
+rational square classes (degree at most 16). An incoming root is tested
+against each existing subset product by an integer perfect-square test of
+the quotient's numerator times denominator, so dependent roots and exact
+cancellations are identified without factoring. The test is exhaustive:
+if a root of a rational already belongs to the field, every generator
+sign-flip sends it to itself or its negative. Each simultaneous eigenspace
+of these sign-flips is spanned by one basis monomial, so the root must be
+a rational multiple of a subset product. A fifth independent root is
+refused without changing the field or output. No interval refinement or
+rounded root is used in the sign fallback.
+
+Write a sign query as `A+B*sqrt(d)` over the lower field. Equal signs or a
+zero term decide immediately; opposite signs reduce to the lower-field sign
+of `A*A-d*B*B`, with the sign of `A` accounted for. At rank four this visits
+at most 121 recursive calls (including rational leaves) and at most 350
+coefficient-pair products across all those norm reductions. One ordinary
+field multiplication uses at most 256 pairs; registering a root tests at
+most 16 subsets. These are operation-count bounds, not constant bit-cost
+bounds for arbitrary precision rational coefficients.
+
+`radical_buffer_noding` lifts true edge offsets and nodes two nondegenerate
+algebraic segments with exact signs, using projective parameters for proper
+crossings, coincident endpoints and overlaps. It compares cuts without
+evaluating an algebraic quotient. Tests cover independent roots, a gap of
+`2^-300`, and the exact intersection of two independently algebraic cap
+chords from the first two **original outer** edges, each within the proved
+radius-4 chord-error budget. Their node is not rational. This checks a
+local arrangement operation, not a full union or a repair of `buffer`.
+
 ## Remaining Work
 
-- Independently algebraic supports and noding are not implemented. The
-  linestring API still accepts one exterior ring only; the polygon API
+- The algebraic pair primitive is not integrated into arrangement assembly.
+  Preserve producer edges and projective coordinates, rebuilding a local
+  field per predicate rather than registering an entire linestring's roots
+  globally. Two pairwise nodes need at most four source roots for coordinate
+  comparison; sorting cuts on one producer needs at most three. An atom
+  midpoint on one producer likewise uses at most three, and testing it
+  against another capsule's edge adds at most one. A full
+  implementation still needs independently certified atom classification,
+  ring assembly, capacity policy and algebraic output, or a **different**
+  contract that proves topology and nesting after lossy export. Exact pair
+  noding alone cannot make native lossless output possible on #578.
+- The linestring API still accepts one exterior ring only; the polygon API
   supports multiple disjoint cycles but not boundary contacts. MultiPolygon
   input and lossy but topology-preserving native export are not implemented.
 - Forming the actual buffer requires exact intersection construction,
@@ -329,4 +416,7 @@ c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
 c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
     test/algorithms/buffer/buffer_polygon_certified.cpp -o /tmp/buffer_polygon_certified
 /tmp/buffer_polygon_certified
+c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
+    test/algorithms/buffer/buffer_issue_578_certified.cpp -o /tmp/buffer_issue_578_certified
+/tmp/buffer_issue_578_certified
 ```
