@@ -656,6 +656,7 @@ For a single Polygon it uses the following certificates, without changing `buffe
 | --- | --- |
 | Zero distance | Validate the source using exact rational coordinates, then copy the same filled polygon losslessly with the output orientation and closure. |
 | Convex erosion | Exact straight offsets, with an independent export bound. A failed exact construction or export is not replaced by a chord approximation. |
+| Convex dilation, native coordinates | Exact straight offset endpoints on every source edge, inscribed chords only on the intervening arcs, and independent native export checks. |
 | Other erosion or dilation, native coordinates | Algebraic chord arrangement, including irrational edge lengths. If necessary, tighten the budgets to keep `0 < e < r` and `0 <= d < r-e`. |
 | Rational chord arrangement | Lossless export for rational-length sources, including as a fallback on a native grid. `cpp_rational` output does not use the native algebraic exporter. |
 
@@ -675,6 +676,66 @@ successful result proves `C` and `E_r` empty. Failed export proves neither.
 The reverse implication is false: a chord can miss part of a round cap.
 Nonempty chord results have the radius bounds above; neither their
 nonemptiness nor their component count is a claim about smooth erosion.
+
+### Support-Exact Convex Dilation
+
+The fast path is for a single, hole-free convex polygon. It shares the
+convex erosion guard: normalize the declared orientation, check closure,
+and require one full CCW edge-direction sweep with no right turns or
+reversals. Positive local turns alone would admit a pentagram. Consecutive
+identical positions are redundant, but noncoincident collinear subdivisions
+are kept. They contribute the same direction only once to the convexity
+proof, not to the construction.
+
+For each CCW edge `a -> b`, use the exact outward unit normal
+`u = (b.y-a.y, a.x-b.x) / sqrt(|b-a|^2)`. Both `a+r*u` and `b+r*u`
+are ideal vertices, consecutive along the translated straight edge. At a
+corner only the minor CCW sweep from the preceding normal to the following
+normal is subdivided. A projective midpoint is a positive combination of
+the two directions, hence lies strictly inside the sweep. The exact minor
+arc predicate certifies each chord's sagitta before accepting it. Each
+chord direction lies between the two endpoint tangent directions, so the
+joined boundary closes in one convex sweep. At a collinear subdivision the
+incoming and outgoing endpoints coincide exactly; emit that position once.
+There is no shared radical field or intersection arrangement. Work is linear
+in the number of source edges and accepted chords, counting exact arithmetic
+operations. The source cap is 512 positions before closure; the ideal ring
+cap is 4096 vertices, with a maximum depth of 16 per arc. Intermediate
+projective directions use the same scalar size bound as the source guard.
+
+The ideal ring is inside `P+B(r)` for input `P` and disk `B`. In a source
+edge's normal direction it attains the **exact** radius-`r` support.
+In a corner's normal cone, the nearest bracketing chord endpoint has
+support deficit at most `e` by the sagitta bound. Thus the ideal ring
+contains `P+B(r-e)`. Native export uses rational root enclosures only to
+propose coordinates, not as the geometric construction or a claim of
+correct rounding. It reads the actual stored coordinates back and compares
+their squared Euclidean errors with `d^2` in one radical per vertex. It
+also proves one convex, noncollapsed exterior including orientation,
+closure and retained subdivisions. This gives
+`P+B(r-e-d) subset stored subset P+B(r+d)`: paired convex hulls differ
+by at most `d` in every supporting direction. The native straight edges
+can move within the displacement budget; the ideal edges are not inset
+to the supports of a fixed chord disk.
+
+The supplied budgets may be tightened to keep `0 < e < r` and
+`0 <= d < r-e`. Failure to construct or export the fast path leaves the
+existing certified arrangement eligible; no fallback to ordinary buffer
+or to a fixed-disk approximation is made. Rational output and all multi
+inputs retain their previous dispatch. A certified positive result whose
+output exceeds 512 sides still cannot use the bounded convex erosion path.
+
+The original #1281 (103 sides, CCW closed) succeeds with native Polygon
+output at both stages. With `+9, e=1/128, d=1e-9`, the local Apple Clang
+21/Darwin arm64 replay exported 217 sides. Passing that stored polygon to
+`-9, e=0, d=1e-9` exported one polygon with 187 sides and area about
+765.0373. The test audits both endpoints of every translated source segment
+and the arc vertices and inclusion independently, then checks clearance
+from every intermediate support at erosion output. It also exercises an
+independent 185-edge convex input, exact collinear subdivisions, the
+multi-winding guard, and export refusal under in-budget grid collapse.
+This sequence erodes the newly certified stored intermediate, not the
+ordinary-buffer intermediate, and is not exact smooth closing.
 
 ## Multi-Input Algebraic Arrangement
 

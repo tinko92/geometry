@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <boost/geometry/algorithms/buffer_linestring_arrangement_certified.hpp>
+#include <boost/geometry/algorithms/detail/buffer/convex_round_dilation.hpp>
 #include <boost/geometry/algorithms/detail/buffer/round_multi_backend.hpp>
 #include <boost/geometry/algorithms/detail/buffer/round_polygon_backend.hpp>
 #include <boost/geometry/algorithms/is_empty.hpp>
@@ -211,6 +212,21 @@ status dispatch(Geometry const& input, MultiPolygon& output, budget const& b)
             // Do not substitute a chord result for a failed exact export.
             if (result != status::invalid_input) { return result; }
         }
+        using polygon = typename boost::range_value<MultiPolygon>::type;
+        if constexpr (!std::is_same_v<coordinate_type_t<polygon>, exact_number>)
+        {
+            if (b.distance > 0 && b.sagitta > 0)
+            {
+                polygon candidate;
+                auto const result = certified_convex_dilation::apply(
+                    input, candidate, b.distance, b.sagitta, b.displacement);
+                if (result == status::success)
+                {
+                    range::push_back(output, std::move(candidate));
+                    return result;
+                }
+            }
+        }
         return polygon_backend(input, output, b.distance, b.sagitta, b.displacement);
     }
     else
@@ -238,6 +254,8 @@ status dispatch(Geometry const& input, MultiPolygon& output, budget const& b)
     before export; max_displacement separately bounds Euclidean movement of
     each ideal chord vertex in the stored output. The stored topology is
     certified against the constructed geometry, not against unchorded arcs.
+    The native convex dilation path constructs both endpoints of every
+    exact straight offset before approximating the intervening arcs.
     Convex erosion uses exact straight offsets and no arcs. Other erosion
     targets the regularized difference with the inscribed boundary band.
     This gives radius-inclusion bounds, not a smooth erosion Hausdorff or

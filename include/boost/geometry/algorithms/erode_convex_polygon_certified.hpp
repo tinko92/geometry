@@ -74,7 +74,24 @@ inline bool strict_convex(std::vector<rational_xy> const& points)
     return wraps == 1;
 }
 
-template <typename Polygon>
+// Co-directed subdivisions contribute no new supporting halfspace.
+// Reject reversals and zero edges, not just clockwise bends.
+inline bool convex_corners(std::vector<rational_xy> const& points,
+                           std::vector<rational_xy>& corners)
+{
+    if (points.size() < 3) { return false; }
+    for (id i = 0; i < points.size(); ++i)
+    {
+        auto const before = subtract(points[i], points[i == 0 ? points.size()-1 : i-1]);
+        auto const after = subtract(points[(i+1) % points.size()], points[i]);
+        auto const turn = cross(before, after);
+        if (turn < 0 || (turn == 0 && dot(before, after) <= 0)) { return false; }
+        if (turn > 0) { corners.push_back(points[i]); }
+    }
+    return strict_convex(corners);
+}
+
+template <bool KeepSubdivisions = false, typename Polygon>
 status read_source(Polygon const& input, std::vector<rational_xy>& corners)
 {
     auto const& holes = interior_rings(input);
@@ -94,17 +111,9 @@ status read_source(Polygon const& input, std::vector<rational_xy>& corners)
     if constexpr (closed_input) { points.pop_back(); }
     if constexpr (geometry::point_order<Polygon>::value == clockwise) { std::reverse(points.begin(), points.end()); }
 
-    // Identical consecutive positions and straight same-direction subdivisions
-    // contribute no new supporting halfspace. Reject reversals, not just bends.
-    for (id i = 0; i < points.size(); ++i)
-    {
-        auto const before = subtract(points[i], points[i == 0 ? points.size()-1 : i-1]);
-        auto const after = subtract(points[(i+1) % points.size()], points[i]);
-        auto const turn = cross(before, after);
-        if (turn < 0 || (turn == 0 && dot(before, after) <= 0)) { return status::invalid_input; }
-        if (turn > 0) { corners.push_back(points[i]); }
-    }
-    return strict_convex(corners) ? status::success : status::invalid_input;
+    if (!convex_corners(points, corners)) { return status::invalid_input; }
+    if constexpr (KeepSubdivisions) { corners.swap(points); }
+    return status::success;
 }
 
 struct enclosure

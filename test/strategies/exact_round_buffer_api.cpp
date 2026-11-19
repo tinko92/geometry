@@ -3,14 +3,18 @@
 // Copyright (c) 2026
 // Distributed under the Boost Software License, Version 1.0.
 
+#include "exact_issue_1281_fixture.hpp"
+
 #include <boost/geometry/algorithms/buffer_round_certified.hpp>
 #include <boost/geometry/geometries/multi_linestring.hpp>
 #include <boost/geometry/geometries/multi_point.hpp>
 #include <boost/geometry/geometries/segment.hpp>
+#include <boost/geometry/io/wkt/read.hpp>
 #include <boost/core/lightweight_test.hpp>
 
 #include <algorithm>
 #include <limits>
+#include <vector>
 
 namespace bg = boost::geometry;
 namespace ec = bg::strategies::detail::exact_cartesian;
@@ -203,6 +207,177 @@ void test_polygon()
     invalid.outer() = {p(0, 0), p(4, 4), p(0, 4), p(4, 0), p(0, 0)};
     BOOST_TEST(bg::buffer_round_certified(invalid, out, -1, 0, 0) == status::invalid_input);
     BOOST_TEST(out.outer().empty());
+}
+
+struct xy
+{
+    number x, y;
+};
+
+xy sub(xy const& a, xy const& b) { return {a.x-b.x, a.y-b.y}; }
+number cross(xy const& a, xy const& b) { return a.x*b.y-a.y*b.x; }
+number dot(xy const& a, xy const& b) { return a.x*b.x+a.y*b.y; }
+
+template <typename Polygon>
+std::vector<xy> ccw_vertices(Polygon const& polygon)
+{
+    std::vector<xy> points;
+    for (auto const& v : polygon.outer()) { points.push_back({lift(bg::get<0>(v)), lift(bg::get<1>(v))}); }
+    if (bg::closure<Polygon>::value == bg::closed) { points.pop_back(); }
+    if (bg::point_order<Polygon>::value == bg::clockwise) { std::reverse(points.begin(), points.end()); }
+    return points;
+}
+
+bool clear_supports(std::vector<xy> const& shell, std::vector<xy> const& points, number const& radius)
+{
+    for (std::size_t j = 0; j < shell.size(); ++j)
+    {
+        auto const edge = sub(shell[(j+1) % shell.size()], shell[j]);
+        number const length2 = dot(edge, edge), min2 = radius*radius*length2;
+        if (length2 == 0) { return false; }
+        for (auto const& v : points)
+        {
+            number const side = cross(edge, sub(v, shell[j]));
+            if (side < 0 || side*side < min2) { return false; }
+        }
+    }
+    return true;
+}
+
+bool offset_endpoint_matches(xy const& q, xy const& p, xy const& edge,
+                             number const& r, number const& d)
+{
+    // Independent oracle in the edge's tangent/normal frame. The outward
+    // projection, in unnormalized units, should be r*sqrt(length2).
+    auto const delta = sub(q, p);
+    number const length2 = dot(edge, edge);
+    number const normal = -cross(edge, delta);
+    number const tangent = dot(edge, delta);
+    number const lhs = normal*normal + tangent*tangent + (r*r-d*d)*length2;
+    if (lhs >= 0 && normal < 0) { return false; }
+    if (lhs <= 0 && normal >= 0) { return true; }
+    number const rhs2 = 4*r*r*normal*normal*length2;
+    return lhs > 0 ? lhs*lhs <= rhs2 : lhs*lhs >= rhs2;
+}
+
+bool audit_convex_buffer(std::vector<xy> const& input, std::vector<xy> const& stored,
+                         number const& r, number const& e, number const& d)
+{
+    // Identify every straight offset by its two adjacent stored endpoints.
+    // A support merely parallel to the input, shifted inward to a disk
+    // chord, cannot pass this test at small d.
+    std::vector<std::size_t> start;
+    auto const n = stored.size();
+    for (std::size_t i = 0; i < input.size(); ++i)
+    {
+        auto const& a = input[i];
+        auto const& b = input[(i+1) % input.size()];
+        auto const edge = sub(b,a);
+        std::size_t j = 0;
+        for (; j < n; ++j)
+        {
+            if (offset_endpoint_matches(stored[j], a, edge, r, d)
+                && offset_endpoint_matches(stored[(j+1) % n], b, edge, r, d)) { break; }
+        }
+        if (j == n) { return false; }
+        start.push_back(j);
+    }
+
+    // Between identified offsets, every vertex belongs to that source
+    // corner's circle up to export error. Account for every stored edge.
+    std::size_t accounted = 0;
+    number const lower = r-d, upper = r+d;
+    for (std::size_t i = 0; i < input.size(); ++i)
+    {
+        std::size_t const from = (start[(i+input.size()-1) % input.size()]+1) % n;
+        std::size_t const to = start[i];
+        accounted += (to+n-from) % n + 1;
+        for (std::size_t j = from;; j = (j+1) % n)
+        {
+            auto const v = sub(stored[j], input[i]);
+            number const distance2 = dot(v,v);
+            if (distance2 < lower*lower || distance2 > upper*upper) { return false; }
+            if (j == to) { break; }
+        }
+    }
+    return accounted == n && clear_supports(stored, stored, 0)
+        && clear_supports(stored, input, r-e-d);
+}
+
+void test_support_exact_convex_dilation()
+{
+    using ccw_open = bg::model::polygon<p, false, false>;
+    ccw_open source;
+    // 184 distinct parabola secants with irrational lengths, and one
+    // closing edge. No single small radical field represents this contour.
+    for (int x = -92; x <= 92; ++x) { source.outer().emplace_back(x, x*x); }
+    number const e = number(1)/16, d = number(1)/(1LL<<35);
+    polygon out;
+    if (!BOOST_TEST(bg::buffer_round_certified(source, out, 2, e, d) == status::success)) { return; }
+    BOOST_TEST(out.inners().empty());
+    BOOST_TEST(area2(out.outer()) < 0);
+    BOOST_TEST_EQ(bg::get<0>(out.outer().front()), bg::get<0>(out.outer().back()));
+    BOOST_TEST_EQ(bg::get<1>(out.outer().front()), bg::get<1>(out.outer().back()));
+    BOOST_TEST(audit_convex_buffer(ccw_vertices(source), ccw_vertices(out), 2, e, d));
+    auto const before = out;
+    BOOST_TEST(bg::buffer_round_certified(source, out, 2, e, 0) == status::cannot_certify);
+    BOOST_TEST(same_storage(before, out));
+    BOOST_TEST(bg::buffer_round_certified(source, out, 2, 0, d) == status::cannot_certify);
+    BOOST_TEST(same_storage(before, out));
+
+    // Displacement <= 1 is loose enough for rounding on this grid, but
+    // the result still cannot publish a collapsed or reversed edge.
+    auto translated = source;
+    for (auto& v : translated.outer())
+    {
+        bg::set<0>(v, bg::get<0>(v) + 0x1p52);
+        bg::set<1>(v, bg::get<1>(v) + 0x1p52);
+    }
+    BOOST_TEST(bg::buffer_round_certified(translated, out, 2, e, 1) == status::cannot_certify);
+    BOOST_TEST(same_storage(before, out));
+
+    ccw_open subdivided;
+    subdivided.outer() = {p(0,0), p(2,0), p(2,0), p(4,0), p(4,4), p(0,4)};
+    ccw_open open;
+    BOOST_TEST(bg::buffer_round_certified(subdivided, open, 1, 0.5, 0) == status::success);
+    BOOST_TEST_EQ(open.outer().size(), 9u); // 8 arc ends + the retained subdivision.
+    BOOST_TEST(std::count_if(open.outer().begin(), open.outer().end(), [](auto const& v)
+    { return bg::get<0>(v) == 2 && bg::get<1>(v) == -1; }) == 1);
+    std::reverse(subdivided.outer().begin(), subdivided.outer().end());
+    BOOST_TEST(bg::buffer_round_certified(subdivided, out, 1, 0.5, 0) == status::invalid_input);
+    BOOST_TEST(same_storage(before, out));
+    bg::set<0>(subdivided.outer().front(), std::numeric_limits<double>::infinity());
+    BOOST_TEST(bg::buffer_round_certified(subdivided, out, 1, 0.5, 0) == status::invalid_input);
+    BOOST_TEST(same_storage(before, out));
+
+    ccw_open star;
+    star.outer() = {p(0,0), p(4,2), p(0,3), p(3,0), p(2,4)};
+    auto const cycle = ccw_vertices(star);
+    for (std::size_t i = 0; i < cycle.size(); ++i)
+    {
+        BOOST_TEST(cross(sub(cycle[(i+1)%5], cycle[i]),
+                         sub(cycle[(i+2)%5], cycle[(i+1)%5])) > 0);
+    }
+    BOOST_TEST(bg::buffer_round_certified(star, out, 1, e, d) == status::invalid_input);
+    BOOST_TEST(same_storage(before, out));
+}
+
+void test_support_exact_1281()
+{
+    using ccw_closed = bg::model::polygon<p, false>;
+    ccw_closed source, intermediate, eroded;
+    bg::read_wkt(issue_1281_wkt, source);
+    BOOST_TEST_EQ(source.outer().size(), 104u);
+    number const e = number(1)/128, d = number(1)/1000000000;
+    if (!BOOST_TEST(bg::buffer_round_certified(source, intermediate, 9, e, d) == status::success)) { return; }
+    if (!BOOST_TEST(bg::buffer_round_certified(intermediate, eroded, -9, 0, d) == status::success)) { return; }
+    BOOST_TEST(intermediate.inners().empty());
+    BOOST_TEST(eroded.inners().empty());
+    BOOST_TEST(intermediate.outer().size() > 184u);
+    BOOST_TEST(area2(eroded.outer()) > 0);
+    auto const stored = ccw_vertices(intermediate);
+    BOOST_TEST(audit_convex_buffer(ccw_vertices(source), stored, 9, e, d));
+    BOOST_TEST(clear_supports(stored, ccw_vertices(eroded), 9-d));
 }
 
 void test_irrational_polygon_arrangement()
@@ -489,6 +664,8 @@ int main()
     test_point_and_segment();
     test_star_and_nonstar();
     test_polygon();
+    test_support_exact_convex_dilation();
+    test_support_exact_1281();
     test_irrational_polygon_arrangement();
     test_chord_erosion_empty_implication();
     test_empty_vs_failure();
