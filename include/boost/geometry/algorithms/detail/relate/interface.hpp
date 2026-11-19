@@ -26,6 +26,7 @@
 #include <boost/geometry/geometries/adapted/boost_variant.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 #include <boost/geometry/strategies/default_strategy.hpp>
+#include <boost/geometry/strategies/detail/cartesian_default_pilot.hpp>
 #include <boost/geometry/strategies/detail.hpp>
 #include <boost/geometry/strategies/relate/services.hpp>
 #include <boost/geometry/strategies/relate/intersection_types.hpp>
@@ -378,6 +379,14 @@ inline bool relate(Geometry1 const& geometry1,
                    Geometry2 const& geometry2,
                    Mask const& mask)
 {
+#ifdef BOOST_GEOMETRY_DETAIL_CARTESIAN_EXACT_DEFAULT_PILOT
+    namespace pilot = detail::cartesian_default_pilot;
+    if constexpr (pilot::admits_pair<Geometry1, Geometry2> && std::is_same<Mask, de9im::mask>::value)
+    {
+        if (pilot::admits_values(geometry1, geometry2))
+            return geometry::relate(geometry1, geometry2, mask, pilot::strategy{});
+    }
+#endif
     return resolve_dynamic::relate
             <
                 Geometry1,

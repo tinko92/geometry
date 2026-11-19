@@ -32,6 +32,7 @@
 #include <boost/geometry/geometries/adapted/boost_variant.hpp>
 #include <boost/geometry/geometries/concepts/check.hpp>
 #include <boost/geometry/strategies/default_strategy.hpp>
+#include <boost/geometry/strategies/detail/cartesian_default_pilot.hpp>
 #include <boost/geometry/strategies/detail.hpp>
 #include <boost/geometry/strategies/detail/point_conversion.hpp>
 #include <boost/geometry/strategies/relate/cartesian.hpp>
@@ -897,6 +898,14 @@ inline void union_(Geometry1 const& geometry1,
                    Geometry2 const& geometry2,
                    Collection& output_collection)
 {
+#ifdef BOOST_GEOMETRY_DETAIL_CARTESIAN_EXACT_DEFAULT_PILOT
+    namespace pilot = detail::cartesian_default_pilot;
+    if constexpr (pilot::admits_output<Geometry1, Geometry2, Collection>)
+    {
+        if (pilot::admits_values(geometry1, geometry2))
+            return geometry::union_(geometry1, geometry2, output_collection, pilot::strategy{});
+    }
+#endif
     resolve_dynamic::union_
         <
             Geometry1,

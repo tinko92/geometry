@@ -2,8 +2,9 @@
 
 The opt-in umbrella is
 `boost::geometry::strategies::relate::cartesian_exact<Coordinate>` in
-`boost/geometry/strategies/relate/cartesian_exact.hpp`. Existing defaults are
-unchanged. This work starts at PR1491 commit
+`boost/geometry/strategies/relate/cartesian_exact.hpp`. Unconfigured defaults
+are unchanged; see the [build-wide pilot](exact_default_pilot.md) for the
+separate opt-in on a few public calls. This work starts at PR1491 commit
 `72b2d832fb9596a2a23c0c164a5426ae720d0cd6`.
 
 ```cpp

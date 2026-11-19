@@ -22,6 +22,7 @@ foreach(item IN ITEMS
     exact_additional_issues
     exact_gc
     exact_construction_filter
+    exact_default_pilot
     exact_filter_routing
     exact_static_box
     exact_static_clipping
@@ -107,6 +108,8 @@ endforeach()
 
 target_link_libraries(boost_geometry_strategies_exact_additional_issues PRIVATE Boost::property_tree)
 target_compile_definitions(boost_geometry_strategies_exact_benchmark_check PRIVATE BG_BENCH_EXACT)
+target_compile_definitions(boost_geometry_strategies_exact_default_pilot PRIVATE
+    BOOST_GEOMETRY_ENABLE_CARTESIAN_EXACT_DEFAULT_PILOT)
 
 find_package(Threads REQUIRED)
 # Exact point-cache regressions exercise threads. Older Unix toolchains need
@@ -114,7 +117,7 @@ find_package(Threads REQUIRED)
 # Keep this dependency on these tests, not on the production geometry target.
 foreach(item IN ITEMS exact_additional_issue_api exact_additional_issues exact_algorithm_optimization exact_benchmark_check
     exact_gc exact_issues exact_native_predicates exact_point exact_segment_position exact_relate_overlay exact_segment exact_segment_box exact_shared_boundary
-    exact_construction_filter exact_filter_routing exact_static_box exact_static_clipping
+    exact_construction_filter exact_default_pilot exact_filter_routing exact_static_box exact_static_clipping
     exact_filtered_segment exact_forward_error exact_fixed_arithmetic exact_fixed_measures exact_fixed_rounding
     exact_static_predicates exact_static_ring_topology
     exact_borrowed_alias exact_borrowed_bounds exact_borrowed_capacity exact_borrowed_clipping exact_borrowed_gc

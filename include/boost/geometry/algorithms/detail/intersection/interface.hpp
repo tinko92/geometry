@@ -21,6 +21,7 @@
 #include <boost/geometry/algorithms/detail/tupled_output.hpp>
 #include <boost/geometry/geometries/adapted/boost_variant.hpp>
 #include <boost/geometry/strategies/default_strategy.hpp>
+#include <boost/geometry/strategies/detail/cartesian_default_pilot.hpp>
 #include <boost/geometry/strategies/detail.hpp>
 #include <boost/geometry/strategies/relate/services.hpp>
 #include <boost/geometry/util/range.hpp>
@@ -370,6 +371,14 @@ inline bool intersection(Geometry1 const& geometry1,
                          Geometry2 const& geometry2,
                          GeometryOut& geometry_out)
 {
+#ifdef BOOST_GEOMETRY_DETAIL_CARTESIAN_EXACT_DEFAULT_PILOT
+    namespace pilot = detail::cartesian_default_pilot;
+    if constexpr (pilot::admits_output<Geometry1, Geometry2, GeometryOut>)
+    {
+        if (pilot::admits_values(geometry1, geometry2))
+            return geometry::intersection(geometry1, geometry2, geometry_out, pilot::strategy{});
+    }
+#endif
     return resolve_dynamic::intersection
         <
             Geometry1,

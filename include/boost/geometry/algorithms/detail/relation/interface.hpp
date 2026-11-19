@@ -179,6 +179,14 @@ template <typename Geometry1, typename Geometry2>
 inline de9im::matrix relation(Geometry1 const& geometry1,
                               Geometry2 const& geometry2)
 {
+#ifdef BOOST_GEOMETRY_DETAIL_CARTESIAN_EXACT_DEFAULT_PILOT
+    namespace pilot = detail::cartesian_default_pilot;
+    if constexpr (pilot::admits_pair<Geometry1, Geometry2>)
+    {
+        if (pilot::admits_values(geometry1, geometry2))
+            return geometry::relation(geometry1, geometry2, pilot::strategy{});
+    }
+#endif
     return resolve_dynamic::relation
         <
             Geometry1,
