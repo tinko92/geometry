@@ -1,0 +1,373 @@
+// Boost.Geometry
+// Copyright (c) 2026 Tinko Bartels.
+// Distributed under the Boost Software License, Version 1.0.
+
+#ifndef BOOST_GEOMETRY_STRATEGIES_CARTESIAN_EXACT_CONSTRUCTION_ROUNDING_HPP
+#define BOOST_GEOMETRY_STRATEGIES_CARTESIAN_EXACT_CONSTRUCTION_ROUNDING_HPP
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <limits>
+#include <stdexcept>
+#include <type_traits>
+
+#include <boost/geometry/strategies/cartesian/exact/forward_error.hpp>
+#include <boost/geometry/strategies/cartesian/exact/output_policy.hpp>
+#include <boost/geometry/strategies/cartesian/exact/point_cache.hpp>
+#include <boost/geometry/util/numeric_cast.hpp>
+
+namespace boost { namespace geometry { namespace strategies { namespace relate
+{
+
+// Both policies keep only a certified binary64 approximation and a precision
+// cache index. Deferred construction certifies one ULP; eager certifies nearest.
+// Floating emission rounds the exact coordinate to the OUTPUT format.
+struct eager_nearest_output {};
+struct deferred_nearest_output {};
+
+}}}}
+
+namespace boost { namespace geometry { namespace strategies { namespace detail
+{ namespace exact_cartesian { namespace construction_rounding
+{
+
+// C++17, IEEE binary64, nearest/ties-even, -ffp-contract=off, no fast-math.
+// FP overflow/underflow in first-stage arithmetic is outside the contract.
+// Producers are {ax,ay,bx,by,cx,cy,dx,dy}, supplied anew by the owner on every
+// arithmetic call. A state never retains coordinates, pointers or callbacks.
+// Copies and their plain cache indices belong to the enclosing operation;
+// they must not outlive its point_cache_scope or be reused with other producers.
+template <typename Policy> struct policy_traits;
+
+template <> struct policy_traits<relate::approximate_output>
+{
+    static constexpr bool store_errors = true;
+    static constexpr bool eager = false;
+    static constexpr bool nearest_output = false;
+};
+
+template <> struct policy_traits<relate::deferred_nearest_output>
+{
+    static constexpr bool store_errors = false;
+    static constexpr bool eager = false;
+    static constexpr bool nearest_output = true;
+};
+
+template <> struct policy_traits<relate::eager_nearest_output>
+    : policy_traits<relate::deferred_nearest_output>
+{
+    static constexpr bool eager = true;
+};
+
+// Legacy nearest_output chooses deferred scheduling when used with this state.
+template <> struct policy_traits<relate::nearest_output>
+    : policy_traits<relate::deferred_nearest_output> {};
+
+namespace detail
+{
+namespace arithmetic = arithmetic_detail;
+namespace fe = forward_error;
+
+inline bool even(double value)
+{
+    std::uint64_t bits;
+    static_assert(sizeof(bits) == sizeof(value), "Binary64 required");
+    std::memcpy(&bits, &value, sizeof(bits));
+    return (bits & 1) == 0;
+}
+
+inline double spacing(double value)
+{
+    double const infinity = (std::numeric_limits<double>::infinity)();
+    return (std::max)(arithmetic::rounded_sub(std::nextafter(value, infinity), value),
+                      arithmetic::rounded_sub(value, std::nextafter(value, -infinity)));
+}
+
+// Symmetric forward bounds must fit BOTH adjacent spacings. At a binade they
+// differ by two, so epsilon*abs(value) is not an adequate certificate. The
+// spacings (and normal half-spacings) are exact powers of two. Nearest cells
+// include both midpoint endpoints iff the retained significand is even.
+inline bool certify(fe::scalar_approximation const& a, bool nearest)
+{
+    if (!a.valid()) return false;
+    if (a.error == 0) return true;
+    if (a.value == 0) return false;
+    double const infinity = (std::numeric_limits<double>::infinity)();
+    double const previous = std::nextafter(a.value, -infinity);
+    double const next = std::nextafter(a.value, infinity);
+    if (!std::isfinite(previous) || !std::isfinite(next)) return false;
+    double width = (std::min)(arithmetic::rounded_sub(a.value, previous),
+                              arithmetic::rounded_sub(next, a.value));
+    if (nearest) width = arithmetic::rounded_mul(0.5, width);
+    return width > 0 && (a.error < width || (a.error == width && (!nearest || even(a.value))));
+}
+
+// If t encloses the exact segment parameter T, exact X=A+T*(B-A).
+// two_diff(b,a) gives U+tail exactly, hence EU=EA+EB+abs(tail).
+// two_sum(fl(t*U),a), together with the FMA product residual and two_diff
+// against the final FMA result c, encloses a+t*U-c without a relative bound
+// on c (which would fail at cancellation/zero). Therefore
+//   |X-c| <= |a+t*U-c| + EA + |t|EU + (|U|+EU)Et.
+// Each nonnegative bound below has <=16 rounded operations on any path;
+// forward_error::inflate covers evaluation roundoff as well. Unlike the
+// coarse a-priori construction bound, exact EFT residuals can vanish.
+template <typename C>
+inline bool forward_bound(std::array<C, 8> const& producers, fe::point_approximation& output)
+{
+    fe::scalar_approximation t;
+    if (!fe::try_segment_parameter(producers, false, t)) return false;
+    fe::point_approximation result;
+    for (std::size_t d = 0; d < 2; ++d)
+    {
+        double a, ea, b, eb;
+        if (!fe::try_native_coordinate(producers[d], a, ea)
+            || !fe::try_native_coordinate(producers[2 + d], b, eb)) return false;
+        auto const direction = orientation_detail::two_diff(b, a);
+        double const u = direction[1];
+        double const eu = fe::detail::inflate(arithmetic::rounded_add(
+            arithmetic::rounded_add(ea, eb), std::abs(direction[0])));
+        double const product = arithmetic::rounded_mul(t.value, u);
+        double const product_tail = std::fma(t.value, u, -product);
+        auto const sum = orientation_detail::two_sum(product, a);
+        double const coordinate = std::fma(t.value, u, a);
+        auto const delta = orientation_detail::two_diff(sum[1], coordinate);
+        auto const residual = orientation_detail::two_sum(sum[0], product_tail);
+        auto const combined = orientation_detail::two_sum(delta[1], residual[1]);
+        double const rounding = fe::detail::inflate(arithmetic::rounded_add(
+            arithmetic::rounded_add(std::abs(combined[1]), std::abs(combined[0])),
+            arithmetic::rounded_add(std::abs(residual[0]), std::abs(delta[0]))));
+        result.value[d] = coordinate;
+        result.error[d] = fe::detail::inflate(arithmetic::rounded_add(
+            arithmetic::rounded_add(rounding, ea), arithmetic::rounded_add(
+                arithmetic::rounded_mul(std::abs(t.value), eu),
+                arithmetic::rounded_mul(arithmetic::rounded_add(std::abs(u), eu), t.error))));
+        // Match fixed_rounding's canonical zero for an exactly zero quotient.
+        if (result.value[d] == 0 && result.error[d] == 0) result.value[d] = 0;
+    }
+    if (!result.valid()) return false;
+    output = result;
+    return true;
+}
+
+template <typename C>
+inline bool represented(std::array<C, 8> const& input, std::array<double, 8>& output)
+{
+    for (std::size_t i = 0; i < input.size(); ++i)
+    {
+        double error;
+        if (!fe::try_native_coordinate(input[i], output[i], error) || error != 0) return false;
+    }
+    return true;
+}
+
+// Native b=16 capacity theorem, not a floating-value heuristic. For integral
+// |p[i]|<2^16, line U/V have magnitude <2^17 and C <2^33. Consequently every
+// product in X/Y is <2^50, X/Y <2^51, and W <2^35. Each written product and
+// difference is therefore an EXACT binary64 integer. For W!=0, one hardware
+// division per coordinate is nearest/ties-even; nonzero quotients lie between
+// 2^-35 and 2^51, so neither overflow nor underflow is possible on this path.
+// Complete <=16-bit native formats need no per-value guard. Wider signed
+// formats compare directly (never abs/negate MIN); unsigned formats have only
+// the upper check. Producer conversion/storage remains call-local.
+template <typename C>
+inline std::enable_if_t<std::is_integral<C>::value, bool>
+small_integer(std::array<C, 8> const& producers, std::array<double, 2>& output)
+{
+    if constexpr (std::numeric_limits<C>::digits + std::is_signed<C>::value > 16)
+    {
+        for (C value : producers)
+        {
+            if constexpr (std::is_signed<C>::value)
+            {
+                if (value <= -65536 || value >= 65536) return false;
+            }
+            else if (value >= 65536u) return false;
+        }
+    }
+    std::array<double, 8> p;
+    for (std::size_t i = 0; i < p.size(); ++i) p[i] = double(producers[i]);
+    double const u = p[1] - p[3], v = p[2] - p[0], c = p[0] * p[3] - p[1] * p[2];
+    double const s = p[5] - p[7], t = p[6] - p[4], f = p[4] * p[7] - p[5] * p[6];
+    double const w = u * t - v * s;
+    if (w == 0) return false;
+    double const x = v * f - c * t, y = c * s - u * f;
+    output = {{x == 0 ? 0 : arithmetic::rounded_div(x, w),
+               y == 0 ? 0 : arithmetic::rounded_div(y, w)}};
+    return true;
+}
+
+template <bool Errors> struct storage;
+
+template <> struct storage<false>
+{
+    std::array<double, 2> approximate{};
+    point_cache_detail::native_cache_handle precision;
+};
+
+template <> struct storage<true>
+{
+    std::array<double, 2> approximate{};
+    std::array<double, 2> error{};
+    point_cache_detail::native_cache_handle precision;
+};
+} // namespace detail
+
+inline bool try_certify_ulp(forward_error::scalar_approximation const& approximation)
+{ return detail::certify(approximation, false); }
+
+inline bool try_certify_nearest(forward_error::scalar_approximation const& approximation)
+{ return detail::certify(approximation, true); }
+
+template <typename C, typename Policy = relate::approximate_output>
+class point_state
+{
+    static_assert(fixed_native_supported<C>::value, "Native construction coordinates required");
+    static_assert(std::numeric_limits<double>::is_iec559
+        && std::numeric_limits<double>::radix == 2 && std::numeric_limits<double>::digits == 53,
+        "Construction rounding requires IEEE binary64");
+    using traits = policy_traits<Policy>;
+    using cache = point_cache_detail::native_cache<C>;
+
+public:
+    using coordinate_type = C;
+    using policy_type = Policy;
+    using producers_type = std::array<C, 8>;
+    using storage_type = detail::storage<traits::store_errors>;
+    static constexpr bool stores_errors = traits::store_errors;
+
+    double approximate(std::size_t dimension) const
+    { return m_state.approximate.at(dimension); }
+
+    // Ordinary callers can use forward_error predicates; lean callers should
+    // use ulp_filter directly. Synthesizing a bound here adds no stored errors.
+    interval approximation(std::size_t dimension) const
+    {
+        double const value = m_state.approximate.at(dimension);
+        if constexpr (traits::store_errors) return {value, m_state.error[dimension]};
+        else return {value, detail::spacing(value)};
+    }
+
+    interval bounds(std::size_t dimension) const { return approximation(dimension); }
+
+    point_cache_detail::native_cache_handle& cache_handle() const
+    { return m_state.precision; }
+
+    void init(producers_type const& producers)
+    {
+        m_state = storage_type{};
+        if constexpr (!traits::store_errors && std::is_integral<C>::value)
+            if (detail::small_integer(producers, m_state.approximate)) return;
+        forward_error::point_approximation first;
+        bool ready;
+        // Stored-error predicates need an enclosure, not a one-ULP certificate.
+        // Reuse the native a-priori proof and the SAME segment-parameter/FMA
+        // approximation. Lean states still need the tighter EFT residuals to
+        // certify ULP/nearest without an eagerly materialized precision cache.
+        if constexpr (traits::store_errors)
+            ready = forward_error::try_intersection(producers, first);
+        else
+            ready = detail::forward_bound(producers, first);
+        for (std::size_t d = 0; d < 2; ++d)
+        {
+            if (ready)
+            {
+                m_state.approximate[d] = first.value[d];
+                if (first.value[d] == 0 && first.error[d] == 0) m_state.approximate[d] = 0;
+                if constexpr (traits::store_errors) m_state.error[d] = first.error[d];
+                if constexpr (traits::store_errors) continue;
+                else if (detail::certify({first.value[d], first.error[d]}, traits::eager)) continue;
+            }
+            refine_value(producers, d);
+        }
+    }
+
+    // Cache refinement returns nearest binary64, which also satisfies deferred
+    // one-ULP scheduling. No cache reference survives another indexed lookup.
+    // Without an enclosing scope, native_cache uses stack temporaries instead.
+    interval refine(producers_type const& producers, std::size_t dimension) const
+    {
+        refine_value(producers, dimension);
+        return approximation(dimension);
+    }
+
+private:
+    void refine_value(producers_type const& producers, std::size_t dimension) const
+    {
+        check_dimension(dimension);
+        std::array<double, 8> represented;
+        interval refined;
+        if (cache::cached_bounds(m_state.precision, dimension, refined)
+            || (detail::represented(producers, represented)
+                && cache::refine(m_state.precision, represented, dimension, refined)))
+        {
+            update(dimension, refined.approximate, refined.error == 0);
+        }
+        else
+        {
+            auto const exact = cache::get(m_state.precision, true, producers);
+            double rounded;
+            if (!try_fixed_round(exact, dimension, rounded) || !std::isfinite(rounded))
+                throw std::domain_error("Intersection has no finite Cartesian approximation");
+            update(dimension, rounded, (dimension == 0 ? exact.X : exact.Y) == 0);
+        }
+    }
+
+public:
+    template <typename Output>
+    Output emit(std::size_t dimension, producers_type const& producers) const
+    {
+        check_dimension(dimension);
+        // BG integral conversion deliberately observes the CURRENT value,
+        // without nearest refinement or nearest-integer rational rounding.
+        if constexpr (!traits::nearest_output || std::is_integral<Output>::value)
+        {
+            return geometry::util::numeric_cast<Output>(approximate(dimension));
+        }
+        else if constexpr (std::is_same<Output, double>::value)
+        {
+            if constexpr (!traits::eager) refine_value(producers, dimension);
+            return approximate(dimension);
+        }
+        else
+        {
+            static_assert(std::is_same<Output, float>::value,
+                          "Nearest construction output supports float and double");
+            // Rounding nearest-double again to float can double-round at a
+            // float midpoint. Round the cached exact quotient to float itself.
+            auto const exact = cache::get(m_state.precision, true, producers);
+            Output rounded;
+            double current;
+            if (!try_fixed_round(exact, dimension, current) || !std::isfinite(current)
+                || !try_fixed_round(exact, dimension, rounded))
+                throw std::domain_error("Intersection has no finite Cartesian approximation");
+            update(dimension, current, (dimension == 0 ? exact.X : exact.Y) == 0);
+            return rounded;
+        }
+    }
+
+private:
+    static void check_dimension(std::size_t dimension)
+    {
+        if (dimension > 1) throw std::out_of_range("Exact Cartesian coordinate dimension");
+    }
+
+    void update(std::size_t dimension, double nearest, bool zero) const
+    {
+        m_state.approximate[dimension] = nearest;
+        if constexpr (traits::store_errors)
+            m_state.error[dimension] = zero ? 0 : detail::arithmetic::rounded_mul(0.5, detail::spacing(nearest));
+    }
+
+    mutable storage_type m_state;
+};
+
+template <typename C, typename Policy = relate::approximate_output>
+using state = point_state<C, Policy>;
+
+}}}}}} // namespace boost::geometry::strategies::detail::exact_cartesian::construction_rounding
+
+#endif
