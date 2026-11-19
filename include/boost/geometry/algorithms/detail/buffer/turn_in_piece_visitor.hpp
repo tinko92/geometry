@@ -217,7 +217,10 @@ public:
         bool const is_flat_end = piece.is_flat_end
             || m_pieces[piece.right_index].type == strategy::buffer::buffered_flat_end;
         // Another linestring's endpoint does not expose this piece's interior.
-        bool const is_linear_end_point = turn.is_linear_end_point
+        // In Cartesian buffers the original endpoint at an internal cap is
+        // also on the offset boundary, even if it is not an input endpoint.
+        bool const is_linear_end_point = (turn.is_linear_end_point
+                || std::is_same<CsTag, cartesian_tag>::value)
             && border.m_original_size > 0
             && ((is_flat_start && geometry::equals(turn.point,
                     border.m_originals[border.m_original_size - 1], m_umbrella_strategy))
