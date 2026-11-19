@@ -93,6 +93,7 @@ test-suite boost-geometry-strategies
     [ run exact_cluster.cpp                  : : : $(exact-requirements) : strategies_exact_cluster ]
     [ run exact_rounding_policies.cpp        : : : $(exact-requirements) : strategies_exact_rounding_policies ]
     [ run exact_round_buffer.cpp             : : : $(exact-requirements) : strategies_exact_round_buffer ]
+    [ run exact_round_buffer_api.cpp         : : : $(exact-requirements) : strategies_exact_round_buffer_api ]
     [ run exact_buffer_radical_field.cpp     : : : $(exact-requirements) : strategies_exact_buffer_radical_field ]
     [ run exact_buffer_radical_noding.cpp    : : : $(exact-requirements) : strategies_exact_buffer_radical_noding ]
     [ run exact_convex_erosion.cpp           : : : $(exact-requirements) : strategies_exact_convex_erosion ]

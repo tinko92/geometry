@@ -75,6 +75,7 @@ foreach(item IN ITEMS
     exact_cluster
     exact_rounding_policies
     exact_round_buffer
+    exact_round_buffer_api
     exact_buffer_radical_field
     exact_buffer_radical_noding
     exact_convex_erosion
