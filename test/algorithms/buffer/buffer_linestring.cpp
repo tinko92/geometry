@@ -218,6 +218,23 @@ void test_all()
     test_one<linestring, polygon>("two_bends_right", two_bends, join_round, end_flat, 19.211, 0.0, settings, 1.5);
     test_one<linestring, polygon>("two_bends_right", two_bends, join_miter, end_flat, 19.288, 0.0, settings, 1.5);
 
+    {
+        // Reduced from #1167, at a right-only distance that cuts the first
+        // source edge with the second strip's offset edge.
+        auto const input = bg::from_wkt<linestring>("LINESTRING(0 0,-3 5,15 7)");
+        bg::model::multi_polygon<polygon> buffered;
+        bg::buffer(input, buffered, bg::strategy::buffer::distance_asymmetric<coor_type>(0, 3),
+                   bg::strategy::buffer::side_straight(), bg::strategy::buffer::join_round(36),
+                   end_flat, bg::strategy::buffer::point_square());
+        // Two rectangles minus their parallelogram overlap.
+        double const a = std::sqrt(34.0), b = std::sqrt(328.0);
+        BOOST_CHECK_CLOSE(bg::area(buffered), 3 * (a + b) - 9 * a * b / 96,
+                          ut_settings::default_tolerance);
+        BOOST_CHECK(bg::is_valid(buffered));
+        BOOST_CHECK_EQUAL(buffered.size(), 1u);
+        BOOST_CHECK(bg::within(P(-2.25, 3), buffered));
+    }
+
     test_one<linestring, polygon>("bend_near_start1", bend_near_start1, join_round, end_flat, 109.2625, 9.0);
     test_one<linestring, polygon>("bend_near_start2", bend_near_start2, join_round, end_flat, 142.8709, 9.0);
 

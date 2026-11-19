@@ -55,6 +55,32 @@ class turn_in_piece_visitor
     DistanceStrategy const& m_distance_strategy; // to check if point is on original or one_sided
     UmbrellaStrategy const& m_umbrella_strategy;
 
+    template <typename Point>
+    static inline bool same_vertex(Point const& a, Point const& b)
+    {
+        return geometry::get<0>(a) == geometry::get<0>(b)
+            && geometry::get<1>(a) == geometry::get<1>(b);
+    }
+
+    template <typename Operation, typename Piece>
+    static inline bool on_original_side(Operation const& op, Piece const& empty_side,
+                                        Piece const& segment)
+    {
+        auto const& original = segment.m_piece_border;
+        auto const* ring = empty_side.m_piece_border.m_ring;
+        if (original.m_original_size != 2 || ring == nullptr)
+        {
+            return false;
+        }
+        auto const index = op.seg_id.segment_index;
+        auto const& from = (*ring)[index];
+        auto const& to = (*ring)[index + 1];
+        auto const& a = original.m_originals[0];
+        auto const& b = original.m_originals[1];
+        return (same_vertex(from, a) && same_vertex(to, b))
+            || (same_vertex(from, b) && same_vertex(to, a));
+    }
+
     template <typename Operation, typename Piece>
     inline bool skip(Operation const& op, Piece const& piece) const
     {
@@ -63,6 +89,17 @@ class turn_in_piece_visitor
             return true;
         }
         Piece const& pc = m_pieces[op.piece_index];
+        if (std::is_same<CsTag, cartesian_tag>::value
+            && pc.type == strategy::buffer::buffered_empty_side
+            && piece.type == strategy::buffer::buffered_segment
+            && op.seg_id.multi_index == piece.first_seg_id.multi_index
+            && on_original_side(op, pc, piece))
+        {
+            // The empty offset edge is the original border of this strip.
+            // Re-testing a rounded intersection against that border can put
+            // it inside, although the turn is incident to the border.
+            return true;
+        }
         if (pc.left_index == piece.index || pc.right_index == piece.index)
         {
             if (pc.type == strategy::buffer::buffered_flat_end)
