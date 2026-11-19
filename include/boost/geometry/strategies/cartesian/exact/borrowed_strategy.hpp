@@ -14,6 +14,7 @@
 #include <boost/geometry/strategies/cartesian/exact/borrowed_geometry.hpp>
 #include <boost/geometry/strategies/cartesian/exact/borrowed_intersection.hpp>
 #include <boost/geometry/strategies/cartesian/exact/borrowed_output.hpp>
+#include <boost/geometry/strategies/cartesian/exact/borrowed_output_alias.hpp>
 #include <boost/geometry/strategies/cartesian/exact/borrowed_primitive.hpp>
 #include <boost/geometry/strategies/cartesian/exact/borrowed_turns.hpp>
 
@@ -233,6 +234,29 @@ public:
         // every tuple member) before a push can reallocate that storage.
         auto staged = stage_output(source, destination);
         publish_output(staged, destination);
+    }
+
+    template <typename Source, typename Destination, typename A, typename B>
+    void append_output(Source const& source, Destination& destination, A const& a, B const& b) const
+    {
+        namespace alias = borrowed_output_alias;
+        if constexpr (alias::known_root<Destination, A> && alias::known_root<Destination, B>)
+        {
+            if (alias::disjoint(destination, a) && alias::disjoint(destination, b))
+            {
+                // These roots own their storage and the destination neither
+                // is nor owns either root. No publication can kill a borrower.
+                for (auto const& value : source)
+                {
+                    borrowed_detail::validate_supports<Root>(context(), value);
+                    typename boost::range_value<Destination>::type converted;
+                    convert_geometry(value, converted);
+                    traits::push_back<Destination>::apply(destination, std::move(converted));
+                }
+                return;
+            }
+        }
+        append_output(source, destination);
     }
 
     template <typename Range, typename P>

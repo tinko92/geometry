@@ -538,7 +538,7 @@ struct difference
     {
         strategies::detail::with_operation_sources(strategy, geometry1, geometry2, [&](auto const& bound)
         {
-            detail::overlay::with_working_output(output_collection, bound, [&](auto& working)
+            detail::overlay::with_working_output(output_collection, bound, geometry1, geometry2, [&](auto& working)
             {
                 resolve_collection::difference<Geometry1, Geometry2, std::decay_t<decltype(working)>>
                     ::apply(geometry1, geometry2, working, bound);
