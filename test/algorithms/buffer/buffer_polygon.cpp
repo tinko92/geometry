@@ -885,8 +885,10 @@ void test_mixed()
         << InputClockwise << "_" << OutputClockwise
         << "_" << InputClosed << "_" << OutputClosed;
 
+    // Area of the triangle, the three side strips and the three chord fans
+    // (4, 5 and 4 equal-angle steps with 12 points per circle).
     test_one<input_polygon_type, output_polygon_type>(name.str(),
-            simplex, join_round, end_flat, 47.4831, 1.5);
+            simplex, join_round, end_flat, 47.67237788, 1.5);
 }
 
 
