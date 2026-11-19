@@ -367,22 +367,96 @@ chords from the first two **original outer** edges, each within the proved
 radius-4 chord-error budget. Their node is not rational. This checks a
 local arrangement operation, not a full union or a repair of `buffer`.
 
+## Common-Witness Native Export
+
+`<boost/geometry/algorithms/buffer_linestring_star_certified.hpp>` adds the
+separate opt-in `buffer_linestring_star_certified(linestring, witness,
+polygon, radius, sagitta, max_displacement)`. The witness must be strictly
+inside every radius-`r-sagitta` source capsule, verified by exact squared
+point-to-segment distances. This implies strict interior to each ideal
+inscribed chord capsule. Neither the legacy `buffer` nor the existing
+lossless `buffer_linestring_certified` contract changes.
+
+### Exact Ideal Contour
+
+Use the true straight sides and algebraic tangent endpoints of each
+capsule. The rotated chart vertices have one root per capsule, and exact
+chord selection certifies their sagitta. The whole radius-`r-sagitta`
+capsule is covered: the side strip is exact, and the forward/backward
+semicircles have that radial lower bound on every chord. The ideal union
+therefore is inscribed in the radius-`r` neighborhood and contains the
+radius-`r-sagitta` neighborhood. It is star-shaped about the witness.
+
+Sweep in angular order about the witness and merge two contours at a time.
+Every open angular interval has exactly one active producer edge from each
+contour. In witness-relative coordinates a CCW edge `a -> a+d` has radial
+parameter `cross(a,d)/cross(u,d)` on ray `u`. Both denominators are positive
+on the interval, so the difference has the sign of a linear form in `u`.
+The two knot tests use an actual point on one active edge and an exact side
+test against the other. Equal signs mean no switch; opposite signs mean one
+switch at the exact producer intersection. A tie at both ends means the
+active supports coincide on the interval. Angular comparison and side tests
+may use outward-rounded binary64 intervals, but an uncertain sign rebuilds
+the exact local field from the producers. Knots retain either a source
+vertex, an exact pair of producer edges, or the rational positive-x seam.
+No rounded coordinates become producer geometry.
+
+The path is bounded to 128 nonzero pieces, 65536 primitive vertices, 16384
+marks per contour, and 32768 exact filter fallbacks; the depth and local
+four-root caps still apply. Each sweep merge visits the two angular lists
+once. A non-interior witness, a bounded-work or precision failure, or an
+invalid stored ring results in `cannot_certify` rather than a different
+construction. Point traces are not handled here. The binary64 filters
+require the exact Cartesian floating environment (no fast-math, implicit
+contraction, or flush-to-zero).
+
+### Displacement and Original #578 Nesting
+
+A rational evaluation using 128-bit dyadic root brackets only proposes
+the native storage values. Re-evaluate the ideal projective vertex in its
+exact field, and compare each stored coordinate with it against half the
+displacement budget `d`. This proves Euclidean vertex displacement `<= d`
+by the L1 bound, separately from the ideal chord sagitta. The same bound
+holds along corresponding edges by interpolation. The actual stored ring
+must also make one simple turn about the same witness. Matching the two
+triangle fans about that witness gives filled-set Hausdorff displacement
+`<= d`. These tests do not say the native vertices themselves are exact
+support incidences or even necessarily the nearest native values.
+
+On the original fixture use the common witness `(85,-62)`, the original
+radii, sagitta `0.00060925`, and displacement `d = 2^-40` independently
+for each result. Both binary64 exports succeed. The earlier cover
+certificate places `B(L_inner, 3.9993898)` strictly inside the ideal outer
+region. Since the actual inner radius plus `2*d` is smaller than
+`3.9993898`, every point of the exported inner polygon is at distance
+strictly greater than `d` from the ideal outer boundary: its closed
+`d`-neighborhood lies inside that larger certified inner buffer. The
+straight homotopy between corresponding outer boundary points cannot
+cross it, so its winding remains inside after export. Independently,
+the fixture sweeps the **stored binary64 rings** using exact rational
+tests at both sets of angular knots and proves their radial order strict.
+
+The same test compares a small integral star merge with the existing
+lossless rational union at zero displacement and rejects a bad witness,
+zero displacement on the irrational fixture, and a float grid that cannot
+meet `d`. It also rejects a collapsed float ring even with a generous
+displacement budget. Run the fixture binary with `--emit-wkt` to print the certified
+inner and outer polygons in that order, with binary64 round-trip precision.
+
 ## Remaining Work
 
-- The algebraic pair primitive is not integrated into arrangement assembly.
-  Preserve producer edges and projective coordinates, rebuilding a local
-  field per predicate rather than registering an entire linestring's roots
-  globally. Two pairwise nodes need at most four source roots for coordinate
-  comparison; sorting cuts on one producer needs at most three. An atom
-  midpoint on one producer likewise uses at most three, and testing it
-  against another capsule's edge adds at most one. A full
-  implementation still needs independently certified atom classification,
-  ring assembly, capacity policy and algebraic output, or a **different**
-  contract that proves topology and nesting after lossy export. Exact pair
-  noding alone cannot make native lossless output possible on #578.
-- The linestring API still accepts one exterior ring only; the polygon API
-  supports multiple disjoint cycles but not boundary contacts. MultiPolygon
-  input and lossy but topology-preserving native export are not implemented.
+- The algebraic pair primitive is integrated only in the common-witness
+  path. General arrangement assembly still needs exact atom classification,
+  ring assembly (including holes), and a capacity policy. Two pairwise
+  nodes need at most four source roots for coordinate comparison; sorting
+  cuts or forming an atom midpoint on one producer needs at most three,
+  and testing that midpoint against another capsule's edge adds at most
+  one. Native lossless output is still impossible on #578. The opt-in star
+  result uses a separate displacement-and-topology contract, not a
+  general native export policy for exact chord arrangements.
+- The lossless linestring API still accepts one exterior ring only; the
+  polygon API supports multiple disjoint cycles but not boundary contacts.
+  MultiPolygon input and general lossy native export are not implemented.
 - Forming the actual buffer requires exact intersection construction,
   ordering and noding for offsets and chords, followed by topology assembly
   and cleanup. Primitives from different edges can introduce expressions
@@ -416,7 +490,7 @@ c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
 c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
     test/algorithms/buffer/buffer_polygon_certified.cpp -o /tmp/buffer_polygon_certified
 /tmp/buffer_polygon_certified
-c++ -std=c++17 -Iinclude -I"$BOOST_ROOT" \
+c++ -std=c++17 -ffp-contract=off -Iinclude -I"$BOOST_ROOT" \
     test/algorithms/buffer/buffer_issue_578_certified.cpp -o /tmp/buffer_issue_578_certified
 /tmp/buffer_issue_578_certified
 ```

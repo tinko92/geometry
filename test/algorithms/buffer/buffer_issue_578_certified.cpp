@@ -7,14 +7,21 @@
 
 #include <boost/core/lightweight_test.hpp>
 #include <boost/geometry/algorithms/buffer_linestring_certified.hpp>
+#include <boost/geometry/algorithms/buffer_linestring_star_certified.hpp>
 #include <boost/geometry/geometries/linestring.hpp>
 #include <boost/geometry/io/wkt/read.hpp>
+#include <boost/geometry/io/wkt/write.hpp>
 #include <boost/geometry/strategies/cartesian/exact/radical_buffer_noding.hpp>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <string>
+#include <type_traits>
 #include <vector>
 
 namespace bg = boost::geometry;
@@ -168,7 +175,50 @@ void check_original_mixed_chord_node(std::vector<seg::rational_segment> const& e
     BOOST_TEST_NOT(f.try_rational_quotient(p.x.n, p.x.d, rational));
 }
 
-void test_original()
+using native_polygon = bg::model::polygon<native_point, false, false>;
+
+// Independent exact rational sweep on what was stored. Check both sets of
+// angular knots; between them the radial order is the sign of a linear
+// functional of the ray, so positive order at both ends excludes a crossing.
+template <typename A, typename B>
+bool check_stored_radial_order(A const& inner, B const& outer, xy const& witness, bool equal = false)
+{
+    auto const angle_less = [](xy const& a, xy const& b)
+    {
+        bool const ha = seg::common::second_half(a), hb = seg::common::second_half(b);
+        return ha != hb ? !ha : seg::cross(a, b) > 0;
+    };
+    auto const directions = [&](auto const& polygon)
+    {
+        using polygon_type = typename std::decay<decltype(polygon)>::type;
+        std::vector<xy> points;
+        for (auto const& p : polygon.outer()) { points.push_back(seg::difference(seg::read_point(p), witness)); }
+        if constexpr (bg::closure<polygon_type>::value == bg::closed)
+        { if (!points.empty()) { points.pop_back(); } }
+        if constexpr (bg::point_order<polygon_type>::value == bg::clockwise)
+        { std::reverse(points.begin(), points.end()); }
+        std::rotate(points.begin(), std::min_element(points.begin(), points.end(), angle_less), points.end());
+        return points;
+    };
+    auto const a = directions(inner), b = directions(outer);
+    if (a.size() < 3 || b.size() < 3) { return false; }
+    auto const check = [&](std::vector<xy> const& probes, std::vector<xy> const& ring, bool inside)
+    {
+        std::size_t i = 0;
+        for (auto const& p : probes)
+        {
+            while (i < ring.size() && !angle_less(p, ring[i])) { ++i; }
+            auto const& from = i == 0 ? ring.back() : ring[i - 1];
+            auto const& to = i == ring.size() ? ring.front() : ring[i];
+            auto const side = seg::cross(seg::difference(to, from), seg::difference(p, from));
+            if (equal ? side != 0 : inside ? side <= 0 : side >= 0) { return false; }
+        }
+        return true;
+    };
+    return check(a, b, true) && check(b, a, false);
+}
+
+void test_original(bool emit_wkt)
 {
     linestring input_inner, input_outer;
     bg::read_wkt(issue_578_fixture::inner, input_inner);
@@ -228,10 +278,72 @@ void test_original()
     BOOST_TEST(bg::buffer_linestring_certified(input_outer, output, 4, error) == status::cannot_certify);
     BOOST_TEST_EQ(output.outer().size(), 1u);
     BOOST_TEST_EQ(bg::get<0>(output.outer().front()), 1);
+
+    // Native export uses a separate contract. Each stored vertex is at
+    // Euclidean distance <= displacement from the ideal contour vertex.
+    number const displacement = number(1) / (boost::multiprecision::cpp_int(1) << 40);
+    BOOST_TEST(ec::exact_value(original_inner_radius) + 2 * displacement < inner_bound);
+    native_point const witness(85, -62);
+    native_polygon stored_inner, stored_outer;
+    BOOST_TEST(bg::buffer_linestring_star_certified(input_inner, witness, stored_inner,
+              original_inner_radius, error, displacement) == status::success);
+    BOOST_TEST(bg::buffer_linestring_star_certified(input_outer, witness, stored_outer,
+              4, error, displacement) == status::success);
+    bool const nested = check_stored_radial_order(stored_inner, stored_outer, {85, -62});
+    BOOST_TEST(nested);
+    if (emit_wkt && nested)
+    {
+        std::cout << std::setprecision(std::numeric_limits<double>::max_digits10)
+                  << bg::wkt(stored_inner) << '\n' << bg::wkt(stored_outer) << '\n';
+    }
+
+    auto const count = stored_inner.outer().size();
+    BOOST_TEST(bg::buffer_linestring_star_certified(input_inner, witness, stored_inner,
+              original_inner_radius, error, 0) == status::cannot_certify);
+    BOOST_TEST(bg::buffer_linestring_star_certified(input_inner, native_point(0, 0), stored_inner,
+              original_inner_radius, error, displacement) == status::cannot_certify);
+    BOOST_TEST_EQ(stored_inner.outer().size(), count);
+
+    using float_point = bg::model::point<float, 2, bg::cs::cartesian>;
+    bg::model::polygon<float_point> coarse;
+    coarse.outer().emplace_back(9, 4);
+    BOOST_TEST(bg::buffer_linestring_star_certified(input_inner, witness, coarse,
+              original_inner_radius, error, displacement) == status::cannot_certify);
+    BOOST_TEST_EQ(coarse.outer().size(), 1u);
 }
 
-int main()
+void test_against_rational_union()
 {
-    test_original();
+    // The four axial directions suffice at this sagitta. This L-shaped
+    // example has coincident and crossing supports but an integral union.
+    linestring const trace{native_point(0, 0), native_point(2, 0), native_point(2, 2)};
+    bg::model::polygon<native_point> stored; // clockwise and closed
+    bg::detail::certified_linestring_buffer::exact_polygon reference;
+    using status = bg::certified_buffer_status;
+    BOOST_TEST(bg::buffer_linestring_certified(trace, reference, 5, 4) == status::success);
+    BOOST_TEST(bg::buffer_linestring_star_certified(trace, native_point(2, 0), stored, 5, 4, 0) == status::success);
+    BOOST_TEST(check_stored_radial_order(stored, reference, {2, 0}, true));
+}
+
+void test_collapsed_export()
+{
+    // All x coordinates collapse to x on this binary32 grid. A generous
+    // displacement allowance does not bypass the stored-ring topology test.
+    double constexpr x = 16777216;
+    linestring const trace{native_point(x, 0), native_point(x + 0.125, 0)};
+    using float_point = bg::model::point<float, 2, bg::cs::cartesian>;
+    bg::model::polygon<float_point> stored;
+    stored.outer().emplace_back(9, 4);
+    BOOST_TEST(bg::buffer_linestring_star_certified(trace, native_point(x, 0), stored, 0.25, 0.125, 1)
+               == bg::certified_buffer_status::cannot_certify);
+    BOOST_TEST_EQ(stored.outer().size(), 1u);
+    BOOST_TEST_EQ(bg::get<0>(stored.outer().front()), 9);
+}
+
+int main(int argc, char** argv)
+{
+    test_original(argc == 2 && std::string(argv[1]) == "--emit-wkt");
+    test_against_rational_union();
+    test_collapsed_export();
     return boost::report_errors();
 }
