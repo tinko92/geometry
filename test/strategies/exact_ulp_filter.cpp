@@ -245,6 +245,8 @@ void proof_constants()
     BOOST_TEST((1+8*u)*square*square >= 1+2*u);
     BOOST_TEST(rational(13)/2*(1+8*u)+4 < 12*(1-u)-1);
     BOOST_TEST((4*k+9)*(1+8*u)+4 < (4*k+16)*(1-u)-1);
+    BOOST_TEST((1-18*u)*(1+u)*(1+u) < square*square);
+    BOOST_TEST((2*k+9)*(1+8*u)+4 < (2*k+16)*(1-u)-1);
 }
 
 void randomized()
@@ -314,13 +316,27 @@ rational step_extreme(double head, bool up)
     return r + (ec::exact_value(up ? next(head) : previous(head)) - r) * 511 / 1024;
 }
 
-template <unsigned N, unsigned Mask>
+template <unsigned N, bool Producer>
+rational ordinate_extreme(double head, bool up)
+{
+    rational const loose = step_extreme<N>(head, up);
+    if constexpr (!Producer) return loose;
+    // Intersect the step interval with the producer's absolute enclosure so
+    // the same exact coordinates also exercise the scalar-order check.
+    constexpr unsigned k = N < (1u << 24) ? N : (1u << 24);
+    rational const radius = (k+2) * ec::exact_value(uf::detail::unit_roundoff)
+        * ec::exact_value((std::max)(std::abs(head), uf::detail::minimum_normal));
+    rational const edge = ec::exact_value(head) + (up ? radius : -radius);
+    return up ? (std::min)(loose, edge) : (std::max)(loose, edge);
+}
+
+template <unsigned N, unsigned Mask, bool Producer = false>
 void bounded_triple(coordinates a, coordinates b, coordinates p)
 {
     constexpr bool ai = (Mask & 1) != 0, bi = (Mask & 2) != 0, pi = (Mask & 4) != 0;
     auto make = [](coordinates z, bool uncertain, bool up) -> exact_coordinates {
         if (!uncertain) return native(z);
-        return {{step_extreme<N>(z[0], up), step_extreme<N>(z[1], !up)}};
+        return {{ordinate_extreme<N,Producer>(z[0], up), ordinate_extreme<N,Producer>(z[1], !up)}};
     };
     auto const x = make(a, ai, true), y = make(b, bi, false), z = make(p, pi, true);
     rational const dx = y[0]-x[0], dy = y[1]-x[1];
@@ -330,11 +346,11 @@ void bounded_triple(coordinates a, coordinates b, coordinates p)
     ec::forward_error::scalar_approximation d{}, s{};
     int side = 2, direction = 2, cmp = 2;
     allocation_guard = true;
-    bool const bounded_d = uf::try_signed_determinant_n<N,ai,bi,pi>(a,b,p,d);
-    bool const bounded_s = uf::try_squared_distance_n<N,ai,bi>(a,b,s);
-    bool const cs = uf::try_orientation_n<N,ai,bi,pi>(a,b,p,side);
-    bool const cd = uf::try_dot_n<N,ai,bi,pi>(a,b,p,direction);
-    auto const dot_bound = uf::detail::n_bilinear<(ai || bi || pi) ? N : 0,true>(
+    bool const bounded_d = uf::try_signed_determinant_n<N,ai,bi,pi,Producer>(a,b,p,d);
+    bool const bounded_s = uf::try_squared_distance_n<N,ai,bi,Producer>(a,b,s);
+    bool const cs = uf::try_orientation_n<N,ai,bi,pi,Producer>(a,b,p,side);
+    bool const cd = uf::try_dot_n<N,ai,bi,pi,Producer>(a,b,p,direction);
+    auto const dot_bound = uf::detail::n_bilinear<(ai || bi || pi) ? N : 0,true,Producer>(
         uf::detail::n_difference<ai,bi>(a,b), uf::detail::n_difference<bi,pi>(b,p));
     bool const cc = uf::try_compare_n<N,ai,bi>(a[0],b[0],cmp);
     allocation_guard = false;
@@ -357,6 +373,8 @@ void bounded_filters(std::integer_sequence<unsigned,M...>)
         coordinates const a{{t,-t}}, b{{next(t),previous(-t)}};
         (bounded_triple<N,M>(a,b,{{previous(t),next(-t)}}), ...);
         (bounded_triple<N,M>(a,{{1.,t}},{{-t,.25}}), ...);
+        if constexpr (N == 1 || N == 100 || N == (1u << 24))
+            (bounded_triple<N,M,true>(a,{{-t,t}},{{next(t),t}}), ...);
     }
     // Worst admitted opposite-sign sums, inexact tiny products and a
     // cancelling dot whose two large terms have opposite signs.
@@ -377,6 +395,31 @@ void bounded_filters(std::integer_sequence<unsigned,M...>)
             }
         }
     }
+}
+
+void producer_witnesses()
+{
+    coordinates const a{{0,0}}, b{{1,1}}, p{{1,1+0x1p-44}};
+    int r = 2;
+    BOOST_TEST((!uf::try_orientation_n<100,false,false,true>(a,b,p,r)));
+    BOOST_TEST_EQ(r, 2);
+    BOOST_TEST((uf::try_orientation_n<100,false,false,true,true>(a,b,p,r)));
+    BOOST_TEST_EQ(r, 1); // exact det = 512u
+
+    // Same heads, two possible contracts. The producer call is valid for
+    // exact (1,0); do NOT apply it to the displaced generic coordinate.
+    coordinates const unit{{1,0}};
+    ec::forward_error::scalar_approximation raw{}, tight{};
+    BOOST_TEST((uf::try_squared_distance_n<100,false,true>(a,unit,raw)));
+    BOOST_TEST((uf::try_squared_distance_n<100,false,true,true>(a,unit,tight)));
+    rational const u = ec::exact_value(uf::detail::unit_roundoff);
+    rational const loose = 1+200*u, err = loose*loose-1;
+    BOOST_TEST_EQ(raw.value, 1.);
+    BOOST_TEST_EQ(tight.value, 1.);
+    BOOST_TEST_EQ(ec::exact_value(raw.error), 416*u);
+    BOOST_TEST_EQ(ec::exact_value(tight.error), 216*u);
+    BOOST_TEST(err <= ec::exact_value(raw.error));
+    BOOST_TEST(err > ec::exact_value(tight.error));
 }
 
 void step_edges()
@@ -478,6 +521,7 @@ int main()
     adversarial();
     randomized();
     using kinds = std::make_integer_sequence<unsigned,8>;
+    producer_witnesses();
     cold_eager();
     step_edges();
     bounded_filters<0>(kinds{});

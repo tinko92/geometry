@@ -9,7 +9,7 @@ The number of adjacent representable steps from `z` to `r` is at most
 larger than the cap, the **producer** must certify the capped distance.
 Silently capping a merely N-step external guarantee would be unsound.
 
-These kernels do not require the tighter absolute error certificate available
+The default/raw kernels do not require the tighter absolute error certificate available
 on successful borrowed-record constructions. In particular, an arbitrary
 K-step input need not satisfy a bound of `(K+2)u |z|`: near the bottom of a
 normal binade an outward step can be almost twice this unit of relative error.
@@ -142,3 +142,73 @@ A measure success certifies `|true - value| <= error`, not necessarily a
 sign. Orientation and dot certify only for `value > error` or
 `value < -error`; a zero head, touching bound or other ambiguous case
 requests fallback. On every false return the output is unchanged.
+
+## Stronger certificate from the bounded producer
+
+The default/raw entry points above accept *any* K-step certificate. Only the
+bilinear entry points with the final template argument `ProducerBound=true`
+may use the following additional fact for **every** uncertain ordinate:
+
+```text
+|Z-z| <= (K+2)u H(z),     1 <= K = min(N, 2^24).
+```
+
+This is a bound in real arithmetic; it does not require reading or rounding
+a per-coordinate error field. Here is why the producer supplies it:
+
+* For a successful `bounded_intersection` axis let h be the rounded
+  direction, t the rounded quotient, y the real `origin+t*h`, and z=RN(y)
+  its single FMA head. L is a positive lower bound for the true absolute
+  denominator. The construction's determinant and division budgets give
+  `|Z-y| <= u |h| height / (L (1-u)^4)`: one factor covers replacing the
+  real direction by h, and at most three rounded nonnegative height operations
+  cover the budget evaluation. See the [retry and rescue derivation](exact_selective_retry.md).
+  The coordinate band keeps all nonzero comparison operands and products
+  normal and finite. The strict comparison of rounded products implies
+  `|h| height < |z| threshold` by monotonicity. The dyadic
+  `1-(2K+16)u` is exact; rounding its product with K, then with L, gives
+  `threshold <= KL [1-(2K+16)u](1+u)^2`. Since
+  `(1-18u)(1+u)^2 < (1-u)^4`, acceptance implies `|Z-y| < Ku |z|`.
+  Lastly `|y-z| <= u |z|/(1-u)`, so the stated enclosure follows.
+  A zero candidate cannot pass a strict test against zero.
+* Replacing the coarse division budget by the FMA residual, or tightening
+  original determinant budgets with certified tails, changes only the height.
+  Optimistic retry screens do **not** accept an axis. Denominator rescue
+  requires a newly separated determinant and recomputes L, t, the residual,
+  both candidates and the threshold before applying the same strict test.
+* The bounded policy only attempts this construction for binary64 source
+  coordinates in its exponent band. For each rejected axis (including a
+  zero candidate), and for other supported native formats, `point_state`
+  goes through `refine_value`. A cached midpoint-certified expansion
+  quotient or directly rounded fixed quotient gives z=RN(Z), hence the
+  stronger `|Z-z| <= u H(z)` inside the predicate guard. This includes a
+  nonzero real rounding to zero. Lossy native conversions cannot enter
+  expansion refinement as if exact. Later refinement or float emission can
+  replace the binary64 head only by nearest binary64, not by a widened
+  float. A failed construction is not a certificate. Nonfinite or out-of-
+  measure-range heads are never usable here.
+* Matching fixed queries have an exact or independently nearest head. An
+  arbitrary auxiliary point, deferred or foreign record, non-exact native
+  conversion, or a mere lattice-distance promise is not a producer certificate.
+
+Now redo the **difference** estimate with the unchanged scale S. Endpoint
+displacements cost at most `(K+2)u S` and subtraction costs at most `u S`.
+Thus `c=K+3` suffices; two exact endpoints still use `S=|d|` and cost at
+most `2u S`. In the bilinear proof above the same monotone remainder bound
+gives `R < 2c+2.5 < 2K+9`, with no assumption of independent errors for
+repeated coordinates. The computed magnitude T and subnormal losses are
+unchanged. In units of `u T` the true error is therefore below
+`(2K+9)(1+8u)+4`, whereas the returned `RN((2K+16)u T)` is at least
+`(2K+16)(1-u)-1`. The latter is larger even at the cap (where the slack
+is smallest). All-exact operands and eager nearest keep the separate 12u
+proof; coordinate comparison remains a lattice-order test.
+
+Two witnesses at K=100 illustrate the distinction. For native a=(0,0),
+b=(1,1) and a constructed p=(1,1+2^-44), the positive determinant is
+512u; the scale is about 2, so 216u times the scale certifies and 416u
+times the scale does not. Conversely take a native origin and a constructed
+(1,0) head whose true x is exactly `1+100*2^-52`. This is 100 legal
+outward steps. Its squared distance differs from 1 by **more than 400u**,
+while the producer-only bound on those heads is 216u. The generic 416u
+bound encloses it. Thus the tighter coefficient is not a replacement for
+the public K-step theorem.

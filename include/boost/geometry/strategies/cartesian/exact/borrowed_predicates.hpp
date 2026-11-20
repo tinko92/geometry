@@ -203,6 +203,8 @@ constexpr std::size_t policy_steps()
 // After visiting, a matching record carries its producer's certificate.
 // query_point factories either prove exactness or round the fixed quotient.
 // An arbitrary auxiliary/legacy point or lossy conversion has neither proof.
+// For lean bounded roots this whitelist also proves the producer's absolute
+// error bound, not just the distance from the nearest double in steps.
 template <typename Root, typename P>
 constexpr bool step_operand = exact_double<P>::value || std::is_same<P, borrowed_point<Root>>::value
     || std::is_same<P, query_point<Root>>::value;
@@ -394,7 +396,7 @@ int orientation(A const& a, B const& b, P const& p, Certified native_differences
         {
             if constexpr (step_filter<Root, A, B, P>)
                 return ulp_filter::try_orientation_n<policy_steps<Root>(),
-                    !exact_double<A>::value, !exact_double<B>::value, !exact_double<P>::value>
+                    !exact_double<A>::value, !exact_double<B>::value, !exact_double<P>::value, lean_bounded<Root>>
                     (bounded_coordinates(a), bounded_coordinates(b), bounded_coordinates(p), result);
             else if constexpr (lean<Root> && !step_policy<Root>) return ulp_orientation(a, b, p, result);
             else return forward_error::try_orientation(approximation(a), approximation(b), approximation(p), result);
@@ -581,7 +583,7 @@ int direction(A const& a, B const& b, P const& p)
     {
         if constexpr (step_filter<Root, A, B, P>)
             return ulp_filter::try_dot_n<policy_steps<Root>(),
-                !exact_double<A>::value, !exact_double<B>::value, !exact_double<P>::value>
+                !exact_double<A>::value, !exact_double<B>::value, !exact_double<P>::value, lean_bounded<Root>>
                 (bounded_coordinates(a), bounded_coordinates(b), bounded_coordinates(p), result);
         else if constexpr (lean<Root> && !step_policy<Root>)
         {
@@ -627,9 +629,9 @@ forward_error::scalar_approximation measure(A const& a, B const& b, P const& p, 
             forward_error::scalar_approximation result{0, (std::numeric_limits<double>::infinity)()};
             if constexpr (Signed)
                 ulp_filter::try_signed_determinant_n<policy_steps<Root>(), xi, yi,
-                    !exact_double<std::decay_t<decltype(z)>>::value>
+                    !exact_double<std::decay_t<decltype(z)>>::value, lean_bounded<Root>>
                     (bounded_coordinates(x), bounded_coordinates(y), bounded_coordinates(z), result);
-            else ulp_filter::try_squared_distance_n<policy_steps<Root>(), xi, yi>
+            else ulp_filter::try_squared_distance_n<policy_steps<Root>(), xi, yi, lean_bounded<Root>>
                     (bounded_coordinates(x), bounded_coordinates(y), result);
             return result;
         }

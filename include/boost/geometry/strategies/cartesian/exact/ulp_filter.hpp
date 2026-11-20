@@ -245,7 +245,7 @@ inline n_vector n_difference(coordinates const& a, coordinates const& b)
     return v;
 }
 
-template <std::size_t N, bool Dot>
+template <std::size_t N, bool Dot, bool ProducerBound = false>
 inline forward_error::scalar_approximation n_bilinear(n_vector const& a, n_vector const& b)
 {
     constexpr std::size_t i = Dot ? 0 : 1, j = 1 - i;
@@ -253,7 +253,8 @@ inline forward_error::scalar_approximation n_bilinear(n_vector const& a, n_vecto
     double const y = arithmetic::rounded_mul(a.value[1], b.value[j]);
     double const scale = arithmetic::rounded_add(arithmetic::rounded_mul(a.scale[0], b.scale[i]),
                                                  arithmetic::rounded_mul(a.scale[1], b.scale[j]));
-    constexpr double factor = (N == 0 ? 12 : 4 * n_steps<N> + 16) * unit_roundoff;
+    // The root producer proves |X-z| <= (K+2)u H(z); a K-step head alone does not.
+    constexpr double factor = (N == 0 ? 12 : (ProducerBound ? 2 : 4) * n_steps<N> + 16) * unit_roundoff;
     return {Dot ? arithmetic::rounded_add(x, y) : arithmetic::rounded_sub(x, y),
             arithmetic::rounded_mul(factor, (std::max)(scale, minimum_normal))};
 }
@@ -278,43 +279,43 @@ inline bool try_compare_n(double a, double b, int& result)
     return true;
 }
 
-template <std::size_t N, bool AI, bool BI, bool PI>
+template <std::size_t N, bool AI, bool BI, bool PI, bool ProducerBound = false>
 inline bool try_signed_determinant_n(coordinates const& a, coordinates const& b,
                                      coordinates const& p, forward_error::scalar_approximation& result)
 {
     if (!detail::in_measure_range(a) || !detail::in_measure_range(b)
         || !detail::in_measure_range(p)) return false;
-    result = detail::n_bilinear<(AI || BI || PI) ? N : 0, false>(
+    result = detail::n_bilinear<(AI || BI || PI) ? N : 0, false, ProducerBound>(
         detail::n_difference<AI, BI>(a, b), detail::n_difference<AI, PI>(a, p));
     return true;
 }
 
-template <std::size_t N, bool AI, bool BI, bool PI>
+template <std::size_t N, bool AI, bool BI, bool PI, bool ProducerBound = false>
 inline bool try_orientation_n(coordinates const& a, coordinates const& b,
                               coordinates const& p, int& result)
 {
     forward_error::scalar_approximation d;
-    return try_signed_determinant_n<N, AI, BI, PI>(a, b, p, d)
+    return try_signed_determinant_n<N, AI, BI, PI, ProducerBound>(a, b, p, d)
         && detail::sign(d.value, d.error, result);
 }
 
-template <std::size_t N, bool AI, bool BI, bool PI>
+template <std::size_t N, bool AI, bool BI, bool PI, bool ProducerBound = false>
 inline bool try_dot_n(coordinates const& a, coordinates const& b, coordinates const& p, int& result)
 {
     if (!detail::in_measure_range(a) || !detail::in_measure_range(b)
         || !detail::in_measure_range(p)) return false;
-    auto const d = detail::n_bilinear<(AI || BI || PI) ? N : 0, true>(
+    auto const d = detail::n_bilinear<(AI || BI || PI) ? N : 0, true, ProducerBound>(
         detail::n_difference<AI, BI>(a, b), detail::n_difference<BI, PI>(b, p));
     return detail::sign(d.value, d.error, result);
 }
 
-template <std::size_t N, bool AI, bool BI>
+template <std::size_t N, bool AI, bool BI, bool ProducerBound = false>
 inline bool try_squared_distance_n(coordinates const& a, coordinates const& b,
                                    forward_error::scalar_approximation& result)
 {
     if (!detail::in_measure_range(a) || !detail::in_measure_range(b)) return false;
     auto const d = detail::n_difference<AI, BI>(a, b);
-    result = detail::n_bilinear<(AI || BI) ? N : 0, true>(d, d);
+    result = detail::n_bilinear<(AI || BI) ? N : 0, true, ProducerBound>(d, d);
     return true;
 }
 

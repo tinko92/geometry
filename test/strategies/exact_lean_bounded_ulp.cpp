@@ -8,6 +8,7 @@
 #include <boost/geometry/strategies/relate/cartesian_exact.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cfenv>
 #include <cmath>
@@ -100,6 +101,22 @@ std::uint64_t rank64(double x)
     return bits & sign ? sign - (bits & ~sign) : sign + bits;
 }
 
+constexpr std::size_t budget_cap = 1u << 24;
+
+// This is a real-number bound, NOT a lattice radius around RN(X). Form
+// even the subnormal floor product in Q, independently of point_state::bounds.
+template <std::size_t N> void producer_bound(double z, q const& exact)
+{
+    BOOST_TEST(std::isfinite(z));
+    if (!std::isfinite(z)) return;
+    constexpr std::size_t k = N < budget_cap ? N : budget_cap;
+    q const height((std::max)(std::abs(z), (std::numeric_limits<double>::min)()));
+    q const limit = height * (k + 2) / (std::uint64_t(1) << 53);
+    if (abs(q(z) - exact) > limit)
+        std::fprintf(stderr, "producer bound: N=%zu K=%zu z=%a\n", N, k, z);
+    BOOST_TEST(abs(q(z) - exact) <= limit);
+}
+
 template <std::size_t N> void check_coordinate(double x, q const& exact)
 {
     auto const a = rank64(x), b = rank64(nearest(exact));
@@ -132,10 +149,12 @@ template <std::size_t N> void construction(endpoints const& v)
         double out;
         auto const alloc = count_new([&]{ out = p.template emit<double>(d, v); });
         BOOST_TEST_EQ(alloc.calls, 0u);
+        producer_bound<N>(p.approximate(d), exact[d]);
         check_coordinate<N>(out, exact[d]);
         encloses(p.bounds(d), exact[d]);
         auto const refined = p.refine(v, d);
         BOOST_TEST_EQ(refined.approximate, nearest(exact[d]));
+        producer_bound<N>(p.approximate(d), exact[d]);
         encloses(refined, exact[d]);
     }
 }
@@ -167,6 +186,7 @@ ec::forward_error::point_approximation det_case(endpoints const& v, xy const& ex
         BOOST_TEST_EQ(pass[d], d != missed || (DetRetry && retry_passes));
         double const rn = nearest(exact[d]);
         double const emitted = p.template emit<double>(d, v);
+        if constexpr (!Store) producer_bound<N>(emitted, exact[d]);
         if (pass[d])
         {
             check_coordinate<N>(first.value[d], exact[d]);
@@ -272,6 +292,105 @@ template <std::size_t N> void construction_cases()
     }
 }
 
+// Pin the path by its acceptance mask; a silently substituted nearest
+// fallback could otherwise pass every producer-bound assertion.
+template <std::size_t N, bool Retry, bool DetRetry, bool Rescue = true, bool Cross = true>
+std::array<double, 2> lean_path(endpoints const& v, std::array<bool, 2> expected)
+{
+    auto const exact = crossing(v);
+    ec::forward_error::point_approximation candidate;
+    auto const accepted = ec::construction_rounding::detail::bounded_intersection
+        <N, Retry, Rescue, Cross, false, DetRetry>(v, candidate);
+    BOOST_TEST(accepted == expected);
+    for (std::size_t d = 0; d != 2; ++d)
+        if (accepted[d]) producer_bound<N>(candidate.value[d], exact[d]);
+    if constexpr (Rescue && Cross)
+    {
+        using policy = sr::lean_bounded_ulp_output<N, Retry, DetRetry>;
+        ec::point_cache_scope<double> scope;
+        ec::construction_rounding::point_state<double, policy> p;
+        p.init(v);
+        for (std::size_t d = 0; d != 2; ++d)
+        {
+            BOOST_TEST_EQ(p.approximate(d), accepted[d] ? candidate.value[d] : nearest(exact[d]));
+            producer_bound<N>(p.approximate(d), exact[d]);
+            p.refine(v, d);
+            BOOST_TEST_EQ(p.approximate(d), nearest(exact[d]));
+            producer_bound<N>(p.approximate(d), exact[d]);
+        }
+    }
+    return candidate.value;
+}
+
+void retry_paths()
+{
+    // Nonzero residual of the rebuilt 1/3 quotient; the ordinary rounded
+    // denominator is zero. Disabling rescue must reject both coordinates.
+    double const m = 0x1p30;
+    endpoints const rescue{{m, m, 2*m+1, 2*m, m+1, m+1, 2*m-1, 2*m-2}};
+    lean_path<1, false, false, false>(rescue, {{false, false}});
+    lean_path<1, false, false>(rescue, {{true, true}});
+
+    // Translate the same D=-3, T=-1 geometry so the rebuilt FMA is
+    // millions of steps from RN(x). The y coordinate still passes at N=1.
+    double const n = 0x1p29, a = 32 - (n+1)/3;
+    endpoints const translated{{a, n, a+n+1, 2*n, a+1, n+1, a+n-1, 2*n-2}};
+    lean_path<budget_cap, false, false, false>(translated, {{false, false}});
+    lean_path<1, false, false>(translated, {{false, true}});
+    auto const rebuilt = lean_path<budget_cap, false, false>(translated, {{true, true}});
+    BOOST_TEST(crossing(translated)[0] == 32);
+    BOOST_TEST(rank64(32.) - rank64(rebuilt[0]) > 1000000);
+
+    endpoints const division{{1.6875, 9, 2.6875, 10, 1.6875, 10, 3.6875, 8}};
+    lean_path<4, false, false>(division, {{false, true}});
+    lean_path<4, true, false>(division, {{true, true}});
+
+    // Nonzero subtraction tail on the shared vertical direction.
+    endpoints const tails{{4, 8, 5, 8, 4.5, -0x1p-10, 4.5, 0x1p54}};
+    lean_path<1, false, true, true, false>(tails, {{false, true}});
+    lean_path<1, false, true>(tails, {{true, true}});
+}
+
+void wide_integer_fallback()
+{
+    using integer = std::int64_t;
+    integer const a = (integer(1) << 58) + 1;
+    // The double endpoints would collapse both x directions. For the
+    // original integers the proper crossing has x=a+2/3 and y=2/3.
+    std::array<integer, 8> const v{{a, 0, a+2, 2, a, 1, a+2, 0}};
+    xy const exact{{q(a) + q(2, 3), q(2, 3)}};
+    ec::point_cache_scope<integer> scope;
+    ec::construction_rounding::point_state<integer, lean<1>> p;
+    p.init(v);
+    for (std::size_t d = 0; d != 2; ++d)
+    {
+        BOOST_TEST_EQ(p.approximate(d), nearest(exact[d]));
+        producer_bound<1>(p.approximate(d), exact[d]);
+    }
+}
+
+template <std::size_t N> void wide_budget(std::size_t scale)
+{
+    // Exact t=1/3, x=delta. The original FMA misses by exactly 2^-54:
+    // at scale=2^24, delta=2/scale the accepted head misses by 2^22
+    // relative roundoff units. A nearest-only corpus cannot exercise this.
+    for (double sign : {-1., 1.})
+    {
+        auto input = [&](double delta) -> endpoints
+        { return {{sign*(-1+delta), 2, sign*(2+delta), 5, -sign, 3, 2*sign, 3}}; };
+        auto v = input(32./scale);
+        auto z = lean_path<N, false, false>(v, {{true, true}});
+        BOOST_TEST(abs(q(z[0]) - crossing(v)[0]) == q(0x1p-54));
+        v = input(2./scale);
+        lean_path<N, false, false>(v, {{false, true}});
+        z = lean_path<N, false, true>(v, {{true, true}});
+        BOOST_TEST(abs(q(z[0]) - crossing(v)[0]) == q(0x1p-54));
+        // The direction contribution alone prevents passing at the cap,
+        // even when the nominal policy would have ample room.
+        lean_path<N, false, true>(input(1./scale), {{false, true}});
+    }
+}
+
 template <std::size_t N> struct fixture
 {
     using root = ec::borrowed_root<double, lean<N>, line, line>;
@@ -294,6 +413,51 @@ template <std::size_t N> struct fixture
     }
     void reset() { record.numeric.init(p.producers()); }
 };
+
+void operand_heads()
+{
+    namespace bp = ec::borrowed_predicates_detail;
+    using root = fixture<100>::root;
+    using query = ec::query_point<root>;
+    using wide = bg::model::d2::point_xy<std::int64_t>;
+    using foreign = fixture<1>::root;
+    static_assert(!bp::step_operand<root, wide> && !bp::step_operand<root, ec::exact_point<double>>
+               && !bp::step_operand<root, ec::borrowed_point<foreign>>
+               && !bp::step_operand<root, ec::query_point<foreign>>, "No borrowed certificate");
+    fixture<100> f(witness);
+    auto check = [](auto const& operand, xy const& exact)
+    {
+        bp::visit<root>(operand, [&](auto const& selected)
+        {
+            using P = std::decay_t<decltype(selected)>;
+            static_assert(bp::step_filter<root, P>, "Exercise admitted operands");
+            auto const head = bp::bounded_coordinates(selected);
+            for (std::size_t d = 0; d != 2; ++d)
+            {
+                producer_bound<100>(head[d], exact[d]);
+                if constexpr (bp::exact_double<P>::value) BOOST_TEST(q(head[d]) == exact[d]);
+            }
+        });
+    };
+    xy const exact = crossing(witness), a{{q(witness[0]), q(witness[1])}};
+    ec::iterator_point_view<decltype(&f.p)> const record_view(&f.p);
+    check(record_view, exact);
+    auto native = ec::borrowed_context<root>::native_vertex(f.a, 0);
+    check(ec::iterator_point_view<decltype(&native)>(&native), a);
+    check(ec::iterator_point_view<line::const_iterator>(f.a.cbegin()), a);
+
+    auto const midpoint = query::midpoint(f.p, native);
+    auto const splice = query::splice_coordinates(f.p, 1, native, 0);
+    check(ec::iterator_point_view<decltype(&midpoint)>(&midpoint),
+          {{(exact[0]+a[0])/2, (exact[1]+a[1])/2}});
+    check(splice, {{exact[1], a[0]}});
+    check(query::midpoint(native, native), a);
+    check(query::splice_coordinates(native, 1, native, 0), {{a[1], a[0]}});
+    double const tiny = (std::numeric_limits<double>::denorm_min)();
+    check(query::midpoint(point(0, -tiny), point(tiny, -2*tiny)), {{q(tiny)/2, -3*q(tiny)/2}});
+    f.p.refine(0);
+    check(record_view, exact);
+}
 
 template <std::size_t N> void ambiguous(endpoints const& v)
 {
@@ -474,6 +638,13 @@ int main()
 {
     BOOST_TEST_EQ(std::fegetround(), FE_TONEAREST);
     run<1>(); run<2>(); run<4>(); run<8>(); run<100>();
+    retry_paths();
+    wide_integer_fallback();
+    wide_budget<1024>(1024);
+    wide_budget<budget_cap-1>(budget_cap);
+    wide_budget<budget_cap>(budget_cap);
+    wide_budget<4*budget_cap>(budget_cap);
+    operand_heads();
     det_cases<8, true>(); det_cases<8, false>();
     det_cases<100, true>(); det_cases<100, false>();
     public_det_case<false>(); public_det_case<true>();
