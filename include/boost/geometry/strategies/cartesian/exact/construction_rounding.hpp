@@ -71,8 +71,8 @@ template <> struct policy_traits<relate::eager_nearest_output>
 template <> struct policy_traits<relate::nearest_output>
     : policy_traits<relate::deferred_nearest_output> {};
 
-template <std::size_t N, bool Retry>
-struct policy_traits<relate::bounded_ulp_output<N, Retry>>
+template <std::size_t N, bool Retry, bool DeterminantRetry>
+struct policy_traits<relate::bounded_ulp_output<N, Retry, DeterminantRetry>>
 {
     // The existing lean predicate filters assume one ULP, not N steps.
     static constexpr bool store_errors = true;
@@ -80,9 +80,9 @@ struct policy_traits<relate::bounded_ulp_output<N, Retry>>
     static constexpr bool nearest_output = false;
 };
 
-template <std::size_t N, bool Retry>
-struct policy_traits<relate::lean_bounded_ulp_output<N, Retry>>
-    : policy_traits<relate::bounded_ulp_output<N, Retry>>
+template <std::size_t N, bool Retry, bool DeterminantRetry>
+struct policy_traits<relate::lean_bounded_ulp_output<N, Retry, DeterminantRetry>>
+    : policy_traits<relate::bounded_ulp_output<N, Retry, DeterminantRetry>>
 {
     static constexpr bool store_errors = false;
 };
@@ -316,7 +316,8 @@ BOOST_NOINLINE std::array<bool, 2> rescue_bounded_denominator(std::array<double,
     return accepted;
 }
 
-template <std::size_t N, bool Retry, bool Rescue = true, bool CrossTerms = true, bool StoreErrors = true>
+template <std::size_t N, bool Retry, bool Rescue = true, bool CrossTerms = true,
+          bool StoreErrors = true, bool DeterminantRetry = (N <= 4)>
 inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
                                                 fe::point_approximation& output)
 {
@@ -378,7 +379,7 @@ inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
     for (std::size_t axis = 0; axis < 2; ++axis)
         certify_axis(axis, z[axis], h);
 
-    if constexpr (N <= 4)
+    if constexpr (DeterminantRetry)
     {
         if (!accepted[0] || !accepted[1])
         {
@@ -575,7 +576,7 @@ public:
             std::array<bool, 2> accepted{};
             if constexpr (std::is_same<C, double>::value)
                 accepted = detail::bounded_intersection<Policy::steps, Policy::retry,
-                    true, true, traits::store_errors>(producers, first);
+                    true, true, traits::store_errors, Policy::determinant_retry>(producers, first);
             for (std::size_t d = 0; d < 2; ++d)
             {
                 if (accepted[d])

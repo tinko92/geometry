@@ -1045,9 +1045,10 @@ namespace relate
       representable steps of nearest, ties to even, and retains predicate
       error bounds. lean_bounded_ulp_output has the same emission contract;
       its root-bound constructions omit both error fields and its filters
-      specialize on N. Budgets up to four steps selectively tighten determinant bounds after a
-      miss. For larger budgets, Retry (default false) enables an FMA
-      residual retry.
+      specialize on N. Both bounded policies accept a third template
+      argument to enable or disable selective determinant tightening after
+      a miss. If disabled, Retry (default false) enables only an FMA
+      quotient-residual retry. The coordinate guarantee is unchanged.
       Uncertified axes, non-double Coordinate types, float output and legacy
       exact_point conversion use nearest rounding for floating constructions.
       Integral output uses BG numeric_cast conversion, which truncates floating

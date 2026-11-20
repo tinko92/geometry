@@ -142,6 +142,107 @@ template <std::size_t N> void construction(endpoints const& v)
 
 endpoints const witness{{-32.487, 5.108, 26.755, 42.581, -24.619, 48.479, 11.438, -6.773}};
 
+// Proper crossing at t=2/7 on the first segment. The ordinary determinant
+// bounds reject x even at N=100; tightening certifies its original FMA even
+// at N=8. That FMA is not RN(3/7), so exact fallback cannot mask a wiring bug.
+endpoints const det_witness{{-1, 1000, 4, 1004, -1, 999, 1, 1002}};
+
+template <std::size_t N, bool Store, bool DetRetry>
+ec::forward_error::point_approximation det_case(endpoints const& v, xy const& exact,
+                                                std::size_t missed, bool retry_passes)
+{
+    using policy = std::conditional_t<Store, sr::bounded_ulp_output<N, false, DetRetry>,
+                                      sr::lean_bounded_ulp_output<N, false, DetRetry>>;
+    using state = ec::construction_rounding::point_state<double, policy>;
+    static_assert(state::stores_errors == Store, "Exercise the requested layout");
+    ec::forward_error::point_approximation first;
+    first.error.fill(-1.);
+    auto const pass = ec::construction_rounding::detail::bounded_intersection
+        <N, false, true, true, Store, DetRetry>(v, first);
+    ec::point_cache_scope<double> scope;
+    state p;
+    p.init(v);
+    for (std::size_t d = 0; d < 2; ++d)
+    {
+        BOOST_TEST_EQ(pass[d], d != missed || (DetRetry && retry_passes));
+        double const rn = nearest(exact[d]);
+        double const emitted = p.template emit<double>(d, v);
+        if (pass[d])
+        {
+            check_coordinate<N>(first.value[d], exact[d]);
+            if (d == missed)
+            {
+                double const candidate = std::fma(nearest(q(2, 7)), 5., v[d]);
+                BOOST_TEST_NE(candidate, rn);
+                BOOST_TEST_EQ(first.value[d], candidate);
+            }
+            BOOST_TEST_EQ(emitted, first.value[d]);
+            if constexpr (Store)
+            {
+                BOOST_TEST(std::isfinite(first.error[d]));
+                encloses({first.value[d], first.error[d]}, exact[d]);
+            }
+        }
+        else BOOST_TEST_EQ(emitted, rn);
+        if constexpr (!Store) BOOST_TEST_EQ(first.error[d], -1.);
+        BOOST_TEST(std::isfinite(p.bounds(d).error));
+        encloses(p.bounds(d), exact[d]);
+    }
+    return first;
+}
+
+template <std::size_t N, bool Store> void det_cases()
+{
+    auto check = [](endpoints const& v, std::size_t missed, bool retry_passes)
+    {
+        auto const exact = crossing(v);
+        auto const off = det_case<N, Store, false>(v, exact, missed, retry_passes);
+        auto const on = det_case<N, Store, true>(v, exact, missed, retry_passes);
+        std::size_t const kept = 1 - missed;
+        BOOST_TEST_EQ(off.value[kept], on.value[kept]);
+        if constexpr (Store) BOOST_TEST_EQ(off.error[kept], on.error[kept]);
+    };
+    check(det_witness, 0, true);
+    endpoints transposed = det_witness, shifted = det_witness;
+    for (std::size_t i = 0; i < 8; i += 2)
+    {
+        std::swap(transposed[i], transposed[i+1]);
+        shifted[i] -= 7./16;
+    }
+    check(transposed, 1, true);
+    // Now x=-1/112 and |t*ux|/|x|=160: even the optimistic retry fails.
+    check(shifted, 0, false);
+}
+
+// Limit public algorithm instantiations to one budget and layout.
+template <bool DetRetry> void public_det_case()
+{
+    sr::cartesian_exact<double, sr::lean_bounded_ulp_output<8, false, DetRetry>> strategy;
+    auto const& v = det_witness;
+    line const a{{v[0], v[1]}, {v[2], v[3]}}, b{{v[4], v[5]}, {v[6], v[7]}};
+    auto const exact = crossing(v);
+    std::vector<point> points;
+    bg::intersection(a, b, points, strategy);
+    BOOST_TEST_EQ(points.size(), 1u);
+    if (points.size() == 1)
+    {
+        check_coordinate<8>(bg::get<0>(points[0]), exact[0]);
+        check_coordinate<8>(bg::get<1>(points[0]), exact[1]);
+    }
+    BOOST_TEST_EQ(bg::relation(a, b, strategy).str(), "0F1FF0102");
+    if constexpr (DetRetry)
+    {
+        std::vector<bg::model::d2::point_xy<q>> rational;
+        bg::intersection(a, b, rational, strategy);
+        BOOST_TEST_EQ(rational.size(), 1u);
+        if (rational.size() == 1)
+        {
+            BOOST_TEST(bg::get<0>(rational[0]) == exact[0]);
+            BOOST_TEST(bg::get<1>(rational[0]) == exact[1]);
+        }
+    }
+}
+
 template <std::size_t N> void construction_cases()
 {
     construction<N>(witness);
@@ -373,5 +474,8 @@ int main()
 {
     BOOST_TEST_EQ(std::fegetround(), FE_TONEAREST);
     run<1>(); run<2>(); run<4>(); run<8>(); run<100>();
+    det_cases<8, true>(); det_cases<8, false>();
+    det_cases<100, true>(); det_cases<100, false>();
+    public_det_case<false>(); public_det_case<true>();
     return boost::report_errors();
 }
