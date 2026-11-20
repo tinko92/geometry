@@ -31,6 +31,9 @@ This is not evidence for unconditionally replacing the stored policy.
 
 ### Why eight is not faster than four
 
+These timings predate the [independent retry on/off comparison](exact_large_budget_retry.md).
+The following cutoff describes the implementation measured here.
+
 The inherited default construction tries extra determinant corrections at
 N <= 4. N=8 uses a looser threshold but does not get that retry. Outside the
 timed loop, replaying the original proper segment crossings for the three

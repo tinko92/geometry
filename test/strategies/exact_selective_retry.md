@@ -1,5 +1,9 @@
 # Selective determinant retry for small output budgets
 
+This records the original small-budget experiment. The subsequent
+[matched N=8 and N=100 comparison](exact_large_budget_retry.md) tests the
+same certificate with an explicitly selectable determinant retry.
+
 Candidate based on `12bb0ff9a4d1dd71a36818d8d846806bc46aa55c`. The initial
 certificate is unchanged. The new retry is used only by
 `bounded_ulp_output<N>` for N=1 through 4 (also when `Retry` is true).
