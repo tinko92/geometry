@@ -95,7 +95,6 @@ void test_segment_box()
 int main()
 {
     test_segment_box<bg::strategies::relate::approximate_output>();
-    test_segment_box<bg::strategies::relate::eager_nearest_output>();
-    test_segment_box<bg::strategies::relate::deferred_nearest_output>();
+    test_segment_box<bg::strategies::relate::nearest_output>();
     return boost::report_errors();
 }

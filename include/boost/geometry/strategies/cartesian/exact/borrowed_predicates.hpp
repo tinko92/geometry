@@ -151,21 +151,6 @@ template <typename P>
 void refine(P const& point) { refine(point, 0); refine(point, 1); }
 
 template <typename P>
-double approximate(P const& point, std::size_t dim)
-{
-    if constexpr (native_operand<P>::value)
-        return dim == 0 ? double(geometry::get<0>(point)) : double(geometry::get<1>(point));
-    else if constexpr (legacy_point<P>::value)
-        // A legacy ordinary point's INITIAL bound need not be one ULP.
-        return point.refined_approximation(dim).approximate;
-    else return point.approximate(dim);
-}
-
-template <typename P>
-ulp_filter::coordinates coordinates(P const& point)
-{ return {{approximate(point, 0), approximate(point, 1)}}; }
-
-template <typename P>
 forward_error::point_approximation approximation(P const& point)
 {
     if constexpr (native_operand<P>::value)
@@ -187,18 +172,10 @@ template <typename Root>
 constexpr bool lean = !construction_rounding::policy_traits<typename Root::output_policy>::store_errors;
 
 template <typename Root>
-constexpr bool lean_bounded = lean<Root> && is_bounded_ulp_output<typename Root::output_policy>::value;
+using root_filter = construction_rounding::policy_traits<typename Root::output_policy>;
 
 template <typename Root>
-constexpr bool step_policy = lean_bounded<Root>
-    || std::is_same<typename Root::output_policy, relate::eager_nearest_output>::value;
-
-template <typename Root>
-constexpr std::size_t policy_steps()
-{
-    if constexpr (lean_bounded<Root>) return Root::output_policy::steps;
-    else return 0;
-}
+using root_certificate = typename root_filter<Root>::arithmetic_certificate;
 
 // After visiting, a matching record carries its producer's certificate.
 // query_point factories either prove exactness or round the fixed quotient.
@@ -210,13 +187,15 @@ constexpr bool step_operand = exact_double<P>::value || std::is_same<P, borrowed
     || std::is_same<P, query_point<Root>>::value;
 
 template <typename Root, typename... P>
-constexpr bool step_filter = step_policy<Root> && (step_operand<Root, P> && ...);
+constexpr bool step_filter = !std::is_void<root_certificate<Root>>::value && (step_operand<Root, P> && ...);
 
 template <typename P>
 double bounded_ordinate(P const& point, std::size_t dim)
 {
     if constexpr (record_point<P>::value) return point.record().numeric.approximate(dim);
-    else return approximate(point, dim);
+    else if constexpr (native_operand<P>::value)
+        return dim == 0 ? double(geometry::get<0>(point)) : double(geometry::get<1>(point));
+    else return point.approximate(dim);
 }
 
 // Called after visit(): a borrowed point here is the selected crossing,
@@ -373,25 +352,6 @@ bool on_support(A const& a, B const& b, P const& point)
     return false;
 }
 
-template <typename A, typename B, typename P>
-bool ulp_orientation(A const& a, B const& b, P const& p, int& result)
-{
-    auto const x = coordinates(a), y = coordinates(b), z = coordinates(p);
-    // Cyclic permutations preserve the sign. Wide native integers are I, not
-    // N: their conversion is adjacent binary64, but need not be exact. Actual
-    // NNN has already gone to checked native_orientation before this stage.
-    if constexpr (exact_double<A>::value && exact_double<B>::value)
-        return ulp_filter::try_orientation_nni(x, y, z, result);
-    else if constexpr (exact_double<B>::value && exact_double<P>::value)
-        return ulp_filter::try_orientation_nni(y, z, x, result);
-    else if constexpr (exact_double<P>::value && exact_double<A>::value)
-        return ulp_filter::try_orientation_nni(z, x, y, result);
-    else if constexpr (exact_double<A>::value) return ulp_filter::try_orientation_nii(x, y, z, result);
-    else if constexpr (exact_double<B>::value) return ulp_filter::try_orientation_nii(y, z, x, result);
-    else if constexpr (exact_double<P>::value) return ulp_filter::try_orientation_nii(z, x, y, result);
-    else return ulp_filter::try_orientation_iii(x, y, z, result);
-}
-
 template <typename Root, typename A, typename B, typename P, typename Certified = std::false_type>
 int orientation(A const& a, B const& b, P const& p, Certified native_differences_exact = {})
 {
@@ -410,10 +370,9 @@ int orientation(A const& a, B const& b, P const& p, Certified native_differences
         auto filter = [&]
         {
             if constexpr (step_filter<Root, A, B, P>)
-                return ulp_filter::try_orientation_n<policy_steps<Root>(),
-                    !exact_double<A>::value, !exact_double<B>::value, !exact_double<P>::value, lean_bounded<Root>>
+                return ulp_filter::try_orientation<root_certificate<Root>,
+                    !exact_double<A>::value, !exact_double<B>::value, !exact_double<P>::value>
                     (bounded_coordinates(a), bounded_coordinates(b), bounded_coordinates(p), result);
-            else if constexpr (lean<Root> && !step_policy<Root>) return ulp_orientation(a, b, p, result);
             else return forward_error::try_orientation(approximation(a), approximation(b), approximation(p), result);
         };
         if constexpr (stored_bilinear_operands<Root, A, B, P>)
@@ -457,21 +416,9 @@ bool coordinate_filter(A const& a, B const& b, int& result)
 {
     if constexpr (step_filter<Root, A, B>)
     {
-        return ulp_filter::try_compare_n<policy_steps<Root>(),
+        return ulp_filter::try_compare_n<root_filter<Root>::order_steps,
             !exact_double<A>::value, !exact_double<B>::value>
             (bounded_ordinate(a, D), bounded_ordinate(b, D), result);
-    }
-    else if constexpr (lean<Root> && !step_policy<Root>)
-    {
-        double const x = approximate(a, D), y = approximate(b, D);
-        if constexpr (exact_double<A>::value) return ulp_filter::try_compare_ni(x, y, result);
-        else if constexpr (exact_double<B>::value)
-        {
-            if (!ulp_filter::try_compare_ni(y, x, result)) return false;
-            result = -result;
-            return true;
-        }
-        else return ulp_filter::try_compare_ii(x, y, result);
     }
     else
     {
@@ -549,31 +496,6 @@ bool equal(A const& a, B const& b)
     }
 }
 
-// The ULP orientation proof also bounds dot products: the two perturbed
-// differences cost (4u+4u^2)M and the rounded products/final +/- cost
-// (2u+u^2)M. Changing the second difference's anchor changes only its endpoint
-// magnitudes. Reuse the SAME 8u bound and subnormal magnitude floor; do not
-// reconstruct coordinate error fields or adjacent spacings on this path.
-template <bool AI, bool BI, bool PI, bool Dot, bool FromB>
-forward_error::scalar_approximation ulp_measure(ulp_filter::coordinates const& a,
-    ulp_filter::coordinates const& b, ulp_filter::coordinates const& p)
-{
-    namespace ar = arithmetic_detail;
-    namespace ud = ulp_filter::detail;
-    double const ux = ar::rounded_sub(b[0], a[0]), uy = ar::rounded_sub(b[1], a[1]);
-    auto const& origin = FromB ? b : a;
-    double const vx = ar::rounded_sub(p[0], origin[0]), vy = ar::rounded_sub(p[1], origin[1]);
-    double const x = ar::rounded_mul(ux, Dot ? vx : vy), y = ar::rounded_mul(uy, Dot ? vy : vx);
-    double const sux = ud::difference_magnitude<AI, BI>(ux, a[0], b[0]);
-    double const suy = ud::difference_magnitude<AI, BI>(uy, a[1], b[1]);
-    double const svx = ud::difference_magnitude<FromB ? BI : AI, PI>(vx, origin[0], p[0]);
-    double const svy = ud::difference_magnitude<FromB ? BI : AI, PI>(vy, origin[1], p[1]);
-    double const magnitude = ar::rounded_add(ar::rounded_mul(sux, Dot ? svx : svy),
-                                            ar::rounded_mul(suy, Dot ? svy : svx));
-    return {Dot ? ar::rounded_add(x, y) : ar::rounded_sub(x, y),
-        ar::rounded_mul(8 * ud::unit_roundoff, (std::max)(magnitude, ud::minimum_normal))};
-}
-
 template <std::size_t AN, std::size_t AD, std::size_t BN, std::size_t BD, std::size_t PN, std::size_t PD>
 int fixed_direction(fixed_homogeneous<AN, AD> const& a, fixed_homogeneous<BN, BD> const& b,
                     fixed_homogeneous<PN, PD> const& p)
@@ -597,15 +519,9 @@ int direction(A const& a, B const& b, P const& p)
     auto filter = [&]
     {
         if constexpr (step_filter<Root, A, B, P>)
-            return ulp_filter::try_dot_n<policy_steps<Root>(),
-                !exact_double<A>::value, !exact_double<B>::value, !exact_double<P>::value, lean_bounded<Root>>
+            return ulp_filter::try_dot<root_certificate<Root>,
+                !exact_double<A>::value, !exact_double<B>::value, !exact_double<P>::value>
                 (bounded_coordinates(a), bounded_coordinates(b), bounded_coordinates(p), result);
-        else if constexpr (lean<Root> && !step_policy<Root>)
-        {
-            auto const bound = ulp_measure<!exact_double<A>::value, !exact_double<B>::value,
-                !exact_double<P>::value, true, true>(coordinates(a), coordinates(b), coordinates(p));
-            return ulp_filter::detail::sign(bound.value, bound.error, result);
-        }
         else return forward_error::try_direction(approximation(a), approximation(b), approximation(p), result);
     };
     if constexpr (stored_bilinear_operands<Root, A, B, P>)
@@ -643,18 +559,13 @@ forward_error::scalar_approximation measure(A const& a, B const& b, P const& p, 
             constexpr bool yi = !exact_double<std::decay_t<decltype(y)>>::value;
             forward_error::scalar_approximation result{0, (std::numeric_limits<double>::infinity)()};
             if constexpr (Signed)
-                ulp_filter::try_signed_determinant_n<policy_steps<Root>(), xi, yi,
-                    !exact_double<std::decay_t<decltype(z)>>::value, lean_bounded<Root>>
+                ulp_filter::try_signed_determinant<root_certificate<Root>, xi, yi,
+                    !exact_double<std::decay_t<decltype(z)>>::value>
                     (bounded_coordinates(x), bounded_coordinates(y), bounded_coordinates(z), result);
-            else ulp_filter::try_squared_distance_n<policy_steps<Root>(), xi, yi, lean_bounded<Root>>
+            else ulp_filter::try_squared_distance<root_certificate<Root>, xi, yi>
                     (bounded_coordinates(x), bounded_coordinates(y), result);
             return result;
         }
-        else if constexpr (lean<Root> && !step_policy<Root>)
-            return ulp_measure<!exact_double<std::decay_t<decltype(x)>>::value,
-                !exact_double<std::decay_t<decltype(y)>>::value,
-                !exact_double<std::decay_t<decltype(z)>>::value, !Signed, false>
-                (coordinates(x), coordinates(y), coordinates(z));
         else
         {
             forward_error::scalar_approximation result{0, (std::numeric_limits<double>::infinity)()};

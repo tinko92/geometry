@@ -92,7 +92,6 @@ void test_parenting()
 int main()
 {
     test_parenting<bg::strategies::relate::approximate_output>();
-    test_parenting<bg::strategies::relate::eager_nearest_output>();
-    test_parenting<bg::strategies::relate::deferred_nearest_output>();
+    test_parenting<bg::strategies::relate::nearest_output>();
     return boost::report_errors();
 }

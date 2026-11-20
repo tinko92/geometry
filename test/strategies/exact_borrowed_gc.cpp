@@ -31,8 +31,7 @@ void check()
 int main()
 {
     check<double, bg::strategies::relate::approximate_output>();
-    check<double, bg::strategies::relate::eager_nearest_output>();
-    check<double, bg::strategies::relate::deferred_nearest_output>();
+    check<double, bg::strategies::relate::nearest_output>();
     check<std::int64_t, bg::strategies::relate::approximate_output>();
     return boost::report_errors();
 }

@@ -1025,7 +1025,7 @@ namespace relate
 /*!
 \brief Exact Cartesian predicates and implicit straight-segment intersections.
 \tparam Coordinate Native input coordinate type: integral, float or double.
-\tparam OutputPolicy approximate_output (default), a nearest policy, bounded_ulp_output<N>,
+\tparam OutputPolicy approximate_output (default), nearest_output, bounded_ulp_output<N>,
         or lean_bounded_ulp_output<N>.
 \details Finite binary floating-point inputs denote their exact binary values.
          Input promotion must preserve the complete source coordinate type.
@@ -1037,10 +1037,11 @@ namespace relate
       Round-to-nearest and controlled contraction are required.
       Long double input/output is not supported. approximate_output emits the
       currently stored approximation without output-only refinement.
-      nearest_output and deferred_nearest_output keep a one-ULP approximation
-      and round floating output to nearest, ties to even, at emission.
-      eager_nearest_output rounds at construction. These policies omit stored
-      coordinate error fields. approximate_output retains forward error bounds.
+      nearest_output (also spelled eager_nearest_output) rounds root-bound
+      intersections to nearest binary64, ties to even, at construction and
+      omits stored coordinate error fields. Float output rounds the exact
+      coordinate directly to float. Legacy exact_point retains its bounds
+      and rounds at floating emission. approximate_output retains forward error bounds.
       bounded_ulp_output<N, Retry> certifies binary64 intersections within N
       representable steps of nearest, ties to even, and retains predicate
       error bounds. lean_bounded_ulp_output has the same emission contract;
@@ -1062,8 +1063,6 @@ class cartesian_exact : public cartesian<double>
 {
     static_assert(std::is_same<OutputPolicy, approximate_output>::value
         || std::is_same<OutputPolicy, nearest_output>::value
-        || std::is_same<OutputPolicy, eager_nearest_output>::value
-        || std::is_same<OutputPolicy, deferred_nearest_output>::value
         || strategies::detail::exact_cartesian::is_bounded_ulp_output<OutputPolicy>::value,
         "Unknown exact Cartesian output policy");
     using primitives = strategies::detail::exact_cartesian::point_equal<Coordinate>;

@@ -4,7 +4,7 @@
 // Set BOOST_ROOT for the umbrella headers; CXX optionally selects the compiler.
 // BENCH_DEVELOP_REVISION pins a newer develop baseline without changing exact snapshots.
 // BENCH_BORROWED_ARCHIVE selects the borrowed implementation before performance fixes.
-// Whole-operation policy comparison: BENCH_VARIANTS=develop,previous,stage1,optimized,eager,deferred
+// Whole-operation policy comparison: BENCH_VARIANTS=develop,previous,stage1,optimized,nearest
 // BENCH_STAGE1_ARCHIVE selects the pre-borrowing tar; BENCH_STAGE1_INCLUDE can
 // instead select an already extracted immutable include directory.
 // BENCH_REQUIRE_GEOMETRY_MATCH=1 makes cross-variant spatial digest mismatches
@@ -53,16 +53,17 @@ function hashTree(root) {
   return hash.digest('hex');
 }
 const variants = [];
-const selectedNames = (process.env.BENCH_VARIANTS || 'develop,previous,optimized').split(',').map(s=>s.trim());
-const variantNames = ['develop', 'pr1491', 'before', 'previous', 'stage1', 'borrowed', 'optimized', 'nearest', 'eager', 'deferred', 'no-algopt'];
+const selectedNames = (process.env.BENCH_VARIANTS || 'develop,previous,optimized').split(',')
+  .map(s=>s.trim()).map(n=>n === 'eager' ? 'nearest' : n);
+const variantNames = ['develop', 'pr1491', 'before', 'previous', 'stage1', 'borrowed', 'optimized', 'nearest', 'no-algopt'];
 if (selectedNames.some(n => ![...variantNames, 'develop-robust'].includes(n))) throw Error('Unsupported benchmark variant');
 const stage1Archive = path.resolve(process.env.BENCH_STAGE1_ARCHIVE || '/tmp/bg-exact-before-borrowing-20261116.tar');
 const stage1Include = path.resolve(process.env.BENCH_STAGE1_INCLUDE || path.join(out, 'stage1/include'));
 const borrowedArchive = path.resolve(process.env.BENCH_BORROWED_ARCHIVE || '/tmp/bg-exact-borrowed-before-performance-20261116.tar.gz');
 const borrowedInclude = path.join(out, 'borrowed/include');
-const currentNames = ['optimized', 'nearest', 'eager', 'deferred', 'no-algopt'];
+const currentNames = ['optimized', 'nearest', 'no-algopt'];
 const exactNames = ['before', 'previous', 'stage1', 'borrowed', ...currentNames];
-const allocationVariants = new Set(['develop', 'previous', 'stage1', 'borrowed', 'optimized', 'nearest', 'eager', 'deferred']
+const allocationVariants = new Set(['develop', 'previous', 'stage1', 'borrowed', 'optimized', 'nearest']
   .map(n=>n+'-double'));
 const coordinates = (process.env.BENCH_COORDINATES || 'double,int64').split(',');
 if (coordinates.some(c => !['double', 'int64'].includes(c))) throw Error('Unsupported benchmark coordinate');
@@ -78,8 +79,6 @@ for (const coordinate of coordinates) {
       : name === 'stage1' ? stage1Include : name === 'borrowed' ? borrowedInclude : path.join(out, name, 'include'),
       defines: [...type, ...(exactNames.includes(name) ? ['-DBG_BENCH_EXACT'] : []),
         ...(name === 'nearest' ? ['-DBG_BENCH_NEAREST'] : []),
-        ...(name === 'eager' ? ['-DBG_BENCH_EAGER'] : []),
-        ...(name === 'deferred' ? ['-DBG_BENCH_DEFERRED'] : []),
         ...(name === 'no-algopt' ? ['-DBOOST_GEOMETRY_EXACT_DISABLE_ALGORITHM_OPTIMIZATIONS'] : [])]});
   }
 }

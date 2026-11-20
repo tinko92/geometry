@@ -30,28 +30,26 @@ using rational = boost::multiprecision::cpp_rational;
 using exact_point = std::array<rational, 2>;
 using producers = std::array<double, 8>;
 using ordinary = cr::point_state<double, policy::approximate_output>;
-using eager = cr::point_state<double, policy::eager_nearest_output>;
-using deferred = cr::point_state<double, policy::deferred_nearest_output>;
-using legacy = cr::point_state<double, policy::nearest_output>;
+using nearest_state = cr::point_state<double, policy::nearest_output>;
+static_assert(std::is_same<policy::eager_nearest_output, policy::nearest_output>::value,
+              "The compatibility spelling is the canonical policy");
 
 template <typename T, typename = void> struct has_error : std::false_type {};
 template <typename T> struct has_error<T, std::void_t<decltype(std::declval<T>().error)>> : std::true_type {};
 static_assert(has_error<ordinary::storage_type>::value, "Ordinary bounds must be retained");
-static_assert(!has_error<eager::storage_type>::value && !has_error<deferred::storage_type>::value,
-              "ULP-only states must not store errors");
-static_assert(!has_error<legacy::storage_type>::value, "Legacy nearest selects deferred layout");
+static_assert(!has_error<nearest_state::storage_type>::value, "Nearest must not store errors");
 constexpr std::size_t lean_payload = 2 * sizeof(double) + sizeof(ec::point_cache_detail::native_cache_handle);
-static_assert(sizeof(eager) == (lean_payload + alignof(eager) - 1) / alignof(eager) * alignof(eager),
+constexpr auto state_alignment = alignof(nearest_state);
+static_assert(sizeof(nearest_state) == (lean_payload + state_alignment - 1) / state_alignment * state_alignment,
               "Lean state must contain only two approximations and a plain cache index");
-static_assert(sizeof(deferred) == sizeof(eager) && sizeof(legacy) == sizeof(eager), "Same lean layout");
-static_assert(sizeof(ordinary) == sizeof(eager) + 2 * sizeof(double), "Only ordinary stores errors");
-static_assert(std::is_trivially_copyable<eager>::value && std::is_trivially_copyable<ordinary>::value,
+static_assert(sizeof(ordinary) == sizeof(nearest_state) + 2 * sizeof(double), "Only ordinary stores errors");
+static_assert(std::is_trivially_copyable<nearest_state>::value && std::is_trivially_copyable<ordinary>::value,
               "No producer ownership or reference counting in numerical state");
 
 namespace
 {
 bool counting = false;
-std::size_t allocations = 0, checked = 0, faithful_not_nearest = 0;
+std::size_t allocations = 0, checked = 0;
 std::size_t forward_certificates = 0;
 std::size_t small_integer_certificates = 0;
 std::size_t ordinary_certificates = 0;
@@ -125,9 +123,6 @@ template <typename T> T nearest(rational const& exact)
     return candidate;
 }
 
-bool one_ulp(double value, rational const& exact)
-{ return rational(previous(value)) <= exact && exact <= rational(next(value)); }
-
 template <typename C, typename Policy>
 void check_policy(std::array<C, 8> const& v, exact_point const& expected)
 {
@@ -167,9 +162,7 @@ void check_policy(std::array<C, 8> const& v, exact_point const& expected)
         }
         else
         {
-            BOOST_TEST(one_ulp(first, expected[d]));
-            if constexpr (traits::eager) BOOST_TEST_EQ(bits(first), bits(nearest<double>(expected[d])));
-            else if (bits(first) != bits(nearest<double>(expected[d]))) ++faithful_not_nearest;
+            BOOST_TEST_EQ(bits(first), bits(nearest<double>(expected[d])));
         }
         // Integral exports must not refine, allocate a precision entry, or
         // apply the exact rational's nearest-integer rule.
@@ -208,36 +201,31 @@ template <typename C> void check(std::array<C, 8> const& v)
         for (std::size_t d = 0; d < 2; ++d)
         {
             BOOST_TEST(absolute(rational(bound.value[d]) - expected[d]) <= rational(bound.error[d]));
-            if (cr::try_certify_ulp({bound.value[d], bound.error[d]}))
-            { BOOST_TEST(one_ulp(bound.value[d], expected[d])); ++forward_certificates; }
             if (cr::try_certify_nearest({bound.value[d], bound.error[d]}))
+            {
                 BOOST_TEST_EQ(bits(bound.value[d]), bits(nearest<double>(expected[d])));
+                ++forward_certificates;
+            }
         }
     }
     check_policy<C, policy::approximate_output>(v, expected);
-    check_policy<C, policy::eager_nearest_output>(v, expected);
-    check_policy<C, policy::deferred_nearest_output>(v, expected);
     check_policy<C, policy::nearest_output>(v, expected);
 }
 
 void certificates()
 {
-    BOOST_TEST(cr::try_certify_ulp({0, 0}));
     BOOST_TEST(cr::try_certify_nearest({0, 0}));
     BOOST_TEST(!cr::try_certify_nearest({0, (std::numeric_limits<double>::min)()}));
-    BOOST_TEST(!cr::try_certify_ulp({1, -1}));
-    BOOST_TEST(!cr::try_certify_ulp({(std::numeric_limits<double>::infinity)(), 0}));
+    BOOST_TEST(!cr::try_certify_nearest({1, -1}));
+    BOOST_TEST(!cr::try_certify_nearest({(std::numeric_limits<double>::infinity)(), 0}));
     BOOST_TEST(!cr::try_certify_nearest({1, (std::numeric_limits<double>::quiet_NaN)()}));
     for (double value : {-2.0, -next(1.0), -1.0, previous(1.0), 1.0, next(1.0), 2.0})
     {
         double const step = (std::min)(value - previous(value), next(value) - value);
-        BOOST_TEST(cr::try_certify_ulp({value, step}));
-        BOOST_TEST(!cr::try_certify_ulp({value, next(step)}));
         BOOST_TEST_EQ(cr::try_certify_nearest({value, step / 2}), (bits(value) & 1) == 0);
         BOOST_TEST(!cr::try_certify_nearest({value, next(step / 2)}));
     }
-    // The narrower side of the binade must control BOTH certificates.
-    BOOST_TEST(!cr::try_certify_ulp({1, next(1.0) - 1}));
+    // The narrower side of the binade must control the nearest certificate.
     BOOST_TEST(!cr::try_certify_nearest({1, (next(1.0) - 1) / 2}));
 }
 
@@ -272,12 +260,13 @@ void boundaries()
     {
         // T=1/6 rounds down. Its product with a three-ULP direction puts
         // the FMA just below a midpoint whose correct ties-even owner is UP.
-        // Deferred accepts this faithful lower neighbour; eager must refine.
+        // Check the constructed head before any emission or predicate can refine it.
         double const odd = next(1.0);
         producers const v{{odd, 0, next(next(next(odd))), 3, 0, 0.5, 2, 0.5}};
-        deferred point;
+        nearest_state point;
         point.init(v);
-        BOOST_TEST_EQ(bits(point.approximation(0).approximate), bits(odd));
+        BOOST_TEST_EQ(bits(std::fma(1. / 6, v[2] - odd, odd)), bits(odd));
+        BOOST_TEST_EQ(bits(point.approximate(0)), bits(next(odd)));
         BOOST_TEST_EQ(bits(point.emit<double>(0, v)), bits(next(odd)));
         check(v);
     }
@@ -293,7 +282,7 @@ void boundaries()
         exact_point expected;
         BOOST_TEST(oracle(v, expected));
         check(v);
-        deferred point;
+        nearest_state point;
         point.init(v);
         BOOST_TEST_EQ(bits(point.emit<float>(0, v)), bits(nearest<float>(expected[0])));
         BOOST_TEST_EQ(bits(point.approximation(0).approximate), bits(nearest<double>(expected[0])));
@@ -322,7 +311,6 @@ void random_cases()
         }
     }
     BOOST_TEST(forward_certificates > 100);
-    BOOST_TEST(faithful_not_nearest > 0);
 }
 
 std::uint64_t ulp_distance(double a, double b)
@@ -860,8 +848,7 @@ void small_integer_case(std::array<C, 8> const& input, bool in_range = true)
             BOOST_TEST_EQ(bits(fast[d]), bits(expected));
             BOOST_TEST_EQ(bits(fast[d]), bits(nearest<double>(exact[d])));
         }
-        small_integer_state<C, policy::eager_nearest_output>(input, exact);
-        small_integer_state<C, policy::deferred_nearest_output>(input, exact);
+        small_integer_state<C, policy::nearest_output>(input, exact);
         // Ordinary output must retain the original naive forward approximation,
         // even when the small-integral quotient could instead be rounded now.
         ec::forward_error::point_approximation initial;
@@ -937,8 +924,8 @@ void cache_lifetime_and_paths()
     {
         ec::point_cache_scope<double> scope;
         BOOST_TEST(ec::operation_detail::current<double>() == nullptr);
-        ordinary a; eager b; deferred c;
-        without_allocations([&] { a.init(simple); b.init(simple); c.init(simple); });
+        ordinary a; nearest_state b;
+        without_allocations([&] { a.init(simple); b.init(simple); });
         BOOST_TEST(ec::operation_detail::current<double>() == nullptr);
         BOOST_TEST_EQ(ec::point_cache_detail::native_cache<double>::size(), 0u);
         without_allocations([&] { BOOST_TEST_EQ(b.emit<double>(0, simple), 1048584); });
@@ -948,19 +935,33 @@ void cache_lifetime_and_paths()
         ec::point_cache_scope<double> scope;
         double const n = std::ldexp(1.0, 27);
         producers const v{{0, 0, n + 1, n, 0, 1, n, n}};
-        deferred point;
+        nearest_state point;
         point.init(v);
         auto& cache = ec::operation_detail::require<double>().storage().native;
         BOOST_TEST_EQ(cache.size(), 1u);
         BOOST_TEST(cache.front().expanded[0].attempted);
         BOOST_TEST(!cache.front().exact_ready);
         auto const first = point.emit<double>(0, v);
-        std::vector<deferred> relocated;
+        auto translated = [&](std::size_t i)
+        {
+            auto input = v;
+            for (std::size_t j = 0; j < 8; j += 2) input[j] += 8 * double(i + 1);
+            return input;
+        };
+        std::vector<nearest_state> relocated;
         for (unsigned i = 0; i < 40; ++i)
-        { deferred other; other.init(v); relocated.push_back(other); }
+        { nearest_state other; other.init(translated(i)); relocated.push_back(other); }
         auto copy = point;
-        BOOST_TEST_EQ(copy.emit<double>(0, v), first);
-        for (auto const& other : relocated) BOOST_TEST_EQ(other.emit<double>(0, v), first);
+        BOOST_TEST_EQ(copy.refine(v, 0).approximate, first);
+        // Emitting double now reads only the head. Refine distinct crossings
+        // to exercise the relocated cache indices, not just the copied heads.
+        for (std::size_t i = 0; i < relocated.size(); ++i)
+        {
+            auto const input = translated(i);
+            exact_point exact;
+            BOOST_TEST(oracle(input, exact));
+            BOOST_TEST_EQ(relocated[i].refine(input, 0).approximate, nearest<double>(exact[0]));
+        }
         point.init(simple); // Reinitialization must discard the old precision index.
         BOOST_TEST_EQ(point.emit<double>(0, simple), 1048584);
     }
@@ -968,7 +969,7 @@ void cache_lifetime_and_paths()
         ec::point_cache_scope<double> scope;
         double const s = std::ldexp(1.0, 200);
         producers const v{{0, 0, s, s, 0, s, s, 0}};
-        eager point;
+        nearest_state point;
         point.init(v);
         auto const& cache = ec::operation_detail::require<double>().storage().native;
         BOOST_TEST_EQ(cache.size(), 1u);
@@ -976,7 +977,7 @@ void cache_lifetime_and_paths()
         BOOST_TEST_EQ(point.emit<double>(0, v), s / 2);
     }
     // There is no retained producer address, including across a stack lifetime.
-    deferred point = [&] { auto local = simple; deferred p; p.init(local); return p; }();
+    nearest_state point = [&] { auto local = simple; nearest_state p; p.init(local); return p; }();
     auto relocated = simple;
     without_allocations([&] { BOOST_TEST_EQ(point.emit<double>(0, relocated), 1048584); });
 }
@@ -986,7 +987,7 @@ void warm_filters()
     ec::point_cache_scope<double> scope;
     ec::operation_detail::require<double>().storage().native.reserve(4);
     producers const v{{10, 10, 13, 17, 9, 15, 17, 11}};
-    deferred a, b, c;
+    nearest_state a, b, c;
     auto v2 = v, v3 = v;
     for (double& x : v2) x += 16;
     for (double& x : v3) x -= 8;
@@ -1006,14 +1007,11 @@ void warm_filters()
             uf::coordinates const y{{b.approximation(0).approximate, b.approximation(1).approximate}};
             uf::coordinates const z{{c.approximation(0).approximate, c.approximation(1).approximate}};
             int result;
-            bool equal;
-            uf::try_compare_ni(0, x[0], result);
-            uf::try_compare_ii(x[0], y[0], result);
-            uf::try_equal_ni(0, x[0], equal);
-            uf::try_equal_ii(x[0], y[0], equal);
-            uf::try_orientation_nni({{0, 0}}, {{1, 0}}, x, result);
-            uf::try_orientation_nii({{0, 0}}, x, y, result);
-            uf::try_orientation_iii(x, y, z, result);
+            uf::try_compare_n<0, false, true>(0, x[0], result);
+            uf::try_compare_n<0, true, true>(x[0], y[0], result);
+            uf::try_orientation<uf::nearest_certificate, false, false, true>({{0, 0}}, {{1, 0}}, x, result);
+            uf::try_orientation<uf::nearest_certificate, false, true, true>({{0, 0}}, x, y, result);
+            uf::try_orientation<uf::nearest_certificate, true, true, true>(x, y, z, result);
             BOOST_TEST_EQ(side::apply(p, q, r), 1);
             for (std::size_t d = 0; d < 2; ++d)
             { a.refine(v, d); a.emit<double>(d, v); a.emit<float>(d, v); a.emit<int>(d, v); }
@@ -1023,7 +1021,7 @@ void warm_filters()
 
 void invalid_inputs()
 {
-    eager point;
+    nearest_state point;
     bool rejected = false;
     try { point.init({{0, 0, 1, 1, 0, 1, 1, 2}}); }
     catch (std::domain_error const&) { rejected = true; }
@@ -1125,14 +1123,10 @@ void benchmark_bounded()
 void benchmark()
 {
     std::cout << "coordinate,policy,corpus,median_ns,min_ns,max_ns,checksum,cache_entries\n";
-    benchmark_case<std::int16_t, policy::eager_nearest_output>("int16", "eager");
-    benchmark_case<std::int16_t, policy::deferred_nearest_output>("int16", "deferred");
-    benchmark_case<std::uint16_t, policy::eager_nearest_output>("uint16", "eager");
-    benchmark_case<std::uint16_t, policy::deferred_nearest_output>("uint16", "deferred");
-    benchmark_case<std::int64_t, policy::eager_nearest_output>("int64", "eager");
-    benchmark_case<std::int64_t, policy::deferred_nearest_output>("int64", "deferred");
-    benchmark_case<std::int64_t, policy::eager_nearest_output>("int64", "eager", true);
-    benchmark_case<std::int64_t, policy::deferred_nearest_output>("int64", "deferred", true);
+    benchmark_case<std::int16_t, policy::nearest_output>("int16", "nearest");
+    benchmark_case<std::uint16_t, policy::nearest_output>("uint16", "nearest");
+    benchmark_case<std::int64_t, policy::nearest_output>("int64", "nearest");
+    benchmark_case<std::int64_t, policy::nearest_output>("int64", "nearest", true);
     benchmark_case<std::int64_t, policy::approximate_output>("int64", "ordinary");
 }
 
@@ -1160,8 +1154,7 @@ int main(int argc, char** argv)
         warm_filters();
         invalid_inputs();
         std::cout << checked << " policy constructions; " << forward_certificates
-                  << " forward ULP certificates; " << faithful_not_nearest
-                  << " deferred coordinates initially faithful but not nearest.\n";
+                  << " forward nearest certificates.\n";
         std::cout << small_integer_certificates << " exact small-integer certificates.\n";
         std::cout << ordinary_certificates << " allocation-free native ordinary certificates.\n";
     }

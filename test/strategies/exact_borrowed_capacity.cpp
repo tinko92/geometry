@@ -190,7 +190,6 @@ void test_boundary_mapping()
 int main()
 {
     test_boundary_mapping<bg::strategies::relate::approximate_output>();
-    test_boundary_mapping<bg::strategies::relate::eager_nearest_output>();
-    test_boundary_mapping<bg::strategies::relate::deferred_nearest_output>();
+    test_boundary_mapping<bg::strategies::relate::nearest_output>();
     return boost::report_errors();
 }

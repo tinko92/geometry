@@ -98,8 +98,7 @@ void construction(input const& v, std::array<q, 2> const& exact)
         }
         else
         {
-            BOOST_TEST(q(previous(stored)) <= exact[axis] && exact[axis] <= q(next(stored)));
-            if constexpr (cr::policy_traits<Policy>::eager) BOOST_TEST(nearest_cell(stored, exact[axis]));
+            BOOST_TEST(nearest_cell(stored, exact[axis]));
             BOOST_TEST(nearest_cell(state.template emit<double>(axis, v), exact[axis]));
         }
         auto const refined = state.refine(v, axis);
@@ -121,8 +120,7 @@ void check(input const& v)
     if (accepted) for (unsigned axis = 0; axis != 2; ++axis)
         enclosure({bound.value[axis], bound.error[axis]}, exact[axis]);
     construction<policy::approximate_output>(v, exact);
-    construction<policy::eager_nearest_output>(v, exact);
-    construction<policy::deferred_nearest_output>(v, exact);
+    construction<policy::nearest_output>(v, exact);
     ++intersections;
 }
 
@@ -210,9 +208,8 @@ int main()
         if (i % 16 == 0) check({{0, 0, 4, 4, 2, 2, 6, 6}});
     }
     public_operations<policy::approximate_output>();
-    public_operations<policy::eager_nearest_output>();
-    public_operations<policy::deferred_nearest_output>();
-    std::cout << orientations << " double orientation cases; " << intersections << " unique intersections x3 policies; "
+    public_operations<policy::nearest_output>();
+    std::cout << orientations << " double orientation cases; " << intersections << " unique intersections x2 policies; "
               << parallels << " parallel/collinear cases; " << eft_residuals << " nonzero FMA residuals.\n";
     return boost::report_errors();
 }

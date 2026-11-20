@@ -19,7 +19,7 @@ also lists rejected experiments and shortcuts for which no proof was found.
 | `03d-topology` | Typed predicates for bounds, generated rings, nesting and clipping. |
 | `03-exact-cartesian` | Public opt-in Cartesian calls, aliasing and source lifetime; the macro-selected default pilot is a separate commit range at its end. Do not flip the global default in this PR. |
 | `04-exact-optimizations` | Same semantic contract. Sterbenz dispatch, certified search limits, ring and symmetric difference shortcuts, and output copying. Keep proofs with the corresponding change. |
-| `05-output-policies` | Bounded N-step construction and selective retries. Separate API review of stored, bounded, eager-nearest and deferred-nearest policies; share numerical primitives. |
+| `05-output-policies` | Bounded N-step construction and selective retries. Separate API review of stored, bounded and eager nearest policies; share certificate-based predicate filters. |
 | `06-simple` | Uncertified Cartesian baseline, independently opt-in. |
 | `07-decimal` | Authoritative scalar and nearest-even binary64 view, filtered original-source predicates. The default binary64 contract does not infer decimal intent. |
 | `08-spherical` | First exact native rays and minor arcs; then directed regions, mixed-dimensional set operations and DE-9IM; finally sufficient fast paths and lossless angular export. Geographic geodesics are not included. Split public result-model review from numerical review. |

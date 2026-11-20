@@ -123,9 +123,7 @@ namespace ec = sd::exact_cartesian;
 #define BOOST_GEOMETRY_BORROWED_TEST_POLICY 0
 #endif
 #if BOOST_GEOMETRY_BORROWED_TEST_POLICY == 1
-using policy = bg::strategies::relate::eager_nearest_output;
-#elif BOOST_GEOMETRY_BORROWED_TEST_POLICY == 2
-using policy = bg::strategies::relate::deferred_nearest_output;
+using policy = bg::strategies::relate::nearest_output;
 #else
 using policy = bg::strategies::relate::approximate_output;
 #endif

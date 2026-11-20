@@ -176,13 +176,11 @@ void check_touching_generated_triangles()
 int main()
 {
     check<double, bg::strategies::relate::approximate_output>();
-    check<double, bg::strategies::relate::eager_nearest_output>();
-    check<double, bg::strategies::relate::deferred_nearest_output>();
+    check<double, bg::strategies::relate::nearest_output>();
     check<double, bg::strategies::relate::bounded_ulp_output<100, true>>();
     check<std::int64_t, bg::strategies::relate::approximate_output>();
     check_linear<double, bg::strategies::relate::approximate_output>();
-    check_linear<double, bg::strategies::relate::eager_nearest_output>();
-    check_linear<double, bg::strategies::relate::deferred_nearest_output>();
+    check_linear<double, bg::strategies::relate::nearest_output>();
     check_linear<double, bg::strategies::relate::bounded_ulp_output<100, true>>();
     check_linear<std::int64_t, bg::strategies::relate::approximate_output>();
     check_ring_traits<true, false>();

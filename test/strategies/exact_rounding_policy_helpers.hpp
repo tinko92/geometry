@@ -34,11 +34,7 @@ using coordinates = uf::coordinates;
 using rational = ec::exact_number;
 using fixed_point = ec::native_fixed_traits<double>::intersection_type;
 
-enum class policy { eager, deferred };
 enum class predicate { coordinate, nni, nii, iii, nni_support, nii_source };
-
-inline char const* name(policy p)
-{ return p == policy::eager ? "eager_nearest" : "deferred_nearest"; }
 
 inline char const* name(predicate p)
 {
@@ -71,10 +67,10 @@ struct statistics
 {
     std::uint64_t constructions = 0, zero_denominators = 0;
     std::uint64_t expansion_entries = 0, fixed_entries = 0;
-    std::uint64_t ulp_certifications = 0, nearest_certifications = 0;
+    std::uint64_t nearest_certifications = 0;
     std::uint64_t boundary_tests = 0, candidate_steps = 0;
     std::uint64_t estimate_refinements = 0, fixed_rounds = 0;
-    std::uint64_t initial_nearest = 0, emission_nearest = 0;
+    std::uint64_t initial_nearest = 0;
     std::uint64_t predicate_filters = 0, predicate_exact = 0, emissions = 0;
     std::array<std::uint64_t, 3> orientation_filters{}, orientation_exact{};
 };
@@ -84,7 +80,6 @@ struct point
     std::array<double, 2> approx;
     endpoints const* source;
     std::size_t cache_index;
-    unsigned nearest_mask = 0;
 };
 
 struct precision_entry
@@ -96,24 +91,10 @@ struct precision_entry
     bool expanded = false;
 };
 
-// Bounds used below, including zero/binade boundaries:
-//
-//   prev(a) <= N/W <= next(a)                           (faithful / one ULP)
-//   (prev(a)+a)/2 <= N/W <= (a+next(a))/2               (nearest)
-//
-// All comparisons use exact expansion signs of 2N-(b+c)W, multiplied
-// by sign(W). The nearest cell includes a midpoint iff a's significand is
-// even. Thus no assumed error estimate or rounded midpoint enters either
-// certificate. The first bound implies |a-N/W| <= the adjacent spacing in
-// the direction of N/W, also at a binade boundary. At zero we require N=0
-// instead of forming subnormal neighbours (underflow is outside the contract).
-// No error field is stored. Failed bounded expansion certification goes to
-// checked, coordinate-format-derived fixed arithmetic, never a guessed sign.
-//
-// The two policies deliberately share this conservative certifier. This
-// measures rounding scheduling with existing arithmetic, not the performance
-// of future specialized forward-error construction filters.
-template <policy Policy, bool Instrument = false>
+// Compare the exact expansion signs of 2N-(prev(a)+a)W and
+// 2N-(a+next(a))W, accounting for sign(W) and the candidate's tie parity.
+// Zero uses N=0; failed expansion certificates use fixed arithmetic.
+template <bool Instrument = false>
 class operation
 {
     std::vector<precision_entry> m_cache;
@@ -177,7 +158,7 @@ class operation
         return cd::compare_boundary(d == 0 ? e.x : e.y, e.w, a, b, sign);
     }
 
-    bool certify(point const& p, unsigned d, bool nearest, double& candidate)
+    bool certify(point const& p, unsigned d, double& candidate)
     {
         auto const& e = precision(p);
         if (!e.expanded) return false;
@@ -185,25 +166,21 @@ class operation
         if (n.sign() == 0)
         {
             candidate = 0;
-            count(nearest ? &statistics::nearest_certifications : &statistics::ulp_certifications);
+            count(&statistics::nearest_certifications);
             return true;
         }
         if (!cd::rounding_cell<double>::allowed(candidate)) return false;
         for (unsigned correction = 0; correction < 4; ++correction)
         {
             int lo, hi;
-            bool const ok = nearest
-                ? boundary(p, d, previous(candidate), candidate, lo)
-                    && boundary(p, d, candidate, next(candidate), hi)
-                : boundary(p, d, previous(candidate), previous(candidate), lo)
-                    && boundary(p, d, next(candidate), next(candidate), hi);
-            if (!ok) return false;
-            bool const include = !nearest || even(candidate);
+            if (!boundary(p, d, previous(candidate), candidate, lo)
+                || !boundary(p, d, candidate, next(candidate), hi)) return false;
+            bool const include = even(candidate);
             bool const above = lo > 0 || (lo == 0 && include);
             bool const below = hi < 0 || (hi == 0 && include);
             if (above && below)
             {
-                count(nearest ? &statistics::nearest_certifications : &statistics::ulp_certifications);
+                count(&statistics::nearest_certifications);
                 return true;
             }
             candidate = above ? next(candidate) : previous(candidate);
@@ -212,10 +189,10 @@ class operation
         return false;
     }
 
-    void refine(point& p, unsigned d, bool nearest)
+    void refine(point& p, unsigned d)
     {
         double candidate = p.approx[d];
-        if (!certify(p, d, nearest, candidate))
+        if (!certify(p, d, candidate))
         {
             auto const& e = precision(p);
             bool ready = false;
@@ -223,19 +200,16 @@ class operation
             {
                 count(&statistics::estimate_refinements);
                 candidate = (d == 0 ? e.x : e.y).estimate() / e.w.estimate();
-                ready = certify(p, d, nearest, candidate);
+                ready = certify(p, d, candidate);
             }
             if (!ready)
             {
                 if (!ec::try_fixed_round(fixed(p), d, candidate) || !std::isfinite(candidate))
                     throw std::domain_error("unsupported intersection output");
                 count(&statistics::fixed_rounds);
-                // Fixed fallback already returns nearest, also satisfying one ULP.
-                p.nearest_mask |= 1u << d;
             }
         }
         p.approx[d] = candidate;
-        if (nearest) p.nearest_mask |= 1u << d;
     }
 
 public:
@@ -269,12 +243,8 @@ public:
         expand(p);
         for (unsigned d = 0; d < 2; ++d)
         {
-            if constexpr (Policy == policy::eager)
-            {
-                count(&statistics::initial_nearest);
-                refine(p, d, true);
-            }
-            else { refine(p, d, false); }
+            count(&statistics::initial_nearest);
+            refine(p, d);
         }
         return p;
     }
@@ -284,7 +254,7 @@ public:
         int sign;
         // Canonical NI compares native-implicit; this method returns the
         // opposite order. The exact expansion/fixed fallback is unchanged.
-        if (uf::try_compare_ni(target, p.approx[d], sign))
+        if (uf::try_compare_n<0, false, true>(target, p.approx[d], sign))
         {
             count(&statistics::predicate_filters);
             return -sign;
@@ -299,7 +269,7 @@ public:
     int orientation_nni(coordinates const& a, coordinates const& b, point const& c)
     {
         int sign;
-        if (uf::try_orientation_nni(a, b, c.approx, sign))
+        if (uf::try_orientation<uf::nearest_certificate, false, false, true>(a, b, c.approx, sign))
         {
             if constexpr (Instrument) ++counts.orientation_filters[0];
             return sign;
@@ -312,7 +282,7 @@ public:
     int orientation_nii(coordinates const& a, point const& b, point const& c)
     {
         int sign;
-        if (uf::try_orientation_nii(a, b.approx, c.approx, sign))
+        if (uf::try_orientation<uf::nearest_certificate, false, true, true>(a, b.approx, c.approx, sign))
         {
             if constexpr (Instrument) ++counts.orientation_filters[1];
             return sign;
@@ -324,7 +294,7 @@ public:
     int orientation_iii(point const& a, point const& b, point const& c)
     {
         int sign;
-        if (uf::try_orientation_iii(a.approx, b.approx, c.approx, sign))
+        if (uf::try_orientation<uf::nearest_certificate, true, true, true>(a.approx, b.approx, c.approx, sign))
         {
             if constexpr (Instrument) ++counts.orientation_filters[2];
             return sign;
@@ -337,18 +307,9 @@ public:
         return ec::fixed_orientation(fixed(a), fixed(b), fixed(c));
     }
 
-    std::array<double, 2> emit(point& p)
+    std::array<double, 2> emit(point const& p)
     {
         count(&statistics::emissions);
-        if constexpr (Policy == policy::deferred)
-        {
-            for (unsigned d = 0; d < 2; ++d)
-                if ((p.nearest_mask & (1u << d)) == 0)
-                {
-                    count(&statistics::emission_nearest);
-                    refine(p, d, true);
-                }
-        }
         return p.approx;
     }
 
@@ -386,13 +347,6 @@ inline double reference_nearest(rational const& q)
         a = q <= lo ? previous(a) : next(a);
     }
     throw std::runtime_error("oracle conversion did not converge");
-}
-
-inline bool one_ulp(double a, rational const& q)
-{
-    if (!std::isfinite(a)) return false;
-    if (a == 0) return q == 0;
-    return ec::exact_value(previous(a)) <= q && q <= ec::exact_value(next(a));
 }
 
 struct query { unsigned dimension; double target; int expected; };
@@ -537,8 +491,8 @@ inline std::vector<sample> corpus(std::string const& shape, std::size_t count, s
     return result;
 }
 
-template <policy Policy, bool Instrument>
-inline int evaluate_query(operation<Policy, Instrument>& op, std::vector<point> const& points,
+template <bool Instrument>
+inline int evaluate_query(operation<Instrument>& op, std::vector<point> const& points,
                            std::vector<sample> const& samples, std::size_t i, unsigned j, predicate kind)
 {
     auto const& s = samples[i];
@@ -567,11 +521,10 @@ inline int query_reference(sample const& s, unsigned j, predicate kind)
     return s.orientation_queries[j % s.orientation_queries.size()].expected[unsigned(kind) - 1];
 }
 
-template <policy Policy>
 inline statistics verify(std::vector<sample> const& samples, unsigned uses, unsigned emit_every,
                           predicate kind = predicate::coordinate)
 {
-    operation<Policy, true> op(samples.size());
+    operation<true> op(samples.size());
     std::vector<point> points;
     points.reserve(samples.size());
     for (auto const& s : samples)
@@ -579,11 +532,8 @@ inline statistics verify(std::vector<sample> const& samples, unsigned uses, unsi
         points.push_back(op.construct(s.input));
         for (unsigned d = 0; d < 2; ++d)
         {
-            if (!one_ulp(points.back().approx[d], s.exact[d]))
-                throw std::runtime_error("initial one-ULP certificate disagrees with oracle");
-            if constexpr (Policy == policy::eager)
-                if (bits(points.back().approx[d]) != bits(s.rounded[d]))
-                    throw std::runtime_error("eager nearest disagrees with oracle");
+            if (bits(points.back().approx[d]) != bits(s.rounded[d]))
+                throw std::runtime_error("initial nearest disagrees with oracle");
         }
     }
     for (std::size_t i = 0; i < samples.size(); ++i)

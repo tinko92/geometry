@@ -63,7 +63,6 @@ void test_records()
 int main()
 {
     test_records<bg::strategies::relate::approximate_output>();
-    test_records<bg::strategies::relate::eager_nearest_output>();
-    test_records<bg::strategies::relate::deferred_nearest_output>();
+    test_records<bg::strategies::relate::nearest_output>();
     return boost::report_errors();
 }

@@ -317,7 +317,7 @@ void indexed_native()
     using P = bg::model::d2::point_xy<double>;
     using Box = bg::model::box<P>;
     using Segment = bg::model::segment<P>;
-    using Root = ec::borrowed_root<double, policy::deferred_nearest_output, Box, Segment>;
+    using Root = ec::borrowed_root<double, policy::nearest_output, Box, Segment>;
     Box const box(P(0, 0), P(3, 5));
     Segment const segment(P(0, 5), P(3, 0));
     auto const a = ec::borrowed_point<Root>::borrow(ec::borrowed_detail::indexed_vertex<Box>{&box, 0});
@@ -341,9 +341,9 @@ template <typename Root> struct probe_query
     auto homogeneous() const { return value; }
 };
 
-void lean_does_not_reconstruct_errors()
+void unrecognized_query_uses_own_bounds()
 {
-    using F = fixture<double, policy::deferred_nearest_output>;
+    using F = fixture<double, policy::nearest_output>;
     using Root = F::root;
     F::native const a(0, 0), b(1, 0);
     F::native const aligned(2, 0);
@@ -355,7 +355,7 @@ void lean_does_not_reconstruct_errors()
         BOOST_TEST_EQ(ec::root_direction<Root>(a, b, query), 1);
         BOOST_TEST(!ec::root_equal<Root>(aligned, query));
     });
-    BOOST_TEST_EQ(query.interval_reads, 0u);
+    BOOST_TEST(query.interval_reads > 0);
     BOOST_TEST_EQ(query.refinement_reads, 0u);
 }
 
@@ -574,36 +574,31 @@ int main()
     {
         BOOST_TEST_EQ(std::fegetround(), FE_TONEAREST);
         cases<double, policy::approximate_output>(0);
-        cases<double, policy::eager_nearest_output>(0);
-        cases<double, policy::deferred_nearest_output>(0);
+        cases<double, policy::nearest_output>(0);
         cases<double, policy::nearest_output>(1048576);
         cases<std::int64_t, policy::approximate_output>((std::int64_t(1) << 54) + 1);
-        cases<std::int64_t, policy::eager_nearest_output>((std::int64_t(1) << 54) + 1);
-        cases<std::int64_t, policy::deferred_nearest_output>((std::numeric_limits<std::int64_t>::max)() - 64);
-        cases<std::int64_t, policy::deferred_nearest_output>((std::numeric_limits<std::int64_t>::min)() + 64);
+        cases<std::int64_t, policy::nearest_output>((std::int64_t(1) << 54) + 1);
+        cases<std::int64_t, policy::nearest_output>((std::numeric_limits<std::int64_t>::max)() - 64);
+        cases<std::int64_t, policy::nearest_output>((std::numeric_limits<std::int64_t>::min)() + 64);
         random_cases<policy::approximate_output>();
-        random_cases<policy::eager_nearest_output>();
-        random_cases<policy::deferred_nearest_output>();
+        random_cases<policy::nearest_output>();
         random_cases<policy::lean_bounded_ulp_output<1>>();
         random_cases<policy::lean_bounded_ulp_output<100>>();
         cases<std::int64_t, policy::lean_bounded_ulp_output<8>>((std::int64_t(1) << 54) + 1);
         stored_filter_reads_once<policy::approximate_output>();
         stored_filter_reads_once<policy::bounded_ulp_output<4>>();
         indexed_native();
-        lean_does_not_reconstruct_errors();
+        unrecognized_query_uses_own_bounds();
         coordinate_filter_reads_one_axis();
         cache_free_support_zero<policy::approximate_output>();
-        cache_free_support_zero<policy::eager_nearest_output>();
-        cache_free_support_zero<policy::deferred_nearest_output>();
+        cache_free_support_zero<policy::nearest_output>();
         native_measure_fallbacks<double, policy::approximate_output>();
-        native_measure_fallbacks<double, policy::eager_nearest_output>();
-        native_measure_fallbacks<double, policy::deferred_nearest_output>();
+        native_measure_fallbacks<double, policy::nearest_output>();
         native_measure_fallbacks<std::int64_t, policy::approximate_output>();
         unsigned_measure_limits();
         shared_intersection_provenance();
         polygon_line_audit<policy::approximate_output>("ordinary");
-        polygon_line_audit<policy::eager_nearest_output>("eager");
-        polygon_line_audit<policy::deferred_nearest_output>("deferred");
+        polygon_line_audit<policy::nearest_output>("nearest");
         std::cout << triples << " rational predicate triples; " << comparisons << " measure comparisons; "
                   << allocation_checks << " allocation checks, " << total_allocations << " allocations.\n";
     }

@@ -178,10 +178,8 @@ void test_policy()
 int main()
 {
     test_policy<double, policy::approximate_output>();
-    test_policy<double, policy::eager_nearest_output>();
-    test_policy<double, policy::deferred_nearest_output>();
+    test_policy<double, policy::nearest_output>();
     test_policy<std::int64_t, policy::approximate_output>();
-    test_policy<std::int64_t, policy::eager_nearest_output>();
-    test_policy<std::int64_t, policy::deferred_nearest_output>();
+    test_policy<std::int64_t, policy::nearest_output>();
     return boost::report_errors();
 }

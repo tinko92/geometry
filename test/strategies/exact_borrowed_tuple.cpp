@@ -92,8 +92,7 @@ int main()
 #if __cplusplus >= 201703L
     test_record_endpoints();
     test_issue_1235<bg::strategies::relate::approximate_output>();
-    test_issue_1235<bg::strategies::relate::eager_nearest_output>();
-    test_issue_1235<bg::strategies::relate::deferred_nearest_output>();
+    test_issue_1235<bg::strategies::relate::nearest_output>();
 #endif
     return boost::report_errors();
 }

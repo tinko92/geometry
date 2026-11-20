@@ -15,10 +15,12 @@ namespace boost { namespace geometry { namespace strategies { namespace relate
 // remain exact, but emission neither refines nor certifies these coordinates.
 struct approximate_output {};
 
-// Round floating output to nearest at emission. Root-bound operations use the
-// deferred one-ULP layout; legacy point compatibility keeps stored error bounds.
+// Root-bound intersections store the nearest binary64 at construction. Float
+// emission rounds the exact coordinate directly to binary32. Legacy exact_point
+// keeps its stored error bounds and rounds floating coordinates at emission.
 // Integral output follows BG numeric_cast conversion under every policy.
 struct nearest_output {};
+using eager_nearest_output = nearest_output;
 
 // Bound constructed binary64 output by N representable steps from nearest.
 // DeterminantRetry selectively tightens the determinant bounds on a miss.

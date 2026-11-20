@@ -96,8 +96,8 @@ options parse(int argc, char** argv)
 inline void mix(std::uint64_t& digest, std::uint64_t value)
 { digest ^= value + 0x9e3779b97f4a7c15ULL + (digest << 6) + (digest >> 2); }
 
-template <rp::policy Policy, bool Instrument>
-std::uint64_t batch(rp::operation<Policy, Instrument>& op, std::vector<rp::point>& points,
+template <bool Instrument>
+std::uint64_t batch(rp::operation<Instrument>& op, std::vector<rp::point>& points,
                     std::vector<rp::sample> const& samples, scenario const& s)
 {
     op.reset();
@@ -114,21 +114,19 @@ std::uint64_t batch(rp::operation<Policy, Instrument>& op, std::vector<rp::point
             auto const out = op.emit(points[i]);
             mix(digest, rp::bits(out[0])); mix(digest, rp::bits(out[1]));
         }
-        // Consume never-emitted values too. Policies need not have the same
-        // internal approximation, so their checksums need not match here.
+        // Consume never-emitted values too.
         else { mix(digest, rp::bits(points[i].approx[0])); mix(digest, rp::bits(points[i].approx[1])); }
     }
     return digest;
 }
 
-template <rp::policy Policy>
 void measure(options const& o, std::string const& shape, std::vector<rp::sample> const& samples,
              scenario const& s, unsigned round)
 {
     // Full rational-oracle checking, allocation and diagnostics are OUTSIDE
     // timing. Instrument=false compiles all counter updates out of timed code.
-    rp::verify<Policy>(samples, s.uses, s.emit_every, s.kind);
-    rp::operation<Policy, true> diagnostic(samples.size());
+    rp::verify(samples, s.uses, s.emit_every, s.kind);
+    rp::operation<true> diagnostic(samples.size());
     std::vector<rp::point> points(samples.size());
     std::uint64_t digest = batch(diagnostic, points, samples, s);
     benchmark_sink = digest;
@@ -137,7 +135,7 @@ void measure(options const& o, std::string const& shape, std::vector<rp::sample>
     double elapsed = 0;
     if (!o.check_only)
     {
-        rp::operation<Policy> op(samples.size());
+        rp::operation<> op(samples.size());
         benchmark_sink = batch(op, points, samples, s); // warmup, including page faults
         auto const start = clock_type::now();
         digest = 0;
@@ -152,13 +150,13 @@ void measure(options const& o, std::string const& shape, std::vector<rp::sample>
     benchmark_sink = digest;
     double const ns = batches == 0 ? std::numeric_limits<double>::quiet_NaN()
         : elapsed * 1e9 / double(batches * samples.size());
-    std::cout << rp::name(Policy) << ',' << shape << ',' << s.name << ',' << round << ','
+    std::cout << "nearest" << ',' << shape << ',' << s.name << ',' << round << ','
               << samples.size() << ',' << s.uses << ',' << s.emit_every << ',' << batches << ','
               << elapsed << ',' << ns << ','
               << c.zero_denominators << ',' << c.expansion_entries << ',' << c.fixed_entries << ','
-              << c.ulp_certifications << ',' << c.nearest_certifications << ',' << c.boundary_tests << ','
+              << c.nearest_certifications << ',' << c.boundary_tests << ','
               << c.candidate_steps << ',' << c.estimate_refinements << ',' << c.fixed_rounds << ','
-              << c.initial_nearest << ',' << c.emission_nearest << ',' << c.predicate_filters << ','
+              << c.initial_nearest << ',' << c.predicate_filters << ','
               << c.predicate_exact << ',' << c.emissions << ',' << digest << ',' << rp::name(s.kind) << ','
               << c.orientation_filters[0] << ',' << c.orientation_exact[0] << ','
               << c.orientation_filters[1] << ',' << c.orientation_exact[1] << ','
@@ -172,7 +170,7 @@ int main(int argc, char** argv)
     {
         assert(std::fegetround() == FE_TONEAREST);
         auto const o = parse(argc, argv);
-        std::cerr << "Numerical binary64 policies only; cache capacity reserved before timing.\n"
+        std::cerr << "Nearest binary64 numerical experiment; cache capacity reserved before timing.\n"
                   << "Counters are from ONE separate diagnostic batch, not the timed batches.\n"
                   << "ULP predicate filters; existing expansion construction certificates, not whole-overlay timing.\n"
                   << "All constructed points get cache entries, even shared native endpoints; no native reuse fast path.\n"
@@ -182,9 +180,9 @@ int main(int argc, char** argv)
                   << " seed=" << o.seed << '\n';
         std::cout << std::setprecision(10)
                   << "policy,shape,scenario,round,corpus,uses,emit_every,batches,seconds,ns_per_point,"
-                     "zero_denominators,expansion_entries,fixed_entries,ulp_certificates,nearest_certificates,"
+                     "zero_denominators,expansion_entries,fixed_entries,nearest_certificates,"
                      "boundary_tests,candidate_steps,estimate_refinements,fixed_rounds,initial_nearest,"
-                     "emission_nearest,predicate_filters,predicate_exact,emissions,digest,query_family,"
+                     "predicate_filters,predicate_exact,emissions,digest,query_family,"
                      "nni_filters,nni_exact,nii_filters,nii_exact,iii_filters,iii_exact,cache_entries,mode\n";
         bool selected_shape = false, selected_scenario = false;
         for (char const* shape : {"ordinary", "near_parallel", "shared_boundary"})
@@ -197,17 +195,7 @@ int main(int argc, char** argv)
             {
                 if (o.scenario_name != "all" && o.scenario_name != s.name) continue;
                 selected_scenario = true;
-                // Rotate order to avoid always favouring one thermal/cache state.
-                if ((round & 1) == 0)
-                {
-                    measure<rp::policy::eager>(o, shape, samples, s, round);
-                    measure<rp::policy::deferred>(o, shape, samples, s, round);
-                }
-                else
-                {
-                    measure<rp::policy::deferred>(o, shape, samples, s, round);
-                    measure<rp::policy::eager>(o, shape, samples, s, round);
-                }
+                measure(o, shape, samples, s, round);
             }
         }
         if (!selected_shape || !selected_scenario) throw std::invalid_argument("unknown shape or scenario");

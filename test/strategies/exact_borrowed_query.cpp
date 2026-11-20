@@ -403,33 +403,24 @@ void test_query()
 int main()
 {
     test_query<std::int64_t, bg::strategies::relate::approximate_output>();
-    test_query<std::int64_t, bg::strategies::relate::eager_nearest_output>();
-    test_query<std::int64_t, bg::strategies::relate::deferred_nearest_output>();
+    test_query<std::int64_t, bg::strategies::relate::nearest_output>();
     test_query<double, bg::strategies::relate::approximate_output>();
-    test_query<double, bg::strategies::relate::eager_nearest_output>();
-    test_query<double, bg::strategies::relate::deferred_nearest_output>();
+    test_query<double, bg::strategies::relate::nearest_output>();
     test_native_queries<std::int8_t, bg::strategies::relate::approximate_output>();
     test_native_queries<std::int64_t, bg::strategies::relate::approximate_output>();
     test_native_queries<std::uint64_t, bg::strategies::relate::approximate_output>();
     test_native_queries<float, bg::strategies::relate::approximate_output>();
     test_native_queries<double, bg::strategies::relate::approximate_output>();
-    test_native_queries<std::int64_t, bg::strategies::relate::eager_nearest_output>();
-    test_native_queries<float, bg::strategies::relate::eager_nearest_output>();
-    test_native_queries<double, bg::strategies::relate::eager_nearest_output>();
-    test_native_queries<std::int64_t, bg::strategies::relate::deferred_nearest_output>();
-    test_native_queries<float, bg::strategies::relate::deferred_nearest_output>();
-    test_native_queries<double, bg::strategies::relate::deferred_nearest_output>();
+    test_native_queries<std::int64_t, bg::strategies::relate::nearest_output>();
+    test_native_queries<float, bg::strategies::relate::nearest_output>();
+    test_native_queries<double, bg::strategies::relate::nearest_output>();
     test_axis_origin<bg::strategies::relate::approximate_output>();
-    test_axis_origin<bg::strategies::relate::eager_nearest_output>();
-    test_axis_origin<bg::strategies::relate::deferred_nearest_output>();
+    test_axis_origin<bg::strategies::relate::nearest_output>();
     test_compact_rational_queries<std::int64_t, bg::strategies::relate::approximate_output>();
     test_compact_rational_queries<float, bg::strategies::relate::approximate_output>();
     test_compact_rational_queries<double, bg::strategies::relate::approximate_output>();
-    test_compact_rational_queries<std::int64_t, bg::strategies::relate::eager_nearest_output>();
-    test_compact_rational_queries<float, bg::strategies::relate::eager_nearest_output>();
-    test_compact_rational_queries<double, bg::strategies::relate::eager_nearest_output>();
-    test_compact_rational_queries<std::int64_t, bg::strategies::relate::deferred_nearest_output>();
-    test_compact_rational_queries<float, bg::strategies::relate::deferred_nearest_output>();
-    test_compact_rational_queries<double, bg::strategies::relate::deferred_nearest_output>();
+    test_compact_rational_queries<std::int64_t, bg::strategies::relate::nearest_output>();
+    test_compact_rational_queries<float, bg::strategies::relate::nearest_output>();
+    test_compact_rational_queries<double, bg::strategies::relate::nearest_output>();
     return boost::report_errors();
 }

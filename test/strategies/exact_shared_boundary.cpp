@@ -179,11 +179,9 @@ void check(char const* policy_name)
 int main()
 {
     check<double, bg::strategies::relate::approximate_output>("approximate");
-    check<double, bg::strategies::relate::eager_nearest_output>("eager");
-    check<double, bg::strategies::relate::deferred_nearest_output>("deferred");
+    check<double, bg::strategies::relate::nearest_output>("nearest");
     check<double, bg::strategies::relate::lean_bounded_ulp_output<100>>("lean100");
     check<std::int64_t, bg::strategies::relate::approximate_output>("approximate");
-    check<std::int64_t, bg::strategies::relate::eager_nearest_output>("eager");
-    check<std::int64_t, bg::strategies::relate::deferred_nearest_output>("deferred");
+    check<std::int64_t, bg::strategies::relate::nearest_output>("nearest");
     return boost::report_errors();
 }

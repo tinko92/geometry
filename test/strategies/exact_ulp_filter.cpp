@@ -20,11 +20,10 @@
 #include <cstdint>
 #include <cstring>
 #include <cstdlib>
-#include <iostream>
 #include <new>
 #include <random>
 #include <utility>
-#include <vector>
+#include <type_traits>
 
 namespace ec = boost::geometry::strategies::detail::exact_cartesian;
 namespace uf = ec::ulp_filter;
@@ -36,8 +35,6 @@ namespace
 {
 bool allocation_guard = false;
 std::size_t allocations = 0;
-std::array<std::size_t, 3> certified{}, uncertain{}, zeros{};
-std::size_t comparisons = 0, coordinate_certificates = 0;
 }
 
 void* operator new(std::size_t size)
@@ -58,38 +55,6 @@ double previous(double a) { return std::nextafter(a, -std::numeric_limits<double
 double next(double a) { return std::nextafter(a, std::numeric_limits<double>::infinity()); }
 int sign(rational const& q) { return int(q > 0) - int(q < 0); }
 
-// Oracle data has independent exact errors on both sides, INCLUDING a=0.
-// It is not restricted to nearest-rounded values or symmetric binade spacing.
-rational implicit_value(double a, int numerator, unsigned denominator = 4)
-{
-    rational const q = ec::exact_value(a);
-    rational const step = numerator < 0 ? q - ec::exact_value(previous(a))
-                                        : ec::exact_value(next(a)) - q;
-    return q + step * numerator / denominator;
-}
-
-void coordinate_check(double a, double b, rational const& exact_a, rational const& exact_b, bool first_native)
-{
-    int result = 17;
-    bool equal = true;
-    allocation_guard = true;
-    bool const certain = first_native ? uf::try_compare_ni(a, b, result) : uf::try_compare_ii(a, b, result);
-    bool const equality_certain = first_native ? uf::try_equal_ni(a, b, equal) : uf::try_equal_ii(a, b, equal);
-    allocation_guard = false;
-    int const expected = sign(exact_a - exact_b);
-    ++comparisons;
-    if (certain)
-    {
-        ++coordinate_certificates;
-        BOOST_TEST_EQ(result, expected);
-        BOOST_TEST(result != 0);
-    }
-    else BOOST_TEST_EQ(result, 17);
-    BOOST_TEST_EQ(certain, equality_certain);
-    if (equality_certain) { BOOST_TEST(!equal); BOOST_TEST(expected != 0); }
-    else BOOST_TEST(equal);
-}
-
 int orientation_reference(exact_coordinates const& a, exact_coordinates const& b, exact_coordinates const& c)
 {
     // Independent arbitrary-precision rational arithmetic, never the filter's
@@ -98,145 +63,16 @@ int orientation_reference(exact_coordinates const& a, exact_coordinates const& b
     return sign(determinant);
 }
 
-template <unsigned Kind>
-void orientation_check(coordinates const& a, coordinates const& b, coordinates const& c,
-                       exact_coordinates const& ea, exact_coordinates const& eb, exact_coordinates const& ec_)
-{
-    int result = 17;
-    allocation_guard = true;
-    bool certain;
-    if constexpr (Kind == 0) certain = uf::try_orientation_nni(a, b, c, result);
-    else if constexpr (Kind == 1) certain = uf::try_orientation_nii(a, b, c, result);
-    else certain = uf::try_orientation_iii(a, b, c, result);
-    allocation_guard = false;
-    if (certain)
-    {
-        ++certified[Kind];
-        BOOST_TEST_EQ(result, orientation_reference(ea, eb, ec_));
-        if (result == 0) ++zeros[Kind];
-    }
-    else { ++uncertain[Kind]; BOOST_TEST_EQ(result, 17); }
-}
-
 exact_coordinates native(coordinates const& p)
 { return {{ec::exact_value(p[0]), ec::exact_value(p[1])}}; }
 
-exact_coordinates implicit(coordinates const& p, int x, int y)
-{ return {{implicit_value(p[0], x), implicit_value(p[1], y)}}; }
-
-void scalars()
-{
-    std::vector<double> values{0, -0.0, 1, -1,
-        (std::numeric_limits<double>::denorm_min)(), -(std::numeric_limits<double>::denorm_min)(),
-        (std::numeric_limits<double>::min)(), -(std::numeric_limits<double>::min)()};
-    for (int e : {-120, -1, 0, 1, 120})
-    {
-        double const x = std::ldexp(1.0, e);
-        for (double a : {previous(x), x, next(x)}) { values.push_back(a); values.push_back(-a); }
-    }
-    for (double a : values)
-    {
-        for (int offset : {-8, -1, 0, 1, 8})
-        {
-            double b = a;
-            for (int i = 0; i < std::abs(offset); ++i) b = offset < 0 ? previous(b) : next(b);
-            int comparison = 17;
-            bool equal = false;
-            BOOST_TEST(uf::try_compare_nn(a, b, comparison));
-            BOOST_TEST_EQ(comparison, sign(ec::exact_value(a) - ec::exact_value(b)));
-            BOOST_TEST(uf::try_equal_nn(a, b, equal));
-            BOOST_TEST_EQ(equal, a == b);
-            for (int eb : {-4, -1, 0, 1, 4})
-            {
-                coordinate_check(a, b, ec::exact_value(a), implicit_value(b, eb), true);
-                for (int ea : {-4, -1, 0, 1, 4})
-                    coordinate_check(a, b, implicit_value(a, ea), implicit_value(b, eb), false);
-            }
-        }
-    }
-    // Overlapping uncertainty must never become exact equality, notably at zero.
-    int result = 17;
-    BOOST_TEST(!uf::try_compare_ni(0, 0, result));
-    BOOST_TEST_EQ(result, 17);
-    BOOST_TEST(!uf::try_compare_ii(0, 0, result));
-    BOOST_TEST_EQ(result, 17);
-    BOOST_TEST(!uf::try_compare_ii(1, 1, result));
-    double const maximum = (std::numeric_limits<double>::max)();
-    BOOST_TEST(!uf::try_compare_ni(0, maximum, result));
-    BOOST_TEST_EQ(result, 17);
-    BOOST_TEST(!uf::try_compare_ii(maximum, previous(maximum), result));
-}
-
-void adversarial()
-{
-    for (int exponent : {-120, -1, 0, 1, 120})
-    {
-        double const s = std::ldexp(1.0, exponent);
-        std::array<std::array<coordinates, 3>, 6> const triples{{
-            {{{{0, 0}}, {{s, 0}}, {{0, s}}}},
-            {{{{0, -s}}, {{0, s}}, {{0, 0}}}},
-            {{{{-s, -s}}, {{s, s}}, {{0, 0}}}},
-            {{{{s, s}}, {{next(s), next(s)}}, {{next(next(s)), next(next(s))}}}},
-            {{{{s, s}}, {{s, s}}, {{previous(s), next(s)}}}},
-            {{{{0, 0}}, {{0, 0}}, {{0, 0}}}}
-        }};
-        for (auto const& t : triples)
-        for (int ex : {-4, 0, 4}) for (int ey : {-4, 0, 4})
-        {
-            auto const na = native(t[0]), nb = native(t[1]);
-            auto const ia = implicit(t[0], ex, ey), ib = implicit(t[1], ey, -ex);
-            auto const ic = implicit(t[2], -ex, -ey);
-            orientation_check<0>(t[0], t[1], t[2], na, nb, ic);
-            orientation_check<0>(t[1], t[0], t[2], nb, na, ic);
-            orientation_check<1>(t[0], t[1], t[2], na, ib, ic);
-            orientation_check<1>(t[0], t[2], t[1], na, ic, ib);
-            orientation_check<2>(t[0], t[1], t[2], ia, ib, ic);
-            orientation_check<2>(t[1], t[2], t[0], ib, ic, ia);
-            orientation_check<2>(t[2], t[0], t[1], ic, ia, ib);
-            orientation_check<2>(t[1], t[0], t[2], ib, ia, ic);
-        }
-    }
-    // Equal approximate zero is not exact zero: the oracle realizes both signs.
-    coordinates const a{{0, -1}}, b{{0, 1}}, c{{0, 0}};
-    for (int ex : {-4, 4})
-    {
-        auto const exact_c = implicit(c, ex, 0);
-        BOOST_TEST(orientation_reference(native(a), native(b), exact_c) != 0);
-        int result = 17;
-        BOOST_TEST(!uf::try_orientation_nni(a, b, c, result));
-        BOOST_TEST_EQ(result, 17);
-    }
-
-    // An implicit y=0 can contribute a NORMAL determinant through a huge
-    // native x. Treating its uncertainty as eps*abs(0)=0 gets the sign wrong.
-    coordinates const large{{std::ldexp(1.0, 1000), 1}}, origin{{0, 0}};
-    coordinates const small{{std::ldexp(1.0, -75), 0}};
-    auto const eo = native(origin), el = native(large);
-    for (int error : {-4, 4})
-    {
-        auto const es = implicit(small, 0, error);
-        BOOST_TEST_EQ(orientation_reference(eo, el, es), error < 0 ? -1 : 1);
-        int result = 17;
-        BOOST_TEST(!uf::try_orientation_nni(origin, large, small, result));
-        BOOST_TEST_EQ(result, 17);
-        orientation_check<1>(origin, large, small, eo, implicit(large, 0, 0), es);
-        orientation_check<2>(origin, large, small, implicit(origin, 0, 0), implicit(large, 0, 0), es);
-    }
-
-    // A subnormal magnitude bound is rounded, not silently flushed to zero.
-    // The value product here is exact; no inexact underflow is required.
-    coordinates const unit{{1, 0}};
-    coordinates const tiny{{0, 8 * (std::numeric_limits<double>::denorm_min)()}};
-    orientation_check<0>(origin, unit, tiny, eo, native(unit), implicit(tiny, 4, -4));
-}
-
 void proof_constants()
 {
+    static_assert(std::is_same<uf::step_certificate<0>, uf::nearest_certificate>::value);
+    static_assert(std::is_same<uf::producer_certificate<0>, uf::nearest_certificate>::value);
     rational const u = ec::exact_value(uf::detail::unit_roundoff);
     rational const one_minus_u = 1 - u;
     rational const square = one_minus_u * one_minus_u;
-    BOOST_TEST(3 * square > 2);
-    BOOST_TEST(7 * square * square * square > (6 + 5 * u) * (1 + 2 * u));
     rational const eta = ec::exact_value((std::numeric_limits<double>::denorm_min)());
     BOOST_TEST_EQ(2 * u * ec::exact_value(uf::detail::minimum_normal), eta);
     rational const k = 1u << 24, c = 2*k + 3;
@@ -247,48 +83,6 @@ void proof_constants()
     BOOST_TEST((4*k+9)*(1+8*u)+4 < (4*k+16)*(1-u)-1);
     BOOST_TEST((1-18*u)*(1+u)*(1+u) < square*square);
     BOOST_TEST((2*k+9)*(1+8*u)+4 < (2*k+16)*(1-u)-1);
-}
-
-void randomized()
-{
-    std::mt19937_64 random(0x554c5046494c5445);
-    auto value = [&]()
-    {
-        double const significand = 1 + std::ldexp(double(random() >> 11), -53);
-        return std::ldexp(random() & 1 ? significand : -significand, int(random() % 241) - 120);
-    };
-    auto error = [&]() { return int(random() % 9) - 4; };
-    for (unsigned i = 0; i < 12000; ++i)
-    {
-        coordinates a{{value(), value()}}, b{{value(), value()}}, c{{value(), value()}};
-        if (i % 7 == 0) { a[0] = 0; b[1] = 0; }
-        if (i % 11 == 0)
-        {
-            // Nearly collinear, translated triangles whose tiny differences
-            // must not hide the uncertainty of their large coordinates.
-            a = {{value(), value()}};
-            b = {{next(a[0]), next(a[1])}};
-            c = {{next(b[0]), next(b[1])}};
-        }
-        auto const na = native(a), nb = native(b);
-        auto const ia = implicit(a, error(), error());
-        auto const ib = implicit(b, error(), error());
-        auto const ic = implicit(c, error(), error());
-        orientation_check<0>(a, b, c, na, nb, ic);
-        orientation_check<1>(a, b, c, na, ib, ic);
-        orientation_check<2>(a, b, c, ia, ib, ic);
-        orientation_check<2>(c, a, b, ic, ia, ib);
-        orientation_check<2>(a, c, b, ia, ic, ib);
-        coordinate_check(a[0], c[0], na[0], ic[0], true);
-        coordinate_check(a[1], c[1], ia[1], ic[1], false);
-
-        // NNN must continue to use BG's existing adaptive Shewchuk predicate.
-        using point = boost::geometry::model::d2::point_xy<double>;
-        using robust = boost::geometry::strategy::side::side_robust<double,
-            boost::geometry::strategy::side::fp_equals_policy, 3>;
-        int const actual = robust::apply(point(a[0], a[1]), point(b[0], b[1]), point(c[0], c[1]));
-        BOOST_TEST_EQ(actual, orientation_reference(na, nb, native(c)));
-    }
 }
 
 // Independently generate the extreme points allowed by the public certificate:
@@ -316,6 +110,34 @@ rational step_extreme(double head, bool up)
     return r + (ec::exact_value(up ? next(head) : previous(head)) - r) * 511 / 1024;
 }
 
+// Monotonicity orders even adjacent nearest heads. Equal heads can hide
+// either exact order, also across signed zero, and must not certify equality.
+template <bool AI, bool BI> void nearest_order_case(double a, double b)
+{
+    for (bool up : {false, true})
+    {
+        rational const x = AI ? step_extreme<0>(a, up) : rational(a);
+        rational const y = BI ? step_extreme<0>(b, !up) : rational(b);
+        int result = 17;
+        bool const pass = uf::try_compare_n<0, AI, BI>(a, b, result);
+        BOOST_TEST_EQ(pass, a != b || !(AI || BI));
+        BOOST_TEST_EQ(result, pass ? sign(x-y) : 17);
+    }
+}
+
+void nearest_order()
+{
+    double const tiny = (std::numeric_limits<double>::denorm_min)();
+    for (double a : {-1., -tiny, -0., 0., tiny, uf::detail::minimum_normal, previous(1.), 1.})
+    for (double b : {previous(a), a, next(a), -a})
+    {
+        nearest_order_case<false,false>(a,b);
+        nearest_order_case<false,true>(a,b);
+        nearest_order_case<true,false>(a,b);
+        nearest_order_case<true,true>(a,b);
+    }
+}
+
 template <unsigned N, bool Producer>
 rational ordinate_extreme(double head, bool up)
 {
@@ -338,6 +160,10 @@ void bounded_triple(coordinates a, coordinates b, coordinates p)
         if (!uncertain) return native(z);
         return {{ordinate_extreme<N,Producer>(z[0], up), ordinate_extreme<N,Producer>(z[1], !up)}};
     };
+    using cert = std::conditional_t<Producer, uf::producer_certificate<N>, uf::step_certificate<N>>;
+    constexpr unsigned k = N < (1u << 24) ? N : 1u << 24;
+    static_assert(cert::rho == (N == 0 ? 1 : (Producer ? k : 2*k) + 2));
+    static_assert(cert::bilinear_units == (N == 0 ? 12 : (Producer ? 2*k : 4*k) + 16));
     auto const x = make(a, ai, true), y = make(b, bi, false), z = make(p, pi, true);
     rational const dx = y[0]-x[0], dy = y[1]-x[1];
     rational const det = dx*(z[1]-x[1]) - dy*(z[0]-x[0]);
@@ -346,11 +172,11 @@ void bounded_triple(coordinates a, coordinates b, coordinates p)
     ec::forward_error::scalar_approximation d{}, s{};
     int side = 2, direction = 2, cmp = 2;
     allocation_guard = true;
-    bool const bounded_d = uf::try_signed_determinant_n<N,ai,bi,pi,Producer>(a,b,p,d);
-    bool const bounded_s = uf::try_squared_distance_n<N,ai,bi,Producer>(a,b,s);
-    bool const cs = uf::try_orientation_n<N,ai,bi,pi,Producer>(a,b,p,side);
-    bool const cd = uf::try_dot_n<N,ai,bi,pi,Producer>(a,b,p,direction);
-    auto const dot_bound = uf::detail::n_bilinear<(ai || bi || pi) ? N : 0,true,Producer>(
+    bool const bounded_d = uf::try_signed_determinant<cert,ai,bi,pi>(a,b,p,d);
+    bool const bounded_s = uf::try_squared_distance<cert,ai,bi>(a,b,s);
+    bool const cs = uf::try_orientation<cert,ai,bi,pi>(a,b,p,side);
+    bool const cd = uf::try_dot<cert,ai,bi,pi>(a,b,p,direction);
+    auto const dot_bound = uf::detail::n_bilinear<std::conditional_t<ai || bi || pi, cert, uf::nearest_certificate>,true>(
         uf::detail::n_difference<ai,bi>(a,b), uf::detail::n_difference<bi,pi>(b,p));
     bool const cc = uf::try_compare_n<N,ai,bi>(a[0],b[0],cmp);
     allocation_guard = false;
@@ -361,6 +187,40 @@ void bounded_triple(coordinates a, coordinates b, coordinates p)
     BOOST_TEST_EQ(side, cs ? sign(det) : 2);
     BOOST_TEST_EQ(direction, cd ? sign(dot) : 2);
     BOOST_TEST_EQ(cmp, cc ? sign(x[0] - y[0]) : 2);
+}
+
+void randomized()
+{
+    std::mt19937_64 random(0x554c5046494c5445);
+    auto value = [&]()
+    {
+        double const significand = 1 + std::ldexp(double(random() >> 11), -53);
+        return std::ldexp(random() & 1 ? significand : -significand, int(random() % 241) - 120);
+    };
+    for (unsigned i = 0; i < 12000; ++i)
+    {
+        coordinates a{{value(), value()}}, b{{value(), value()}}, c{{value(), value()}};
+        if (i % 7 == 0) { a[0] = 0; b[1] = 0; }
+        if (i % 11 == 0)
+        {
+            // Nearly collinear, translated triangles whose tiny differences
+            // must not hide the uncertainty of their large coordinates.
+            a = {{value(), value()}};
+            b = {{next(a[0]), next(a[1])}};
+            c = {{next(b[0]), next(b[1])}};
+        }
+        bounded_triple<0,4>(a,b,c);
+        bounded_triple<0,6>(a,b,c);
+        bounded_triple<0,7>(a,b,c);
+        bounded_triple<0,7>(c,a,b);
+
+        // NNN must continue to use BG's existing adaptive Shewchuk predicate.
+        using point = boost::geometry::model::d2::point_xy<double>;
+        using robust = boost::geometry::strategy::side::side_robust<double,
+            boost::geometry::strategy::side::fp_equals_policy, 3>;
+        int const actual = robust::apply(point(a[0], a[1]), point(b[0], b[1]), point(c[0], c[1]));
+        BOOST_TEST_EQ(actual, orientation_reference(native(a), native(b), native(c)));
+    }
 }
 
 template <unsigned N, unsigned... M>
@@ -401,17 +261,17 @@ void producer_witnesses()
 {
     coordinates const a{{0,0}}, b{{1,1}}, p{{1,1+0x1p-44}};
     int r = 2;
-    BOOST_TEST((!uf::try_orientation_n<100,false,false,true>(a,b,p,r)));
+    BOOST_TEST((!uf::try_orientation<uf::step_certificate<100>,false,false,true>(a,b,p,r)));
     BOOST_TEST_EQ(r, 2);
-    BOOST_TEST((uf::try_orientation_n<100,false,false,true,true>(a,b,p,r)));
+    BOOST_TEST((uf::try_orientation<uf::producer_certificate<100>,false,false,true>(a,b,p,r)));
     BOOST_TEST_EQ(r, 1); // exact det = 512u
 
     // Same heads, two possible contracts. The producer call is valid for
     // exact (1,0); do NOT apply it to the displaced generic coordinate.
     coordinates const unit{{1,0}};
     ec::forward_error::scalar_approximation raw{}, tight{};
-    BOOST_TEST((uf::try_squared_distance_n<100,false,true>(a,unit,raw)));
-    BOOST_TEST((uf::try_squared_distance_n<100,false,true,true>(a,unit,tight)));
+    BOOST_TEST((uf::try_squared_distance<uf::step_certificate<100>,false,true>(a,unit,raw)));
+    BOOST_TEST((uf::try_squared_distance<uf::producer_certificate<100>,false,true>(a,unit,tight)));
     rational const u = ec::exact_value(uf::detail::unit_roundoff);
     rational const loose = 1+200*u, err = loose*loose-1;
     BOOST_TEST_EQ(raw.value, 1.);
@@ -437,9 +297,9 @@ void step_edges()
         coordinates const a{{0,0}}, b{{1,1}}, p{{0,bad}};
         ec::forward_error::scalar_approximation s{17,19};
         r = 2;
-        BOOST_TEST((!uf::try_signed_determinant_n<0,false,false,true>(a,b,p,s)));
-        BOOST_TEST((!uf::try_squared_distance_n<cap,true,true>(p,b,s)));
-        BOOST_TEST((!uf::try_dot_n<0,false,false,true>(a,b,p,r)));
+        BOOST_TEST((!uf::try_signed_determinant<uf::nearest_certificate,false,false,true>(a,b,p,s)));
+        BOOST_TEST((!uf::try_squared_distance<uf::step_certificate<cap>,true,true>(p,b,s)));
+        BOOST_TEST((!uf::try_dot<uf::nearest_certificate,false,false,true>(a,b,p,r)));
         BOOST_TEST_EQ(s.value, 17);
         BOOST_TEST_EQ(s.error, 19);
         BOOST_TEST_EQ(r, 2);
@@ -452,18 +312,18 @@ void step_edges()
     BOOST_TEST_EQ((uf::detail::n_difference<false,false>(a,b).scale[0]), next(1)-1);
 }
 
-void cold_eager()
+void cold_nearest()
 {
     namespace bg = boost::geometry;
     namespace bp = ec::borrowed_predicates_detail;
     namespace policy = bg::strategies::relate;
     using point = bg::model::d2::point_xy<double>;
     using line = bg::model::linestring<point>;
-    using root = ec::borrowed_root<double, policy::eager_nearest_output, line, line>;
-    using deferred = ec::borrowed_root<double, policy::deferred_nearest_output, line, line>;
+    using root = ec::borrowed_root<double, policy::nearest_output, line, line>;
+    using stored = ec::borrowed_root<double, policy::bounded_ulp_output<1>, line, line>;
     static_assert(bp::step_filter<root, point, ec::borrowed_point<root>>);
-    static_assert(!bp::step_filter<deferred, ec::borrowed_point<deferred>>);
-    static_assert(!bp::step_filter<root, ec::borrowed_point<deferred>>);
+    static_assert(!bp::step_filter<stored, ec::borrowed_point<stored>>);
+    static_assert(!bp::step_filter<root, ec::borrowed_point<stored>>);
     static_assert(!bp::step_filter<root, ec::exact_point<double>>);
     static_assert(!bp::step_filter<root, bg::model::d2::point_xy<std::int64_t>>);
 
@@ -509,7 +369,33 @@ void cold_eager()
     BOOST_TEST_EQ(result, -1);
     BOOST_TEST((bp::coordinate_filter<0,root>(right,odd,result)));
     BOOST_TEST_EQ(result, 1);
-    BOOST_TEST_EQ((ec::root_compare_coordinate<0,root>(left,even)), 1);
+    // Adjacent uncertain heads prove strict order. A tied pair needs the
+    // exact ordinates: the midpoints on either side of 1 both round to 1.
+    auto const below = query::midpoint(point(previous(1),0), even);
+    auto const adjacent_query = query::midpoint(odd, odd);
+    BOOST_TEST_EQ(below.approximate(0), left.approximate(0));
+    BOOST_TEST((!bp::coordinate_filter<0,root>(below,left,result)));
+    BOOST_TEST((bp::coordinate_filter<0,root>(left,adjacent_query,result)));
+    BOOST_TEST_EQ(result, -1);
+    auto ordered = [](auto const& x, auto const& y, rational const& delta)
+    {
+        BOOST_TEST_EQ((ec::root_compare_coordinate<0,root>(x,y)), sign(delta));
+        BOOST_TEST_EQ((ec::root_compare_coordinate<0,root>(y,x)), -sign(delta));
+        BOOST_TEST_EQ(ec::root_equal<root>(x,y), delta == 0);
+    };
+    rational const half = (rational(1)+rational(next(1)))/2;
+    ordered(below, left, (rational(previous(1))+1)/2 - half);
+    ordered(left, adjacent_query, half-rational(next(1)));
+    ordered(left, bg::model::d2::point_xy<float>(1,0), half-1);
+    ordered(left, bg::model::d2::point_xy<int>(1,0), half-1);
+
+    // At 2^53 both h and the integer h+1 convert to the query's nearest
+    // double head. The wide native must retain its original integer value.
+    std::int64_t const h = std::int64_t(1) << 53;
+    auto const wide_mid = query::midpoint(point(double(h),0), point(double(h+2),0));
+    BOOST_TEST_EQ(wide_mid.approximate(0), double(h));
+    for (std::int64_t i : {h, h+1, h+2})
+        ordered(wide_mid, bg::model::d2::point_xy<std::int64_t>(i,0), rational(h)+1-i);
 }
 
 int main()
@@ -517,12 +403,11 @@ int main()
     BOOST_TEST_EQ(std::fegetround(), FE_TONEAREST);
     static_assert(sizeof(coordinates) == 2 * sizeof(double), "no stored errors or hidden point state");
     proof_constants();
-    scalars();
-    adversarial();
+    nearest_order();
     randomized();
     using kinds = std::make_integer_sequence<unsigned,8>;
     producer_witnesses();
-    cold_eager();
+    cold_nearest();
     step_edges();
     bounded_filters<0>(kinds{});
     bounded_filters<1>(kinds{}); bounded_filters<2>(kinds{});
@@ -530,18 +415,5 @@ int main()
     bounded_filters<(1u<<24)>(kinds{});
     bounded_filters<(1u<<24)+1>(kinds{});
     BOOST_TEST_EQ(allocations, 0u);
-    BOOST_TEST(coordinate_certificates > 0);
-    BOOST_TEST(zeros[0] > 0);
-    BOOST_TEST_EQ(zeros[1], 0u);
-    BOOST_TEST_EQ(zeros[2], 0u);
-    std::cout << comparisons << " coordinate cases; " << coordinate_certificates << " certified.\n";
-    for (unsigned i = 0; i < 3; ++i)
-    {
-        BOOST_TEST(certified[i] > 0);
-        BOOST_TEST(uncertain[i] > 0);
-        std::cout << (i == 0 ? "NNI" : i == 1 ? "NII" : "III") << ": "
-                  << certified[i] << " certified, " << uncertain[i] << " uncertain, "
-                  << zeros[i] << " structural zeros.\n";
-    }
     return boost::report_errors();
 }

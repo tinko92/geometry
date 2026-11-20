@@ -253,8 +253,7 @@ int main()
     test_hook_dispatch();
 #if __cplusplus >= 201703L
     test_root_primitive<bg::strategies::relate::approximate_output>();
-    test_root_primitive<bg::strategies::relate::eager_nearest_output>();
-    test_root_primitive<bg::strategies::relate::deferred_nearest_output>();
+    test_root_primitive<bg::strategies::relate::nearest_output>();
 #endif
     return boost::report_errors();
 }

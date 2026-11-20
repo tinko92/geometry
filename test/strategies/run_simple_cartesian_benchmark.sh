@@ -17,7 +17,7 @@ CXX=${CXX:-clang++}
 seconds=${BENCH_SECONDS:-0.1}
 repetitions=${BENCH_REPETITIONS:-3}
 arch=${BENCH_ARCH:-}
-variants="develop simple exact eager deferred"
+variants="develop simple exact nearest"
 if [ "${BENCH_BOUNDED_ULP:-0}" = 1 ]; then variants="$variants ulp1 ulp4 ulp100"; fi
 categories=${BENCH_CATEGORIES:-"degenerate general decimal"}
 if [ -n "${BEFORE_INCLUDE:-}" ]; then variants="$variants before before-eager before-deferred"; fi
@@ -53,13 +53,14 @@ variant_config()
     case "$1" in
         develop) include=$DEVELOP_INCLUDE; define=;;
         simple) include=${SIMPLE_INCLUDE:-$EXACT_INCLUDE}; define=-DBG_BENCH_SIMPLE;;
-        exact|eager|deferred|ulp*|lean*) include=$EXACT_INCLUDE; define=-DBG_BENCH_EXACT;;
+        exact|nearest|ulp*|lean*) include=$EXACT_INCLUDE; define=-DBG_BENCH_EXACT;;
         before|before-eager|before-deferred) include=$BEFORE_INCLUDE; define=-DBG_BENCH_EXACT;;
         *) echo "Unknown variant: $1" >&2; exit 1;;
     esac
     case "$1" in
-        eager|before-eager) policy=-DBG_BENCH_EAGER;;
-        deferred|before-deferred) policy=-DBG_BENCH_DEFERRED;;
+        nearest) policy=-DBG_BENCH_NEAREST;;
+        before-eager) policy=-DBG_BENCH_BEFORE_POLICY=eager_nearest_output;;
+        before-deferred) policy=-DBG_BENCH_BEFORE_POLICY=deferred_nearest_output;;
         ulp*|lean*) bound=${1#ulp}; bound=${bound#lean}; policy="-DBG_BENCH_ULPS=${bound%%-*}";;
     esac
 }

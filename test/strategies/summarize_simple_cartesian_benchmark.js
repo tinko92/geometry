@@ -7,7 +7,8 @@ const assert = require('assert');
 const categories = ['degenerate','general','decimal'];
 const operations = ['union','intersection','difference','sym_difference','relate_aa','relate_la','relate_ll','covered_by','clip'];
 const controlFields = ['corpus_digest','geometry_digest','output_components','output_holes','output_points'];
-const variantNames = ['develop','simple','exact','eager','deferred','before','before-eager','before-deferred'];
+// Retain eager/deferred only for reading archived results.
+const variantNames = ['develop','simple','exact','nearest','before','before-eager','before-deferred','eager','deferred'];
 const median = values => {
   const sorted = [...values].sort((a,b)=>a-b), middle = Math.floor(sorted.length/2);
   return sorted.length%2 ? sorted[middle] : (sorted[middle-1]+sorted[middle])/2;
@@ -110,12 +111,12 @@ try {
     assert.equal(analyze(rows.filter(r=>r.repetition===0),1).assurances.rows,54);
     assert.equal(analyze(rows.filter(r=>r.repetition<2),2).assurances.rows,108);
     assert.equal(median([1,3]),2);
-    const values = {develop:10,simple:5,exact:20,eager:30,deferred:25,before:22,'before-eager':32,'before-deferred':27};
+    const values = {develop:10,simple:5,exact:20,nearest:24,eager:30,deferred:25,before:22,'before-eager':32,'before-deferred':27};
     const matrix = variantNames.flatMap(label=>rows.filter(r=>r.label==='develop')
       .map(r=>({...r,label,ns_per_call:String(values[label])})));
     const full = analyze(matrix);
-    assert.equal(full.assurances.rows,648);
-    assert.equal(full.cases.length,7*27);
+    assert.equal(full.assurances.rows,variantNames.length*27*3);
+    assert.equal(full.cases.length,(variantNames.length-1)*27);
     assert(full.cases.every(r=>r.reference==='develop'));
     for (const label of variantNames.filter(v=>v!=='develop')) {
       const overall = full.aggregates.find(r=>r.candidate===label && r.group==='overall');

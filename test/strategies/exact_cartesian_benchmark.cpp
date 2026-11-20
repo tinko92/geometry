@@ -9,15 +9,12 @@
 #include <boost/geometry/strategies/relate/cartesian.hpp>
 #if defined(BG_BENCH_EXACT)
 #include <boost/geometry/strategies/relate/cartesian_exact.hpp>
-#if defined(BG_BENCH_EAGER) || defined(BG_BENCH_DEFERRED)
-#include <boost/geometry/strategies/cartesian/exact/construction_rounding.hpp>
-#endif
 #endif
 
-#if (defined(BG_BENCH_NEAREST) + defined(BG_BENCH_EAGER) + defined(BG_BENCH_DEFERRED)) > 1
-#error Select only one exact output policy
+#if defined(BG_BENCH_DEFERRED)
+#error Deferred is not a current policy; select BG_BENCH_NEAREST
 #endif
-#if !defined(BG_BENCH_EXACT) && (defined(BG_BENCH_NEAREST) || defined(BG_BENCH_EAGER) || defined(BG_BENCH_DEFERRED))
+#if !defined(BG_BENCH_EXACT) && (defined(BG_BENCH_NEAREST) || defined(BG_BENCH_EAGER))
 #error Exact output policies require BG_BENCH_EXACT
 #endif
 
@@ -84,13 +81,7 @@ using polygons = bg::model::multi_polygon<polygon>;
 using line = bg::model::linestring<point>;
 using lines = bg::model::multi_linestring<line>;
 #if defined(BG_BENCH_EXACT)
-#if defined(BG_BENCH_EAGER)
-using strategy = bg::strategies::relate::cartesian_exact<coordinate,
-    bg::strategies::relate::eager_nearest_output>;
-#elif defined(BG_BENCH_DEFERRED)
-using strategy = bg::strategies::relate::cartesian_exact<coordinate,
-    bg::strategies::relate::deferred_nearest_output>;
-#elif defined(BG_BENCH_NEAREST)
+#if defined(BG_BENCH_NEAREST) || defined(BG_BENCH_EAGER)
 using strategy = bg::strategies::relate::cartesian_exact<coordinate,
     bg::strategies::relate::nearest_output>;
 #else

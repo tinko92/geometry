@@ -596,8 +596,6 @@ void test_polygon_operation_emission()
             {
                 using bound_type = std::decay_t<decltype(bound)>;
                 using working_polygon = typename bound_type::template overlay_geometry_type<polygon>;
-                using output_policy = typename bound_type::output_policy;
-                using traits = ec::construction_rounding::policy_traits<output_policy>;
                 std::vector<working_polygon> working;
                 operation(a, b, working, bound);
                 BOOST_TEST(!working.empty());
@@ -607,15 +605,7 @@ void test_polygon_operation_emission()
                 {
                     for (auto const& p : source)
                     {
-                        if (!p.is_native())
-                        {
-                            ++constructed;
-                            // Deferred emission deliberately requests nearest.
-                            // Warm it explicitly BEFORE the export snapshot;
-                            // ordinary/eager need no such output refinement.
-                            if constexpr (traits::nearest_output && !traits::eager)
-                            { p.refine(0); p.refine(1); }
-                        }
+                        if (!p.is_native()) ++constructed;
                         destination.emplace_back(current(p, 0), current(p, 1));
                     }
                 };
@@ -659,8 +649,6 @@ void test_polygon_operation_emission()
             });
         };
         check_policy(default_strategy());
-        check_policy(sr::cartesian_exact<double, sr::eager_nearest_output>());
-        check_policy(sr::cartesian_exact<double, sr::deferred_nearest_output>());
         check_policy(nearest_strategy());
         check_policy(sr::cartesian_exact<double, sr::bounded_ulp_output<100, true>>());
     };

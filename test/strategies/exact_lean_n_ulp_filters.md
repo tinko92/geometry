@@ -1,7 +1,19 @@
-# First-stage binary64 predicates for step-certified coordinates
+# Producer certificates for first-stage binary64 predicates
 
-The `ulp_filter::try_*_n` functions in `ulp_filter.hpp` use the following
-contract, independently on each axis. A native input is the exact real number
+The construction policy publishes two independent facts: an arithmetic
+certificate for the error relative to the true coordinate, and an ordering
+radius measured in representable steps from its correctly rounded value.
+The determinant, orientation, dot product and squared-distance kernels take
+the arithmetic certificate as a type. They do not test the policy at runtime.
+
+| Source | Arithmetic factor rho | Bilinear coefficient (units of u) | Order radius |
+| --- | ---: | ---: | ---: |
+| Lossless native | 0 | 12 | 0, exact |
+| Eager `nearest_output` | 1 | 12 | 0, nearest |
+| Lean bounded producer, K > 0 | K+2 | 2K+16 | K |
+| Only a K-step promise, K > 0 | 2K+2 | 4K+16 | K |
+
+Here is the ordering contract, independently on each axis. A native input is the exact real number
 represented by its double. For a constructed input with head `z`, let `r`
 be the finite binary64 nearest-even rounding of the true coordinate `Z`.
 The number of adjacent representable steps from `z` to `r` is at most
@@ -9,7 +21,7 @@ The number of adjacent representable steps from `z` to `r` is at most
 larger than the cap, the **producer** must certify the capped distance.
 Silently capping a merely N-step external guarantee would be unsound.
 
-The default/raw kernels do not require the tighter absolute error certificate available
+Kernels instantiated with `step_certificate<N>` do not require the tighter absolute error certificate available
 on successful borrowed-record constructions. In particular, an arbitrary
 K-step input need not satisfy a bound of `(K+2)u |z|`: near the bottom of a
 normal binade an outward step can be almost twice this unit of relative error.
@@ -25,8 +37,8 @@ The latter two are treated as uncertain even if a particular head is exact.
 An ineligible combination uses the ordinary forward-error predicate with
 the operands' own enclosures and the usual exact fallback. In particular
 legacy points and wide integer conversions do not inherit eager nearest.
-Deferred and legacy nearest-output policies retain their adjacent-value
-kernels; native-only orientation and scalar comparison retain typed dispatch.
+The stored-error policies keep their own enclosure path. Native-only
+orientation and scalar comparison retain typed dispatch.
 
 All operations below use binary64 round-to-nearest/ties-even, gradual
 underflow, no excess precision, reassociation, contraction or fast-math.
@@ -145,9 +157,9 @@ requests fallback. On every false return the output is unchanged.
 
 ## Stronger certificate from the bounded producer
 
-The default/raw entry points above accept *any* K-step certificate. Only the
-bilinear entry points with the final template argument `ProducerBound=true`
-may use the following additional fact for **every** uncertain ordinate:
+The generic `step_certificate<N>` accepts *any* K-step certificate. The
+same kernels instantiated with `producer_certificate<N>` may use the
+following additional fact for **every** uncertain ordinate:
 
 ```text
 |Z-z| <= (K+2)u H(z),     1 <= K = min(N, 2^24).
@@ -188,7 +200,7 @@ a per-coordinate error field. Here is why the producer supplies it:
   float. A failed construction is not a certificate. Nonfinite or out-of-
   measure-range heads are never usable here.
 * Matching fixed queries have an exact or independently nearest head. An
-  arbitrary auxiliary point, deferred or foreign record, non-exact native
+  arbitrary auxiliary point, foreign record, non-exact native
   conversion, or a mere lattice-distance promise is not a producer certificate.
 
 Now redo the **difference** estimate with the unchanged scale S. Endpoint

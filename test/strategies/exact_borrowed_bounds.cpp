@@ -252,16 +252,12 @@ void test_implicit_origin()
 int main()
 {
     test_bounds<bg::strategies::relate::approximate_output>();
-    test_bounds<bg::strategies::relate::eager_nearest_output>();
-    test_bounds<bg::strategies::relate::deferred_nearest_output>();
+    test_bounds<bg::strategies::relate::nearest_output>();
     test_segments_and_lines<std::int64_t, bg::strategies::relate::approximate_output>();
-    test_segments_and_lines<std::int64_t, bg::strategies::relate::eager_nearest_output>();
-    test_segments_and_lines<std::int64_t, bg::strategies::relate::deferred_nearest_output>();
+    test_segments_and_lines<std::int64_t, bg::strategies::relate::nearest_output>();
     test_segments_and_lines<double, bg::strategies::relate::approximate_output>();
-    test_segments_and_lines<double, bg::strategies::relate::eager_nearest_output>();
-    test_segments_and_lines<double, bg::strategies::relate::deferred_nearest_output>();
+    test_segments_and_lines<double, bg::strategies::relate::nearest_output>();
     test_implicit_origin<bg::strategies::relate::approximate_output>();
-    test_implicit_origin<bg::strategies::relate::eager_nearest_output>();
-    test_implicit_origin<bg::strategies::relate::deferred_nearest_output>();
+    test_implicit_origin<bg::strategies::relate::nearest_output>();
     return boost::report_errors();
 }

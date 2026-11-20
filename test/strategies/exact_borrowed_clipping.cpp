@@ -326,10 +326,8 @@ void test_cases()
 int main()
 {
     test_cases<double, policy::approximate_output>();
-    test_cases<double, policy::eager_nearest_output>();
-    test_cases<double, policy::deferred_nearest_output>();
+    test_cases<double, policy::nearest_output>();
     test_cases<std::int64_t, policy::approximate_output>();
-    test_cases<std::int64_t, policy::eager_nearest_output>();
-    test_cases<std::int64_t, policy::deferred_nearest_output>();
+    test_cases<std::int64_t, policy::nearest_output>();
     return boost::report_errors();
 }

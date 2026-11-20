@@ -13,15 +13,18 @@
 #if defined(BG_BENCH_SIMPLE) && defined(BG_BENCH_EXACT)
 #error Select one benchmark strategy
 #endif
-#if defined(BG_BENCH_EAGER) && defined(BG_BENCH_DEFERRED)
+#if defined(BG_BENCH_DEFERRED)
+#error Deferred is not a current policy; select an archived type with BG_BENCH_BEFORE_POLICY
+#endif
+#if (defined(BG_BENCH_NEAREST) + defined(BG_BENCH_EAGER) + defined(BG_BENCH_BEFORE_POLICY) + defined(BG_BENCH_ULPS)) > 1
 #error Select one exact output policy
 #endif
-#if (defined(BG_BENCH_EAGER) || defined(BG_BENCH_DEFERRED)) && !defined(BG_BENCH_EXACT)
+#if (defined(BG_BENCH_NEAREST) || defined(BG_BENCH_EAGER) || defined(BG_BENCH_BEFORE_POLICY) || defined(BG_BENCH_ULPS)) && !defined(BG_BENCH_EXACT)
 #error Exact output policies require BG_BENCH_EXACT
 #endif
 #if defined(BG_BENCH_EXACT)
 #include <boost/geometry/strategies/relate/cartesian_exact.hpp>
-#if defined(BG_BENCH_EAGER) || defined(BG_BENCH_DEFERRED)
+#if defined(BG_BENCH_BEFORE_POLICY)
 #include <boost/geometry/strategies/cartesian/exact/construction_rounding.hpp>
 #endif
 #endif
@@ -70,12 +73,12 @@ using output_policy = bounded_policy<BG_BENCH_ULPS, false, BG_BENCH_DET_RETRY>;
 using output_policy = bounded_policy<BG_BENCH_ULPS>;
 #endif
 using strategy = bg::strategies::relate::cartesian_exact<coordinate, output_policy>;
-#elif defined(BG_BENCH_EAGER)
+#elif defined(BG_BENCH_BEFORE_POLICY)
 using strategy = bg::strategies::relate::cartesian_exact<coordinate,
-    bg::strategies::relate::eager_nearest_output>;
-#elif defined(BG_BENCH_DEFERRED)
+    bg::strategies::relate::BG_BENCH_BEFORE_POLICY>;
+#elif defined(BG_BENCH_NEAREST) || defined(BG_BENCH_EAGER)
 using strategy = bg::strategies::relate::cartesian_exact<coordinate,
-    bg::strategies::relate::deferred_nearest_output>;
+    bg::strategies::relate::nearest_output>;
 #else
 using strategy = bg::strategies::relate::cartesian_exact<coordinate>;
 #endif

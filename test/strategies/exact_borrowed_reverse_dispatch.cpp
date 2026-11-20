@@ -77,7 +77,6 @@ void test_reverse_dispatch()
 int main()
 {
     test_reverse_dispatch<bg::strategies::relate::approximate_output>();
-    test_reverse_dispatch<bg::strategies::relate::eager_nearest_output>();
-    test_reverse_dispatch<bg::strategies::relate::deferred_nearest_output>();
+    test_reverse_dispatch<bg::strategies::relate::nearest_output>();
     return boost::report_errors();
 }
