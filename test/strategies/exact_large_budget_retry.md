@@ -10,6 +10,9 @@ less than one is faster.
 
 ## Predicate bounds
 
+For the subsequent change using the producer's direct forward bound, see
+the [predicate fallback and timing comparison](exact_producer_bound_benchmark.md).
+
 Compare `369510c05` to the new [filter and proof](exact_lean_n_ulp_filters.md)
 with the same driver, changing no output budget or retry setting. These are
 whole-operation timings, not the cost of a single predicate. The before/after
