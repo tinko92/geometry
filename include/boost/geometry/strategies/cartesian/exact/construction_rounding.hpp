@@ -74,7 +74,7 @@ template <> struct policy_traits<relate::nearest_output>
 template <std::size_t N, bool Retry, bool DeterminantRetry>
 struct policy_traits<relate::bounded_ulp_output<N, Retry, DeterminantRetry>>
 {
-    // The existing lean predicate filters assume one ULP, not N steps.
+    // Stored layout: use the enclosure provided by the construction.
     static constexpr bool store_errors = true;
     static constexpr bool eager = true;
     static constexpr bool nearest_output = false;
@@ -317,7 +317,7 @@ BOOST_NOINLINE std::array<bool, 2> rescue_bounded_denominator(std::array<double,
 }
 
 template <std::size_t N, bool Retry, bool Rescue = true, bool CrossTerms = true,
-          bool StoreErrors = true, bool DeterminantRetry = (N <= 4)>
+          bool StoreErrors = true, bool DeterminantRetry = relate::bounded_ulp_output<N, Retry>::determinant_retry>
 inline std::array<bool, 2> bounded_intersection(std::array<double, 8> const& p,
                                                 fe::point_approximation& output)
 {

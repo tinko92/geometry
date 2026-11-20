@@ -23,7 +23,7 @@ struct nearest_output {};
 // Bound constructed binary64 output by N representable steps from nearest.
 // DeterminantRetry selectively tightens the determinant bounds on a miss.
 // Without it, Retry enables just the FMA division-residual retry.
-template <std::size_t N, bool Retry = false, bool DeterminantRetry = (N <= 4)>
+template <std::size_t N, bool Retry = false, bool DeterminantRetry = true>
 struct bounded_ulp_output
 {
     static_assert(N >= 1, "bounded_ulp_output requires at least one ULP");
@@ -34,7 +34,8 @@ struct bounded_ulp_output
 
 // Same construction and emission contract. Root-bound points retain no
 // coordinate error fields; predicates use a bound specialized on N.
-template <std::size_t N, bool Retry = false, bool DeterminantRetry = (N <= 4)>
+template <std::size_t N, bool Retry = false,
+          bool DeterminantRetry = bounded_ulp_output<N, Retry>::determinant_retry>
 struct lean_bounded_ulp_output : bounded_ulp_output<N, Retry, DeterminantRetry> {};
 
 }}}} // namespace boost::geometry::strategies::relate

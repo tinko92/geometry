@@ -1047,7 +1047,8 @@ namespace relate
       its root-bound constructions omit both error fields and its filters
       specialize on N. Both bounded policies accept a third template
       argument to enable or disable selective determinant tightening after
-      a miss. If disabled, Retry (default false) enables only an FMA
+      a miss (enabled by default at every budget). If disabled, Retry
+      (default false) enables only an FMA
       quotient-residual retry. The coordinate guarantee is unchanged.
       Uncertified axes, non-double Coordinate types, float output and legacy
       exact_point conversion use nearest rounding for floating constructions.

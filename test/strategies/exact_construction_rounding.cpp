@@ -355,17 +355,17 @@ std::vector<producers> bounded_corpus()
     return inputs;
 }
 
-template <std::size_t N, bool Retry>
+template <std::size_t N, bool Retry, bool DeterminantRetry = policy::bounded_ulp_output<N, Retry>::determinant_retry>
 void check_bounded(producers const& input, exact_point const& exact,
                    std::array<double, 2> const& expected, bounded_counts& counts)
 {
-    using state = cr::point_state<double, policy::bounded_ulp_output<N, Retry>>;
+    using state = cr::point_state<double, policy::bounded_ulp_output<N, Retry, DeterminantRetry>>;
     using cache = ec::point_cache_detail::native_cache<double>;
     static_assert(sizeof(state) == sizeof(ordinary), "Reuse the stored-error layout");
     static_assert(std::is_trivially_copyable<state>::value, "No producer ownership");
     ec::forward_error::point_approximation first, tighter;
-    auto const plain = cr::detail::bounded_intersection<N, false>(input, first);
-    auto const accepted = cr::detail::bounded_intersection<N, Retry>(input, tighter);
+    auto const plain = cr::detail::bounded_intersection<N, false, true, true, true, DeterminantRetry>(input, first);
+    auto const accepted = cr::detail::bounded_intersection<N, Retry, true, true, true, DeterminantRetry>(input, tighter);
     ec::point_cache_scope<double> scope;
     state point;
     auto const init = [&] { point.init(input); };
@@ -410,7 +410,7 @@ void check_bounded(producers const& input, exact_point const& exact,
 
 void bounded_cases()
 {
-    std::array<bounded_counts, 6> counts{};
+    std::array<bounded_counts, 8> counts{};
     std::size_t cases = 0;
     auto check_input = [&](producers const& input)
     {
@@ -423,6 +423,8 @@ void bounded_cases()
         check_bounded<4, true>(input, exact, expected, counts[3]);
         check_bounded<100, false>(input, exact, expected, counts[4]);
         check_bounded<100, true>(input, exact, expected, counts[5]);
+        check_bounded<100, false, false>(input, exact, expected, counts[6]);
+        check_bounded<100, true, false>(input, exact, expected, counts[7]);
         ++cases;
     };
     // Exact t=1/2. The default selective retry now certifies x as well as y.
@@ -461,8 +463,11 @@ void bounded_cases()
     BOOST_TEST(counts[0].accepted > 100 && counts[0].different > 0);
     BOOST_TEST_EQ(counts[3].accepted, counts[2].accepted);
     BOOST_TEST(counts[4].accepted > counts[0].accepted && counts[4].beyond_one > 0);
+    BOOST_TEST(counts[7].rescued > 0); // Residual-only retry remains independently selectable.
     for (std::size_t i = 0; i < counts.size(); ++i)
-        std::cout << "bounded " << (i < 2 ? 1 : i < 4 ? 4 : 100) << (i % 2 ? " retry: " : ": ")
+        std::cout << "bounded " << (i < 2 ? 1 : i < 4 ? 4 : 100)
+                  << (i == 6 ? " no retry: " : i == 7 ? " residual only: "
+                      : i % 2 ? " determinant (residual flag set): " : " determinant: ")
                   << counts[i].accepted << '/' << 2 * cases << " axes accepted, "
                   << counts[i].rescued << " rescued, " << counts[i].different
                   << " non-nearest, " << counts[i].beyond_one << " beyond one step\n";
