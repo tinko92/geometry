@@ -13,9 +13,20 @@ These kernels do not require the tighter absolute error certificate available
 on successful borrowed-record constructions. In particular, an arbitrary
 K-step input need not satisfy a bound of `(K+2)u |z|`: near the bottom of a
 normal binade an outward step can be almost twice this unit of relative error.
-Even K=0 leaves half a rounding cell of uncertainty for constructed inputs.
-Lossy native conversions cannot use the exact flag; they need their own
-certificate before using the constructed flag.
+Eager correctly rounded means exactly **K=0 steps from RN(Z)**. It does not
+mean half a step from RN(Z); the half-cell between RN(Z) and Z is already
+accounted for below. A rounded zero need not mean Z=0.
+
+The typed visitor uses this path only for eager-nearest or lean-bounded
+Root policies. Each operand must be a losslessly binary64-representable
+native type, the selected crossing record of that Root, or its fixed query
+type (exact-native shortcut or direct nearest rounding of the fixed quotient).
+The latter two are treated as uncertain even if a particular head is exact.
+An ineligible combination uses the ordinary forward-error predicate with
+the operands' own enclosures and the usual exact fallback. In particular
+legacy points and wide integer conversions do not inherit eager nearest.
+Deferred and legacy nearest-output policies retain their adjacent-value
+kernels; native-only orientation and scalar comparison retain typed dispatch.
 
 All operations below use binary64 round-to-nearest/ties-even, gradual
 underflow, no excess precision, reassociation, contraction or fast-math.
@@ -39,6 +50,8 @@ Monotonicity of RN then strictly orders the true values. This proof needs no
 extra half-step: disjoint RN cells cannot contain a common true value, even at
 a midpoint tie. For overlapping index ranges the filter declines; only two
 exact natives can certify equality. No neighbour beyond max-double is needed.
+For K=0 the implementation just compares finite doubles: any two strictly
+unequal heads suffice, with no bit decoding and no subtraction.
 
 ## Coordinate and difference bounds
 
@@ -58,12 +71,23 @@ and `(2K+2)2Ku <= 1` at the cap. The measure range guard
 same growth bound (less than a factor of two). Tests of this form reject
 NaN and infinity. Neither zero nor any subnormal head is assumed exact.
 
-For a component `d=RN(b-a)` let S be the real sum of `|d|` and H of each
-constructed endpoint; omit both H terms for two native endpoints. A normal
-subtraction result has posterior rounding error at most `2u |d|`; a tiny
-difference is exact because both operands are integer multiples of eta.
-Thus `|D-d| <= C S` for the true difference D. This is an absolute bound:
-near cancellation cannot hide the uncertainties of the endpoints.
+For K=0 use the sharper coordinate bound `u H(z)` directly from the last
+half-cell. For a factor `d=RN(b-a)` define a real scale S:
+
+* If either endpoint is uncertain, `S=H(a)+H(b)`. Then `|b-a| <= S`.
+  Subtraction rounding costs at most `u S`: a tiny difference is exact
+  because binary64 operands are integer multiples of eta. The combined
+  displacement of both endpoints costs at most `C S` (only `u S` for K=0).
+  No extra `|d|` or individual coordinate error is added to the computed scale.
+* For two exact endpoints use `S=|d|`, including zero. Subtraction need not
+  be exact; its posterior rounding error is at most `u/(1-u) |d| <= 2u S`.
+
+In both cases the true difference D and its head satisfy
+
+```text
+|d| <= (1+u) S,    |D-d| <= c u S,
+c = 2 (K=0),   c = 2K+3 (K>0).
+```
 
 ## Bilinear measures and signs
 
@@ -76,39 +100,41 @@ Use two products with the following pairing and final operation:
 | Squared distance | `(b-a).(b-a)` |
 
 Let M be the sum of the two products of the corresponding real S factors.
-For each product the two linear perturbations and their quadratic term cost
-at most `(2C+C^2) S1 S2`. This uses no independence assumption when a
-point, or an entire vector in squared distance, occurs twice.
-
-Each rounded operation on real t has error at most `u |t| + eta/2` in
-range. The two rounded products have total error at most `u M + eta`, so
-the absolute sum of their heads is at most `(1+u)M + eta`. The final
-addition/subtraction therefore brings the arithmetic error to at most
-`(2u+u^2)M + (1.5+u)eta`. Since `C < 1/2`, the total absolute error
-of the returned head is at most
+The two linear perturbations and quadratic term cost at most
+`[2(1+u)c u + (c u)^2] M`, including for repeated operands. The products
+of the rounded differences have absolute sum at most `P=(1+u)^2 M` before
+product rounding. The two multiplications cost at most `u P + eta`, and
+the final addition/subtraction costs at most `u [(1+u)P + eta] + eta/2`.
+Thus the total error is at most `R u M + 2 eta`, where
 
 ```text
-(5K+8)u M + 2 eta.
+R = 2(1+u)c + c^2 u + (2+u)(1+u)^2
+  < 2c + 2 + 1/2.
 ```
 
-It remains to bound M using the *computed* magnitude. Nonnegative sums of
-doubles, if subnormal, are exact. Thus each computed S is at least
-`(1-u)^2 S` (at most two additions). Each magnitude product can lose a
-further factor `1-u` and an absolute `eta/2`; the final nonnegative sum
-loses at most a factor `1-u`. Its computed result, floored at m, is T:
+For the strict inequality the excess above `2c+2` is increasing in c and
+is less than 1/2 already at the worst case `c=2^25+3`. Hence R is below
+6.5 for nearest, and below `4K+9` otherwise.
+
+Each computed S is at least `(1-u)S` (zero or one addition). Each magnitude
+product can lose a factor `1-u` and an absolute `eta/2`; their nonnegative
+sum, if subnormal, is exact. The computed sum floored at m is T:
 
 ```text
-T >= (1-u)^6 M - eta,    eta <= 2u T,
-M <= ((1+2u)/(1-u)^6) T < (9/8) T.
+T >= (1-u)^4 M - eta,    eta <= 2u T,
+M <= ((1+2u)/(1-u)^4) T <= (1+8u) T.
 ```
 
-The coefficient `F=(8K+16)u` is exactly representable and less than 1.
-The returned error `RN(F T)` is at least `(1-u)F T - eta/2`, hence at
-least `(8K+14)u T`. This dominates the true error because
-`(5K+8)*9/8 + 4 < 8K+14`. With all operands native the same proof uses
-K=0. The coordinate guard keeps every difference at most `2^501`, each
-computed S at most `2^502`, and the sum of magnitude products at most
-`2^1005`. All heads and errors are finite, including at the admitted
+Use `F=L u`, with L=12 for nearest (also for all-exact operands), and
+`L=4K+16` otherwise. These static dyadic coefficients are exactly
+representable. Even when subnormal, the returned error `RN(F T)` is at
+least `(L(1-u)-1)u T`. This dominates the true error: for K=0,
+`6.5(1+8u)+4 < 12(1-u)-1`; for positive K up to the cap,
+`(4K+9)(1+8u)+4 < (4K+16)(1-u)-1` (the slack decreases with K).
+
+The coordinate guard keeps every difference and computed S at most
+`2^501`, and the sum of magnitude products at most `2^1003`.
+All heads and errors are finite, including at the admitted
 endpoints. Underflow of a value product, magnitude product, or final error
 is covered above, not excluded by a relative-error assumption.
 

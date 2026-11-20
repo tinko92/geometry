@@ -7,6 +7,9 @@
 //   test/strategies/exact_ulp_filter.cpp -o /tmp/bg-ulp-filter
 // /tmp/bg-ulp-filter
 #include <boost/geometry/strategies/cartesian/exact/ulp_filter.hpp>
+#include <boost/geometry/strategies/cartesian/exact/borrowed_predicates.hpp>
+#include <boost/geometry/strategies/cartesian/exact/borrowed_query.hpp>
+#include <boost/geometry/geometries/linestring.hpp>
 #include <boost/geometry/strategy/cartesian/side_robust.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/core/lightweight_test.hpp>
@@ -15,6 +18,7 @@
 #include <cfenv>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <cstdlib>
 #include <iostream>
 #include <new>
@@ -235,6 +239,12 @@ void proof_constants()
     BOOST_TEST(7 * square * square * square > (6 + 5 * u) * (1 + 2 * u));
     rational const eta = ec::exact_value((std::numeric_limits<double>::denorm_min)());
     BOOST_TEST_EQ(2 * u * ec::exact_value(uf::detail::minimum_normal), eta);
+    rational const k = 1u << 24, c = 2*k + 3;
+    BOOST_TEST((2*k+2)*2*k*u <= 1);
+    BOOST_TEST(2*(1+u)*c + c*c*u + (2+u)*(1+u)*(1+u) < 2*c + rational(5)/2);
+    BOOST_TEST((1+8*u)*square*square >= 1+2*u);
+    BOOST_TEST(rational(13)/2*(1+8*u)+4 < 12*(1-u)-1);
+    BOOST_TEST((4*k+9)*(1+8*u)+4 < (4*k+16)*(1-u)-1);
 }
 
 void randomized()
@@ -285,7 +295,21 @@ void randomized()
 template <unsigned N>
 rational step_extreme(double head, bool up)
 {
-    for (unsigned i = 0; i < N; ++i) head = up ? next(head) : previous(head);
+    constexpr unsigned k = N < (1u << 24) ? N : (1u << 24);
+    if constexpr (k <= 100)
+        for (unsigned i = 0; i < k; ++i) head = up ? next(head) : previous(head);
+    else
+    {
+        // Jump in magnitude space, reflecting at zero (test inputs stay finite).
+        double magnitude = std::abs(head);
+        std::uint64_t bits;
+        std::memcpy(&bits, &magnitude, sizeof(bits));
+        bool const away = up == !std::signbit(head);
+        bool const negative = away || bits >= k ? std::signbit(head) : !std::signbit(head);
+        bits = away ? bits + k : bits >= k ? bits - k : k - bits;
+        std::memcpy(&magnitude, &bits, sizeof(bits));
+        head = negative ? -magnitude : magnitude;
+    }
     rational const r = ec::exact_value(head);
     return r + (ec::exact_value(up ? next(head) : previous(head)) - r) * 511 / 1024;
 }
@@ -310,11 +334,14 @@ void bounded_triple(coordinates a, coordinates b, coordinates p)
     bool const bounded_s = uf::try_squared_distance_n<N,ai,bi>(a,b,s);
     bool const cs = uf::try_orientation_n<N,ai,bi,pi>(a,b,p,side);
     bool const cd = uf::try_dot_n<N,ai,bi,pi>(a,b,p,direction);
+    auto const dot_bound = uf::detail::n_bilinear<(ai || bi || pi) ? N : 0,true>(
+        uf::detail::n_difference<ai,bi>(a,b), uf::detail::n_difference<bi,pi>(b,p));
     bool const cc = uf::try_compare_n<N,ai,bi>(a[0],b[0],cmp);
     allocation_guard = false;
     BOOST_TEST(bounded_d && bounded_s);
     BOOST_TEST(abs(det - ec::exact_value(d.value)) <= ec::exact_value(d.error));
     BOOST_TEST(abs(dist - ec::exact_value(s.value)) <= ec::exact_value(s.error));
+    BOOST_TEST(abs(dot - ec::exact_value(dot_bound.value)) <= ec::exact_value(dot_bound.error));
     BOOST_TEST_EQ(side, cs ? sign(det) : 2);
     BOOST_TEST_EQ(direction, cd ? sign(dot) : 2);
     BOOST_TEST_EQ(cmp, cc ? sign(x[0] - y[0]) : 2);
@@ -331,17 +358,115 @@ void bounded_filters(std::integer_sequence<unsigned,M...>)
         (bounded_triple<N,M>(a,b,{{previous(t),next(-t)}}), ...);
         (bounded_triple<N,M>(a,{{1.,t}},{{-t,.25}}), ...);
     }
-    for (double a : {-1., -tiny, -0., 0., tiny, previous(1.), 1.})
+    // Worst admitted opposite-sign sums, inexact tiny products and a
+    // cancelling dot whose two large terms have opposite signs.
+    (bounded_triple<N,M>({{0x1p500,-0x1p500}},{{-0x1p500,0x1p500}},{{0,0}}), ...);
+    (bounded_triple<N,M>({{0,0}},{{0x1p-537,0x1p-538}},{{0x1p-538,0x1p-537}}), ...);
+    (bounded_triple<N,M>({{-1,-1}},{{0,0}},{{1,next(-1)}}), ...);
+    if constexpr (N <= 100)
     {
-        double b = a;
-        for (unsigned k = 0; k <= 2*N+1; ++k, b = next(b))
+        for (double a : {-1., -tiny, -0., 0., tiny, previous(1.), 1.})
         {
-            int r = 2;
-            bool const ok = uf::try_compare_n<N,true,true>(a,b,r);
-            BOOST_TEST_EQ(ok, k > 2*N);
-            BOOST_TEST_EQ(r, ok ? -1 : 2);
+            double b = a;
+            for (unsigned k = 0; k <= 2*N+1; ++k, b = next(b))
+            {
+                int r = 2;
+                bool const ok = uf::try_compare_n<N,true,true>(a,b,r);
+                BOOST_TEST_EQ(ok, k > 2*N);
+                BOOST_TEST_EQ(r, ok ? -1 : 2);
+            }
         }
     }
+}
+
+void step_edges()
+{
+    constexpr unsigned cap = 1u << 24;
+    double const limit = 1.0 + std::ldexp(double(2 * cap), -52);
+    int r = 2;
+    BOOST_TEST((!uf::try_compare_n<cap+1,true,true>(1, limit, r)));
+    BOOST_TEST_EQ(r, 2);
+    BOOST_TEST((uf::try_compare_n<cap+1,true,true>(1, next(limit), r)));
+    BOOST_TEST_EQ(r, -1);
+    for (double bad : {next(0x1p500), -next(0x1p500), std::numeric_limits<double>::infinity(),
+                       std::numeric_limits<double>::quiet_NaN()})
+    {
+        coordinates const a{{0,0}}, b{{1,1}}, p{{0,bad}};
+        ec::forward_error::scalar_approximation s{17,19};
+        r = 2;
+        BOOST_TEST((!uf::try_signed_determinant_n<0,false,false,true>(a,b,p,s)));
+        BOOST_TEST((!uf::try_squared_distance_n<cap,true,true>(p,b,s)));
+        BOOST_TEST((!uf::try_dot_n<0,false,false,true>(a,b,p,r)));
+        BOOST_TEST_EQ(s.value, 17);
+        BOOST_TEST_EQ(s.error, 19);
+        BOOST_TEST_EQ(r, 2);
+        if (!std::isfinite(bad)) BOOST_TEST((!uf::try_compare_n<0,true,true>(bad,0,r)));
+    }
+    coordinates const a{{1,0}}, b{{next(1),0}};
+    auto mixed = uf::detail::n_difference<false,true>(a,b);
+    BOOST_TEST_EQ(mixed.scale[0], 2.0);
+    BOOST_TEST_EQ(mixed.scale[1], 2 * uf::detail::minimum_normal);
+    BOOST_TEST_EQ((uf::detail::n_difference<false,false>(a,b).scale[0]), next(1)-1);
+}
+
+void cold_eager()
+{
+    namespace bg = boost::geometry;
+    namespace bp = ec::borrowed_predicates_detail;
+    namespace policy = bg::strategies::relate;
+    using point = bg::model::d2::point_xy<double>;
+    using line = bg::model::linestring<point>;
+    using root = ec::borrowed_root<double, policy::eager_nearest_output, line, line>;
+    using deferred = ec::borrowed_root<double, policy::deferred_nearest_output, line, line>;
+    static_assert(bp::step_filter<root, point, ec::borrowed_point<root>>);
+    static_assert(!bp::step_filter<deferred, ec::borrowed_point<deferred>>);
+    static_assert(!bp::step_filter<root, ec::borrowed_point<deferred>>);
+    static_assert(!bp::step_filter<root, ec::exact_point<double>>);
+    static_assert(!bp::step_filter<root, bg::model::d2::point_xy<std::int64_t>>);
+
+    ec::point_cache_scope<double> scope;
+    line const first{{1048576,1048576}, {1048592,1048608}};
+    line const second{{1048576,1048600}, {1048592,1048584}};
+    ec::borrowed_context<root> context;
+    ec::borrowed_stage<root> stage(context, first, second);
+    std::array<root::operation_type,2> operations;
+    operations[0].seg_id = bg::segment_identifier(0,-1,-1,0);
+    operations[1].seg_id = bg::segment_identifier(1,-1,-1,0);
+    ec::borrowed_record<root> record;
+    record.stage = &stage;
+    record.operations = {{&operations[0], &operations[1]}};
+    ec::borrowed_point<root> const p(record);
+    record.numeric.init(p.producers());
+    point const adjacent(next(1048584),1048592), a(0,0), b(1,0);
+    BOOST_TEST_EQ(ec::point_cache_detail::native_cache<double>::size(), 0u);
+    allocation_guard = true;
+    BOOST_TEST_EQ((ec::root_compare_coordinate<0,root>(p, adjacent)), -1);
+    BOOST_TEST(!ec::root_equal<root>(adjacent,p));
+    BOOST_TEST_EQ(ec::root_orientation<root>(a,b,p), 1);
+    BOOST_TEST_EQ(ec::root_direction<root>(a,b,p), 1);
+    auto const det = ec::root_signed_determinant<root>(a,b,p).bounds();
+    auto const dist = ec::root_squared_distance<root>(a,p).bounds();
+    allocation_guard = false;
+    BOOST_TEST_EQ(det.approximate, 1048592.);
+    BOOST_TEST_EQ(dist.approximate, 1048584.*1048584. + 1048592.*1048592.);
+    BOOST_TEST(std::isfinite(det.error) && std::isfinite(dist.error));
+    BOOST_TEST_EQ(ec::point_cache_detail::native_cache<double>::size(), 0u);
+
+    // Both midpoints are exact rationals; ties round to the even heads.
+    // The left query and the native value 1 have equal heads but differ.
+    point const even(1,0), odd(next(1),0), even2(next(next(1)),0);
+    using query = ec::query_point<root>;
+    auto const left = query::midpoint(even,odd), right = query::midpoint(odd,even2);
+    BOOST_TEST_EQ(left.approximate(0), 1);
+    BOOST_TEST_EQ(right.approximate(0), bg::get<0>(even2));
+    int result = 2;
+    BOOST_TEST((!bp::coordinate_filter<0,root>(left,even,result)));
+    BOOST_TEST_EQ(result, 2);
+    BOOST_TEST((bp::coordinate_filter<0,root>(left,odd,result)));
+    BOOST_TEST_EQ(result, -1);
+    BOOST_TEST((bp::coordinate_filter<0,root>(right,odd,result)));
+    BOOST_TEST_EQ(result, 1);
+    BOOST_TEST_EQ((ec::root_compare_coordinate<0,root>(left,even)), 1);
 }
 
 int main()
@@ -353,8 +478,13 @@ int main()
     adversarial();
     randomized();
     using kinds = std::make_integer_sequence<unsigned,8>;
+    cold_eager();
+    step_edges();
+    bounded_filters<0>(kinds{});
     bounded_filters<1>(kinds{}); bounded_filters<2>(kinds{});
     bounded_filters<4>(kinds{}); bounded_filters<8>(kinds{}); bounded_filters<100>(kinds{});
+    bounded_filters<(1u<<24)>(kinds{});
+    bounded_filters<(1u<<24)+1>(kinds{});
     BOOST_TEST_EQ(allocations, 0u);
     BOOST_TEST(coordinate_certificates > 0);
     BOOST_TEST(zeros[0] > 0);

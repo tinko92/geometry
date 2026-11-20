@@ -202,7 +202,7 @@ inline bool try_orientation_iii(coordinates const& a, coordinates const& b,
                                 coordinates const& c, int& result)
 { return detail::orientation<true, true>(a, b, c, result); }
 
-// Separate from the nearest kernels above. Each constructed coordinate is
+// Separate from the adjacent-value kernels above. Each constructed coordinate is
 // within K representable steps of RN(true), NOT necessarily of true itself.
 // K=min(N,2^24) is the producer's effective certificate; native means exact
 // binary64. See test/strategies/exact_lean_n_ulp_filters.md for the bounds.
@@ -237,7 +237,10 @@ inline n_vector n_difference(coordinates const& a, coordinates const& b)
     for (std::size_t i = 0; i < 2; ++i)
     {
         v.value[i] = arithmetic::rounded_sub(b[i], a[i]);
-        v.scale[i] = difference_magnitude<AI, BI>(v.value[i], a[i], b[i]);
+        if constexpr (AI || BI)
+            v.scale[i] = arithmetic::rounded_add((std::max)(std::abs(a[i]), minimum_normal),
+                                                 (std::max)(std::abs(b[i]), minimum_normal));
+        else v.scale[i] = std::abs(v.value[i]);
     }
     return v;
 }
@@ -250,7 +253,7 @@ inline forward_error::scalar_approximation n_bilinear(n_vector const& a, n_vecto
     double const y = arithmetic::rounded_mul(a.value[1], b.value[j]);
     double const scale = arithmetic::rounded_add(arithmetic::rounded_mul(a.scale[0], b.scale[i]),
                                                  arithmetic::rounded_mul(a.scale[1], b.scale[j]));
-    constexpr double factor = (8 * n_steps<N> + 16) * unit_roundoff;
+    constexpr double factor = (N == 0 ? 12 : 4 * n_steps<N> + 16) * unit_roundoff;
     return {Dot ? arithmetic::rounded_add(x, y) : arithmetic::rounded_sub(x, y),
             arithmetic::rounded_mul(factor, (std::max)(scale, minimum_normal))};
 }
@@ -260,7 +263,12 @@ template <std::size_t N, bool AI, bool BI>
 inline bool try_compare_n(double a, double b, int& result)
 {
     if (!std::isfinite(a) || !std::isfinite(b)) return false;
-    if constexpr (AI || BI)
+    if constexpr ((AI || BI) && N == 0)
+    {
+        // RN is monotone, including ties. Equal heads do not prove equality.
+        if (a == b) return false;
+    }
+    else if constexpr (AI || BI)
     {
         auto const x = detail::step_index(a), y = detail::step_index(b);
         constexpr auto limit = (unsigned(AI) + unsigned(BI)) * detail::n_steps<N>;
