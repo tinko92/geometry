@@ -31,8 +31,6 @@ using exact_point = std::array<rational, 2>;
 using producers = std::array<double, 8>;
 using ordinary = cr::point_state<double, policy::approximate_output>;
 using nearest_state = cr::point_state<double, policy::nearest_output>;
-static_assert(std::is_same<policy::eager_nearest_output, policy::nearest_output>::value,
-              "The compatibility spelling is the canonical policy");
 
 template <typename T, typename = void> struct has_error : std::false_type {};
 template <typename T> struct has_error<T, std::void_t<decltype(std::declval<T>().error)>> : std::true_type {};

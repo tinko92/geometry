@@ -1037,7 +1037,7 @@ namespace relate
       Round-to-nearest and controlled contraction are required.
       Long double input/output is not supported. approximate_output emits the
       currently stored approximation without output-only refinement.
-      nearest_output (also spelled eager_nearest_output) rounds root-bound
+      nearest_output rounds root-bound
       intersections to nearest binary64, ties to even, at construction and
       omits stored coordinate error fields. Float output rounds the exact
       coordinate directly to float. Legacy exact_point retains its bounds

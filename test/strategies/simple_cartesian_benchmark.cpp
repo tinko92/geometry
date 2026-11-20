@@ -16,10 +16,10 @@
 #if defined(BG_BENCH_DEFERRED)
 #error Deferred is not a current policy; select an archived type with BG_BENCH_BEFORE_POLICY
 #endif
-#if (defined(BG_BENCH_NEAREST) + defined(BG_BENCH_EAGER) + defined(BG_BENCH_BEFORE_POLICY) + defined(BG_BENCH_ULPS)) > 1
+#if (defined(BG_BENCH_NEAREST) + defined(BG_BENCH_BEFORE_POLICY) + defined(BG_BENCH_ULPS)) > 1
 #error Select one exact output policy
 #endif
-#if (defined(BG_BENCH_NEAREST) || defined(BG_BENCH_EAGER) || defined(BG_BENCH_BEFORE_POLICY) || defined(BG_BENCH_ULPS)) && !defined(BG_BENCH_EXACT)
+#if (defined(BG_BENCH_NEAREST) || defined(BG_BENCH_BEFORE_POLICY) || defined(BG_BENCH_ULPS)) && !defined(BG_BENCH_EXACT)
 #error Exact output policies require BG_BENCH_EXACT
 #endif
 #if defined(BG_BENCH_EXACT)
@@ -76,7 +76,7 @@ using strategy = bg::strategies::relate::cartesian_exact<coordinate, output_poli
 #elif defined(BG_BENCH_BEFORE_POLICY)
 using strategy = bg::strategies::relate::cartesian_exact<coordinate,
     bg::strategies::relate::BG_BENCH_BEFORE_POLICY>;
-#elif defined(BG_BENCH_NEAREST) || defined(BG_BENCH_EAGER)
+#elif defined(BG_BENCH_NEAREST)
 using strategy = bg::strategies::relate::cartesian_exact<coordinate,
     bg::strategies::relate::nearest_output>;
 #else

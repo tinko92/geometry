@@ -14,7 +14,7 @@
 #if defined(BG_BENCH_DEFERRED)
 #error Deferred is not a current policy; select BG_BENCH_NEAREST
 #endif
-#if !defined(BG_BENCH_EXACT) && (defined(BG_BENCH_NEAREST) || defined(BG_BENCH_EAGER))
+#if !defined(BG_BENCH_EXACT) && defined(BG_BENCH_NEAREST)
 #error Exact output policies require BG_BENCH_EXACT
 #endif
 
@@ -81,7 +81,7 @@ using polygons = bg::model::multi_polygon<polygon>;
 using line = bg::model::linestring<point>;
 using lines = bg::model::multi_linestring<line>;
 #if defined(BG_BENCH_EXACT)
-#if defined(BG_BENCH_NEAREST) || defined(BG_BENCH_EAGER)
+#if defined(BG_BENCH_NEAREST)
 using strategy = bg::strategies::relate::cartesian_exact<coordinate,
     bg::strategies::relate::nearest_output>;
 #else

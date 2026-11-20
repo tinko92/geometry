@@ -20,7 +20,6 @@ struct approximate_output {};
 // keeps its stored error bounds and rounds floating coordinates at emission.
 // Integral output follows BG numeric_cast conversion under every policy.
 struct nearest_output {};
-using eager_nearest_output = nearest_output;
 
 // Bound constructed binary64 output by N representable steps from nearest.
 // DeterminantRetry selectively tightens the determinant bounds on a miss.
