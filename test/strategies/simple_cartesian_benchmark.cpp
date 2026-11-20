@@ -57,12 +57,19 @@ using lines = bg::model::multi_linestring<line>;
 #if defined(BG_BENCH_SIMPLE)
 using strategy = bg::strategies::relate::simple_cartesian;
 #elif defined(BG_BENCH_EXACT)
+#if defined(BG_BENCH_ULPS)
+template <auto... Args>
 #if defined(BG_BENCH_LEAN)
-using strategy = bg::strategies::relate::cartesian_exact<coordinate,
-    bg::strategies::relate::lean_bounded_ulp_output<BG_BENCH_ULPS>>;
-#elif defined(BG_BENCH_ULPS)
-using strategy = bg::strategies::relate::cartesian_exact<coordinate,
-    bg::strategies::relate::bounded_ulp_output<BG_BENCH_ULPS>>;
+using bounded_policy = bg::strategies::relate::lean_bounded_ulp_output<Args...>;
+#else
+using bounded_policy = bg::strategies::relate::bounded_ulp_output<Args...>;
+#endif
+#if defined(BG_BENCH_DET_RETRY)
+using output_policy = bounded_policy<BG_BENCH_ULPS, false, BG_BENCH_DET_RETRY>;
+#else
+using output_policy = bounded_policy<BG_BENCH_ULPS>;
+#endif
+using strategy = bg::strategies::relate::cartesian_exact<coordinate, output_policy>;
 #elif defined(BG_BENCH_EAGER)
 using strategy = bg::strategies::relate::cartesian_exact<coordinate,
     bg::strategies::relate::eager_nearest_output>;

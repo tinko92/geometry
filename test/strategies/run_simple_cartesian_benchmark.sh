@@ -1,11 +1,12 @@
 #!/bin/sh
-# Serial, case-paired benchmark. Only BENCH_COMPARE_BOUNDED=1 needs Python 3.
+# Serial, case-paired benchmark. The opt-in comparison modes need Python 3.
 # EXACT_INCLUDE=... DEVELOP_INCLUDE=... BOOST_ROOT=... CXX=clang++ TASKSET_CPU=2 \
 #   sh run_simple_cartesian_benchmark.sh build|check|run|all [output-directory]
 # BEFORE_INCLUDE optionally adds three old-header policies; BENCH_ARCH=x86-64-v2
 # applies the same -march target to every variant, including develop.
 # For exported headers, set DEVELOP_REVISION to the exact archived commit.
 # BENCH_COMPARE_BOUNDED=1 selects only develop and five stored/lean pairs.
+# BENCH_COMPARE_DET_RETRY=1 selects develop and eight N/layout/retry variants.
 set -eu
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -21,7 +22,17 @@ if [ "${BENCH_BOUNDED_ULP:-0}" = 1 ]; then variants="$variants ulp1 ulp4 ulp100"
 categories=${BENCH_CATEGORIES:-"degenerate general decimal"}
 if [ -n "${BEFORE_INCLUDE:-}" ]; then variants="$variants before before-eager before-deferred"; fi
 compare=${BENCH_COMPARE_BOUNDED:-0}
-if [ "$compare" = 1 ]; then
+det_retry=${BENCH_COMPARE_DET_RETRY:-0}
+if [ "$det_retry" = 1 ]; then
+    [ "$compare" != 1 ] || { echo "Select only one comparison mode" >&2; exit 1; }
+    compare=1
+    repetitions=${BENCH_REPETITIONS:-5}
+    variants=develop
+    for n in 8 100; do
+        for state in off on; do variants="$variants ulp$n-$state lean$n-$state"; done
+    done
+    categories=${BENCH_CATEGORIES:-"degenerate general decimal projected projected-local"}
+elif [ "$compare" = 1 ]; then
     variants=develop
     for n in 1 2 4 8 100; do variants="$variants ulp$n lean$n"; done
     categories=${BENCH_CATEGORIES:-"degenerate general decimal projected projected-local"}
@@ -49,8 +60,7 @@ variant_config()
     case "$1" in
         eager|before-eager) policy=-DBG_BENCH_EAGER;;
         deferred|before-deferred) policy=-DBG_BENCH_DEFERRED;;
-        ulp*) policy="-DBG_BENCH_ULPS=${1#ulp}";;
-        lean*) policy="-DBG_BENCH_ULPS=${1#lean}";;
+        ulp*|lean*) bound=${1#ulp}; bound=${bound#lean}; policy="-DBG_BENCH_ULPS=${bound%%-*}";;
     esac
 }
 
@@ -94,6 +104,10 @@ build()
         if [ -n "$policy" ]; then set -- "$@" "$policy"; fi
         if [ "$compare" = 1 ]; then set -- "$@" -DBG_BENCH_COMPARE_BOUNDED; fi
         case "$variant" in lean*) set -- "$@" -DBG_BENCH_LEAN;; esac
+        case "$variant" in
+            *-on) set -- "$@" -DBG_BENCH_DET_RETRY=true;;
+            *-off) set -- "$@" -DBG_BENCH_DET_RETRY=false;;
+        esac
         printf 'variant=%s define=%s policy=%s include=%s\n' "$variant" "$define" "$policy" "$include" \
             >> "$out/build-metadata.txt"
         if [ "$compare" = 1 ]; then printf 'compile_args=%s\n' "$*" >> "$out/build-metadata.txt"; fi
@@ -127,6 +141,12 @@ verify_source()
     done
 }
 
+analyze()
+{
+    if [ "$det_retry" = 1 ]; then set -- --det-retry "$@"; fi
+    python3 "$here/analyze_bounded_comparison.py" "$out" "$@"
+}
+
 check()
 {
     verify_source
@@ -134,7 +154,7 @@ check()
         invoke "$out/$variant" --label "$variant" --digest-self-test 1
         invoke "$out/$variant" --label "$variant" --check 1 > "$out/$variant-check.csv"
     done
-    if [ "$compare" = 1 ]; then python3 "$here/analyze_bounded_comparison.py" "$out" check; fi
+    if [ "$compare" = 1 ]; then analyze check; fi
 }
 
 run()
@@ -171,7 +191,7 @@ run()
             done
         done
         # Rotate starting variant each repetition, without concurrent timings.
-        if [ "$compare" != 1 ]; then
+        if [ "$compare" != 1 ] || [ "$det_retry" = 1 ]; then
             set -- $order; first=$1; shift; order="$* $first"
         fi
         repetition=$((repetition + 1))
@@ -183,7 +203,7 @@ run()
         else sed '1d' "$file"; fi
     done > "$out/results.csv"
     if [ "$compare" = 1 ]; then
-        python3 "$here/analyze_bounded_comparison.py" "$out" timed "$repetitions" $categories
+        analyze timed "$repetitions" $categories
     fi
     date -u '+finished=%Y-%m-%dT%H:%M:%SZ' >> "$out/run-metadata.txt"
 }
