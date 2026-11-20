@@ -233,22 +233,37 @@ ulp_filter::coordinates bounded_coordinates(P const& point)
 }
 
 template <typename I>
+constexpr bool view_preserves_coordinate = std::is_same<geometry::coordinate_type_t<iterator_point_view<I>>,
+    geometry::coordinate_type_t<std::decay_t<typename iterator_point_view<I>::reference>>>::value;
+
+template <typename I>
 ulp_filter::coordinates bounded_coordinates(iterator_point_view<I> const& view)
-{ return bounded_coordinates(view.read()); }
+{
+    if constexpr (view_preserves_coordinate<I>)
+        return bounded_coordinates(view.read());
+    else
+    {
+        // Match the view's Point accessor, even if its proxy uses wider ordinates.
+        auto&& p = view.read();
+        using C = geometry::coordinate_type_t<iterator_point_view<I>>;
+        C const x = geometry::get<0>(p), y = geometry::get<1>(p);
+        return {{double(x), double(y)}};
+    }
+}
 
 template <typename P>
-constexpr bool reads_by_reference = true;
+constexpr bool direct_bilinear_read = true;
 template <typename I>
-constexpr bool reads_by_reference<iterator_point_view<I>> =
-    std::is_lvalue_reference<typename iterator_point_view<I>::reference>::value;
+constexpr bool direct_bilinear_read<iterator_point_view<I>> = view_preserves_coordinate<I>
+    && std::is_lvalue_reference<typename iterator_point_view<I>::reference>::value;
 
 template <typename Root, typename A, typename B, typename P>
 constexpr bool stored_bilinear_operands = !lean<Root>
     && std::is_same<typename Root::coordinate_type, double>::value
     && (record_point<A>::value || record_point<B>::value || record_point<P>::value)
-    && (record_point<A>::value || (exact_double<A>::value && reads_by_reference<A>))
-    && (record_point<B>::value || (exact_double<B>::value && reads_by_reference<B>))
-    && (record_point<P>::value || (exact_double<P>::value && reads_by_reference<P>));
+    && (record_point<A>::value || (exact_double<A>::value && direct_bilinear_read<A>))
+    && (record_point<B>::value || (exact_double<B>::value && direct_bilinear_read<B>))
+    && (record_point<P>::value || (exact_double<P>::value && direct_bilinear_read<P>));
 
 // This is only used inside the typed visitor, where a borrowed_point argument
 // denotes a construction. Decode the record or lvalue iterator once for X/Y.

@@ -5,7 +5,9 @@
 #include <boost/core/bit.hpp>
 #include <boost/core/lightweight_test.hpp>
 #include <boost/geometry.hpp>
+#include <boost/geometry/geometries/adapted/boost_tuple.hpp>
 #include <boost/geometry/strategies/relate/cartesian_exact.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 
 #include <algorithm>
@@ -25,6 +27,8 @@
 namespace bg = boost::geometry;
 namespace ec = bg::strategies::detail::exact_cartesian;
 namespace sr = bg::strategies::relate;
+
+BOOST_GEOMETRY_REGISTER_BOOST_TUPLE_CS(bg::cs::cartesian)
 
 namespace
 {
@@ -391,9 +395,9 @@ template <std::size_t N> void wide_budget(std::size_t scale)
     }
 }
 
-template <std::size_t N> struct fixture
+template <std::size_t N, typename Policy = lean<N>> struct fixture
 {
-    using root = ec::borrowed_root<double, lean<N>, line, line>;
+    using root = ec::borrowed_root<double, Policy, line, line>;
     line a, b;
     ec::borrowed_context<root> context;
     ec::borrowed_stage<root> stage;
@@ -457,6 +461,41 @@ void operand_heads()
     check(query::midpoint(point(0, -tiny), point(tiny, -2*tiny)), {{q(tiny)/2, -3*q(tiny)/2}});
     f.p.refine(0);
     check(record_view, exact);
+}
+
+void mixed_format_view()
+{
+    using root = fixture<1>::root;
+    using proxy = boost::tuple<double, double>;
+    using value = boost::tuple<float, float>;
+    auto read = [](point const& p) { return proxy(p.x(), p.y()); };
+    using iterator = boost::transform_iterator<decltype(read), point const*, proxy, value>;
+    point const a(1+0x1p-26, 0), b(1, 1), c(1+0x1p-28, .5);
+    ec::iterator_point_view<iterator> const view(iterator(&a, read));
+    auto const query = ec::query_point<root>::midpoint(c, c);
+    // The Point accessor returns the declared float, whereas the tagged
+    // proxy returned by read() exposes the unconverted double.
+    q const ax(bg::get<0>(view)), ay(bg::get<1>(view));
+    BOOST_TEST(ax == 1);
+    namespace bp = ec::borrowed_predicates_detail;
+    bp::visit<root>(view, [&](auto const& selected)
+    {
+        using P = std::decay_t<decltype(selected)>;
+        if constexpr (bp::step_filter<root, P, ec::query_point<root>>)
+            producer_bound<1>(bp::bounded_coordinates(selected)[0], ax);
+    });
+    q const det = (q(b.x())-ax)*(q(c.y())-ay) - (q(b.y())-ay)*(q(c.x())-ax);
+    BOOST_TEST_EQ(ec::root_orientation<root>(view, b, query), signum(det));
+
+    // The stored bilinear shortcut takes lvalue views and a crossing record.
+    // Keep the same declared point and exact determinant as the lean case.
+    proxy const backing = read(a);
+    auto by_ref = [](proxy const& p) -> proxy const& { return p; };
+    using ref_iterator = boost::transform_iterator<decltype(by_ref), proxy const*, proxy const&, value>;
+    ec::iterator_point_view<ref_iterator> const ref_view(ref_iterator(&backing, by_ref));
+    using stored = fixture<1, sr::bounded_ulp_output<1>>;
+    stored f(endpoints{{c.x(), 0, c.x(), 1, 0, c.y(), 2, c.y()}});
+    BOOST_TEST_EQ(ec::root_orientation<stored::root>(ref_view, b, f.p), signum(det));
 }
 
 template <std::size_t N> void ambiguous(endpoints const& v)
@@ -645,6 +684,7 @@ int main()
     wide_budget<budget_cap>(budget_cap);
     wide_budget<4*budget_cap>(budget_cap);
     operand_heads();
+    mixed_format_view();
     det_cases<8, true>(); det_cases<8, false>();
     det_cases<100, true>(); det_cases<100, false>();
     public_det_case<false>(); public_det_case<true>();
