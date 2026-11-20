@@ -1,0 +1,315 @@
+section	family	policy	verdict	rows
+Dormant	buffer	branch_default	Build failed	3
+Dormant	buffer	branch_default	Fail	8
+Dormant	buffer	buffer_cert	Not run	11
+Dormant	buffer	decimal	N/A	11
+Dormant	buffer	develop	Build failed	3
+Dormant	buffer	develop	Fail	8
+Dormant	buffer	exact_approx	N/A	11
+Dormant	buffer	lean_1	N/A	11
+Dormant	buffer	lean_100	N/A	11
+Dormant	buffer	lean_2	N/A	11
+Dormant	buffer	lean_4	N/A	11
+Dormant	buffer	lean_8	N/A	11
+Dormant	buffer	nearest_output	N/A	11
+Dormant	buffer	simple_cartesian	N/A	11
+Dormant	buffer	stored_1	N/A	11
+Dormant	buffer	stored_100	N/A	11
+Dormant	buffer	stored_2	N/A	11
+Dormant	buffer	stored_4	N/A	11
+Dormant	buffer	stored_8	N/A	11
+Dormant	cart	branch_default	Build failed	47
+Dormant	cart	branch_default	Fail	58
+Dormant	cart	branch_default	Not reached	2
+Dormant	cart	branch_default	Partial	16
+Dormant	cart	branch_default	Pass	77
+Dormant	cart	branch_default	Unclear	3
+Dormant	cart	buffer_cert	N/A	177
+Dormant	cart	decimal	Not run	156
+Dormant	cart	decimal	Pass	22
+Dormant	cart	decimal	Regressed*	1
+Dormant	cart	decimal	Solved*	5
+Dormant	cart	decimal	Unclear	3
+Dormant	cart	develop	Build failed	47
+Dormant	cart	develop	Fail	58
+Dormant	cart	develop	Not reached	2
+Dormant	cart	develop	Partial	16
+Dormant	cart	develop	Pass	77
+Dormant	cart	develop	Unclear	3
+Dormant	cart	exact_approx	Aborted	2
+Dormant	cart	exact_approx	Fail	31
+Dormant	cart	exact_approx	Not run	88
+Dormant	cart	exact_approx	Partial	16
+Dormant	cart	exact_approx	Pass	41
+Dormant	cart	exact_approx	Regressed*	4
+Dormant	cart	exact_approx	Solved*	2
+Dormant	cart	exact_approx	Unclear	3
+Dormant	cart	lean_1	Aborted	2
+Dormant	cart	lean_1	Fail	31
+Dormant	cart	lean_1	Not run	88
+Dormant	cart	lean_1	Partial	16
+Dormant	cart	lean_1	Pass	41
+Dormant	cart	lean_1	Regressed*	4
+Dormant	cart	lean_1	Solved*	2
+Dormant	cart	lean_1	Unclear	3
+Dormant	cart	lean_100	Aborted	2
+Dormant	cart	lean_100	Fail	31
+Dormant	cart	lean_100	Not run	88
+Dormant	cart	lean_100	Partial	16
+Dormant	cart	lean_100	Pass	41
+Dormant	cart	lean_100	Regressed*	4
+Dormant	cart	lean_100	Solved*	2
+Dormant	cart	lean_100	Unclear	3
+Dormant	cart	lean_2	Aborted	2
+Dormant	cart	lean_2	Fail	31
+Dormant	cart	lean_2	Not run	88
+Dormant	cart	lean_2	Partial	16
+Dormant	cart	lean_2	Pass	41
+Dormant	cart	lean_2	Regressed*	4
+Dormant	cart	lean_2	Solved*	2
+Dormant	cart	lean_2	Unclear	3
+Dormant	cart	lean_4	Aborted	2
+Dormant	cart	lean_4	Fail	31
+Dormant	cart	lean_4	Not run	88
+Dormant	cart	lean_4	Partial	16
+Dormant	cart	lean_4	Pass	41
+Dormant	cart	lean_4	Regressed*	4
+Dormant	cart	lean_4	Solved*	2
+Dormant	cart	lean_4	Unclear	3
+Dormant	cart	lean_8	Aborted	2
+Dormant	cart	lean_8	Fail	31
+Dormant	cart	lean_8	Not run	88
+Dormant	cart	lean_8	Partial	16
+Dormant	cart	lean_8	Pass	41
+Dormant	cart	lean_8	Regressed*	4
+Dormant	cart	lean_8	Solved*	2
+Dormant	cart	lean_8	Unclear	3
+Dormant	cart	nearest_output	Aborted	2
+Dormant	cart	nearest_output	Fail	31
+Dormant	cart	nearest_output	Not run	88
+Dormant	cart	nearest_output	Partial	16
+Dormant	cart	nearest_output	Pass	41
+Dormant	cart	nearest_output	Regressed*	4
+Dormant	cart	nearest_output	Solved*	2
+Dormant	cart	nearest_output	Unclear	3
+Dormant	cart	simple_cartesian	Build failed	2
+Dormant	cart	simple_cartesian	Fail	33
+Dormant	cart	simple_cartesian	Not run	88
+Dormant	cart	simple_cartesian	Partial	16
+Dormant	cart	simple_cartesian	Pass	37
+Dormant	cart	simple_cartesian	Regressed*	7
+Dormant	cart	simple_cartesian	Solved*	1
+Dormant	cart	simple_cartesian	Unclear	3
+Dormant	cart	stored_1	Aborted	2
+Dormant	cart	stored_1	Fail	31
+Dormant	cart	stored_1	Not run	88
+Dormant	cart	stored_1	Partial	16
+Dormant	cart	stored_1	Pass	41
+Dormant	cart	stored_1	Regressed*	4
+Dormant	cart	stored_1	Solved*	2
+Dormant	cart	stored_1	Unclear	3
+Dormant	cart	stored_100	Aborted	2
+Dormant	cart	stored_100	Fail	31
+Dormant	cart	stored_100	Not run	88
+Dormant	cart	stored_100	Partial	16
+Dormant	cart	stored_100	Pass	41
+Dormant	cart	stored_100	Regressed*	4
+Dormant	cart	stored_100	Solved*	2
+Dormant	cart	stored_100	Unclear	3
+Dormant	cart	stored_2	Aborted	2
+Dormant	cart	stored_2	Fail	31
+Dormant	cart	stored_2	Not run	88
+Dormant	cart	stored_2	Partial	16
+Dormant	cart	stored_2	Pass	41
+Dormant	cart	stored_2	Regressed*	4
+Dormant	cart	stored_2	Solved*	2
+Dormant	cart	stored_2	Unclear	3
+Dormant	cart	stored_4	Aborted	2
+Dormant	cart	stored_4	Fail	31
+Dormant	cart	stored_4	Not run	88
+Dormant	cart	stored_4	Partial	16
+Dormant	cart	stored_4	Pass	41
+Dormant	cart	stored_4	Regressed*	4
+Dormant	cart	stored_4	Solved*	2
+Dormant	cart	stored_4	Unclear	3
+Dormant	cart	stored_8	Aborted	2
+Dormant	cart	stored_8	Fail	31
+Dormant	cart	stored_8	Not run	88
+Dormant	cart	stored_8	Partial	16
+Dormant	cart	stored_8	Pass	41
+Dormant	cart	stored_8	Regressed*	4
+Dormant	cart	stored_8	Solved*	2
+Dormant	cart	stored_8	Unclear	3
+Source notes	buffer	branch_default	unspecified	34
+Source notes	buffer	buffer_cert	unspecified	34
+Source notes	buffer	decimal	unspecified	34
+Source notes	buffer	develop	unspecified	34
+Source notes	buffer	exact_approx	unspecified	34
+Source notes	buffer	lean_1	unspecified	34
+Source notes	buffer	lean_100	unspecified	34
+Source notes	buffer	lean_2	unspecified	34
+Source notes	buffer	lean_4	unspecified	34
+Source notes	buffer	lean_8	unspecified	34
+Source notes	buffer	nearest_output	unspecified	34
+Source notes	buffer	simple_cartesian	unspecified	34
+Source notes	buffer	stored_1	unspecified	34
+Source notes	buffer	stored_100	unspecified	34
+Source notes	buffer	stored_2	unspecified	34
+Source notes	buffer	stored_4	unspecified	34
+Source notes	buffer	stored_8	unspecified	34
+Source notes	cart	branch_default	unspecified	187
+Source notes	cart	buffer_cert	unspecified	187
+Source notes	cart	decimal	unspecified	187
+Source notes	cart	develop	unspecified	187
+Source notes	cart	exact_approx	unspecified	187
+Source notes	cart	lean_1	unspecified	187
+Source notes	cart	lean_100	unspecified	187
+Source notes	cart	lean_2	unspecified	187
+Source notes	cart	lean_4	unspecified	187
+Source notes	cart	lean_8	unspecified	187
+Source notes	cart	nearest_output	unspecified	187
+Source notes	cart	simple_cartesian	unspecified	187
+Source notes	cart	stored_1	unspecified	187
+Source notes	cart	stored_100	unspecified	187
+Source notes	cart	stored_2	unspecified	187
+Source notes	cart	stored_4	unspecified	187
+Source notes	cart	stored_8	unspecified	187
+Tracker	buffer	branch_default	Contract	1
+Tracker	buffer	branch_default	Fail	3
+Tracker	buffer	branch_default	Pass	7
+Tracker	buffer	branch_default	Solved*	1
+Tracker	buffer	buffer_cert	Declined	4
+Tracker	buffer	buffer_cert	Not run	6
+Tracker	buffer	buffer_cert	Qualified	3
+Tracker	buffer	decimal	N/A	12
+Tracker	buffer	develop	Contract	1
+Tracker	buffer	develop	Fail	4
+Tracker	buffer	develop	Pass	7
+Tracker	buffer	exact_approx	N/A	12
+Tracker	buffer	lean_1	N/A	12
+Tracker	buffer	lean_100	N/A	12
+Tracker	buffer	lean_2	N/A	12
+Tracker	buffer	lean_4	N/A	12
+Tracker	buffer	lean_8	N/A	12
+Tracker	buffer	nearest_output	N/A	12
+Tracker	buffer	simple_cartesian	N/A	12
+Tracker	buffer	stored_1	N/A	12
+Tracker	buffer	stored_100	N/A	12
+Tracker	buffer	stored_2	N/A	12
+Tracker	buffer	stored_4	N/A	12
+Tracker	buffer	stored_8	N/A	12
+Tracker	cart	branch_default	Fail	32
+Tracker	cart	branch_default	Partial	31
+Tracker	cart	branch_default	Pass	17
+Tracker	cart	branch_default	Solved*	2
+Tracker	cart	branch_default	Unclear	2
+Tracker	cart	branch_default	Unsupported	2
+Tracker	cart	buffer_cert	N/A	86
+Tracker	cart	decimal	Fail	2
+Tracker	cart	decimal	Partial	13
+Tracker	cart	decimal	Pass	39
+Tracker	cart	decimal	Solved*	28
+Tracker	cart	decimal	Unclear	1
+Tracker	cart	decimal	Unsupported	3
+Tracker	cart	develop	Fail	39
+Tracker	cart	develop	Partial	26
+Tracker	cart	develop	Pass	17
+Tracker	cart	develop	Unclear	2
+Tracker	cart	develop	Unsupported	2
+Tracker	cart	exact_approx	Fail	12
+Tracker	cart	exact_approx	Partial	37
+Tracker	cart	exact_approx	Pass	19
+Tracker	cart	exact_approx	Solved*	15
+Tracker	cart	exact_approx	Unclear	1
+Tracker	cart	exact_approx	Unsupported	2
+Tracker	cart	lean_1	Fail	8
+Tracker	cart	lean_1	Partial	41
+Tracker	cart	lean_1	Pass	19
+Tracker	cart	lean_1	Solved*	15
+Tracker	cart	lean_1	Unclear	1
+Tracker	cart	lean_1	Unsupported	2
+Tracker	cart	lean_100	Fail	12
+Tracker	cart	lean_100	Partial	37
+Tracker	cart	lean_100	Pass	19
+Tracker	cart	lean_100	Solved*	15
+Tracker	cart	lean_100	Unclear	1
+Tracker	cart	lean_100	Unsupported	2
+Tracker	cart	lean_2	Fail	8
+Tracker	cart	lean_2	Partial	41
+Tracker	cart	lean_2	Pass	19
+Tracker	cart	lean_2	Solved*	15
+Tracker	cart	lean_2	Unclear	1
+Tracker	cart	lean_2	Unsupported	2
+Tracker	cart	lean_4	Fail	9
+Tracker	cart	lean_4	Partial	40
+Tracker	cart	lean_4	Pass	19
+Tracker	cart	lean_4	Solved*	15
+Tracker	cart	lean_4	Unclear	1
+Tracker	cart	lean_4	Unsupported	2
+Tracker	cart	lean_8	Fail	11
+Tracker	cart	lean_8	Partial	38
+Tracker	cart	lean_8	Pass	19
+Tracker	cart	lean_8	Solved*	15
+Tracker	cart	lean_8	Unclear	1
+Tracker	cart	lean_8	Unsupported	2
+Tracker	cart	nearest_output	Fail	7
+Tracker	cart	nearest_output	Partial	42
+Tracker	cart	nearest_output	Pass	19
+Tracker	cart	nearest_output	Solved*	15
+Tracker	cart	nearest_output	Unclear	1
+Tracker	cart	nearest_output	Unsupported	2
+Tracker	cart	simple_cartesian	Fail	10
+Tracker	cart	simple_cartesian	Partial	11
+Tracker	cart	simple_cartesian	Pass	16
+Tracker	cart	simple_cartesian	Solved*	9
+Tracker	cart	simple_cartesian	Unclear	2
+Tracker	cart	simple_cartesian	Unsupported	38
+Tracker	cart	stored_1	Fail	8
+Tracker	cart	stored_1	Partial	41
+Tracker	cart	stored_1	Pass	19
+Tracker	cart	stored_1	Solved*	15
+Tracker	cart	stored_1	Unclear	1
+Tracker	cart	stored_1	Unsupported	2
+Tracker	cart	stored_100	Fail	12
+Tracker	cart	stored_100	Partial	37
+Tracker	cart	stored_100	Pass	19
+Tracker	cart	stored_100	Solved*	15
+Tracker	cart	stored_100	Unclear	1
+Tracker	cart	stored_100	Unsupported	2
+Tracker	cart	stored_2	Fail	8
+Tracker	cart	stored_2	Partial	41
+Tracker	cart	stored_2	Pass	19
+Tracker	cart	stored_2	Solved*	15
+Tracker	cart	stored_2	Unclear	1
+Tracker	cart	stored_2	Unsupported	2
+Tracker	cart	stored_4	Fail	9
+Tracker	cart	stored_4	Partial	40
+Tracker	cart	stored_4	Pass	19
+Tracker	cart	stored_4	Solved*	15
+Tracker	cart	stored_4	Unclear	1
+Tracker	cart	stored_4	Unsupported	2
+Tracker	cart	stored_8	Fail	11
+Tracker	cart	stored_8	Partial	38
+Tracker	cart	stored_8	Pass	19
+Tracker	cart	stored_8	Solved*	15
+Tracker	cart	stored_8	Unclear	1
+Tracker	cart	stored_8	Unsupported	2
+Tracker	cart-dispatch	branch_default	Build failed	3
+Tracker	cart-dispatch	branch_default	Not run	1
+Tracker	cart-dispatch	buffer_cert	N/A	4
+Tracker	cart-dispatch	decimal	Not run	4
+Tracker	cart-dispatch	develop	Build failed	3
+Tracker	cart-dispatch	develop	Not run	1
+Tracker	cart-dispatch	exact_approx	Not run	4
+Tracker	cart-dispatch	lean_1	Not run	4
+Tracker	cart-dispatch	lean_100	Not run	4
+Tracker	cart-dispatch	lean_2	Not run	4
+Tracker	cart-dispatch	lean_4	Not run	4
+Tracker	cart-dispatch	lean_8	Not run	4
+Tracker	cart-dispatch	nearest_output	Not run	4
+Tracker	cart-dispatch	simple_cartesian	Not run	4
+Tracker	cart-dispatch	stored_1	Not run	4
+Tracker	cart-dispatch	stored_100	Not run	4
+Tracker	cart-dispatch	stored_2	Not run	4
+Tracker	cart-dispatch	stored_4	Not run	4
+Tracker	cart-dispatch	stored_8	Not run	4

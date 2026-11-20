@@ -1,0 +1,11 @@
+workload	N	axes	fast_off	fast_on	points_requiring_refinement_off	points_requiring_refinement_on
+degenerate	8	20	12	17	8	3
+degenerate	100	20	17	17	3	3
+general	8	66	30	62	28	4
+general	100	66	62	63	4	3
+decimal	8	54	26	49	22	5
+decimal	100	54	50	53	4	1
+projected	8	544	544	544	0	0
+projected	100	544	544	544	0	0
+projected-local	8	544	333	509	193	35
+projected-local	100	544	511	539	33	5
